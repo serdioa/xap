@@ -73,8 +73,8 @@ public class WaitForDrainUtils {
                 repetitiveTryWithinTimeout(isDemote ? "Backup is not synced" : "Some targets are not synced", remainingTime, () -> isDemote ? isBackupSynced(spaceImpl) : isAllTargetSync(spaceImpl, loggerToUse));
                 loggerToUse.info("[{}]: Replication drained, duration: " + (System.currentTimeMillis() - startReplication) + " ms", containerName);
             }
-        } catch (TimeoutException e){
-            loggerToUse.warn("[{}]: Caught TimeoutException while waiting for "+spaceImpl.getContainerName()+" to drain",e);
+        } catch (Exception e){
+            loggerToUse.warn("[{}]: Caught Exception while waiting for "+spaceImpl.getContainerName()+" to drain",e);
             throw e;
         }
     }

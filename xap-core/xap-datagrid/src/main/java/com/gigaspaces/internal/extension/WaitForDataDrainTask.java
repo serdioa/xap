@@ -47,6 +47,11 @@ public class WaitForDataDrainTask extends SystemDistributedTask<SpaceResponseInf
 
     @Override
     public SpaceResponseInfo reduce(List<AsyncResult<SpaceResponseInfo>> asyncResults) throws Exception {
+        if(response.isEmpty()){
+            for (AsyncResult<SpaceResponseInfo> asyncResult : asyncResults) {
+                handleAsyncResult(asyncResult);
+            }
+        }
         return response;
     }
 
@@ -64,11 +69,16 @@ public class WaitForDataDrainTask extends SystemDistributedTask<SpaceResponseInf
 
     @Override
     public Decision onResult(AsyncResultFilterEvent<SpaceResponseInfo> event) {
-        if(event.getCurrentResult().getException() != null){
-            response.addException(-1, event.getCurrentResult().getException());
+        final AsyncResult<SpaceResponseInfo> asyncResult = event.getCurrentResult();
+        return handleAsyncResult(asyncResult);
+    }
+
+    private Decision handleAsyncResult(AsyncResult<SpaceResponseInfo> asyncResult) {
+        if(asyncResult.getException() != null){
+            response.addException(-1, asyncResult.getException());
             return Decision.CONTINUE;
         }
-        final WaitForDrainPartitionResponse partitionResponse = (WaitForDrainPartitionResponse) event.getCurrentResult().getResult();
+        final WaitForDrainPartitionResponse partitionResponse = (WaitForDrainPartitionResponse) asyncResult.getResult();
         if(partitionResponse != null){
             if(partitionResponse.getException() != null){
                 response.addException(partitionResponse.getPartitionId(), partitionResponse.getException());
