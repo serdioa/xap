@@ -4,10 +4,10 @@ import com.gigaspaces.jdbc.QueryExecutor;
 import com.gigaspaces.jdbc.calcite.handlers.AggregateHandler;
 import com.gigaspaces.jdbc.calcite.handlers.CaseConditionHandler;
 import com.gigaspaces.jdbc.calcite.handlers.ConditionHandler;
+import com.gigaspaces.jdbc.calcite.handlers.JoinConditionHandler;
 import com.gigaspaces.jdbc.calcite.handlers.SingleTableProjectionHandler;
 import com.gigaspaces.jdbc.calcite.pg.PgCalciteTable;
 import com.gigaspaces.jdbc.calcite.utils.CalciteUtils;
-import com.gigaspaces.jdbc.model.join.JoinInfo;
 import com.gigaspaces.jdbc.model.table.*;
 import com.gigaspaces.query.sql.functions.extended.LocalSession;
 import com.j_spaces.jdbc.builder.QueryTemplatePacket;
@@ -63,10 +63,10 @@ public class SelectHandler extends RelShuttleImpl {
 
     @Override
     public RelNode visit(RelNode other) {
-        if(root == null){
+        if (root == null) {
             root = other;
         }
-        if(other instanceof GSCalc){
+        if (other instanceof GSCalc) {
             GSCalc calc = (GSCalc) other;
             if(rootCalc == null){
                 rootCalc = calc;
@@ -75,10 +75,10 @@ public class SelectHandler extends RelShuttleImpl {
             while (!(input instanceof GSJoin)
                     && !(input instanceof GSTableScan)
                     && !(input instanceof GSAggregate)) {
-                if(input.getInputs().isEmpty()) {
+                if (input.getInputs().isEmpty()) {
                     break;
                 }
-                input =  input.getInput(0);
+                input = input.getInput(0);
             }
             childToCalc.putIfAbsent(input, calc);
         }
@@ -125,7 +125,7 @@ public class SelectHandler extends RelShuttleImpl {
                     int columnOrdinal = ((RexLocalRef) operand).getIndex();
                     params.add(new LiteralColumn(CalciteUtils.getValue(literal, castType), columnOrdinal));
                 } else if (funcArgument instanceof RexCall) { //operator
-                    RexCall function= (RexCall) funcArgument;
+                    RexCall function = (RexCall) funcArgument;
                     params.add(getFunctionCallColumn(program, function));
                 }
             }
@@ -144,16 +144,16 @@ public class SelectHandler extends RelShuttleImpl {
             String columnName = columnAlias;
             boolean isVisible = false;
             RelNode parent = this.stack.peek();
-            if(parent instanceof GSCalc) {
+            if (parent instanceof GSCalc) {
                 RexProgram program = ((GSCalc) parent).getProgram();
                 RelDataTypeField field = program.getOutputRowType().getField(columnAlias, true, false);
-                if(field != null) {
+                if (field != null) {
                     isVisible = true;
                     columnName = program.getInputRowType().getFieldNames().get(program.getSourceField(field.getIndex()));
                 }
             }
             TableContainer table = queryExecutor.getTableByColumnName(columnName);
-            OrderColumn orderColumn = new OrderColumn(new ConcreteColumn(columnName,null, columnAlias,
+            OrderColumn orderColumn = new OrderColumn(new ConcreteColumn(columnName, null, columnAlias,
                     isVisible, table, columnCounter++), !direction.isDescending(),
                     nullDirection == RelFieldCollation.NullDirection.LAST);
             table.addOrderColumns(orderColumn);
@@ -180,25 +180,34 @@ public class SelectHandler extends RelShuttleImpl {
     }
 
     private void handleJoin(GSJoin join) {
-        RexCall rexCall = (RexCall) join.getCondition();
-        if(rexCall.getKind() != SqlKind.EQUALS){
-            throw new UnsupportedOperationException("Only equal joins are supported");
+        if (!(join.getCondition() instanceof RexCall)) {
+            System.out.println("A");
         }
-        int leftIndex = ((RexInputRef) rexCall.getOperands().get(0)).getIndex();
-        int rightIndex = ((RexInputRef) rexCall.getOperands().get(1)).getIndex();
-        TableContainer rightContainer = queryExecutor.getTableByColumnIndex(rightIndex);
-        TableContainer leftContainer = queryExecutor.getTableByColumnIndex(leftIndex);
-        IQueryColumn rightColumn = queryExecutor.getColumnByColumnIndex(rightIndex);
-        IQueryColumn leftColumn = queryExecutor.getColumnByColumnIndex(leftIndex);
-        rightContainer.setJoinInfo(new JoinInfo(leftColumn, rightColumn, JoinInfo.JoinType.getType(join.getJoinType())));
-        if (leftContainer.getJoinedTable() == null) {
-            if (!rightContainer.isJoined()) {
-                leftContainer.setJoinedTable(rightContainer);
-                rightContainer.setJoined(true);
-            }
+        RexNode joinCondition = join.getCondition();
+        TableContainer leftContainer;
+
+        if (joinCondition instanceof RexLiteral) {
+//            RexLiteral rexLiteral = ((RexLiteral) joinCondition);
+//
+//            leftContainer = ((GSTableScan) ((GSCalc) join.getLeft()).getInput()).getActualTableContainer();
+//            TableContainer rightContainer = ((GSTableScan) ((GSCalc) join.getRight()).getInput()).getActualTableContainer();
+//            leftContainer.setJoinedTable(rightContainer);
+            List<TableContainer> tables = queryExecutor.getTables();
+            leftContainer = tables.get(tables.size() - 2);
+            TableContainer rightTable = tables.get(tables.size() - 1);
+            if (leftContainer.getJoinedTable() != null)
+                throw new IllegalArgumentException("left table shouldn't be joined yet!");
+            leftContainer.setJoinedTable(rightTable);
         }
-        if(!childToCalc.containsKey(join)) { // it is SELECT *
-            if(join.equals(root)
+        else if (joinCondition instanceof RexCall) {
+            RexCall rexCall = (RexCall) join.getCondition();
+            JoinConditionHandler joinConditionHandler = new JoinConditionHandler(join, queryExecutor);
+            leftContainer = joinConditionHandler.handleRexCall(rexCall);
+        } else {
+            throw new UnsupportedOperationException("Only equal joins are supported"); //TODO
+        }
+        if (!childToCalc.containsKey(join)) { // it is SELECT *
+            if (join.equals(root)
                     || ((root instanceof GSSort) && ((GSSort) root).getInput().equals(join))) { // root is GSSort and its child is join
                 if (join.isSemiJoin()) {
                     queryExecutor.getVisibleColumns().addAll(leftContainer.getVisibleColumns());
@@ -208,8 +217,7 @@ public class SelectHandler extends RelShuttleImpl {
                     }
                 }
             }
-        }
-        else{
+        } else {
             handleCalcFromJoin(childToCalc.get(join));
             childToCalc.remove(join); // visited, not needed anymore
         }
@@ -268,7 +276,7 @@ public class SelectHandler extends RelShuttleImpl {
                         break;
                     }
                     default:
-                        throw new UnsupportedOperationException("Unexpected node kind expected CASE / INPUT_REF but was [" + node.getKind() + "]");
+        //                throw new UnsupportedOperationException("Unexpected node kind expected CASE / INPUT_REF but was [" + node.getKind() + "]");
                 }
             }
         }
