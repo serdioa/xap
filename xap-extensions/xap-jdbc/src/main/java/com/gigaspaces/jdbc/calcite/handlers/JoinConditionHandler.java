@@ -216,7 +216,7 @@ public class JoinConditionHandler {
                 }
                 joinInfo.addJoinCondition(JoinConditionOperator.getConditionOperator(rexCall.getKind(), 2));
                 joinInfo.addJoinCondition(new JoinConditionColumnValue(column));
-                joinInfo.addJoinCondition(new JoinConditionColumnValue(new LiteralColumn(literalValue)));
+                joinInfo.addJoinCondition(new JoinConditionColumnValue(new LiteralColumn(literalValue, 0)));
                 return table; //TODO: @ not good!. not the left always
             case OR:
             case AND:

@@ -152,7 +152,7 @@ public class SelectHandler extends RelShuttleImpl {
                     columnName = program.getInputRowType().getFieldNames().get(program.getSourceField(field.getIndex()));
                 }
             }
-            TableContainer table = queryExecutor.getTableByColumnName(columnName);
+            TableContainer table = queryExecutor.getTableByColumnIndex(relCollation.getFieldIndex());
             OrderColumn orderColumn = new OrderColumn(new ConcreteColumn(columnName, null, columnAlias,
                     isVisible, table, columnCounter++), !direction.isDescending(),
                     nullDirection == RelFieldCollation.NullDirection.LAST);
@@ -276,7 +276,7 @@ public class SelectHandler extends RelShuttleImpl {
                         break;
                     }
                     default:
-        //                throw new UnsupportedOperationException("Unexpected node kind expected CASE / INPUT_REF but was [" + node.getKind() + "]");
+                        throw new UnsupportedOperationException("Unexpected node kind expected CASE / INPUT_REF but was [" + node.getKind() + "]");
                 }
             }
         }
