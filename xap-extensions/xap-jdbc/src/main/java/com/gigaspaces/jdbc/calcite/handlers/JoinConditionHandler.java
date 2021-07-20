@@ -124,6 +124,34 @@ public class JoinConditionHandler {
                         }
                     }
                     return leftContainer;
+                } else if (rexCall.getOperands().stream().allMatch(rexNode -> rexNode.isA(SqlKind.INPUT_REF) || rexNode.isA(SqlKind.ITEM))) {
+                    int firstOperandIndex = ((RexInputRef) rexCall.getOperands().get(0)).getIndex();
+                    IQueryColumn leftColumn = queryExecutor.getColumnByColumnIndex(firstOperandIndex);
+                    RexCall second = ((RexCall) rexCall.getOperands().get(1));
+                    RexNode array = second.getOperands().get(0);
+                    if (!(array instanceof RexInputRef))
+                        throw new UnsupportedOperationException("111"); //TODO
+                    IQueryColumn arrayColumn = queryExecutor.getColumnByColumnIndex(((RexInputRef) array).getIndex());
+                    RexNode arrayIndex = second.getOperands().get(1);
+                    if (!(arrayIndex instanceof RexCall))
+                        throw new UnsupportedOperationException("2222");
+                    Function<IQueryColumn, Object> f = (Function<IQueryColumn, Object>) iQueryColumn -> {
+//                        Object arrayValue = iQueryColumn.getCurrentValue();
+                        return null;
+                    };
+
+                    joinInfo.addJoinCondition(JoinConditionOperator.getConditionOperator(rexCall.getKind(), 2));
+                    joinInfo.addJoinCondition(new JoinConditionColumnValue(leftColumn));
+                    joinInfo.addJoinCondition(new JoinConditionColumnArrayValue(arrayColumn, f));
+                    TableContainer leftContainer = leftColumn.getTableContainer();
+                    TableContainer rightContainer = arrayColumn.getTableContainer();
+                    if (leftContainer.getJoinedTable() == null) {
+                        if (!rightContainer.isJoined()) {
+                            leftContainer.setJoinedTable(rightContainer);
+                            rightContainer.setJoined(true);
+                        }
+                    }
+                    return leftContainer;
                 }
                 //handle column and literal
                 int operandIndex = 0;

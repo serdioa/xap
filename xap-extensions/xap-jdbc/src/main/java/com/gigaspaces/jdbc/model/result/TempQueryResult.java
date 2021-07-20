@@ -1,5 +1,6 @@
 package com.gigaspaces.jdbc.model.result;
 
+import com.gigaspaces.jdbc.model.table.TableContainer;
 import com.gigaspaces.jdbc.model.table.TempTableContainer;
 
 import java.util.ArrayList;
@@ -24,6 +25,12 @@ public class TempQueryResult extends QueryResult{
     public TableRow aggregate( List<TableRow> tableRows) {
         return TableRowUtils.aggregate(tableRows, tempTableContainer.getSelectedColumns(),
                             tempTableContainer.getAggregationColumns(), tempTableContainer.getVisibleColumns() );
+    }
+
+    @Override
+    public TableContainer getTableContainer() {
+
+        return tempTableContainer;
     }
 
     @Override

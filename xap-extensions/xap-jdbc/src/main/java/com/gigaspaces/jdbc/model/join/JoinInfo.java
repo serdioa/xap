@@ -83,7 +83,11 @@ public class JoinInfo {
                     case GREATER_THAN:
                     case GREATER_THAN_OR_EQUAL:
                     case LIKE:
-                        evaluate = joinConditionOperator.evaluate(stack.pop().getValue(), stack.pop().getValue());
+                        JoinCondition col1 = stack.pop();
+                        Object val1 = col1.getValue();
+                        JoinCondition col2 = stack.pop();
+                        Object val2 = col2.getValue();
+                        evaluate = joinConditionOperator.evaluate(val1, val2);
                         stack.push(new JoinConditionBooleanValue(evaluate));
                         break;
                     case AND:

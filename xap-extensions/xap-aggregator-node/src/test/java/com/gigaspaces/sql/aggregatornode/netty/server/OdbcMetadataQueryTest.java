@@ -17,7 +17,22 @@ public class OdbcMetadataQueryTest extends AbstractServerTest {
     private static final String SELECT_TYPE_WHERE_TYPNAME_LO = "select oid, typbasetype from pg_type where typname = 'lo';";
     private static final String SHOW_MAX_IDENTIFIER_LENGTH = "show max_identifier_length;";
     private static final String SELECT_NULL = "select NULL, NULL, NULL";
-    private static final String SELECT_TABLES = "select relname, nspname, relkind from pg_catalog.pg_class c, pg_catalog.pg_namespace n where relkind in ('r', 'v', 'm', 'f', 'p') and nspname not in ('pg_catalog', 'information_schema', 'pg_toast', 'pg_temp_1') and n.oid = relnamespace order by nspname, relname";
+    private static final String SELECT_TABLES = "" +
+            "SELECT n.oid,c.relnamespace, c.oid from pg_catalog.pg_namespace n " +
+            "INNER JOIN pg_catalog.pg_class c ON n.oid = c.relnamespace";
+    private static final String SELECT_TABLES1 = "SELECT c.relnamespace, c.oid from pg_catalog.pg_class c";
+    private static final String SELECT_TABLES2 = "SELECT n.oid from pg_catalog.pg_namespace n";
+
+    private static final String SELECT_TABLESZ = "" +
+            "select relname, nspname, relkind, relnamespace, n.oid " +
+            "from pg_catalog.pg_class c, pg_catalog.pg_namespace n " +
+            "where relkind in ('r', 'v', 'm', 'f', 'p') " +
+//            "and nspname not in ('pg_catalog', 'information_schema', 'pg_toast', 'pg_temp_1') " +
+//            "and n.oid = relnamespace " +
+            "order by nspname, relname";
+    private static final String SELECT_TABLES_NO_FILTER = "select relname, relkind from pg_catalog.pg_class";
+    private static final String SELECT_TABLES_NO_FILTER_1 = "select relname, relkind from pg_catalog.pg_class where relkind = 'r'";
+    private static final String SELECT_TABLESZZZ = "select relname, relkind from pg_catalog.pg_class where relkind in ('r', 'v', 'm', 'f', 'p')";
     private static final String SELECT_ATTRIBUTES_1 = "select n.nspname, c.relname, a.attname, a.atttypid, t.typname, a.attnum, a.attlen, a.atttypmod, a.attnotnull, c.relhasrules, c.relkind, c.oid, pg_get_expr(d.adbin, d.adrelid), case t.typtype when 'd' then t.typbasetype else 0 end, t.typtypmod, 0, attidentity, c.relhassubclass from (((pg_catalog.pg_class c inner join pg_catalog.pg_namespace n on n.oid = c.relnamespace and c.oid = 16388) inner join pg_catalog.pg_attribute a on (not a.attisdropped) and a.attnum > 0 and a.attrelid = c.oid) inner join pg_catalog.pg_type t on t.oid = a.atttypid) left outer join pg_attrdef d on a.atthasdef and d.adrelid = a.attrelid and d.adnum = a.attnum order by n.nspname, c.relname, attnum";
     private static final String SELECT_ATTRIBUTES_2 = "select n.nspname, c.relname, a.attname, a.atttypid, t.typname, a.attnum, a.attlen, a.atttypmod, a.attnotnull, c.relhasrules, c.relkind, c.oid, pg_get_expr(d.adbin, d.adrelid), case t.typtype when 'd' then t.typbasetype else 0 end, t.typtypmod, 0, attidentity, c.relhassubclass from (((pg_catalog.pg_class c inner join pg_catalog.pg_namespace n on n.oid = c.relnamespace and c.relname like 'test\\_table' and n.nspname like 'public') inner join pg_catalog.pg_attribute a on (not a.attisdropped) and a.attnum > 0 and a.attrelid = c.oid) inner join pg_catalog.pg_type t on t.oid = a.atttypid) left outer join pg_attrdef d on a.atthasdef and d.adrelid = a.attrelid and d.adnum = a.attnum order by n.nspname, c.relname, attnum";
     private static final String SELECT_INDEXES = "select ta.attname, ia.attnum, ic.relname, n.nspname, tc.relname from pg_catalog.pg_attribute ta, pg_catalog.pg_attribute ia, pg_catalog.pg_class tc, pg_catalog.pg_index i, pg_catalog.pg_namespace n, pg_catalog.pg_class ic where tc.relname = 'test_table' AND n.nspname = 'public' AND tc.oid = i.indrelid AND n.oid = tc.relnamespace AND i.indisprimary = 't' AND ia.attrelid = i.indexrelid AND ta.attrelid = i.indrelid AND ta.attnum = i.indkey[ia.attnum-1] AND (NOT ta.attisdropped) AND (NOT ia.attisdropped) AND ic.oid = i.indexrelid order by ia.attnum";
@@ -137,6 +152,10 @@ public class OdbcMetadataQueryTest extends AbstractServerTest {
 
     @Test
     public void testSelectTables() throws Exception {
+//        checkQuery(SELECT_TABLES_NO_FILTER);
+//        checkQuery(SELECT_TABLES_NO_FILTER_1);
+//        checkQuery(SELECT_TABLES1);
+//        checkQuery(SELECT_TABLES2);
         checkQuery(SELECT_TABLES);
     }
 
