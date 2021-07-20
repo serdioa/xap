@@ -20,6 +20,11 @@ public class CalciteUtils {
             case BOOLEAN:
                 return RexLiteral.booleanValue(literal);
             case CHAR:
+                if (literal.getType().getPrecision() == 1) {
+                    return literal.getValueAs(Character.class);
+                } else {
+                    return literal.getValueAs(String.class);
+                }
             case VARCHAR:
                 return literal.getValueAs(String.class);
             case TINYINT:

@@ -28,6 +28,7 @@ public class JoinConditionOperator implements JoinCondition {
             case LIKE:
             case OR:
             case AND:
+            case INPUT_REF:
                 return new JoinConditionOperator(sqlKind, numberOfOperands);
             default:
                 throw new UnsupportedOperationException("Join with sqlType " + sqlKind + " is not supported");

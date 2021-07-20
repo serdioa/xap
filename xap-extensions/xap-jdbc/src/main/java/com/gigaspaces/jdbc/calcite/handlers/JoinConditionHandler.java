@@ -4,6 +4,7 @@ import com.gigaspaces.jdbc.QueryExecutor;
 import com.gigaspaces.jdbc.calcite.GSJoin;
 import com.gigaspaces.jdbc.calcite.utils.CalciteUtils;
 import com.gigaspaces.jdbc.exceptions.SQLExceptionWrapper;
+import com.gigaspaces.jdbc.model.join.JoinConditionColumnArrayValue;
 import com.gigaspaces.jdbc.model.join.JoinConditionColumnValue;
 import com.gigaspaces.jdbc.model.join.JoinConditionOperator;
 import com.gigaspaces.jdbc.model.join.JoinInfo;
@@ -15,9 +16,12 @@ import com.j_spaces.jdbc.SQLUtil;
 import org.apache.calcite.rex.RexCall;
 import org.apache.calcite.rex.RexInputRef;
 import org.apache.calcite.rex.RexLiteral;
+import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.sql.SqlKind;
 
 import java.sql.SQLException;
+import java.util.List;
+import java.util.function.Function;
 
 public class JoinConditionHandler {
     private final GSJoin join;
@@ -48,10 +52,19 @@ public class JoinConditionHandler {
                 break;
             case OR:
             case AND:
-                int operandsSize = call.getOperands().size();
+                List<RexNode> operands = call.getOperands();
+                int operandsSize = operands.size();
                 joinInfo.addJoinCondition(JoinConditionOperator.getConditionOperator(call.getKind(), operandsSize));
                 for (int i = 0; i < operandsSize; i++) {
-                    leftContainer = handleSingleJoinCondition(join, (RexCall) call.getOperands().get(i));
+                    RexNode rexNode = operands.get(i);
+                    if (rexNode instanceof RexCall) {
+                        leftContainer = handleSingleJoinCondition(join, (RexCall) rexNode);
+                    } else if (rexNode instanceof RexInputRef) {
+                        IQueryColumn column = queryExecutor.getColumnByColumnIndex(((RexInputRef) rexNode).getIndex());
+                        leftContainer = column.getTableContainer();
+                        joinInfo.addJoinCondition(JoinConditionOperator.getConditionOperator(rexNode.getKind(), 1));
+                        joinInfo.addJoinCondition(new JoinConditionColumnValue(column));
+                    }
                 }
                 break;
             default:
@@ -104,8 +117,6 @@ public class JoinConditionHandler {
                         leftIndex = secondOperandIndex;
                         rightIndex = firstOperandIndex;
                     }
-                    String lColumn = join.getLeft().getRowType().getFieldNames().get(leftIndex);
-                    String rColumn = join.getRight().getRowType().getFieldNames().get(rightIndex - diff);
                     TableContainer rightContainer = queryExecutor.getTableByColumnIndex(rightIndex);
                     TableContainer leftContainer = queryExecutor.getTableByColumnIndex(leftIndex);
                     IQueryColumn rightColumn = queryExecutor.getColumnByColumnIndex(rightIndex);
