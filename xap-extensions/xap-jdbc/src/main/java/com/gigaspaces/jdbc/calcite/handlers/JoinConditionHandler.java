@@ -64,7 +64,7 @@ public class JoinConditionHandler {
     private TableContainer handleSingleJoinCondition(GSJoin join, RexCall rexCall) {
         switch (rexCall.getKind()) {
             case IS_NULL:
-            case IS_NOT_NULL:
+            case IS_NOT_NULL: {
                 int operandIndex = ((RexInputRef) rexCall.getOperands().get(0)).getIndex();
                 String columnName = null;
                 int leftFieldCount = join.getLeft().getRowType().getFieldCount();
@@ -74,20 +74,22 @@ public class JoinConditionHandler {
                     columnName = join.getRight().getRowType().getFieldNames().get(operandIndex - leftFieldCount);
                 }
                 TableContainer table = queryExecutor.getTableByColumnIndex(operandIndex);
-                IQueryColumn column = table.addQueryColumn(columnName, null, false, -1);
+                IQueryColumn column = queryExecutor.getColumnByColumnIndex(operandIndex);
                 joinInfo.addJoinCondition(JoinConditionOperator.getConditionOperator(rexCall.getKind(), 1));
                 joinInfo.addJoinCondition(new JoinConditionColumnValue(column));
                 return table; //TODO: @sagiv not good!. not the left always
-            case NOT:
+            }
+            case NOT: {
                 joinInfo.addJoinCondition(JoinConditionOperator.getConditionOperator(rexCall.getKind(), 1));
                 return handleSingleJoinCondition(join, (RexCall) rexCall.getOperands().get(0));
+            }
             case EQUALS:
             case NOT_EQUALS:
             case GREATER_THAN:
             case GREATER_THAN_OR_EQUAL:
             case LESS_THAN:
             case LESS_THAN_OR_EQUAL:
-            case LIKE:
+            case LIKE: {
                 if (rexCall.getOperands().stream().allMatch(rexNode -> rexNode.isA(SqlKind.INPUT_REF))) {
                     //continue regularly - handle column and column
                     int firstOperandIndex = ((RexInputRef) rexCall.getOperands().get(0)).getIndex();
@@ -106,8 +108,8 @@ public class JoinConditionHandler {
                     String rColumn = join.getRight().getRowType().getFieldNames().get(rightIndex - diff);
                     TableContainer rightContainer = queryExecutor.getTableByColumnIndex(rightIndex);
                     TableContainer leftContainer = queryExecutor.getTableByColumnIndex(leftIndex);
-                    IQueryColumn rightColumn = rightContainer.addQueryColumn(rColumn, null, false, -1);
-                    IQueryColumn leftColumn = leftContainer.addQueryColumn(lColumn, null, false, -1);
+                    IQueryColumn rightColumn = queryExecutor.getColumnByColumnIndex(rightIndex);
+                    IQueryColumn leftColumn = queryExecutor.getColumnByColumnIndex(leftIndex);
                     if (rightContainer.getJoinInfo() == null) {
                         rightContainer.setJoinInfo(joinInfo);
                     }
@@ -124,7 +126,7 @@ public class JoinConditionHandler {
                     return leftContainer;
                 }
                 //handle column and literal
-                operandIndex = 0;
+                int operandIndex = 0;
                 Object literalValue = null;
                 switch (rexCall.getOperands().get(0).getKind()) {
                     case INPUT_REF:
@@ -148,15 +150,15 @@ public class JoinConditionHandler {
                         throw new UnsupportedOperationException("Join condition type [" + rexCall.getKind() + "]  " +
                                 "and operand type [" + rexCall.getOperands().get(1).getKind() + "] is not supported");
                 }
-                leftFieldCount = join.getLeft().getRowType().getFieldCount();
+                int leftFieldCount = join.getLeft().getRowType().getFieldCount();
+                String columnName = null;
                 if (leftFieldCount > operandIndex) { //in left table
                     columnName = join.getLeft().getRowType().getFieldNames().get(operandIndex);
                 } else { // in right table
                     columnName = join.getRight().getRowType().getFieldNames().get(operandIndex - leftFieldCount);
                 }
-                table = queryExecutor.getTableByColumnIndex(operandIndex);
-                column = table.addQueryColumn(columnName, null, false, -1);
-
+                TableContainer table = queryExecutor.getTableByColumnIndex(operandIndex);
+                IQueryColumn column = queryExecutor.getColumnByColumnIndex(operandIndex);
                 try { //cast the literalValue to the table column type
                     literalValue = SQLUtil.cast(((ConcreteTableContainer) table).getTypeDesc(), columnName, literalValue, false);
                 } catch (SQLException e) {
@@ -164,8 +166,9 @@ public class JoinConditionHandler {
                 }
                 joinInfo.addJoinCondition(JoinConditionOperator.getConditionOperator(rexCall.getKind(), 2));
                 joinInfo.addJoinCondition(new JoinConditionColumnValue(column));
-                joinInfo.addJoinCondition(new JoinConditionColumnValue(new LiteralColumn(literalValue)));
+                joinInfo.addJoinCondition(new JoinConditionColumnValue(new LiteralColumn(literalValue, -1)));
                 return table; //TODO: @sagiv not good!. not the left always
+            }
             case OR:
             case AND:
                 return handleRexCall(rexCall);
