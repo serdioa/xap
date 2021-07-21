@@ -1,7 +1,5 @@
 package com.gigaspaces.jdbc.calcite;
 
-import com.gigaspaces.jdbc.calcite.pg.PgTypeDescriptor;
-import com.gigaspaces.jdbc.calcite.pg.PgTypeUtils;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.rel.type.RelProtoDataType;
 import org.apache.calcite.schema.Function;
@@ -16,15 +14,12 @@ import java.util.Set;
 public abstract class GSAbstractSchema implements Schema {
     @Override
     public RelProtoDataType getType(String name) {
-        PgTypeDescriptor type = PgTypeUtils.getTypeByName(name);
-        if (type == PgTypeDescriptor.UNKNOWN)
-            return null;
-        return PgTypeUtils.toRelProtoDataType(type);
+        return null;
     }
 
     @Override
     public Set<String> getTypeNames() {
-        return PgTypeUtils.getTypeNames();
+        return Collections.emptySet();
     }
 
     @Override
