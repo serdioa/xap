@@ -48,6 +48,7 @@ public class CalciteUtils {
                 String[] strings = literal.toString().split(":");
                 return String.join(":", strings[0], strings[1], strings[2]);
             case SYMBOL:
+            case NULL:
                 return literal.getValue();
             default:
                 throw new UnsupportedOperationException("Unsupported type: " + literal.getType().getSqlTypeName());

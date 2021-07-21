@@ -116,7 +116,8 @@ public class OdbcMetadataQueryTest extends AbstractServerTest {
 
     @Test
     public void testSelectTypeWhereTypnameLo() throws Exception {
-        checkQuery(SELECT_TYPE_WHERE_TYPNAME_LO);
+        checkQuery("select ta.attname, ia.attnum, ic.relname, n.nspname, NULL from pg_catalog.pg_attribute ta, pg_catalog.pg_attribute ia, pg_catalog.pg_class ic, pg_catalog.pg_index i, pg_catalog.pg_namespace n where ic.relname = E'com.gigaspaces.aggrnode.MyPojo_pkey' AND n.nspname = E'public' AND ic.oid = i.indexrelid AND n.oid = ic.relnamespace AND ia.attrelid = i.indexrelid AND ta.attrelid = i.indrelid AND ta.attnum = i.indkey[ia.attnum-1] AND (NOT ta.attisdropped) AND (NOT ia.attisdropped) order by ia.attnum");
+//        checkQuery(SELECT_TYPE_WHERE_TYPNAME_LO);
     }
 
     @Test
