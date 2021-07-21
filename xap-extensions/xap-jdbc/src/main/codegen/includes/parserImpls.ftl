@@ -113,3 +113,13 @@ SqlDynamicParam PgDynamicParam() :
         return new SqlDynamicParam(ordinal, getPos());
     }
 }
+
+SqlNode PgEscapeStringLiteral() :
+{
+}
+{
+    <ESCAPED_STRING_LITERAL> {
+        String p = SqlParserUtil.parseString(token.image);
+        return SqlLiteral.createCharString(p, null, getPos());
+    }
+}
