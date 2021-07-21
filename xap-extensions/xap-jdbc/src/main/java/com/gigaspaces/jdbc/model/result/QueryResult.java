@@ -67,7 +67,7 @@ public abstract class QueryResult {
         }
         while (hasNext()) {
             JoinInfo joinInfo = getTableContainer().getJoinedTable().getJoinInfo();
-            if (joinInfo.getJoinType().equals(JoinInfo.JoinType.SEMI) && joinInfo.isHasMatch()) {
+            if (joinInfo != null && joinInfo.getJoinType().equals(JoinInfo.JoinType.SEMI) && joinInfo.isHasMatch()) {
                 if (getCursor().next()) {
                     joinedResult.reset();
                     joinInfo.resetHasMatch();
@@ -79,7 +79,8 @@ public abstract class QueryResult {
                 return true;
             }
             if (getCursor().next()) {
-                joinInfo.resetHasMatch();
+                if (joinInfo != null)
+                    joinInfo.resetHasMatch();
                 joinedResult.reset();
             } else {
                 return false;

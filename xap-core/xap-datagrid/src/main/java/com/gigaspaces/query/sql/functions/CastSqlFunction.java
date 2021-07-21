@@ -43,7 +43,7 @@ public class CastSqlFunction extends SqlFunction {
         assertNumberOfArguments(1, context);
         Object value = context.getArgument(0);
         if (!isString(value)) {
-            throw new RuntimeException("Cast function - 1st argument must be a String: " + value);
+            throw new RuntimeException("Cast function - 1st argument must be a String: " + value+", got: " + value.getClass().getName());
         }
         String type = context.getType();
         try {

@@ -492,8 +492,9 @@ public class MessageProcessor extends ChannelInboundHandlerAdapter {
 
         if (row0 == null)
             throw new BreakingException(ErrorCodes.INTERNAL_ERROR, "row is null");
-        else if (row0.length != desc.getColumnsCount())
-            throw new BreakingException(ErrorCodes.PROTOCOL_VIOLATION, "unexpected row columns count");
+        else if (row0.length != desc.getColumnsCount()) {
+            throw new BreakingException(ErrorCodes.PROTOCOL_VIOLATION, "unexpected row columns count. Expected: " + desc.getColumnsCount()+", actual: " + row0.length);
+        }
 
         buf.writeByte('D');
         int idx = buf.writerIndex();

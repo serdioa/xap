@@ -63,6 +63,7 @@ public class CalciteUtils {
             case INTERVAL_MINUTE_SECOND:
             case INTERVAL_SECOND:
             case SYMBOL:
+            case NULL:
                 return literal.getValue();
             default:
                 throw new UnsupportedOperationException("Unsupported type: " + literal.getType().getSqlTypeName());

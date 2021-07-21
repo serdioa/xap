@@ -1,13 +1,9 @@
 package com.gigaspaces.sql.aggregatornode.netty.server;
 
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
-import java.sql.Connection;
-import java.sql.Statement;
-import java.sql.Time;
-import java.sql.Timestamp;
+import java.sql.*;
 import java.text.SimpleDateFormat;
 
 public class OdbcMetadataQueryTest extends AbstractServerTest {
@@ -19,6 +15,29 @@ public class OdbcMetadataQueryTest extends AbstractServerTest {
     private static final String SELECT_NULL = "select NULL, NULL, NULL";
     private static final String SELECT_TABLES = "select relname, nspname, relkind from pg_catalog.pg_class c, pg_catalog.pg_namespace n where relkind in ('r', 'v', 'm', 'f', 'p') and nspname not in ('pg_catalog', 'information_schema', 'pg_toast', 'pg_temp_1') and n.oid = relnamespace order by nspname, relname";
     private static final String SELECT_ATTRIBUTES = "select n.nspname, c.relname, a.attname, a.atttypid, t.typname, a.attnum, a.attlen, a.atttypmod, a.attnotnull, c.relhasrules, c.relkind, c.oid, pg_get_expr(d.adbin, d.adrelid), case t.typtype when 'd' then t.typbasetype else 0 end, t.typtypmod, c.relhasoids, '', c.relhassubclass from (((pg_catalog.pg_class c inner join pg_catalog.pg_namespace n on n.oid = c.relnamespace and c.relname like E'com.gigaspaces.sql.aggregatornode.netty.server.MyPojo' and n.nspname like E'public') inner join pg_catalog.pg_attribute a on (not a.attisdropped) and a.attnum > 0 and a.attrelid = c.oid) inner join pg_catalog.pg_type t on t.oid = a.atttypid) left outer join pg_attrdef d on a.atthasdef and d.adrelid = a.attrelid and d.adnum = a.attnum order by n.nspname, c.relname, attnum";
+    private static final String SELECT_ATTRIBUTES_ORG_ORDERED = "" +
+            "select n.nspname, c.relname, a.attname, a.atttypid, t.typname, a.attnum, a.attlen, a.atttypmod, a.attnotnull, c.relhasrules, c.relkind, c.oid, " +
+            "pg_get_expr(d.adbin, d.adrelid), case t.typtype when 'd' then t.typbasetype else 0 end, t.typtypmod, c.relhasoids, '', c.relhassubclass " +
+            "from " +
+            "   (" +
+            "       (" +
+            "           (pg_catalog.pg_class c inner join pg_catalog.pg_namespace n on n.oid = c.relnamespace and c.relname like E'com.gigaspaces.sql.aggregatornode.netty.server.MyPojo' and n.nspname like E'public')" +
+            "           inner join pg_catalog.pg_attribute a on (not a.attisdropped) and a.attnum > 0 and a.attrelid = c.oid" +
+            "       ) inner join pg_catalog.pg_type t on t.oid = a.atttypid" +
+            "   ) left outer join pg_attrdef d on a.atthasdef and d.adrelid = a.attrelid and d.adnum = a.attnum" +
+            " order by n.nspname, c.relname, attnum";
+    private static final String SELECT_ATTRIBUTESzz = "" +
+            "select n.nspname, c.relname, a.attname, a.atttypid, t.typname, a.attnum, a.attlen, a.atttypmod, a.attnotnull, c.relhasrules, c.relkind, c.oid, " +
+            "pg_get_expr(d.adbin, d.adrelid), case t.typtype when 'd' then t.typbasetype else 0 end, t.typtypmod, c.relhasoids, '', c.relhassubclass " +
+            "from " +
+            "   (" +
+            "       (" +
+            "           (pg_catalog.pg_class c inner join pg_catalog.pg_namespace n on n.oid = c.relnamespace and c.relname like E'com.gigaspaces.sql.aggregatornode.netty.server.MyPojo' and n.nspname like E'public')" +
+            "           inner join pg_catalog.pg_attribute a on (not a.attisdropped) and a.attnum > 0 and a.attrelid = c.oid" +
+            "       ) inner join pg_catalog.pg_type t on t.oid = a.atttypid" +
+            "   ) left outer join pg_attrdef d on a.atthasdef and d.adrelid = a.attrelid and d.adnum = a.attnum" +
+            " order by n.nspname, c.relname, attnum";
+
     private static final String SELECT_INDEXES = "select ta.attname, ia.attnum, ic.relname, n.nspname, tc.relname from pg_catalog.pg_attribute ta, pg_catalog.pg_attribute ia, pg_catalog.pg_class tc, pg_catalog.pg_index i, pg_catalog.pg_namespace n, pg_catalog.pg_class ic where tc.relname = E'test_table' AND n.nspname = E'public' AND tc.oid = i.indrelid AND n.oid = tc.relnamespace AND i.indisprimary = 't' AND ia.attrelid = i.indexrelid AND ta.attrelid = i.indrelid AND ta.attnum = i.indkey[ia.attnum-1] AND (NOT ta.attisdropped) AND (NOT ia.attisdropped) AND ic.oid = i.indexrelid order by ia.attnum";
     private static final String SELECT_CONSTRAINTS = "select\t'mySpace'::name as \"PKTABLE_CAT\",\n" +
             "\tn2.nspname as \"PKTABLE_SCHEM\",\n" +
@@ -139,19 +158,16 @@ public class OdbcMetadataQueryTest extends AbstractServerTest {
         checkQuery(SELECT_TABLES);
     }
 
-    @Disabled("Only equal joins are supported")
     @Test
     public void testSelectAttributes() throws Exception {
         checkQuery(SELECT_ATTRIBUTES);
     }
 
-    @Disabled("Only equal joins are supported")
     @Test
     public void testSelectIndexes() throws Exception {
         checkQuery(SELECT_INDEXES);
     }
 
-    @Disabled("Unexpected node kind expected CASE / INPUT_REF but was [OTHER_FUNCTION]")
     @Test
     public void testSelectConstraints() throws Exception {
         checkQuery(SELECT_CONSTRAINTS);
@@ -160,7 +176,13 @@ public class OdbcMetadataQueryTest extends AbstractServerTest {
     private void checkQuery(String query) throws Exception {
         try (Connection connection = connect(true)) {
             Statement statement = connection.createStatement();
-            statement.execute(query);
+            System.out.println("Executing: " + query);
+            if (query.startsWith("select")) {
+                ResultSet res = statement.executeQuery(query);
+                DumpUtils.dump(res);
+            } else {
+                statement.execute(query);
+            }
         }
     }
 }

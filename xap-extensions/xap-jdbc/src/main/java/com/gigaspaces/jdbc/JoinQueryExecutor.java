@@ -49,44 +49,43 @@ public class JoinQueryExecutor {
             }
         }
         Collections.sort(orderColumns); //TODO see if necessary
-        if(visibleColumns.isEmpty()){
+        if (visibleColumns.isEmpty()) {
             visibleColumns.addAll(groupByColumns);
         }
         JoinTablesIterator joinTablesIterator = new JoinTablesIterator(tables);
-        if(config.isExplainPlan()) {
+        if (config.isExplainPlan()) {
             return explain(joinTablesIterator, orderColumns, groupByColumns, isDistinct);
         }
         QueryResult res = new JoinQueryResult(this.selectedQueryColumns);
         while (joinTablesIterator.hasNext()) {
-            if(tables.stream().allMatch(TableContainer::checkJoinCondition))
+            if (tables.stream().allMatch(TableContainer::checkJoinCondition))
                 res.addRow(TableRowFactory.createTableRowFromSpecificColumns(this.allQueryColumns, orderColumns,
                         groupByColumns));
         }
 
-        if( groupByColumns.isEmpty()) {
-            if( !aggregationColumns.isEmpty() ) {
+        if (groupByColumns.isEmpty()) {
+            if (!aggregationColumns.isEmpty()) {
                 List<TableRow> aggregateRows = new ArrayList<>();
                 TableRow aggregatedRow = config.isCalcite() ? TableRowUtils.aggregate(res.getRows(), selectedQueryColumns) : TableRowUtils.aggregate(res.getRows(), selectedQueryColumns, this.aggregationColumns, visibleColumns);
                 aggregateRows.add(aggregatedRow);
                 res.setRows(aggregateRows);
             }
-        }
-        else {
+        } else {
             res.groupBy(); //group by the results at the client
-            if( !aggregationColumns.isEmpty() ) {
+            if (!aggregationColumns.isEmpty()) {
                 Map<TableRowGroupByKey, List<TableRow>> groupByRowsResult = res.getGroupByRowsResult();
                 List<TableRow> totalAggregationsResultRowsList = new ArrayList<>();
                 for (List<TableRow> rowsList : groupByRowsResult.values()) {
                     TableRow aggregatedRow = config.isCalcite() ? TableRowUtils.aggregate(rowsList, selectedQueryColumns) : TableRowUtils.aggregate(rowsList, selectedQueryColumns, this.aggregationColumns, visibleColumns);
-                    totalAggregationsResultRowsList.add( aggregatedRow );
+                    totalAggregationsResultRowsList.add(aggregatedRow);
                 }
-                res.setRows( totalAggregationsResultRowsList );
+                res.setRows(totalAggregationsResultRowsList);
             }
         }
-        if(!orderColumns.isEmpty()) {
+        if (!orderColumns.isEmpty()) {
             res.sort(); //sort the results at the client
         }
-        if (isDistinct){
+        if (isDistinct) {
             res.distinct();
         }
 
@@ -98,7 +97,7 @@ public class JoinQueryExecutor {
         Stack<TableContainer> stack = new Stack<>();
         TableContainer current = joinTablesIterator.getStartingPoint();
         stack.push(current);
-        while (current.getJoinedTable() != null){
+        while (current.getJoinedTable() != null) {
             current = current.getJoinedTable();
             stack.push(current);
         }

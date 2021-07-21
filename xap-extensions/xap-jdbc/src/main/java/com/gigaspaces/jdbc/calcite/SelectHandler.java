@@ -1,7 +1,11 @@
 package com.gigaspaces.jdbc.calcite;
 
 import com.gigaspaces.jdbc.QueryExecutor;
-import com.gigaspaces.jdbc.calcite.handlers.*;
+import com.gigaspaces.jdbc.calcite.handlers.AggregateHandler;
+import com.gigaspaces.jdbc.calcite.handlers.CaseConditionHandler;
+import com.gigaspaces.jdbc.calcite.handlers.ConditionHandler;
+import com.gigaspaces.jdbc.calcite.handlers.JoinConditionHandler;
+import com.gigaspaces.jdbc.calcite.handlers.SingleTableProjectionHandler;
 import com.gigaspaces.jdbc.calcite.pg.PgCalciteTable;
 import com.gigaspaces.jdbc.calcite.utils.CalciteUtils;
 import com.gigaspaces.jdbc.model.join.JoinInfo;
@@ -141,19 +145,20 @@ public class SelectHandler extends RelShuttleImpl {
             RelFieldCollation.NullDirection nullDirection = relCollation.nullDirection;
             String columnAlias = sort.getRowType().getFieldNames().get(fieldIndex);
             String columnName = columnAlias;
-            boolean isVisible = false;
-            RelNode parent = this.stack.peek();
-            if(parent instanceof GSCalc) {
-                RexProgram program = ((GSCalc) parent).getProgram();
-                RelDataTypeField field = program.getOutputRowType().getField(columnAlias, true, false);
-                if(field != null) {
-                    isVisible = true;
-                    columnName = program.getInputRowType().getFieldNames().get(program.getSourceField(field.getIndex()));
+            if(sort.getInput() instanceof GSAggregate){
+                final GSAggregate input = (GSAggregate) sort.getInput();
+                if(!input.getAggCallList().isEmpty()){
+                    throw new UnsupportedOperationException("Order By of Aggregation is unsupported yet!");
+                }
+                List<Integer> indexes = input.groupSets.get(0).asList();
+                if(!indexes.isEmpty()) {
+                    fieldIndex = indexes.get(fieldIndex);
                 }
             }
-            TableContainer table = queryExecutor.getTableByColumnName(columnName);
-            OrderColumn orderColumn = new OrderColumn(new ConcreteColumn(columnName,null, columnAlias,
-                    isVisible, table, columnCounter++), !direction.isDescending(),
+            TableContainer table = queryExecutor.isJoinQuery() ? queryExecutor.getTableByColumnIndex(fieldIndex) : queryExecutor.getTableByColumnName(columnName);
+            IQueryColumn qc = queryExecutor.isJoinQuery() ? queryExecutor.getColumnByColumnIndex(fieldIndex) : queryExecutor.getColumnByColumnName(columnName);
+            OrderColumn orderColumn = new OrderColumn(new ConcreteColumn(columnName,null, columnName,
+                    qc != null, table, columnCounter++), !direction.isDescending(),
                     nullDirection == RelFieldCollation.NullDirection.LAST);
             table.addOrderColumns(orderColumn);
         }
@@ -229,14 +234,32 @@ public class SelectHandler extends RelShuttleImpl {
     }
 
     private void handleJoin(GSJoin join) {
-        RexCall rexCall = (RexCall) join.getCondition();
-        JoinConditionHandler joinConditionHandler = new JoinConditionHandler(join, queryExecutor);
-        TableContainer leftContainer = joinConditionHandler.handleRexCall(rexCall);
-        if (leftContainer.getJoinedTable() != null && leftContainer.getJoinedTable().getJoinInfo() != null) {
-            JoinInfo joinInfo = leftContainer.getJoinedTable().getJoinInfo();
-            if (joinInfo.getJoinType().equals(JoinInfo.JoinType.LEFT) && !joinInfo.joinConditionsContainsOnlyEqualAndAndOperators()) {
-                throw new UnsupportedOperationException("LEFT join only supports AND and EQUALS operators in ON condition");
+        if (!(join.getCondition() instanceof RexCall)) {
+            System.out.println("A");
+        }
+        RexNode joinCondition = join.getCondition();
+        TableContainer leftContainer;
+
+        if (joinCondition instanceof RexLiteral) {
+            List<TableContainer> tables = queryExecutor.getTables();
+            leftContainer = tables.get(tables.size() - 2);
+            TableContainer rightTable = tables.get(tables.size() - 1);
+            if (leftContainer.getJoinedTable() != null)
+                throw new IllegalArgumentException("left table shouldn't be joined yet!");
+            leftContainer.setJoinedTable(rightTable);
+        }
+        else if (joinCondition instanceof RexCall) {
+            RexCall rexCall = (RexCall) join.getCondition();
+            JoinConditionHandler joinConditionHandler = new JoinConditionHandler(join, queryExecutor);
+            leftContainer = joinConditionHandler.handleRexCall(rexCall);
+            if (leftContainer.getJoinedTable() != null && leftContainer.getJoinedTable().getJoinInfo() != null) {
+                JoinInfo joinInfo = leftContainer.getJoinedTable().getJoinInfo();
+                if (joinInfo.getJoinType().equals(JoinInfo.JoinType.LEFT) && !joinInfo.joinConditionsContainsOnlyEqualAndAndOperators()) {
+                    throw new UnsupportedOperationException("LEFT join only supports AND and EQUALS operators in ON condition");
+                }
             }
+        } else {
+            throw new UnsupportedOperationException("Unsupported join condition type: " + joinCondition.getKind());
         }
         if(!childToCalc.containsKey(join)) { // it is SELECT *
             if(join.equals(root)
