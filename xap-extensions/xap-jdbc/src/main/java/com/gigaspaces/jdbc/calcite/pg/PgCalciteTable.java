@@ -99,7 +99,7 @@ public class PgCalciteTable extends AbstractTable {
             String fqn = "public." + name;
             int oid = PgOidGenerator.INSTANCE.oid(fqn);
             ITypeDesc typeDesc = SQLUtil.checkTableExistence(name, space);
-            long idx = 0;
+            short idx = 0;
             for (PropertyInfo property : typeDesc.getProperties()) {
                 SqlTypeName sqlTypeName = GSTable.mapToSqlType(property.getType());
                 PgTypeDescriptor pgType = PgTypeUtils.fromSqlTypeName(sqlTypeName);
@@ -154,7 +154,8 @@ public class PgCalciteTable extends AbstractTable {
                     false,                                   // relhastriggers
                     false,                                   // relhassubclass
                     null,                                    // relacl
-                    null                                     // reloptions
+                    null,                                     // reloptions
+                    false //hasreloids
             ));
         }
     }

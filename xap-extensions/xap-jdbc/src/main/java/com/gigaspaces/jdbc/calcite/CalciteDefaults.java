@@ -20,11 +20,12 @@ public class CalciteDefaults {
     }
 
     public static boolean isCalciteDriverPropertySet(Properties properties) {
-        if (isCalciteDriverPropertySet()) return true;
-        if (properties != null) {
-            return DRIVER_VALUE.equals(properties.getProperty(DRIVER_KEY));
-        }
-        return false;
+        return true;
+//        if (isCalciteDriverPropertySet()) return true;
+//        if (properties != null) {
+//            return DRIVER_VALUE.equals(properties.getProperty(DRIVER_KEY));
+//        }
+//        return false;
     }
 
     public static boolean isCalcitePropertySet(String key, Properties properties) {

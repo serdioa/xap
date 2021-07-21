@@ -14,7 +14,7 @@ import java.util.Properties;
 
 public class MainTester {
     public static void main(String[] args) throws SQLException, ParseException {
-        boolean newDriver = Boolean.getBoolean("useNewDriver");
+        boolean newDriver = true;//Boolean.getBoolean("useNewDriver");
         GigaSpace space = createAndFillSpace(newDriver, true);
 
         Properties properties = new Properties();
@@ -29,7 +29,7 @@ public class MainTester {
 
             Statement statement = connection.createStatement();
 //            execute(statement, String.format("SELECT * FROM %s ORDER BY name",MyPojo.class.getName()));
-            execute(statement, String.format("SELECT name FROM %s ORDER BY 1",MyPojo.class.getName()));
+            execute(statement, String.format("explain plan for SELECT name FROM \"%s\"",MyPojo.class.getName()));
 
             teardown(space, true);
         }

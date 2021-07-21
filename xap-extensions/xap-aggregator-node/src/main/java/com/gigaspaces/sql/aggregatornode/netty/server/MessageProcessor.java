@@ -64,6 +64,10 @@ public class MessageProcessor extends ChannelInboundHandlerAdapter {
     void onMessage(ChannelHandlerContext ctx, char type, ByteBuf msg) throws Exception {
         if (isError) {
             switch (type) {
+                case 'X':
+                    isError = false;
+                    onTerminate(ctx, msg);
+                    break;
                 case 'P':
                     isError = false;
                     onParse(ctx, msg);
@@ -488,7 +492,7 @@ public class MessageProcessor extends ChannelInboundHandlerAdapter {
         if (row0 == null)
             throw new BreakingException(ErrorCodes.INTERNAL_ERROR, "row is null");
         else if (row0.length != desc.getColumnsCount())
-            throw new BreakingException(ErrorCodes.PROTOCOL_VIOLATION, "unexpected row columns count");
+            throw new BreakingException(ErrorCodes.PROTOCOL_VIOLATION, String.format("unexpected row columns count %s!=%s", row0.length, desc.getColumnsCount()));
 
         buf.writeByte('D');
         int idx = buf.writerIndex();

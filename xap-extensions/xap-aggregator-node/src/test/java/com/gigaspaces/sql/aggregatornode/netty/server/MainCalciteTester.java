@@ -13,10 +13,10 @@ import java.text.SimpleDateFormat;
 public class MainCalciteTester {
     public static void main(String[] args) throws Exception {
         String spaceName = "mySpace222";
-        GigaSpace space = createAndFillSpace(spaceName, false);
+        GigaSpace space = createAndFillSpace(spaceName, true);
 
-//        try (ServerBean server = new ServerBean()) {
-//            server.init();
+        try (ServerBean server = new ServerBean()) {
+            server.init();
 
             try {
                 Class.forName("org.postgresql.Driver");
@@ -32,15 +32,15 @@ public class MainCalciteTester {
 //            execute(statement, String.format("SELECT * FROM %s as T where T.last_name = 'Bb' or T.first_name = 'Adam' or T.last_name = 'Cc' or T.email = 'Adler@msn.com' or T.age>=40", "\"" + MyPojo.class.getName() + "\""));
 //            execute(statement, "SELECT * FROM com.gigaspaces.jdbc.MyPojo as T where (T.last_name = 'Bb' AND T.first_name = 'Adam') OR ((T.last_name = 'Cc') or (T.email = 'Adler@msn.com') or (T.age>=40))");
 //                execute(statement, String.format("SELECT first_nzame, last_name, email, age FROM %s as T where T.last_name = 'Aa' OR T.first_name = 'Adam'", "\"" + MyPojo.class.getName() + "\""));
-                execute(statement, String.format("SELECT first_name, last_name, email, age FROM %s as T where T.last_name = 'Aa' OR T.first_name = 'Adam'", "\"" + MyPojo.class.getName() + "\""));
+                execute(statement, String.format("EXPLAIN PLAN FOR SELECT first_name FROM %s", "\"" + MyPojo.class.getName() + "\""));
 //                execute(statement, String.format("SELECT first_nzame, last_name, email, age FROM %s as T where T.last_name = 'Aa' OR T.first_name = 'Adam'", "\"" + MyPojo.class.getName() + "\""));
 //            execute(statement, String.format("SELECT * FROM %s as T where T.age <= 40", "\"" + MyPojo.class.getName() + "\""));
 //            execute(statement, String.format("EXPLAIN PLAN FOR SELECT * FROM %s ", "\"" + MyPojo.class.getName() + "\""));
             }
 
-//        } catch (Exception e) {
-//            e.printStackTrace();
-//        }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     private static void execute(Statement statement, String sql) throws SQLException {

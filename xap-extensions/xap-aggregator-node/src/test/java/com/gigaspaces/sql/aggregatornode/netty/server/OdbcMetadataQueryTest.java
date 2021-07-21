@@ -164,7 +164,13 @@ public class OdbcMetadataQueryTest extends AbstractServerTest {
 //    @Disabled("Only equal joins are supported")
     @Test
     public void testSelectAttributes2() throws Exception {
-        checkQuery(SELECT_ATTRIBUTES_2);
+        checkQuery("select n.nspname, c.relname," +
+                " a.attname, a.atttypid, t.typname, a.attnum, a.attlen, a.atttypmod, a.attnotnull," +
+                " c.relhasrules, c.relkind, c.oid, " +
+                "pg_get_expr(d.adbin, d.adrelid), " +
+                "case t.typtype when 'd' then t.typbasetype else 0 end," +
+                " t.typtypmod, '', " +
+                " c.relhasoids, c.relhassubclass from (((pg_catalog.pg_class c inner join pg_catalog.pg_namespace n on n.oid = c.relnamespace) inner join pg_catalog.pg_attribute a on a.attrelid = c.oid) inner join pg_catalog.pg_type t on t.oid = a.atttypid) left outer join pg_attrdef d on d.adrelid = a.attrelid");
     }
 
     //@Disabled("Only equal joins are supported")

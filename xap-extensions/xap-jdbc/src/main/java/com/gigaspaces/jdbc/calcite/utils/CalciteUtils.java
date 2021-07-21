@@ -63,6 +63,11 @@ public class CalciteUtils {
             case BOOLEAN:
                 return Boolean.class;
             case CHAR:
+                if (rexNode.getType().getPrecision() == 1) {
+                    return Character.class;
+                } else {
+                    return String.class;
+                }
             case VARCHAR:
                 return String.class;
             case TINYINT:
