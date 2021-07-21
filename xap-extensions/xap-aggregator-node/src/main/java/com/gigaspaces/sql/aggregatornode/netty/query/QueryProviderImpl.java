@@ -135,7 +135,7 @@ public class QueryProviderImpl implements QueryProvider {
 
     @Override
     public List<Portal<?>> executeQueryMultiline(Session session, String query) throws ProtocolException {
-        log.debug("Executing query: {}", query);
+        log.info("Executing query: {}", query);
         if (query.equalsIgnoreCase(SELECT_NULL_NULL_NULL)) {
             List<ColumnDescription> columns = ImmutableList.of(
                     new ColumnDescription("column1", TypeUtils.PG_TYPE_UNKNOWN),
