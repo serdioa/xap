@@ -2,6 +2,7 @@ package com.gigaspaces.jdbc.model.result;
 
 import com.gigaspaces.jdbc.model.join.ColumnValueJoinCondition;
 import com.gigaspaces.jdbc.model.join.JoinCondition;
+import com.gigaspaces.jdbc.model.join.JoinConditionColumnArrayValue;
 import com.gigaspaces.jdbc.model.join.JoinInfo;
 import com.gigaspaces.jdbc.model.table.IQueryColumn;
 
@@ -34,7 +35,10 @@ public class HashedRowCursor implements Cursor<TableRow>{
                 joinRightColumns.add(((ColumnValueJoinCondition) joinCondition).getColumn());
                 index++;
                 joinCondition = joinInfo.getJoinConditions().get(index);
-                joinLeftColumns.add(((ColumnValueJoinCondition) joinCondition).getColumn());
+                if (joinCondition instanceof ColumnValueJoinCondition)
+                    joinLeftColumns.add(((ColumnValueJoinCondition) joinCondition).getColumn());
+                else if (joinCondition instanceof JoinConditionColumnArrayValue)
+                    joinLeftColumns.add(((JoinConditionColumnArrayValue) joinCondition).getColumn());
             }
             index++;
         }

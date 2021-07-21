@@ -4,6 +4,7 @@ import com.gigaspaces.jdbc.QueryExecutor;
 import com.gigaspaces.jdbc.calcite.GSJoin;
 import com.gigaspaces.jdbc.calcite.utils.CalciteUtils;
 import com.gigaspaces.jdbc.exceptions.SQLExceptionWrapper;
+import com.gigaspaces.jdbc.model.join.JoinConditionColumnArrayValue;
 import com.gigaspaces.jdbc.model.join.ColumnValueJoinCondition;
 import com.gigaspaces.jdbc.model.join.JoinInfo;
 import com.gigaspaces.jdbc.model.join.OperatorJoinCondition;
@@ -15,9 +16,12 @@ import com.j_spaces.jdbc.SQLUtil;
 import org.apache.calcite.rex.RexCall;
 import org.apache.calcite.rex.RexInputRef;
 import org.apache.calcite.rex.RexLiteral;
+import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.sql.SqlKind;
 
 import java.sql.SQLException;
+import java.util.List;
+import java.util.function.Function;
 
 import static com.gigaspaces.jdbc.model.table.IQueryColumn.EMPTY_ORDINAL;
 
@@ -50,10 +54,19 @@ public class JoinConditionHandler {
                 break;
             case OR:
             case AND:
-                int operandsSize = call.getOperands().size();
+                List<RexNode> operands = call.getOperands();
+                int operandsSize = operands.size();
                 joinInfo.addJoinCondition(OperatorJoinCondition.getConditionOperator(call.getKind(), operandsSize));
                 for (int i = 0; i < operandsSize; i++) {
-                    leftContainer = handleSingleJoinCondition(join, (RexCall) call.getOperands().get(i));
+                    RexNode rexNode = operands.get(i);
+                    if (rexNode instanceof RexCall) {
+                        leftContainer = handleSingleJoinCondition(join, (RexCall) rexNode);
+                    } else if (rexNode instanceof RexInputRef) {
+                        IQueryColumn column = queryExecutor.getColumnByColumnIndex(((RexInputRef) rexNode).getIndex());
+                        leftContainer = column.getTableContainer();
+                        joinInfo.addJoinCondition(OperatorJoinCondition.getConditionOperator(rexNode.getKind(), 1));
+                        joinInfo.addJoinCondition(new ColumnValueJoinCondition(column));
+                    }
                 }
                 break;
             default:
@@ -116,6 +129,37 @@ public class JoinConditionHandler {
                     joinInfo.addJoinCondition(new ColumnValueJoinCondition(rightColumn));
                     joinInfo.addJoinCondition(new ColumnValueJoinCondition(leftColumn));
 
+                    if (leftContainer.getJoinedTable() == null) {
+                        if (!rightContainer.isJoined()) {
+                            leftContainer.setJoinedTable(rightContainer);
+                            rightContainer.setJoined(true);
+                        }
+                    }
+                    return leftContainer;
+                } else if (rexCall.getOperands().stream().allMatch(rexNode -> rexNode.isA(SqlKind.INPUT_REF) || rexNode.isA(SqlKind.ITEM))) {
+                    int firstOperandIndex = ((RexInputRef) rexCall.getOperands().get(0)).getIndex();
+                    IQueryColumn leftColumn = queryExecutor.getColumnByColumnIndex(firstOperandIndex);
+                    RexCall second = ((RexCall) rexCall.getOperands().get(1));
+                    RexNode array = second.getOperands().get(0);
+                    if (!(array instanceof RexInputRef))
+                        throw new UnsupportedOperationException("111"); //TODO
+                    IQueryColumn arrayColumn = queryExecutor.getColumnByColumnIndex(((RexInputRef) array).getIndex());
+                    RexNode arrayIndex = second.getOperands().get(1);
+                    if (!(arrayIndex instanceof RexCall))
+                        throw new UnsupportedOperationException("2222");
+                    Function<IQueryColumn, Object> f = (Function<IQueryColumn, Object>) iQueryColumn -> {
+//                        Object arrayValue = iQueryColumn.getCurrentValue();
+                        return null;
+                    };
+
+                    joinInfo.addJoinCondition(OperatorJoinCondition.getConditionOperator(rexCall.getKind(), 2));
+                    joinInfo.addJoinCondition(new ColumnValueJoinCondition(leftColumn));
+                    joinInfo.addJoinCondition(new JoinConditionColumnArrayValue(arrayColumn, f));
+                    TableContainer leftContainer = leftColumn.getTableContainer();
+                    TableContainer rightContainer = arrayColumn.getTableContainer();
+                    if (rightContainer.getJoinInfo() == null) {
+                        rightContainer.setJoinInfo(joinInfo);
+                    }
                     if (leftContainer.getJoinedTable() == null) {
                         if (!rightContainer.isJoined()) {
                             leftContainer.setJoinedTable(rightContainer);

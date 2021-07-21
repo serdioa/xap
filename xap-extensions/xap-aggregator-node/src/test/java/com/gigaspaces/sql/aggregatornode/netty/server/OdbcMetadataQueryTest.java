@@ -4,10 +4,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
-import java.sql.Connection;
-import java.sql.Statement;
-import java.sql.Time;
-import java.sql.Timestamp;
+import java.sql.*;
 import java.text.SimpleDateFormat;
 
 public class OdbcMetadataQueryTest extends AbstractServerTest {
@@ -139,19 +136,19 @@ public class OdbcMetadataQueryTest extends AbstractServerTest {
         checkQuery(SELECT_TABLES);
     }
 
-    @Disabled("Only equal joins are supported")
+    //@Disabled("Only equal joins are supported")
     @Test
     public void testSelectAttributes() throws Exception {
         checkQuery(SELECT_ATTRIBUTES);
     }
 
-    @Disabled("Only equal joins are supported")
+    //@Disabled("Only equal joins are supported")
     @Test
     public void testSelectIndexes() throws Exception {
         checkQuery(SELECT_INDEXES);
     }
 
-    @Disabled("Unexpected node kind expected CASE / INPUT_REF but was [OTHER_FUNCTION]")
+    //@Disabled("Unexpected node kind expected CASE / INPUT_REF but was [OTHER_FUNCTION]")
     @Test
     public void testSelectConstraints() throws Exception {
         checkQuery(SELECT_CONSTRAINTS);
@@ -160,7 +157,13 @@ public class OdbcMetadataQueryTest extends AbstractServerTest {
     private void checkQuery(String query) throws Exception {
         try (Connection connection = connect(true)) {
             Statement statement = connection.createStatement();
-            statement.execute(query);
+            System.out.println("Executing: " + query);
+            if (query.startsWith("select")) {
+                ResultSet res = statement.executeQuery(query);
+                DumpUtils.dump(res);
+            } else {
+                statement.execute(query);
+            }
         }
     }
 }
