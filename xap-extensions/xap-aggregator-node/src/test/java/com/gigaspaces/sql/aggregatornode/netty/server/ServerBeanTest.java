@@ -280,8 +280,8 @@ class ServerBeanTest extends AbstractServerTest{
             String expected = "" +
 "| oid   | nspname    | nspowner | nspacl |\n" +
 "| ----- | ---------- | -------- | ------ |\n" +
-"| 0     | PUBLIC     | 0        | null   |\n" +
-"| -1000 | PG_CATALOG | 0        | null   |\n";
+"| 0     | public     | 0        | null   |\n" +
+"| -1000 | pg_catalog | 0        | null   |\n";
             DumpUtils.checkResult(res, expected);
         }
     }
@@ -295,10 +295,10 @@ class ServerBeanTest extends AbstractServerTest{
             assertTrue(statement.execute());
             ResultSet res = statement.getResultSet();
             String expected = "" +
-"| oid | relname                                               | relnamespace | reltype | relowner | relam | relfilenode | reltablespace | relpages | reltuples | reltoastrelid | relhasindex | relisshared | relkind | relnatts | relchecks | reltriggers | relhasrules | relhastriggers | relhassubclass | relacl | reloptions |\n" +
-"| --- | ----------------------------------------------------- | ------------ | ------- | -------- | ----- | ----------- | ------------- | -------- | --------- | ------------- | ----------- | ----------- | ------- | -------- | --------- | ----------- | ----------- | -------------- | -------------- | ------ | ---------- |\n" +
-"| 1   | java.lang.Object                                      | 0            | 0       | 0        | 0     | 0           | 0             | 0        | 100.0     | 0             | false       | false       | r       | 0        | 0         | 0           | false       | false          | false          | null   | null       |\n" +
-"| 2   | com.gigaspaces.sql.aggregatornode.netty.server.MyPojo | 0            | 0       | 0        | 0     | 0           | 0             | 0        | 100.0     | 0             | false       | false       | r       | 11       | 0         | 0           | false       | false          | false          | null   | null       |\n";
+"| oid | relname                                               | relnamespace | reltype | relowner | relam | relfilenode | reltablespace | relpages | reltuples | reltoastrelid | relhasindex | relisshared | relkind | relnatts | relchecks | relhasoids | reltriggers | relhasrules | relhastriggers | relhassubclass | relacl | reloptions |\n" +
+"| --- | ----------------------------------------------------- | ------------ | ------- | -------- | ----- | ----------- | ------------- | -------- | --------- | ------------- | ----------- | ----------- | ------- | -------- | --------- | ---------- | ----------- | ----------- | -------------- | -------------- | ------ | ---------- |\n" +
+"| 1   | java.lang.Object                                      | 0            | 0       | 0        | 0     | 0           | 0             | 0        | 100.0     | 0             | false       | false       | r       | 0        | 0         | true       | 0           | false       | false          | false          | null   | null       |\n" +
+"| 2   | com.gigaspaces.sql.aggregatornode.netty.server.MyPojo | 0            | 0       | 0        | 0     | 0           | 0             | 0        | 100.0     | 0             | false       | false       | r       | 11       | 0         | true       | 0           | false       | false          | false          | null   | null       |\n";
             DumpUtils.checkResult(res, expected);
         }
     }
@@ -312,10 +312,10 @@ class ServerBeanTest extends AbstractServerTest{
             assertTrue(statement.execute());
             ResultSet res = statement.getResultSet();
             String expected = "" +
-"| oid | relname                                               | relnamespace | reltype | relowner | relam | relfilenode | reltablespace | relpages | reltuples | reltoastrelid | relhasindex | relisshared | relkind | relnatts | relchecks | reltriggers | relhasrules | relhastriggers | relhassubclass | relacl | reloptions |\n" +
-"| --- | ----------------------------------------------------- | ------------ | ------- | -------- | ----- | ----------- | ------------- | -------- | --------- | ------------- | ----------- | ----------- | ------- | -------- | --------- | ----------- | ----------- | -------------- | -------------- | ------ | ---------- |\n" +
-"| 1   | java.lang.Object                                      | 0            | 0       | 0        | 0     | 0           | 0             | 0        | 100.0     | 0             | false       | false       | r       | 0        | 0         | 0           | false       | false          | false          | null   | null       |\n" +
-"| 2   | com.gigaspaces.sql.aggregatornode.netty.server.MyPojo | 0            | 0       | 0        | 0     | 0           | 0             | 0        | 100.0     | 0             | false       | false       | r       | 11       | 0         | 0           | false       | false          | false          | null   | null       |\n";
+"| oid | relname                                               | relnamespace | reltype | relowner | relam | relfilenode | reltablespace | relpages | reltuples | reltoastrelid | relhasindex | relisshared | relkind | relnatts | relchecks | relhasoids | reltriggers | relhasrules | relhastriggers | relhassubclass | relacl | reloptions |\n" +
+"| --- | ----------------------------------------------------- | ------------ | ------- | -------- | ----- | ----------- | ------------- | -------- | --------- | ------------- | ----------- | ----------- | ------- | -------- | --------- | ---------- | ----------- | ----------- | -------------- | -------------- | ------ | ---------- |\n" +
+"| 1   | java.lang.Object                                      | 0            | 0       | 0        | 0     | 0           | 0             | 0        | 100.0     | 0             | false       | false       | r       | 0        | 0         | true       | 0           | false       | false          | false          | null   | null       |\n" +
+"| 2   | com.gigaspaces.sql.aggregatornode.netty.server.MyPojo | 0            | 0       | 0        | 0     | 0           | 0             | 0        | 100.0     | 0             | false       | false       | r       | 11       | 0         | true       | 0           | false       | false          | false          | null   | null       |\n";
             DumpUtils.checkResult(res, expected);
         }
     }
@@ -358,11 +358,10 @@ class ServerBeanTest extends AbstractServerTest{
             final String goodQuery = "SELECT * from pg_class where 1 = 1";
             final String badQuery = "SELECT * from pg_clazz";
             String expected = "" +
-"| oid | relname                                               | relnamespace | reltype | relowner | relam | relfilenode | reltablespace | relpages | reltuples | reltoastrelid | relhasindex | relisshared | relkind | relnatts | relchecks | reltriggers | relhasrules | relhastriggers | relhassubclass | relacl | reloptions |\n" +
-"| --- | ----------------------------------------------------- | ------------ | ------- | -------- | ----- | ----------- | ------------- | -------- | --------- | ------------- | ----------- | ----------- | ------- | -------- | --------- | ----------- | ----------- | -------------- | -------------- | ------ | ---------- |\n" +
-"| 1   | java.lang.Object                                      | 0            | 0       | 0        | 0     | 0           | 0             | 0        | 100.0     | 0             | false       | false       | r       | 0        | 0         | 0           | false       | false          | false          | null   | null       |\n" +
-"| 2   | com.gigaspaces.sql.aggregatornode.netty.server.MyPojo | 0            | 0       | 0        | 0     | 0           | 0             | 0        | 100.0     | 0             | false       | false       | r       | 11       | 0         | 0           | false       | false          | false          | null   | null       |\n";
-
+"| oid | relname                                               | relnamespace | reltype | relowner | relam | relfilenode | reltablespace | relpages | reltuples | reltoastrelid | relhasindex | relisshared | relkind | relnatts | relchecks | relhasoids | reltriggers | relhasrules | relhastriggers | relhassubclass | relacl | reloptions |\n" +
+"| --- | ----------------------------------------------------- | ------------ | ------- | -------- | ----- | ----------- | ------------- | -------- | --------- | ------------- | ----------- | ----------- | ------- | -------- | --------- | ---------- | ----------- | ----------- | -------------- | -------------- | ------ | ---------- |\n" +
+"| 1   | java.lang.Object                                      | 0            | 0       | 0        | 0     | 0           | 0             | 0        | 100.0     | 0             | false       | false       | r       | 0        | 0         | true       | 0           | false       | false          | false          | null   | null       |\n" +
+"| 2   | com.gigaspaces.sql.aggregatornode.netty.server.MyPojo | 0            | 0       | 0        | 0     | 0           | 0             | 0        | 100.0     | 0             | false       | false       | r       | 11       | 0         | true       | 0           | false       | false          | false          | null   | null       |\n";
             try (PreparedStatement statement = conn.prepareStatement(goodQuery)) {
                 assertTrue(statement.execute());
                 DumpUtils.checkResult(statement.getResultSet(), expected);

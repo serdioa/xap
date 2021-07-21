@@ -393,6 +393,7 @@ data: {
     # Example: ParseJsonLiteral().
     literalParserMethods: [
       "PgDynamicParam()"
+      "PgEscapeStringLiteral()"
     ]
 
     # List of methods for parsing custom data types.
@@ -427,6 +428,7 @@ data: {
     binaryOperatorsTokens: [
       "< INFIX_CAST: \"::\" >"
       "< PG_DYNAMIC_PARAM: \"$\" ([\"1\"-\"9\"])+ >"
+      "< ESCAPED_STRING_LITERAL: \"E\" <QUOTED_STRING> >"
     ]
 
     # Binary operators initialization

@@ -30,6 +30,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import static com.gigaspaces.jdbc.calcite.GSOptimizer.PUBLIC_SCHEMA_NAME;
+
 public class PgCalciteTable extends AbstractTable {
 
     private static final Map<String, PgCalciteTable> TABLES = new LinkedHashMap<>();
@@ -149,6 +151,7 @@ public class PgCalciteTable extends AbstractTable {
                     'r',                                     // relkind
                     (short) typeDesc.getProperties().length, // relnatts
                     (short) 0,                               // relchecks
+                    true,                                    // relhasoids
                     (short) 0,                               // reltriggers
                     false,                                   // relhasrules
                     false,                                   // relhastriggers
@@ -160,8 +163,8 @@ public class PgCalciteTable extends AbstractTable {
     }
 
     private void executePgNamespace(QueryResult result, IQueryColumn[] queryColumns) {
-        result.addRow(new TableRow(queryColumns, 0, "PUBLIC", 0, null));
-        result.addRow(new TableRow(queryColumns, -1000, "PG_CATALOG", 0, null));
+        result.addRow(new TableRow(queryColumns, 0, PUBLIC_SCHEMA_NAME, 0, null));
+        result.addRow(new TableRow(queryColumns, -1000, PgCalciteSchema.NAME, 0, null));
     }
 
     private void executePgType(QueryResult result, IQueryColumn[] queryColumns) {

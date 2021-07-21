@@ -64,6 +64,11 @@ public class MessageProcessor extends ChannelInboundHandlerAdapter {
     void onMessage(ChannelHandlerContext ctx, char type, ByteBuf msg) throws Exception {
         if (isError) {
             switch (type) {
+                case 'X':
+                    isError = false;
+                    onTerminate(ctx, msg);
+                    break;
+
                 case 'P':
                     isError = false;
                     onParse(ctx, msg);

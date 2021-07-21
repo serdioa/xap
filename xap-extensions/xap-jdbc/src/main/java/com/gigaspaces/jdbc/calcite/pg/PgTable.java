@@ -59,6 +59,7 @@ public enum PgTable {
         column("relkind", PgTypeDescriptor.CHAR),
         column("relnatts", PgTypeDescriptor.INT2),
         column("relchecks", PgTypeDescriptor.INT2),
+        column("relhasoids", PgTypeDescriptor.BOOL),
         column("reltriggers", PgTypeDescriptor.INT2),
         column("relhasrules", PgTypeDescriptor.BOOL),
         column("relhastriggers", PgTypeDescriptor.BOOL),

@@ -48,7 +48,7 @@ import static org.apache.calcite.sql.validate.SqlConformanceEnum.LENIENT;
 
 public class GSOptimizer {
 
-    public static final String ROOT_SCHEMA_NAME = "root";
+    public static final String PUBLIC_SCHEMA_NAME = "public";
 
     private static final CalciteConnectionConfig CONNECTION_CONFIG = CalciteConnectionConfig.DEFAULT
         .set(CalciteConnectionProperty.PARSER_FACTORY, GSSqlParserFactoryWrapper.FACTORY_CLASS)
@@ -73,7 +73,8 @@ public class GSOptimizer {
         catalogReader = new GSCalciteCatalogReader(
             createSchema(space),
             Arrays.asList(
-                Collections.singletonList(ROOT_SCHEMA_NAME),
+                Collections.singletonList(space.getName()),
+                Collections.singletonList(PUBLIC_SCHEMA_NAME),
                 Collections.singletonList(PgCalciteSchema.NAME),
                 Collections.emptyList()
             ),
@@ -218,7 +219,8 @@ public class GSOptimizer {
 
     private static CalciteSchema createSchema(IJSpace space) {
         CalciteSchema res = CalciteSchema.createRootSchema(true, false,
-                ROOT_SCHEMA_NAME, new GSSchema(space));
+                space.getName(), new GSRootSchema());
+        res.add(PUBLIC_SCHEMA_NAME, new GSSchema(space));
         res.add(PgCalciteSchema.NAME, PgCalciteSchema.INSTANCE);
         return res;
     }
