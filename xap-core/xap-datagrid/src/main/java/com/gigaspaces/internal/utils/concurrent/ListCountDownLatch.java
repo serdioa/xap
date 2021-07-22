@@ -35,10 +35,15 @@ public class ListCountDownLatch<T> extends CountDownLatch {
     }
 
 
-    public void countDown(T e) {
+    public List<T> countDown(T e) {
         synchronized (addLock){
             _list.add(e);
             countDown();
+            if(getCount() == 0){
+                return _list;
+            } else{
+                return null;
+            }
         }
     }
 
