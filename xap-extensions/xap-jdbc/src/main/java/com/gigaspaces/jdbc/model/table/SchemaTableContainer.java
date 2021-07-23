@@ -1,7 +1,9 @@
 package com.gigaspaces.jdbc.model.table;
 
+import com.gigaspaces.internal.utils.ObjectConverter;
 import com.gigaspaces.jdbc.calcite.pg.PgCalciteTable;
 import com.gigaspaces.jdbc.exceptions.ColumnNotFoundException;
+import com.gigaspaces.jdbc.exceptions.SQLExceptionWrapper;
 import com.gigaspaces.jdbc.model.QueryExecutionConfig;
 import com.gigaspaces.jdbc.model.result.QueryResult;
 import com.gigaspaces.jdbc.model.result.TempQueryResult;
@@ -55,6 +57,15 @@ public class SchemaTableContainer extends TempTableContainer {
 
     @Override
     public Object getColumnValue(String columnName, Object value) {
+        Optional<Class<?>> javaType = Arrays.stream(table.getSchemas()).filter(x -> x.getPropertyName().equalsIgnoreCase(columnName)).findFirst().map(PgCalciteTable.SchemaProperty::getJavaType);
+        if (javaType.isPresent()) {
+            try {
+                return ObjectConverter.convert(value, javaType.get());
+            } catch (SQLException throwables) {
+                throwables.printStackTrace();
+                throw new SQLExceptionWrapper(throwables);
+            }
+        }
         return value;
     }
 }
