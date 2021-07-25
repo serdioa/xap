@@ -155,7 +155,7 @@ public class SelectHandler extends RelShuttleImpl {
                     columnName = program.getInputRowType().getFieldNames().get(program.getSourceField(field.getIndex()));
                 }
             }
-            TableContainer table = queryExecutor.getTableByColumnIndex(relCollation.getFieldIndex());
+            TableContainer table = queryExecutor.getTableByColumnName(columnName);
             OrderColumn orderColumn = new OrderColumn(new ConcreteColumn(columnName,null, columnAlias,
                     isVisible, table, columnCounter++), !direction.isDescending(),
                     nullDirection == RelFieldCollation.NullDirection.LAST);
