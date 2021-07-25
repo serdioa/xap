@@ -63,4 +63,7 @@ public class WaitForDrainCompoundResponse implements SpaceResponseInfo {
     }
 
 
+    public boolean isEmpty() {
+        return this.getExceptionMap().isEmpty() && this.getSuccessfulPartitions().isEmpty();
+    }
 }
