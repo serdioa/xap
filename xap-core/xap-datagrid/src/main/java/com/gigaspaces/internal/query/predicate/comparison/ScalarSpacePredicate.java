@@ -82,9 +82,7 @@ public abstract class ScalarSpacePredicate extends AbstractSpacePredicate {
 
     @Override
     public boolean execute(Object target) {
-        Object preparedExpectedValue = getPreparedExpectedValue(target);
-        System.out.println(String.format("Trying to match target=%s (%s) with expected value=%s (%s)", target, target.getClass().getName(), preparedExpectedValue, preparedExpectedValue.getClass().getName()));
-        return match(target, preparedExpectedValue);
+        return match(target, getPreparedExpectedValue(target));
     }
 
     protected abstract boolean match(Object actual, Object expected);
