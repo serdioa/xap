@@ -106,6 +106,8 @@ public class TypeUtils {
             case DOUBLE:
                 return PG_TYPE_FLOAT8;
             case CHAR:
+                if (internalType.getPrecision() == 0)
+                    return PG_TYPE_VARCHAR;
                 return PG_TYPE_CHAR;
             case VARCHAR:
                 return PG_TYPE_VARCHAR;
