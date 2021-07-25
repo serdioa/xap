@@ -4,10 +4,7 @@ import com.gigaspaces.jdbc.QueryExecutor;
 import com.gigaspaces.jdbc.calcite.GSJoin;
 import com.gigaspaces.jdbc.calcite.utils.CalciteUtils;
 import com.gigaspaces.jdbc.exceptions.SQLExceptionWrapper;
-import com.gigaspaces.jdbc.model.join.JoinConditionColumnArrayValue;
-import com.gigaspaces.jdbc.model.join.ColumnValueJoinCondition;
-import com.gigaspaces.jdbc.model.join.JoinInfo;
-import com.gigaspaces.jdbc.model.join.OperatorJoinCondition;
+import com.gigaspaces.jdbc.model.join.*;
 import com.gigaspaces.jdbc.model.table.ConcreteTableContainer;
 import com.gigaspaces.jdbc.model.table.IQueryColumn;
 import com.gigaspaces.jdbc.model.table.LiteralColumn;
@@ -18,6 +15,7 @@ import org.apache.calcite.rex.RexInputRef;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.sql.SqlKind;
+import org.apache.calcite.sql.type.SqlTypeName;
 
 import java.sql.SQLException;
 import java.util.List;
@@ -60,10 +58,16 @@ public class JoinConditionHandler {
                     if (rexNode instanceof RexCall) {
                         leftContainer = handleSingleJoinCondition(join, (RexCall) rexNode);
                     } else if (rexNode instanceof RexInputRef) {
-                        IQueryColumn column = queryExecutor.getColumnByColumnIndex(((RexInputRef) rexNode).getIndex());
-                        leftContainer = column.getTableContainer();
-                        joinInfo.addJoinCondition(OperatorJoinCondition.getConditionOperator(rexNode.getKind(), 1));
-                        joinInfo.addJoinCondition(new ColumnValueJoinCondition(column));
+                        if (rexNode.getType().getSqlTypeName() == SqlTypeName.BOOLEAN) {
+                            IQueryColumn column = queryExecutor.getColumnByColumnIndex(((RexInputRef) rexNode).getIndex());
+                            leftContainer = column.getTableContainer();
+                            joinInfo.addJoinCondition(OperatorJoinCondition.getConditionOperator(rexNode.getKind(), 2));
+                            joinInfo.addJoinCondition(new ColumnValueJoinCondition(column));
+                            joinInfo.addJoinCondition(new BooleanValueJoinCondition(true));
+
+                        } else {
+                            throw new UnsupportedOperationException("");
+                        }
                     }
                 }
                 break;

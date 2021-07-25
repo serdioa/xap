@@ -121,7 +121,7 @@ public class JoinInfo {
             if (joinCondition.isOperator()) {
                 OperatorJoinCondition operatorJoinCondition = (OperatorJoinCondition) joinCondition;
                 SqlKind sqlKind = operatorJoinCondition.getSqlKind();
-                if (!sqlKind.equals(SqlKind.AND) && !sqlKind.equals(SqlKind.EQUALS)) {
+                if (!sqlKind.equals(SqlKind.AND) && !sqlKind.equals(SqlKind.EQUALS) && !sqlKind.equals(SqlKind.INPUT_REF)) {
                     return false;
                 }
             }

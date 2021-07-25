@@ -20,6 +20,7 @@ public class JoinQueryExecutor {
     private final List<IQueryColumn> selectedQueryColumns;
     private final List<IQueryColumn> groupByColumns = new ArrayList<>();
     private final List<OrderColumn> orderColumns = new ArrayList<>();
+    private final List<IQueryColumn> caseColumns;
 
     public JoinQueryExecutor(QueryExecutor queryExecutor) {
         this.tables = queryExecutor.getTables();
@@ -31,6 +32,7 @@ public class JoinQueryExecutor {
         this.config.setJoinUsed(true);
         this.aggregationColumns = queryExecutor.getAggregationColumns();
         this.allQueryColumns = Stream.concat(visibleColumns.stream(), invisibleColumns.stream()).collect(Collectors.toList());
+        this.caseColumns = queryExecutor.getCaseColumns();
         this.selectedQueryColumns = Stream.concat(this.visibleColumns.stream(), this.aggregationColumns.stream()).sorted().collect(Collectors.toList());
     }
 

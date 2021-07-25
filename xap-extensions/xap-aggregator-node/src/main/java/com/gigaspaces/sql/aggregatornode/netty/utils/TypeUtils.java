@@ -181,6 +181,7 @@ public class TypeUtils {
     }
 
     public static void writeColumn(Session session, ByteBuf dst, Object value, ColumnDescription desc) throws ProtocolException {
+        System.out.println("Writing column ["+desc.getName()+"] of type: " + desc.getType().getName());
         int format = desc.getFormat();
         if (format == Constants.TEXT)
             desc.getType().asText(session, dst, value);
@@ -203,7 +204,7 @@ public class TypeUtils {
     protected static void checkType(Object value, Class<?> type) throws ProtocolException {
         if (type.isInstance(value))
             return;
-        throw new BreakingException(ErrorCodes.PROTOCOL_VIOLATION, "Unexpected value type: " + value.getClass());
+        throw new BreakingException(ErrorCodes.PROTOCOL_VIOLATION, "Unexpected value ("+value+") type: " + value.getClass()+". Expecting: " + type.getName());
     }
 
     protected static void checkLen(ByteBuf src, int expected) throws ProtocolException {

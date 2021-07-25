@@ -199,7 +199,8 @@ public class MessageProcessor extends ChannelInboundHandlerAdapter {
                         writeRowDescription(buf, rowDesc);
                         int inBatch = 0;
                         while (portal.hasNext()) {
-                            writeDataRow(buf, portal.next(), rowDesc);
+                            Object next = portal.next();
+                            writeDataRow(buf, next, rowDesc);
                             if (++inBatch == BATCH_SIZE) {
                                 ctx.write(buf);
                                 buf = ctx.alloc().ioBuffer();
@@ -492,8 +493,16 @@ public class MessageProcessor extends ChannelInboundHandlerAdapter {
 
         if (row0 == null)
             throw new BreakingException(ErrorCodes.INTERNAL_ERROR, "row is null");
-        else if (row0.length != desc.getColumnsCount())
-            throw new BreakingException(ErrorCodes.PROTOCOL_VIOLATION, "unexpected row columns count");
+        else if (row0.length != desc.getColumnsCount()) {
+            System.out.println("Unexpected column count:");
+            System.out.println("Desc:");
+            desc.getColumns().stream().map(x -> x.getName()+", " + x.getType().getName()).forEach(System.out::println);
+            System.out.println("Actual: ");
+            for (Object o : row0) {
+                System.out.println(o+", " + o.getClass().getName());
+            }
+            throw new BreakingException(ErrorCodes.PROTOCOL_VIOLATION, "unexpected row columns count. Expected: " + desc.getColumnsCount()+", actual: " + row0.length);
+        }
 
         buf.writeByte('D');
         int idx = buf.writerIndex();
