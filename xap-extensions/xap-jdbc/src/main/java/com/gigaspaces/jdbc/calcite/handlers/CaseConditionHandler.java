@@ -44,7 +44,7 @@ public class CaseConditionHandler extends RexShuttle {
                         String fieldName = inputFields.get(((RexInputRef) rexNode).getIndex());
                         TableContainer tableForColumn = getTableForColumn(fieldName);
                         IQueryColumn queryColumn = tableForColumn.addQueryColumnWithoutOrdinal(fieldName, null, false);
-                        queryExecutor.addColumn(queryColumn);
+                        queryExecutor.addColumn(queryColumn, false);
                         caseCondition.setResult(queryColumn);
                         caseColumn.addCaseCondition(caseCondition);
                         caseCondition = null;
@@ -165,7 +165,7 @@ public class CaseConditionHandler extends RexShuttle {
         assert column != null;
 
         IQueryColumn queryColumn = tableForColumn.addQueryColumnWithoutOrdinal(column, null, false);
-        queryExecutor.addColumn(queryColumn);
+        queryExecutor.addColumn(queryColumn, false);
 
         sqlKind = isNot ? sqlKind.negateNullSafe() : sqlKind;
         switch (sqlKind) {

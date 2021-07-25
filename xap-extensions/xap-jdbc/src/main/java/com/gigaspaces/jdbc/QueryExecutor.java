@@ -210,6 +210,10 @@ public class QueryExecutor {
         this.caseColumns.add(caseColumn);
     }
 
+    public List<IQueryColumn> getCaseColumns() {
+        return caseColumns.stream().map(x-> ((CaseColumn) x)).collect(Collectors.toList());
+    }
+
     public TableContainer getTableByColumnName(String column) {
         TableContainer result = getTableByPhysicalColumnName(column);
         if (result != null) {

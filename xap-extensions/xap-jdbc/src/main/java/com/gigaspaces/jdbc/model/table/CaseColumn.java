@@ -1,8 +1,10 @@
 package com.gigaspaces.jdbc.model.table;
 
 import com.gigaspaces.internal.transport.IEntryPacket;
+import com.gigaspaces.internal.utils.ObjectConverter;
 import com.gigaspaces.jdbc.model.result.TableRow;
 
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -87,7 +89,12 @@ public class CaseColumn implements IQueryColumn{
                 } else if (result instanceof ConcreteColumn) { //column value
                     return tableRow.getPropertyValue(((ConcreteColumn) result).getAlias());
                 }
-                return result;
+                try {
+                    return ObjectConverter.convert(result, this.returnType);
+                } catch (SQLException throwables) {
+                    throwables.printStackTrace();
+                    return result;
+                }
             }
         }
         throw new IllegalStateException("should not arrive here");
