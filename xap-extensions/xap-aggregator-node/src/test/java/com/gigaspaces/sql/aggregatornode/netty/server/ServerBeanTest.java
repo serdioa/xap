@@ -56,7 +56,7 @@ class ServerBeanTest extends AbstractServerTest{
             Assertions.assertTrue(statement.execute(query));
             ResultSet resultSet = statement.getResultSet();
             String expected = "" +
-"| explain                                                                     |\n" +
+"| Explain Plan                                                                |\n" +
 "| --------------------------------------------------------------------------- |\n" +
 "| 'FullScan: com.gigaspaces.sql.aggregatornode.netty.server.MyPojo as MyPojo' |\n" +
 "| '  Select: first_name, last_name, email, age'                               |\n" +
