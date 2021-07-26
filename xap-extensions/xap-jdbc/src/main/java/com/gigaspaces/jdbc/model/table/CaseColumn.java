@@ -3,6 +3,8 @@ package com.gigaspaces.jdbc.model.table;
 import com.gigaspaces.internal.transport.IEntryPacket;
 import com.gigaspaces.internal.utils.ObjectConverter;
 import com.gigaspaces.jdbc.model.result.TableRow;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -13,6 +15,7 @@ public class CaseColumn implements IQueryColumn{
     private final Class<?> returnType;
     private final int columnOrdinal;
     private final List<ICaseCondition> caseConditions;
+    private static Logger _logger = LoggerFactory.getLogger(CaseColumn.class);
 
     public CaseColumn(String columnName, Class<?> type, int columnOrdinal) {
         this.columnName = columnName;
@@ -91,8 +94,8 @@ public class CaseColumn implements IQueryColumn{
                 }
                 try {
                     return ObjectConverter.convert(result, this.returnType);
-                } catch (SQLException throwables) {
-                    throwables.printStackTrace();
+                } catch (SQLException e) {
+                    _logger.warn("Failed to convert CASE column value to " + this.returnType.getName(), e);
                     return result;
                 }
             }

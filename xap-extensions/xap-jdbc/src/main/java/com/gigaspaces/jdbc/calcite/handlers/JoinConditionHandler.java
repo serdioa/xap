@@ -68,7 +68,7 @@ public class JoinConditionHandler {
                             joinInfo.addJoinCondition(new BooleanValueJoinCondition(true));
 
                         } else {
-                            throw new UnsupportedOperationException("");
+                            throw new UnsupportedOperationException("Unsupported type of rexNode in JOIN condition: " + rexNode.getKind());
                         }
                     }
                 }
@@ -146,13 +146,14 @@ public class JoinConditionHandler {
                     RexCall second = ((RexCall) rexCall.getOperands().get(1));
                     RexNode array = second.getOperands().get(0);
                     if (!(array instanceof RexInputRef))
-                        throw new UnsupportedOperationException("111"); //TODO
+                        throw new UnsupportedOperationException("Unsupported type of operand: " + array.getKind());
                     IQueryColumn arrayColumn = queryExecutor.getColumnByColumnIndex(((RexInputRef) array).getIndex());
                     RexNode arrayIndex = second.getOperands().get(1);
                     if (!(arrayIndex instanceof RexCall))
-                        throw new UnsupportedOperationException("2222");
+                        throw new UnsupportedOperationException("Unsupported type of array index: " + arrayIndex.getKind());
                     Function<IQueryColumn, Object> f = (Function<IQueryColumn, Object>) iQueryColumn -> {
 //                        Object arrayValue = iQueryColumn.getCurrentValue();
+                        // TODO implement when required. For now queries don't really do the matching so returning null is fine - for now
                         return null;
                     };
 

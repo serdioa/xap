@@ -13,7 +13,7 @@ import java.text.SimpleDateFormat;
 public class MainCalciteTester {
     public static void main(String[] args) throws Exception {
         String spaceName = "mySpace222";
-//        GigaSpace space = createAndFillSpace(spaceName, false);
+        GigaSpace space = createAndFillSpace(spaceName, false);
 
 //        try (ServerBean server = new ServerBean()) {
 //            server.init();
@@ -23,7 +23,7 @@ public class MainCalciteTester {
             } catch (ClassNotFoundException e) {
                 e.printStackTrace();
             }
-            try (Connection connection = DriverManager.getConnection("jdbc:postgresql://ad7f8be5de9cf4d69b83d5696a12f6dc-685392565.ca-central-1.elb.amazonaws.com:6432/space")) {
+            try (Connection connection = DriverManager.getConnection("jdbc:postgresql://localhost/" + spaceName + "?user=user&password=secret")) {
                 Statement statement = connection.createStatement();
 
 //            execute(statement, String.format("SELECT * FROM %s where last_name = 'Bb' OR first_name = 'Eve'", "\"" + MyPojo.class.getName() + "\""));
@@ -32,7 +32,7 @@ public class MainCalciteTester {
 //            execute(statement, String.format("SELECT * FROM %s as T where T.last_name = 'Bb' or T.first_name = 'Adam' or T.last_name = 'Cc' or T.email = 'Adler@msn.com' or T.age>=40", "\"" + MyPojo.class.getName() + "\""));
 //            execute(statement, "SELECT * FROM com.gigaspaces.jdbc.MyPojo as T where (T.last_name = 'Bb' AND T.first_name = 'Adam') OR ((T.last_name = 'Cc') or (T.email = 'Adler@msn.com') or (T.age>=40))");
 //                execute(statement, String.format("SELECT first_nzame, last_name, email, age FROM %s as T where T.last_name = 'Aa' OR T.first_name = 'Adam'", "\"" + MyPojo.class.getName() + "\""));
-                execute(statement, String.format("SELECT first_name, last_name, email, age FROM \"com.gigaspaces.aggrnode.MyPojo\""));
+                execute(statement, String.format("SELECT first_name, last_name, email, age FROM %s as T where T.last_name = 'Aa' OR T.first_name = 'Adam'", "\"" + MyPojo.class.getName() + "\""));
 //                execute(statement, String.format("SELECT first_nzame, last_name, email, age FROM %s as T where T.last_name = 'Aa' OR T.first_name = 'Adam'", "\"" + MyPojo.class.getName() + "\""));
 //            execute(statement, String.format("SELECT * FROM %s as T where T.age <= 40", "\"" + MyPojo.class.getName() + "\""));
 //            execute(statement, String.format("EXPLAIN PLAN FOR SELECT * FROM %s ", "\"" + MyPojo.class.getName() + "\""));

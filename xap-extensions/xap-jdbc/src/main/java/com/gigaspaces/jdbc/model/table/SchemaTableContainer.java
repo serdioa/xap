@@ -8,6 +8,8 @@ import com.gigaspaces.jdbc.model.QueryExecutionConfig;
 import com.gigaspaces.jdbc.model.result.QueryResult;
 import com.gigaspaces.jdbc.model.result.TempQueryResult;
 import com.j_spaces.core.IJSpace;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.sql.SQLException;
 import java.util.Arrays;
@@ -19,6 +21,7 @@ import static com.gigaspaces.jdbc.model.table.IQueryColumn.EMPTY_ORDINAL;
 public class SchemaTableContainer extends TempTableContainer {
     private final PgCalciteTable table;
     private final IJSpace space;
+    private static Logger _logger = LoggerFactory.getLogger(SchemaTableContainer.class);
 
     public SchemaTableContainer(PgCalciteTable table, String alias, IJSpace space) {
         super(alias);
@@ -60,12 +63,17 @@ public class SchemaTableContainer extends TempTableContainer {
     public Object getColumnValue(String columnName, Object value) {
         Optional<Class<?>> javaType = Arrays.stream(table.getSchemas()).filter(x -> x.getPropertyName().equalsIgnoreCase(columnName)).findFirst().map(PgCalciteTable.SchemaProperty::getJavaType);
         if (javaType.isPresent()) {
+            Class<?> className = javaType.get();
             try {
-                return ObjectConverter.convert(value, javaType.get());
+                return ObjectConverter.convert(value, className);
             } catch (SQLException throwables) {
+                _logger.warn("Couldn't convert column's value of type ["+ className.getName()+"] for column name ["+columnName+"]");
+
                 throwables.printStackTrace();
                 throw new SQLExceptionWrapper(throwables);
             }
+        } else {
+            _logger.warn("Couldn't find column / type for column ["+columnName+"], result type might be incorrect");
         }
         return value;
     }

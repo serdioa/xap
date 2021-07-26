@@ -201,11 +201,6 @@ public class SelectHandler extends RelShuttleImpl {
         TableContainer leftContainer;
 
         if (joinCondition instanceof RexLiteral) {
-//            RexLiteral rexLiteral = ((RexLiteral) joinCondition);
-//
-//            leftContainer = ((GSTableScan) ((GSCalc) join.getLeft()).getInput()).getActualTableContainer();
-//            TableContainer rightContainer = ((GSTableScan) ((GSCalc) join.getRight()).getInput()).getActualTableContainer();
-//            leftContainer.setJoinedTable(rightContainer);
             List<TableContainer> tables = queryExecutor.getTables();
             leftContainer = tables.get(tables.size() - 2);
             TableContainer rightTable = tables.get(tables.size() - 1);
@@ -224,7 +219,7 @@ public class SelectHandler extends RelShuttleImpl {
                 }
             }
         } else {
-            throw new UnsupportedOperationException("Only equal joins are supported"); //TODO
+            throw new UnsupportedOperationException("Unsupported join condition type: " + joinCondition.getKind());
         }
         if(!childToCalc.containsKey(join)) { // it is SELECT *
             if(join.equals(root)
