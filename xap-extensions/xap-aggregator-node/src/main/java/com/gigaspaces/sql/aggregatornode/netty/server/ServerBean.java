@@ -1,5 +1,6 @@
 package com.gigaspaces.sql.aggregatornode.netty.server;
 
+import com.gigaspaces.jdbc.calcite.CalciteDefaults;
 import com.gigaspaces.sql.aggregatornode.netty.authentication.AuthenticationProvider;
 import com.gigaspaces.sql.aggregatornode.netty.query.QueryProviderImpl;
 import io.netty.bootstrap.ServerBootstrap;
@@ -16,6 +17,9 @@ import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 
 public final class ServerBean implements AutoCloseable {
+    static {
+        CalciteDefaults.setCalciteDriverSystemProperty();
+    }
     static final boolean SSL = System.getProperty("ssl") != null;
     private int port = 5432;
 
