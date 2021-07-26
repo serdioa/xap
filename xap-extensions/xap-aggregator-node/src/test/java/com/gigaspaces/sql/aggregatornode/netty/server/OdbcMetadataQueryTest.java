@@ -144,17 +144,17 @@ public class OdbcMetadataQueryTest extends AbstractServerTest {
 
     @Test
     public void testSelectTypeWhereTypnameLo() throws Exception {
-        checkQuery("select attrelid,attnum, attisdropped from pg_catalog.pg_attribute");
-        checkQuery("select relname, relnamespace, oid from pg_catalog.pg_class");
-        checkQuery("select indrelid, indisprimary, indexrelid, indkey from pg_catalog.pg_index");
-        checkQuery("select ta.attname, ia.attnum, ic.relname, n.nspname, tc.relname " +
-                "from pg_catalog.pg_attribute ta, " +
-                "    pg_catalog.pg_attribute ia, " +
-                "    pg_catalog.pg_class tc, " +
+//        checkQuery("select attrelid,attnum, attisdropped from pg_catalog.pg_attribute");
+//        checkQuery("select relname, relnamespace, oid from pg_catalog.pg_class");
+//        checkQuery("select indrelid, indisprimary, indexrelid, indkey from pg_catalog.pg_index");
+//        checkQuery("select ta.attname, ia.attnum, ic.relname, n.nspname, tc.relname " +
+//                "from pg_catalog.pg_attribute ta, " +
+//                "    pg_catalog.pg_attribute ia, " +
+//                "    pg_catalog.pg_class tc, " +
 //                "    pg_catalog.pg_index i, " +
-                "    pg_catalog.pg_namespace n, " +
-                "    pg_catalog.pg_class ic " +
-                "where " +
+//                "    pg_catalog.pg_namespace n, " +
+//                "    pg_catalog.pg_class ic " +
+//                "where " +
 //                "    tc.relname = E'com.gigaspaces.aggrnode.MyPojo' " +
 //                "    AND n.nspname = E'public' " +
 //                "    AND tc.oid = i.indrelid " +
@@ -169,8 +169,8 @@ public class OdbcMetadataQueryTest extends AbstractServerTest {
 //                "    AND ic.oid = ia.attrelid " + //ZZZZ
 //                "    AND ic.oid = i.indexrelid " +
 //                "order by ia.attnum" +
-        "");
-//        checkQuery(SELECT_TYPE_WHERE_TYPNAME_LO);
+//        "");
+        checkQuery(SELECT_TYPE_WHERE_TYPNAME_LO);
     }
 
     @Test
