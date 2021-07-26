@@ -15,6 +15,8 @@ import org.apache.calcite.sql.SqlExplainLevel;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.calcite.sql.validate.SqlValidatorException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -24,6 +26,7 @@ import java.util.Properties;
 import static com.gigaspaces.jdbc.calcite.CalciteDefaults.isCalcitePropertySet;
 
 public class CalciteQueryHandler {
+    private static final Logger logger = LoggerFactory.getLogger("com.gigaspaces.jdbc.v3");
     private boolean explainPlan;
 
     private static final String EXPLAIN_PREFIX = "explain";
@@ -66,11 +69,13 @@ public class CalciteQueryHandler {
             }
             GSOptimizerValidationResult validated = optimizer.validate(ast);
             GSRelNode physicalPlan = optimizer.optimize(validated.getValidatedAst());
-            StringWriter sw = new StringWriter();
-            PrintWriter pw = new PrintWriter(sw);
-            RelWriterImpl writer = new RelWriterImpl(pw, SqlExplainLevel.EXPPLAN_ATTRIBUTES, false);
-            physicalPlan.explain(writer);
-            System.out.println(sw);
+            if (explainPlan || logger.isDebugEnabled()) {
+                StringWriter sw = new StringWriter();
+                PrintWriter pw = new PrintWriter(sw);
+                RelWriterImpl writer = new RelWriterImpl(pw, SqlExplainLevel.EXPPLAN_ATTRIBUTES, false);
+                physicalPlan.explain(writer);
+                logger.info("Physical Plan: \n" + sw.toString());
+            }
 
             return physicalPlan;
         } catch (CalciteException calciteException) {
