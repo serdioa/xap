@@ -51,6 +51,9 @@ public class TableRowUtils {
             if(qc.isAggregate()){
                 values[i] = aggregate((AggregationColumn) qc, tableRows);
             }
+            else if (qc.isCaseColumn()) {
+                values[i] = null;
+            }
             else{
                 values[i] = tableRows.get(0).getPropertyValue(qc);
             }
