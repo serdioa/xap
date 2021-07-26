@@ -27,23 +27,18 @@ public class OdbcMetadataQueryTest extends AbstractServerTest {
             "       ) inner join pg_catalog.pg_type t on t.oid = a.atttypid" +
             "   ) left outer join pg_attrdef d on a.atthasdef and d.adrelid = a.attrelid and d.adnum = a.attnum" +
             " order by n.nspname, c.relname, attnum";
-    private static final String SELECT_ATTRIBUTESZZ = "" +
-            "select " +
-            "n.nspname, c.relname, a.attname, a.atttypid, t.typname, a.attnum, a.attlen, a.atttypmod, a.attnotnull, c.relhasrules, c.relkind, c.oid, " +
-//            " pg_get_expr(d.adbin, d.adrelid), " +
-            "t.typtypmod, c.relhasoids," +
-            " ''," +
-            " c.relhassubclass," +
-            " case t.typtype when 'd' then 1 else 2 end " +
+    private static final String SELECT_ATTRIBUTESzz = "" +
+            "select n.nspname, c.relname, a.attname, a.atttypid, t.typname, a.attnum, a.attlen, a.atttypmod, a.attnotnull, c.relhasrules, c.relkind, c.oid, " +
+            "pg_get_expr(d.adbin, d.adrelid), case t.typtype when 'd' then t.typbasetype else 0 end, t.typtypmod, c.relhasoids, '', c.relhassubclass " +
             "from " +
             "   (" +
             "       (" +
             "           (pg_catalog.pg_class c inner join pg_catalog.pg_namespace n on n.oid = c.relnamespace and c.relname like E'com.gigaspaces.sql.aggregatornode.netty.server.MyPojo' and n.nspname like E'public')" +
             "           inner join pg_catalog.pg_attribute a on (not a.attisdropped) and a.attnum > 0 and a.attrelid = c.oid" +
             "       ) inner join pg_catalog.pg_type t on t.oid = a.atttypid" +
-            "   ) " +
-            "left outer join pg_attrdef d on a.atthasdef and d.adrelid = a.attrelid and d.adnum = a.attnum" +
+            "   ) left outer join pg_attrdef d on a.atthasdef and d.adrelid = a.attrelid and d.adnum = a.attnum" +
             " order by n.nspname, c.relname, attnum";
+
     private static final String SELECT_INDEXES = "select ta.attname, ia.attnum, ic.relname, n.nspname, tc.relname from pg_catalog.pg_attribute ta, pg_catalog.pg_attribute ia, pg_catalog.pg_class tc, pg_catalog.pg_index i, pg_catalog.pg_namespace n, pg_catalog.pg_class ic where tc.relname = E'test_table' AND n.nspname = E'public' AND tc.oid = i.indrelid AND n.oid = tc.relnamespace AND i.indisprimary = 't' AND ia.attrelid = i.indexrelid AND ta.attrelid = i.indrelid AND ta.attnum = i.indkey[ia.attnum-1] AND (NOT ta.attisdropped) AND (NOT ia.attisdropped) AND ic.oid = i.indexrelid order by ia.attnum";
     private static final String SELECT_CONSTRAINTS = "select\t'mySpace'::name as \"PKTABLE_CAT\",\n" +
             "\tn2.nspname as \"PKTABLE_SCHEM\",\n" +
@@ -193,43 +188,6 @@ public class OdbcMetadataQueryTest extends AbstractServerTest {
     //@Disabled("Only equal joins are supported")
     @Test
     public void testSelectAttributes() throws Exception {
-//        checkQuery("" +
-//                "select ta.attname, ia.attnum, ic.relname, n.nspname, tc.relname " +
-//                "from pg_catalog.pg_attribute ta, " +
-//                "   pg_catalog.pg_attribute ia, " +
-//                "   pg_catalog.pg_class tc, " +
-//                "   pg_catalog.pg_namespace n, " +
-//                "   pg_catalog.pg_class ic " +
-//                "where " +
-//                "   tc.relname = E'"+MyPojo.class.getName()+"' " +
-//                "   AND n.nspname = E'public' " +
-//                "   AND tc.oid = ta.attrelid " +
-//                "   AND n.oid = tc.relnamespace " +
-//                "   AND ia.attrelid = ic.oid " +
-//                "   AND (NOT ta.attisdropped) " +
-//                "   AND (NOT ia.attisdropped) " +
-//                " order by ia.attnum");
-//        checkQuery("" +
-//                "select ta.attname, ia.attnum, ic.relname, n.nspname, tc.relname " +
-//                "from pg_catalog.pg_attribute ta, " +
-//                "   pg_catalog.pg_attribute ia, " +
-//                "   pg_catalog.pg_class tc, " +
-//                "   pg_catalog.pg_index i, " +
-//                "   pg_catalog.pg_namespace n, " +
-//                "   pg_catalog.pg_class ic " +
-//                "where " +
-//                "   tc.relname = E'com.gigaspaces.aggrnode.MyPojo' " +
-//                "   AND n.nspname = E'public' " +
-//                "   AND tc.oid = i.indrelid " +
-//                "   AND n.oid = tc.relnamespace " +
-//                "   AND i.indisprimary = 't' " +
-//                "   AND ia.attrelid = i.indexrelid " +
-//                "   AND ta.attrelid = i.indrelid " +
-//                "   AND ta.attnum = i.indkey[ia.attnum-1] " +
-//                "   AND (NOT ta.attisdropped) " +
-//                "   AND (NOT ia.attisdropped) " +
-//                "   AND ic.oid = i.indexrelid" +
-//                " order by ia.attnum");
         checkQuery(SELECT_ATTRIBUTES);
     }
 

@@ -145,19 +145,14 @@ public class SelectHandler extends RelShuttleImpl {
             RelFieldCollation.NullDirection nullDirection = relCollation.nullDirection;
             String columnAlias = sort.getRowType().getFieldNames().get(fieldIndex);
             String columnName = columnAlias;
-            boolean isVisible = false;
-            RelNode parent = this.stack.peek();
-            if(parent instanceof GSCalc) {
-                RexProgram program = ((GSCalc) parent).getProgram();
-                RelDataTypeField field = program.getOutputRowType().getField(columnAlias, true, false);
-                if(field != null) {
-                    isVisible = true;
-                    columnName = program.getInputRowType().getFieldNames().get(program.getSourceField(field.getIndex()));
-                }
+            if(sort.getInput() instanceof GSAggregate){
+                final GSAggregate input = (GSAggregate) sort.getInput();
+                fieldIndex = input.groupSets.get(0).asList().get(fieldIndex);
             }
             TableContainer table = queryExecutor.isJoinQuery() ? queryExecutor.getTableByColumnIndex(fieldIndex) : queryExecutor.getTableByColumnName(columnName);
-            OrderColumn orderColumn = new OrderColumn(new ConcreteColumn(columnName,null, columnAlias,
-                    isVisible, table, columnCounter++), !direction.isDescending(),
+            IQueryColumn qc = queryExecutor.isJoinQuery() ? queryExecutor.getColumnByColumnIndex(fieldIndex) : queryExecutor.getColumnByColumnName(columnName);
+            OrderColumn orderColumn = new OrderColumn(new ConcreteColumn(columnName,null, columnName,
+                    qc != null, table, columnCounter++), !direction.isDescending(),
                     nullDirection == RelFieldCollation.NullDirection.LAST);
             table.addOrderColumns(orderColumn);
         }
