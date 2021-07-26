@@ -105,15 +105,10 @@ public class GSSqlOperatorTable extends ReflectiveSqlOperatorTable {
                     SqlFunctionCategory.NUMERIC);
 
     public static final SqlFunction ODBC_TIMESTAMP =
-            new NoParameterSqlFunction(
-                    "ODBC_TIMESTAMP", SqlTypeName.VARCHAR) {
+            new NoParameterSqlTimeFunction("ODBC_TIMESTAMP", SqlTypeName.TIMESTAMP);
 
-                @Override
-                public SqlSyntax getSyntax() {
-                    return SqlSyntax.FUNCTION;
-                }
-            };
-
+    public static final SqlFunction SYSDATE =
+            new NoParameterSqlTimeFunction("SYSDATE", SqlTypeName.TIMESTAMP);
 
     public static final SqlFunction DAYNAME =
             new SqlFunction(

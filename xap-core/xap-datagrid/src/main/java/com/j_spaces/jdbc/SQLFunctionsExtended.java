@@ -35,6 +35,7 @@ public class SQLFunctionsExtended {
         functions.put("SECOND", new SecondSqlFunction());
         functions.put("WEEK", new WeekSqlFunction());
         functions.put("YEAR", new YearSqlFunction());
+        functions.put("SYSDATE", new SysDateSqlFunction());
 
         functions.put("TRUNCATE", new TruncSqlFunction());
         functions.put("TRUNC", new TruncSqlFunction());

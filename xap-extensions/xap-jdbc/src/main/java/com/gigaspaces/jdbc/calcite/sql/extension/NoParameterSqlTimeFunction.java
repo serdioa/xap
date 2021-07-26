@@ -5,11 +5,15 @@ import org.apache.calcite.sql.SqlOperatorBinding;
 import org.apache.calcite.sql.fun.SqlAbstractTimeFunction;
 import org.apache.calcite.sql.type.SqlTypeName;
 
-public class NoParameterSqlFunction extends SqlAbstractTimeFunction {
+/**
+ * Class for dat/time functions that does not get any parameter
+ * @since 16.0
+ */
+public class NoParameterSqlTimeFunction extends SqlAbstractTimeFunction {
 
     private final SqlTypeName returnTypeName;
 
-    public NoParameterSqlFunction(
+    public NoParameterSqlTimeFunction(
             String functionName, SqlTypeName returnTypeName) {
         // access protected constructor
         super(functionName, returnTypeName);
@@ -19,10 +23,5 @@ public class NoParameterSqlFunction extends SqlAbstractTimeFunction {
     @Override
     public RelDataType inferReturnType(SqlOperatorBinding opBinding) {
         return opBinding.getTypeFactory().createSqlType(returnTypeName);
-    }
-
-    @Override
-    public boolean isDeterministic() {
-        return false;
     }
 }
