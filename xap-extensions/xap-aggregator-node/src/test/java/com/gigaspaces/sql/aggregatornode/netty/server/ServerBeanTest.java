@@ -1,6 +1,5 @@
 package com.gigaspaces.sql.aggregatornode.netty.server;
 
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -44,24 +43,6 @@ class ServerBeanTest extends AbstractServerTest{
         try (Connection conn = connect(simple)) {
             assertFalse(conn.isClosed());
             assertTrue(conn.isValid(1000));
-        }
-    }
-
-    @ParameterizedTest
-    @ValueSource(booleans = {true, false})
-    void testExplain(boolean simple) throws Exception {
-        try (Connection conn = connect(simple)) {
-            String query = String.format("EXPLAIN PLAN FOR SELECT first_name, last_name, email, age FROM \"%s\" as T where T.last_name = 'Aa'", MyPojo.class.getName());
-            final Statement statement = conn.createStatement();
-            Assertions.assertTrue(statement.execute(query));
-            ResultSet resultSet = statement.getResultSet();
-            String expected = "" +
-"| explain                                                                     |\n" +
-"| --------------------------------------------------------------------------- |\n" +
-"| 'FullScan: com.gigaspaces.sql.aggregatornode.netty.server.MyPojo as MyPojo' |\n" +
-"| '  Select: first_name, last_name, email, age'                               |\n" +
-"| '  Filter: (last_name = Aa)'                                                |";
-            DumpUtils.checkResult(resultSet, expected);
         }
     }
 
