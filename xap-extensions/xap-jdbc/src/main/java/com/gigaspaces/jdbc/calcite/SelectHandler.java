@@ -147,7 +147,13 @@ public class SelectHandler extends RelShuttleImpl {
             String columnName = columnAlias;
             if(sort.getInput() instanceof GSAggregate){
                 final GSAggregate input = (GSAggregate) sort.getInput();
-                fieldIndex = input.groupSets.get(0).asList().get(fieldIndex);
+                if(!input.getAggCallList().isEmpty()){
+                    throw new UnsupportedOperationException("Order By of Aggregation is unsupported yet!");
+                }
+                List<Integer> indexes = input.groupSets.get(0).asList();
+                if(!indexes.isEmpty()) {
+                    fieldIndex = indexes.get(fieldIndex);
+                }
             }
             TableContainer table = queryExecutor.isJoinQuery() ? queryExecutor.getTableByColumnIndex(fieldIndex) : queryExecutor.getTableByColumnName(columnName);
             IQueryColumn qc = queryExecutor.isJoinQuery() ? queryExecutor.getColumnByColumnIndex(fieldIndex) : queryExecutor.getColumnByColumnName(columnName);
