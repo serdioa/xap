@@ -116,9 +116,6 @@ public abstract class TableContainer {
 
     public void addGroupByColumns(IQueryColumn groupByColumn) {
         this.groupByColumns.add(groupByColumn);
-        if( !groupByColumn.isVisible() ) {
-            this.getInvisibleColumns().add(groupByColumn);
-        }
     }
 
     public List<IQueryColumn> getGroupByColumns() {

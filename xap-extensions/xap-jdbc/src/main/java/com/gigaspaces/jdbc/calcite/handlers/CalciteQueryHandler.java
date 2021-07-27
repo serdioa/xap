@@ -82,13 +82,14 @@ public class CalciteQueryHandler {
             }
             GSOptimizerValidationResult validated = optimizer.validate(ast);
             GSRelNode physicalPlan = optimizer.optimize(validated.getValidatedAst());
-            if (explainPlan || logger.isDebugEnabled()) {
+//            if (explainPlan || logger.isDebugEnabled()) {
                 StringWriter sw = new StringWriter();
                 PrintWriter pw = new PrintWriter(sw);
                 RelWriterImpl writer = new RelWriterImpl(pw, SqlExplainLevel.EXPPLAN_ATTRIBUTES, false);
                 physicalPlan.explain(writer);
-                logger.info("Physical Plan: \n" + sw.toString());
-            }
+//                logger.info("Physical Plan: \n" + sw.toString());
+            System.out.println(("Physical Plan: \n" + sw.toString()));
+//            }
 
             return physicalPlan;
         } catch (CalciteException calciteException) {

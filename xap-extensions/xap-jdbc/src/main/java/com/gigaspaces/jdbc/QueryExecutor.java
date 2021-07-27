@@ -5,7 +5,10 @@ import com.gigaspaces.jdbc.exceptions.ColumnNotFoundException;
 import com.gigaspaces.jdbc.explainplan.SubqueryExplainPlan;
 import com.gigaspaces.jdbc.model.QueryExecutionConfig;
 import com.gigaspaces.jdbc.model.result.*;
-import com.gigaspaces.jdbc.model.table.*;
+import com.gigaspaces.jdbc.model.table.AggregationColumn;
+import com.gigaspaces.jdbc.model.table.CaseColumn;
+import com.gigaspaces.jdbc.model.table.IQueryColumn;
+import com.gigaspaces.jdbc.model.table.TableContainer;
 import com.j_spaces.core.IJSpace;
 
 import java.sql.SQLException;
@@ -108,7 +111,7 @@ public class QueryExecutor {
     private boolean hasOnlyFunctions() {
         if( !visibleColumns.isEmpty() ){
             for( IQueryColumn column : visibleColumns ){
-                if( !( column instanceof FunctionCallColumn) ){
+                if(!column.isFunction()){
                     return false;
                 }
             }

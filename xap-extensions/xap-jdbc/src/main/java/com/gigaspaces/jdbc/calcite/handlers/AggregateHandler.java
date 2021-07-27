@@ -2,7 +2,10 @@ package com.gigaspaces.jdbc.calcite.handlers;
 
 import com.gigaspaces.jdbc.QueryExecutor;
 import com.gigaspaces.jdbc.calcite.GSAggregate;
-import com.gigaspaces.jdbc.model.table.*;
+import com.gigaspaces.jdbc.model.table.AggregationColumn;
+import com.gigaspaces.jdbc.model.table.AggregationFunctionType;
+import com.gigaspaces.jdbc.model.table.IQueryColumn;
+import com.gigaspaces.jdbc.model.table.TableContainer;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.util.ImmutableBitSet;
@@ -43,7 +46,7 @@ public class AggregateHandler {
                 if(!hasCalc){
                     queryExecutor.addProjectedColumn(queryColumn);
                 }
-                IQueryColumn groupByColumn = new ConcreteColumn(queryColumn.getName(), null, null, true, table, EMPTY_ORDINAL);
+                IQueryColumn groupByColumn = queryColumn.copy();
                 table.addGroupByColumns(groupByColumn);
             });
         }

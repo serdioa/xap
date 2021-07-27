@@ -3,7 +3,6 @@ package com.gigaspaces.query.sql.functions;
 import com.gigaspaces.internal.utils.ObjectConverter;
 
 import java.math.BigDecimal;
-import java.math.BigInteger;
 import java.sql.SQLException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -42,9 +41,6 @@ public class CastSqlFunction extends SqlFunction {
     public Object apply(SqlFunctionExecutionContext context) {
         assertNumberOfArguments(1, context);
         Object value = context.getArgument(0);
-        if (!isString(value)) {
-            throw new RuntimeException("Cast function - 1st argument must be a String: " + value+", got: " + value.getClass().getName());
-        }
         String type = context.getType();
         try {
             if (type.startsWith("BOOLEAN")) {
@@ -57,6 +53,7 @@ public class CastSqlFunction extends SqlFunction {
             }
             //covers cases like when type = "TIME(0)"
             type= type.replaceAll("\\(\\d+\\)", "");
+            type= type.replaceAll("\\(\\d+, \\d+\\)", "");
             if(types.get(type) == null){
                 throw new RuntimeException("Cast function - casting to type " + type + " is not supported");
             }

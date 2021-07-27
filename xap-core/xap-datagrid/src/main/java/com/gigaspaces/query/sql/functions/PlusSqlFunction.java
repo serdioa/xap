@@ -1,6 +1,7 @@
 package com.gigaspaces.query.sql.functions;
 
 import com.gigaspaces.internal.utils.ObjectConverter;
+import com.gigaspaces.internal.utils.math.MutableNumber;
 
 import java.math.BigDecimal;
 import java.sql.Date;
@@ -12,7 +13,6 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.Arrays;
 import java.util.HashSet;
-import java.util.List;
 
 /**
  * Returns the the addition of two objects
@@ -92,6 +92,12 @@ public class PlusSqlFunction extends SqlFunction {
                     throw new RuntimeException("cannot add " + context.getType() + " to date");
                 }
             }
+        }
+        else if(left instanceof Number && right instanceof Number){
+            MutableNumber mutableNumber = MutableNumber.fromClass(left.getClass(), false);
+            mutableNumber.add((Number) left);
+            mutableNumber.add((Number) right);
+            res = mutableNumber.toNumber();
         }
         if (res != null) {
             if (originalClass == null){
