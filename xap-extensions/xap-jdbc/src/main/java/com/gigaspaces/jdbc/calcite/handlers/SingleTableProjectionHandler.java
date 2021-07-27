@@ -99,7 +99,7 @@ public class SingleTableProjectionHandler extends RexShuttle {
                     queryColumns.add(tableContainer.addQueryColumnWithoutOrdinal(column, null, false));
                 } else if (rexNode.isA(SqlKind.LITERAL)) {
                     RexLiteral literal = (RexLiteral) rexNode;
-                    queryColumns.add(new LiteralColumn(CalciteUtils.getValue(literal), index, outputFields.get(index), false));
+                    queryColumns.add(new LiteralColumn(CalciteUtils.getValue(literal), index, getAlias(outputFields, index), false));
                 } else if (rexNode instanceof RexCall) {
                     RexCall inner = (RexCall) rexNode;
                     List<IQueryColumn> innerColumns = new ArrayList<>();
@@ -123,6 +123,13 @@ public class SingleTableProjectionHandler extends RexShuttle {
                 }
             }
         }
+    }
+
+    private String getAlias(List<String> outputFields, int index) {
+        if (index < 0) {
+            return null;
+        }
+        return outputFields.get(index);
     }
 
     private void addCaseCondition(RexCall call, CaseColumn caseColumn) {

@@ -43,6 +43,13 @@ public class MutableBigInteger extends MutableNumber {
     }
 
     @Override
+    public void subtract(Number x) {
+        if (x == null)
+            return;
+        value = value == null ? (BigInteger) x : value.subtract((BigInteger) x);
+    }
+
+    @Override
     public Number calcDivision(long count) {
         return new BigDecimal(value).divide(BigDecimal.valueOf(count));
     }

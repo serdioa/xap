@@ -1,6 +1,7 @@
 package com.gigaspaces.query.sql.functions;
 
 import com.gigaspaces.internal.utils.ObjectConverter;
+import com.gigaspaces.internal.utils.math.MutableNumber;
 
 import java.math.BigDecimal;
 import java.sql.Date;
@@ -10,10 +11,8 @@ import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.HashSet;
-import java.util.List;
 
 /**
  * Returns the the subtraction of two objects
@@ -40,6 +39,12 @@ public class MinusSqlFunction extends SqlFunction {
         Object res = null;
         Class originalClass = null;
 
+        if(left instanceof Number && right instanceof Number){
+            MutableNumber mutableNumber = MutableNumber.fromClass(left.getClass(), false);
+            mutableNumber.add((Number) left);
+            mutableNumber.subtract((Number) right);
+            res = mutableNumber.toNumber();
+        }
         try {
             if (left instanceof Time) {
                 originalClass = left.getClass();
