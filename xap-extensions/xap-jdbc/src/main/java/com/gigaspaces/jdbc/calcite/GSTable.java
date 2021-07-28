@@ -12,11 +12,13 @@ import java.math.BigDecimal;
 public class GSTable extends AbstractTable {
 
     private final ITypeDesc typeDesc;
+    private final boolean isPrimaryKeyFirst;
     private final String name;
 
-    public GSTable(String name, ITypeDesc typeDesc) {
+    public GSTable(String name, ITypeDesc typeDesc, boolean isPrimaryKeyFirst) {
         this.name = name;
         this.typeDesc = typeDesc;
+        this.isPrimaryKeyFirst = isPrimaryKeyFirst;
     }
 
     /**
@@ -80,7 +82,7 @@ public class GSTable extends AbstractTable {
     public RelDataType getRowType(RelDataTypeFactory typeFactory) {
         RelDataTypeFactory.Builder builder = new RelDataTypeFactory.Builder(typeFactory);
 
-        for (PropertyInfo property : typeDesc.getProperties()) {
+        for (PropertyInfo property : typeDesc.getProperties(isPrimaryKeyFirst)) {
             builder.add(
                     property.getName(),
                     mapToSqlType(property.getType())

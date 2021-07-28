@@ -7,6 +7,7 @@ import org.apache.calcite.schema.Table;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Properties;
 import java.util.Set;
 
 public class GSSchema extends GSAbstractSchema {
@@ -24,7 +25,9 @@ public class GSSchema extends GSAbstractSchema {
         if (table == null) {
             try {
                 ITypeDesc typeDesc = SQLUtil.checkTableExistence(name, space);
-                table = new GSTable(name, typeDesc);
+                Properties customProperties = space.getURL().getCustomProperties();
+                boolean isPrimaryKeyFirst = CalciteDefaults.isCalcitePropertySet(CalciteDefaults.SUPPORT_PRIMARY_KEY_FIRST, customProperties);
+                table = new GSTable(name, typeDesc, isPrimaryKeyFirst);
                 tableMap.put(name, table);
             } catch (Exception e) {
                 return null;

@@ -1,11 +1,7 @@
 package com.gigaspaces.jdbc.calcite;
 
 import com.gigaspaces.jdbc.QueryExecutor;
-import com.gigaspaces.jdbc.calcite.handlers.AggregateHandler;
-import com.gigaspaces.jdbc.calcite.handlers.CaseConditionHandler;
-import com.gigaspaces.jdbc.calcite.handlers.ConditionHandler;
-import com.gigaspaces.jdbc.calcite.handlers.JoinConditionHandler;
-import com.gigaspaces.jdbc.calcite.handlers.SingleTableProjectionHandler;
+import com.gigaspaces.jdbc.calcite.handlers.*;
 import com.gigaspaces.jdbc.calcite.pg.PgCalciteTable;
 import com.gigaspaces.jdbc.calcite.utils.CalciteUtils;
 import com.gigaspaces.jdbc.model.join.JoinInfo;
@@ -17,7 +13,6 @@ import org.apache.calcite.rel.RelFieldCollation;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelShuttleImpl;
 import org.apache.calcite.rel.core.TableScan;
-import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.rex.*;
 import org.apache.calcite.sql.SqlFunction;
 import org.apache.calcite.sql.SqlKind;
@@ -104,20 +99,22 @@ public class SelectHandler extends RelShuttleImpl {
         if (childToCalc.containsKey(gsValues)) {
             GSCalc gsCalc = childToCalc.get(gsValues);
             RexProgram program = gsCalc.getProgram();
-
+            List<String> outputFields = program.getOutputRowType().getFieldNames();
             List<RexLocalRef> projectList = program.getProjectList();
+            int index = 0;
             for (RexLocalRef project : projectList) {
                 RexNode node = program.getExprList().get(project.getIndex());
                 if (node instanceof RexCall) {
-                    FunctionCallColumn functionCallColumn = getFunctionCallColumn(program, (RexCall) node);
+                    FunctionCallColumn functionCallColumn = getFunctionCallColumn(program, (RexCall) node, outputFields.get(index));
                     queryExecutor.addColumn(functionCallColumn);
                     queryExecutor.addProjectedColumn(functionCallColumn);
                 }
+                index++;
             }
         }
     }
 
-    private FunctionCallColumn getFunctionCallColumn(RexProgram program, RexCall rexCall) {
+    private FunctionCallColumn getFunctionCallColumn(RexProgram program, RexCall rexCall, String columnAlias) {
         SqlOperator sqlFunction = rexCall.op;
         List<IQueryColumn> params = new ArrayList<>();
         DateTypeResolver castType = new DateTypeResolver();
@@ -129,12 +126,12 @@ public class SelectHandler extends RelShuttleImpl {
                     params.add(new LiteralColumn(CalciteUtils.getValue(literal, castType), EMPTY_ORDINAL, null, false));
                 } else if (funcArgument instanceof RexCall) { //operator
                     RexCall function= (RexCall) funcArgument;
-                    params.add(getFunctionCallColumn(program, function));
+                    params.add(getFunctionCallColumn(program, function, columnAlias));
                 }
             }
 
         }
-        return new FunctionCallColumn(session, params, sqlFunction.getName(), null, null, true, EMPTY_ORDINAL, castType.getResolvedDateType());
+        return new FunctionCallColumn(session, params, sqlFunction.getName(), sqlFunction.toString(), columnAlias, true, EMPTY_ORDINAL, castType.getResolvedDateType());
     }
 
     private void handleSort(GSSort sort) {

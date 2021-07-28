@@ -190,6 +190,8 @@ public interface SpaceTypeDescriptor {
 
     String[] getPropertiesNames();
 
+    String[] getPropertiesNames(boolean isPrimaryKeyFirst);
+
     String[] getPropertiesTypes();
 
     boolean[] getPropertiesIndexTypes();

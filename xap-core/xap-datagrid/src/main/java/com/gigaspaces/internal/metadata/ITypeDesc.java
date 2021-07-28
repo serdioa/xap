@@ -45,6 +45,8 @@ public interface ITypeDesc extends SpaceTypeDescriptor, IDotnetTypeDescDetails, 
 
     PropertyInfo[] getProperties();
 
+    PropertyInfo[] getProperties(boolean isPrimaryKeyFirst);
+
     @Override
     int getNumOfFixedProperties();
 

@@ -20,12 +20,7 @@ import com.gigaspaces.annotation.pojo.FifoSupport;
 import com.gigaspaces.client.storage_adapters.class_storage_adapters.ClassBinaryStorageAdapter;
 import com.gigaspaces.document.SpaceDocument;
 import com.gigaspaces.internal.io.IOUtils;
-import com.gigaspaces.internal.metadata.EntryType;
-import com.gigaspaces.internal.metadata.EntryTypeDesc;
-import com.gigaspaces.internal.metadata.ITypeDesc;
-import com.gigaspaces.internal.metadata.ITypeIntrospector;
-import com.gigaspaces.internal.metadata.PropertyInfo;
-import com.gigaspaces.internal.metadata.SpaceIdType;
+import com.gigaspaces.internal.metadata.*;
 import com.gigaspaces.internal.utils.StringUtils;
 import com.gigaspaces.metadata.StorageType;
 import com.gigaspaces.metadata.index.SpaceIndex;
@@ -204,6 +199,11 @@ import java.util.Set;
         throw new UnsupportedOperationException();
     }
 
+    @Override
+    public PropertyInfo[] getProperties(boolean isPrimaryKeyFirst) {
+        throw new UnsupportedOperationException();
+    }
+
     public int getNumOfFixedProperties() {
         throw new UnsupportedOperationException();
     }
@@ -229,6 +229,11 @@ import java.util.Set;
     }
 
     public String[] getPropertiesNames() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public String[] getPropertiesNames(boolean isPrimaryKeyFirst) {
         throw new UnsupportedOperationException();
     }
 
