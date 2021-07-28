@@ -73,7 +73,7 @@ public class SingleTableProjectionHandler extends RexShuttle {
                         sqlFunction = (SqlFunction) call.op;
                         addQueryColumns(call, queryColumns, inputFields, outputFields, i);
                         functionCallColumn = new FunctionCallColumn(session, queryColumns, sqlFunction.getName(),
-                                sqlFunction.toString(), null, isRoot, EMPTY_ORDINAL);
+                                sqlFunction.toString(), outputFields.get(i), isRoot, EMPTY_ORDINAL);
                         if(isRoot) {
                             tableContainer.getVisibleColumns().add(functionCallColumn);
                             tableContainer.addProjectedColumn(functionCallColumn);
@@ -85,7 +85,8 @@ public class SingleTableProjectionHandler extends RexShuttle {
                         sqlFunction = (SqlCastFunction) call.op;
                         addQueryColumns(call, queryColumns, inputFields, outputFields, i);
                         functionCallColumn = new FunctionCallColumn(session, queryColumns, sqlFunction.getName(),
-                                sqlFunction.toString(), null, isRoot, EMPTY_ORDINAL, call.getType().getFullTypeString());
+                                sqlFunction.toString(), outputFields.get(i), isRoot, EMPTY_ORDINAL,
+                                call.getType().getFullTypeString());
                         if(isRoot) {
                             tableContainer.addProjectedColumn(functionCallColumn);
                             tableContainer.getVisibleColumns().add(functionCallColumn);

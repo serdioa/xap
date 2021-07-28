@@ -20,6 +20,7 @@ import com.gigaspaces.internal.metadata.ITypeDesc;
 import com.gigaspaces.internal.query.explainplan.ExplainPlanV3;
 import com.gigaspaces.internal.transport.IEntryPacket;
 import com.gigaspaces.internal.transport.ProjectionTemplate;
+import com.gigaspaces.jdbc.calcite.CalciteDefaults;
 import com.gigaspaces.jdbc.exceptions.ColumnNotFoundException;
 import com.gigaspaces.jdbc.exceptions.TypeNotFoundException;
 import com.gigaspaces.jdbc.model.QueryExecutionConfig;
@@ -65,8 +66,9 @@ public class ConcreteTableContainer extends TableContainer {
         } catch (SQLException e) {
             throw new TypeNotFoundException("Unknown table [" + name + "]", e);
         }
-
-        allColumnNamesSorted = Arrays.asList(typeDesc.getPropertiesNames());
+        Properties customProperties = space.getURL().getCustomProperties();
+        boolean isPrimaryKeyFirst = CalciteDefaults.isCalcitePropertySet(CalciteDefaults.SUPPORT_PRIMARY_KEY_FIRST, customProperties);
+        allColumnNamesSorted = Arrays.asList(typeDesc.getPropertiesNames(isPrimaryKeyFirst));
     }
 
     @Override

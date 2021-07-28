@@ -27,7 +27,6 @@ import com.gigaspaces.internal.utils.ReflectionUtils;
 import com.gigaspaces.internal.utils.StringUtils;
 import com.gigaspaces.internal.version.PlatformLogicalVersion;
 import com.gigaspaces.lrmi.LRMIInvocationContext;
-import com.gigaspaces.metadata.SpaceMetadataException;
 import com.gigaspaces.metadata.SpaceMetadataValidationException;
 import com.gigaspaces.metadata.StorageType;
 import com.gigaspaces.metadata.index.ISpaceIndex;
@@ -430,6 +429,25 @@ public class TypeDesc implements ITypeDesc {
     }
 
     public PropertyInfo[] getProperties() {
+        return getProperties(false);
+
+    }
+
+    @Override
+    public PropertyInfo[] getProperties(boolean isPrimaryKeyFirst) {
+        if (isPrimaryKeyFirst) {
+            PropertyInfo[] propertyInfos = new PropertyInfo[_fixedProperties.length];
+            int idIndex = getIdentifierPropertyId();
+            int currIndex = 1;
+            for (int i = 0; i < _fixedProperties.length; i++) {
+                if (i == idIndex) {
+                    propertyInfos[0] = _fixedProperties[i];
+                } else {
+                    propertyInfos[currIndex++] = _fixedProperties[i];
+                }
+            }
+            return propertyInfos;
+        }
         return _fixedProperties;
     }
 
@@ -542,9 +560,15 @@ public class TypeDesc implements ITypeDesc {
     }
 
     public String[] getPropertiesNames() {
-        String[] names = new String[_fixedProperties.length];
+        return getPropertiesNames(false);
+    }
+
+    @Override
+    public String[] getPropertiesNames(boolean isPrimaryKeyFirst) {
+        PropertyInfo[] properties = getProperties(isPrimaryKeyFirst);
+        String[] names = new String[properties.length];
         for (int i = 0; i < names.length; i++)
-            names[i] = _fixedProperties[i].getName();
+            names[i] = properties[i].getName();
         return names;
     }
 

@@ -25,6 +25,7 @@ public class CalciteDefaults {
     public static final String SUPPORT_SEMICOLON_SEPARATOR = "com.gs.jdbc.v3.support.semicolon_separator";
     public static final String SUPPORT_ROWNUM = "com.gs.jdbc.v3.support.rownum";
     public static final String SUPPORT_EXPLAIN_PLAN = "com.gs.jdbc.v3.support.explain_plan";
+    public static final String SUPPORT_PRIMARY_KEY_FIRST = "com.gs.jdbc.v3.support.primary_key_first";
 
 
     public static boolean isCalciteDriverPropertySet() {

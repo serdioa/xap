@@ -59,7 +59,6 @@ public class ExplainPlanQueryResult extends QueryResult {
     public ResultEntry convertEntriesToResultArrays(QueryExecutionConfig config) {
         // Column (field) names and labels (aliases)
         String[] fieldNames = new String[]{config.isExplainPlanVerbose() ? ExplainPlanConcreteColumn.EXPLAIN_PLAN_VERBOSE_COL_NAME : ExplainPlanConcreteColumn.EXPLAIN_PLAN_COL_NAME};
-        String[] columnLabels = new String[]{config.isExplainPlanVerbose() ? ExplainPlanConcreteColumn.EXPLAIN_PLAN_VERBOSE_COL_NAME : ExplainPlanConcreteColumn.EXPLAIN_PLAN_COL_NAME};
 
 
         //the field values for the result
@@ -76,7 +75,7 @@ public class ExplainPlanQueryResult extends QueryResult {
 
         return new ResultEntry(
                 fieldNames,
-                columnLabels,
+                fieldNames,
                 null, //TODO
                 fieldValues);
     }
