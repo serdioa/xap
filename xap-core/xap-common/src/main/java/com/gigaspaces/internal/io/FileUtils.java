@@ -51,8 +51,12 @@ public class FileUtils {
 
     public static boolean deleteFileOrDirectoryIfExists(File fileOrDirectory) {
         if (fileOrDirectory.isDirectory()) {
-            for (File file : BootIOUtils.listFiles(fileOrDirectory))
+            for (File file : BootIOUtils.listFiles(fileOrDirectory)) {
                 deleteFileOrDirectoryIfExists(file);
+            }
+        }
+        if(!fileOrDirectory.exists()){
+            return true;
         }
         return fileOrDirectory.delete();
     }
