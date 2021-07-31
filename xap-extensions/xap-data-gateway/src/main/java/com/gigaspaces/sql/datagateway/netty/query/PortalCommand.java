@@ -2,6 +2,7 @@ package com.gigaspaces.sql.datagateway.netty.query;
 
 enum PortalCommand {
     SHOW("SHOW"),
+    DEALLOCATE("DEALLOCATE"),
     SELECT("SELECT"),
     SET("SET");
 

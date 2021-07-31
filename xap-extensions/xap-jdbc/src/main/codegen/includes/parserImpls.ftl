@@ -28,61 +28,77 @@ SqlShowOption SqlShowOption() :
   }
 }
 
-SqlSetOption SqlSetOptionAlt() :
+SqlDeallocate SqlDeallocate() :
 {
-    final Span s = span();
+    final SqlIdentifier resourceName;
+    boolean prepare = false;
+}
+{
+    <DEALLOCATE> [<PREPARE> { prepare = true; } ]
+    resourceName = CompoundIdentifier()
+    {
+        return new SqlDeallocate(getPos(), resourceName, prepare);
+    }
+}
+
+SqlSetOption SqlSetSessionCharacteristics() :
+{
     final SqlIdentifier name;
     final SqlNode val;
 }
 {
+    <SET> <SESSION> <CHARACTERISTICS> <AS> <TRANSACTION> <ISOLATION> <LEVEL>
+    {
+        name = new SqlIdentifier("TRANSACTION_ISOLATION", getPos());
+    }
     (
         LOOKAHEAD(2)
-        <SET> <SESSION> <CHARACTERISTICS> <AS> <TRANSACTION> <ISOLATION> <LEVEL>
-        {
-            name = new SqlIdentifier("TRANSACTION_ISOLATION", getPos());
-        }
-        (
-            LOOKAHEAD(2)
-            <READ> <COMMITTED> {
-                val = SqlLiteral.createCharString("READ_COMMITTED", getPos());
-            }
-        |
-            <READ> <UNCOMMITTED> {
-                val = SqlLiteral.createCharString("READ_UNCOMMITTED", getPos());
-            }
-        |
-            <REPEATABLE> <READ> {
-                val = SqlLiteral.createCharString("REPEATABLE_READ", getPos());
-            }
-        |
-            <SERIALIZABLE> {
-                val = SqlLiteral.createCharString("SERIALIZABLE", getPos());
-            }
-        )
-        {
-            return new SqlSetOption(getPos(), null, name, val);
+        <READ> <COMMITTED> {
+            val = SqlLiteral.createCharString("READ_COMMITTED", getPos());
         }
     |
-        <SET> {
-            s.add(this);
+        <READ> <UNCOMMITTED> {
+            val = SqlLiteral.createCharString("READ_UNCOMMITTED", getPos());
         }
-        name = CompoundIdentifier()
-        (<EQ>|<TO>)
-        (
-            val = Literal()
-        |
-            val = SimpleIdentifier()
-        |
-            <ON> {
-                // OFF is handled by SimpleIdentifier, ON handled here.
-                val = new SqlIdentifier(token.image.toUpperCase(Locale.ROOT),
-                    getPos());
-            }
-        )
-        {
-            return new SqlSetOption(s.end(val), null, name, val);
+    |
+        <REPEATABLE> <READ> {
+            val = SqlLiteral.createCharString("REPEATABLE_READ", getPos());
+        }
+    |
+        <SERIALIZABLE> {
+            val = SqlLiteral.createCharString("SERIALIZABLE", getPos());
         }
     )
+    {
+        return new SqlSetOption(getPos(), null, name, val);
+    }
+}
+
+SqlSetOption SqlSetOptionAlt(Span s, String scope) :
+{
+    final SqlIdentifier name;
+    final SqlNode val;
+}
+{
+    <SET> {
+        s.add(this);
+    }
+    name = CompoundIdentifier()
+    (<EQ>|<TO>)
+    (
+        val = Literal()
+    |
+        val = SimpleIdentifier()
+    |
+        <ON> {
+            // OFF is handled by SimpleIdentifier, ON handled here.
+            val = new SqlIdentifier(token.image.toUpperCase(Locale.ROOT),
+                getPos());
+        }
+    )
+    {
+        return new SqlSetOption(s.end(val), scope, name, val);
+    }
 }
 
 void InfixCast(List<Object> list, ExprContext exprContext, Span s) :

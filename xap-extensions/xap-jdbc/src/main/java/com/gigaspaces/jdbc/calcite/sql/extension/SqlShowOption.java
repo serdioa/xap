@@ -19,4 +19,10 @@ public class SqlShowOption extends SqlBasicCall {
     public SqlIdentifier getName() {
         return (SqlIdentifier) operands[0];
     }
+
+    @Override
+    public void unparse(SqlWriter writer, int leftPrec, int rightPrec) {
+        writer.keyword("SHOW");
+        getName().unparse(writer, leftPrec, rightPrec);
+    }
 }
