@@ -38,9 +38,14 @@ class DmlPortal<T> implements Portal<T> {
 
     @Override
     public String tag() {
-        if (command == PortalCommand.SET)
-            return String.format("%s %d", command.tag(), processed);
-        return String.format("%s 0 %d", command.tag(), processed);
+        switch (command) {
+            case DEALLOCATE:
+                return command.tag();
+            case SET:
+                return String.format("%s %d", command.tag(), processed);
+            default:
+                return String.format("%s 0 %d", command.tag(), processed);
+        }
     }
 
     @Override

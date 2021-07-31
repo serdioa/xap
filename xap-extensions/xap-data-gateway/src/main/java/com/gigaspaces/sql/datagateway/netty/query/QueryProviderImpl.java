@@ -5,6 +5,7 @@ import com.gigaspaces.jdbc.calcite.GSOptimizer;
 import com.gigaspaces.jdbc.calcite.GSOptimizerValidationResult;
 import com.gigaspaces.jdbc.calcite.GSRelNode;
 import com.gigaspaces.jdbc.calcite.handlers.CalciteQueryHandler;
+import com.gigaspaces.jdbc.calcite.sql.extension.SqlDeallocate;
 import com.gigaspaces.jdbc.calcite.sql.extension.SqlShowOption;
 import com.gigaspaces.jdbc.calcite.utils.CalciteUtils;
 import com.gigaspaces.query.sql.functions.extended.LocalSession;
@@ -194,10 +195,13 @@ public class QueryProviderImpl implements QueryProvider {
     private StatementImpl prepareStatement(Session session, String name, GSOptimizer optimizer, int[] paramTypes, SqlNode ast) throws ProtocolException {
         if (SqlUtil.isCallTo(ast, SqlShowOption.OPERATOR)) {
             StatementDescription description = describeShow((SqlShowOption) ast);
-            return new StatementImpl(this, Constants.EMPTY_STRING, ast, optimizer, description);
+            return new StatementImpl(this, name, ast, optimizer, description);
+        } else if (SqlUtil.isCallTo(ast, SqlDeallocate.OPERATOR)) {
+            // all parameters should be literals
+            return new StatementImpl(this, name, ast, optimizer, StatementDescription.EMPTY);
         } else if (ast.getKind() == SqlKind.SET_OPTION) {
             // all parameters should be literals
-            return new StatementImpl(this, Constants.EMPTY_STRING, ast, optimizer, StatementDescription.EMPTY);
+            return new StatementImpl(this, name, ast, optimizer, StatementDescription.EMPTY);
         } else if (ast.getKind() == SqlKind.EXPLAIN) {
             SqlExplain explain = (SqlExplain) ast;
             SqlNode explicandum = explain.getExplicandum();
@@ -282,6 +286,10 @@ public class QueryProviderImpl implements QueryProvider {
             return prepareShowOption(session, name, statement, (SqlShowOption) query);
         }
 
+        if (SqlUtil.isCallTo(query, SqlDeallocate.OPERATOR)) {
+            return prepareDeallocate(session, name, statement, (SqlDeallocate) query);
+        }
+
         if (statement instanceof ExplainStatement) {
             return prepareExplain(session, name, (ExplainStatement) statement, params, formatCodes, query);
         }
@@ -341,6 +349,15 @@ public class QueryProviderImpl implements QueryProvider {
             default:
                 return new QueryPortal(this, name, statement, PortalCommand.SHOW, Constants.EMPTY_INT_ARRAY, Collections::emptyIterator);
         }
+    }
+
+    private Portal<?> prepareDeallocate(Session session, String name, Statement statement, SqlDeallocate query) {
+        String resource = query.getResourceName().toString();
+        ThrowingSupplier<Integer, ProtocolException> op = () -> {
+            closeS(resource);
+            return DML_SINGLE_VALUE_MODIFIED;
+        };
+        return new DmlPortal<>(this, name, statement, PortalCommand.DEALLOCATE, op);
     }
 
     private Portal<?> prepareSetOption(Session session, String name, Statement statement, SqlSetOption query) throws NonBreakingException {

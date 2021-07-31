@@ -1,6 +1,7 @@
 package com.gigaspaces.jdbc.calcite.parser.impl;
 
 import com.gigaspaces.jdbc.calcite.parser.GSSqlParserFactoryWrapper;
+import com.gigaspaces.jdbc.calcite.sql.extension.SqlDeallocate;
 import com.gigaspaces.jdbc.calcite.sql.extension.SqlShowOption;
 import org.apache.calcite.avatica.util.Casing;
 import org.apache.calcite.sql.*;
@@ -12,6 +13,31 @@ import org.junit.Test;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class GSSqlParserImplTest {
+    @Test
+    public void testDeallocate() throws Exception {
+        String sql;
+        SqlNode parseResult;
+        SqlDeallocate deallocate;
+
+        sql = "DEALLOCATE statementName;";
+        parseResult = parse(sql);
+        Assert.assertNotNull(parseResult);
+        Assert.assertTrue(parseResult instanceof SqlDeallocate);
+        deallocate = (SqlDeallocate) parseResult;
+        Assert.assertFalse(deallocate.isPrepare());
+        String resourceName = deallocate.getResourceName().toString();
+        Assert.assertEquals("statementName", resourceName);
+
+        sql = "DEALLOCATE PREPARE statementName";
+        parseResult = parse(sql);
+        Assert.assertNotNull(parseResult);
+        Assert.assertTrue(parseResult instanceof SqlDeallocate);
+        deallocate = (SqlDeallocate) parseResult;
+        Assert.assertTrue(deallocate.isPrepare());
+        resourceName = deallocate.getResourceName().toString();
+        Assert.assertEquals("statementName", resourceName);
+    }
+
     @Test
     public void testParseSetRegular() throws Exception {
         String sql = "SET CLIENT_ENCODING = 'UTF-8'";

@@ -42,6 +42,7 @@ data: {
     # Example. "org.apache.calcite.sql.*", "java.util.List".
     imports: [
       "com.gigaspaces.jdbc.calcite.sql.extension.SqlShowOption"
+      "com.gigaspaces.jdbc.calcite.sql.extension.SqlDeallocate"
     ]
 
     # List of new keywords. Example: "DATABASES", "TABLES". If the keyword is not a reserved
@@ -384,8 +385,10 @@ data: {
     # Return type of method implementation should be 'SqlNode'.
     # Example: SqlShowDatabases(), SqlShowTables().
     statementParserMethods: [
-      "SqlSetOptionAlt()"
+      "SqlSetSessionCharacteristics()"
+      "SqlSetOptionAlt(Span.of(), null)"
       "SqlShowOption()"
+      "SqlDeallocate()"
     ]
 
     # List of methods for parsing custom literals.
@@ -412,6 +415,7 @@ data: {
     # Each must accept arguments "(SqlParserPos pos, String scope)".
     # Example: "SqlUploadJarNode"
     alterStatementParserMethods: [
+        "SqlSetOptionAlt"
     ]
 
     # List of methods for parsing extensions to "CREATE [OR REPLACE]" calls.
