@@ -48,6 +48,11 @@ public class MutableBigInteger extends MutableNumber {
     }
 
     @Override
+    public Number calcAverage(long count) {
+        return calcDivision(count);
+    }
+
+    @Override
     public Number toNumber() {
         return value;
     }

@@ -241,10 +241,10 @@ public class ConcreteTableContainer extends TableContainer {
                     aggregationSet.minValue(columnName);
                     break;
                 case AVG:
-                    aggregationSet.average(columnName);
+                    aggregationSet.typePreserveAverage(columnName);
                     break;
                 case SUM:
-                    aggregationSet.sum(columnName);
+                    aggregationSet.typePreserveSum(columnName);
                     break;
             }
         }

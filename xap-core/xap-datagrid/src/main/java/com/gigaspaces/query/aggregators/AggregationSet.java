@@ -63,7 +63,7 @@ public class AggregationSet implements SmartExternalizable {
     }
 
     /**
-     * Sums values of paths of matching entries.
+     * Sums values of paths of matching entries, infers the return type of the path.
      *
      * @param path Path to sum (must be a numeric type)
      */
@@ -72,12 +72,30 @@ public class AggregationSet implements SmartExternalizable {
     }
 
     /**
-     * Calculates average of path values of matching entries.
+     * Sums values of paths of matching entries, returns the same type as the path.
+     *
+     * @param path Path to sum (must be a numeric type)
+     */
+    public AggregationSet typePreserveSum(String path) {
+        return add(new SumStrictAggregator().setPath(path));
+    }
+
+    /**
+     * Calculates average of path values of matching entries, infers the return type of the path.
      *
      * @param path Path to average (must be a numeric type)
      */
     public AggregationSet average(String path) {
         return add(new AverageAggregator().setPath(path));
+    }
+
+    /**
+     * Calculates average of path values of matching entries, returns the same type as the path.
+     *
+     * @param path Path to average (must be a numeric type)
+     */
+    public AggregationSet typePreserveAverage(String path) {
+        return add(new AverageStrictAggregator().setPath(path));
     }
 
     /**

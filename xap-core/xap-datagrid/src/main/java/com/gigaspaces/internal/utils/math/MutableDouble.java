@@ -48,6 +48,11 @@ public class MutableDouble extends MutableNumber {
     }
 
     @Override
+    public Number calcAverage(long count) {
+        return calcDivision(count);
+    }
+
+    @Override
     public void writeExternal(ObjectOutput out) throws IOException {
         out.writeDouble(value);
     }

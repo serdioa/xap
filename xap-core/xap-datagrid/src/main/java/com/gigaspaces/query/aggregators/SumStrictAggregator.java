@@ -20,52 +20,27 @@ package com.gigaspaces.query.aggregators;
 import com.gigaspaces.internal.utils.math.MutableNumber;
 
 /**
- * @author Niv Ingberg
- * @since 10.0
+ * Keeps the return type
+ *
+ * @author Mishel Liberman
+ * @since 16.0
  */
 
-public class SumAggregator extends AbstractPathAggregator<MutableNumber> {
+public class SumStrictAggregator extends SumAggregator {
 
     private static final long serialVersionUID = 1L;
 
-    protected transient MutableNumber result;
-
-    public SumAggregator() {
+    public SumStrictAggregator() {
+        super();
     }
 
     @Override
-    public String getDefaultAlias() {
-        return "sum(" + getPath() + ")";
-    }
-
-    @Override
-    public void aggregate(SpaceEntriesAggregatorContext context) {
-        add((Number) getPathValue(context));
-    }
-
-    @Override
-    public MutableNumber getIntermediateResult() {
-        return result;
-    }
-
-    @Override
-    public void aggregateIntermediateResult(MutableNumber partitionResult) {
-        if (result == null)
-            result = partitionResult;
-        else
-            result.add(partitionResult.toNumber());
-    }
-
-    @Override
-    public Object getFinalResult() {
-        return result != null ? result.toNumber() : null;
-    }
-
     protected void add(Number number) {
         if (number != null) {
             if (result == null)
-                result = MutableNumber.fromClass(number.getClass(), true);
+                result = MutableNumber.fromClass(number.getClass(), false);
             result.add(number);
         }
     }
+
 }

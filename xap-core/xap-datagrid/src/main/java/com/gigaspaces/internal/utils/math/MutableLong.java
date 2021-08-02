@@ -48,6 +48,11 @@ public class MutableLong extends MutableNumber {
     }
 
     @Override
+    public Number calcAverage(long count) {
+        return value / count;
+    }
+
+    @Override
     public void writeExternal(ObjectOutput out) throws IOException {
         out.writeLong(value);
     }

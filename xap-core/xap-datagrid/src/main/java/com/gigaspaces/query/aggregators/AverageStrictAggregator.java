@@ -19,70 +19,50 @@ package com.gigaspaces.query.aggregators;
 
 import com.gigaspaces.internal.io.IOUtils;
 import com.gigaspaces.internal.utils.math.MutableNumber;
-import com.gigaspaces.serialization.SmartExternalizable;
 
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 
 /**
- * @author Niv Ingberg
- * @since 10.0
+ * Keeps the return type
+ *
+ * @author Mishel Liberman
+ * @since 16.0
  */
 
-public class AverageAggregator extends AbstractPathAggregator<AverageAggregator.AverageTuple> {
+public class AverageStrictAggregator extends AverageAggregator {
 
     private static final long serialVersionUID = 1L;
 
-    protected transient AverageTuple result;
-
-    @Override
-    public String getDefaultAlias() {
-        return "avg(" + getPath() + ")";
+    public AverageStrictAggregator() {
+        super();
     }
 
     @Override
     public void aggregate(SpaceEntriesAggregatorContext context) {
         Number value = (Number) getPathValue(context);
         if (value != null)
-            result = result != null ? result.add(value, 1) : new AverageTuple(value);
+            result = result != null ? result.add(value, 1) : new StrictAverageTuple(value);
     }
 
-    @Override
-    public void aggregateIntermediateResult(AverageTuple partitionResult) {
-        if (result == null)
-            result = partitionResult;
-        else
-            result = result.add(partitionResult.sum.toNumber(), partitionResult.count);
-    }
-
-    @Override
-    public AverageTuple getIntermediateResult() {
-        return result;
-    }
-
-    @Override
-    public Object getFinalResult() {
-        return result == null ? null : result.getAverage();
-    }
-
-    public static class AverageTuple implements SmartExternalizable {
+    public static class StrictAverageTuple extends AverageTuple {
 
         private static final long serialVersionUID = 1L;
 
         private MutableNumber sum;
         private long count;
 
-        public AverageTuple() {
+        public StrictAverageTuple() {
         }
 
-        public AverageTuple(Number sum) {
-            this.sum = MutableNumber.fromClass(sum.getClass(), true);
+        public StrictAverageTuple(Number sum) {
+            this.sum = MutableNumber.fromClass(sum.getClass(), false);
             this.sum.add(sum);
             this.count = 1;
         }
 
-        public AverageTuple add(Number deltaSum, long deltaCount) {
+        public AverageAggregator.AverageTuple add(Number deltaSum, long deltaCount) {
             this.count += deltaCount;
             this.sum.add(deltaSum);
             return this;
@@ -91,7 +71,7 @@ public class AverageAggregator extends AbstractPathAggregator<AverageAggregator.
         public Number getAverage() {
             if (count == 0)
                 return null;
-            return sum.calcDivision(count);
+            return sum.calcAverage(count);
         }
 
         @Override
@@ -106,4 +86,5 @@ public class AverageAggregator extends AbstractPathAggregator<AverageAggregator.
             this.sum = IOUtils.readObject(in);
         }
     }
+
 }
