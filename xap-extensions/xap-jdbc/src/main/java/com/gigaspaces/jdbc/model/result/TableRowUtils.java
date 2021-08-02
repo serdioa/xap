@@ -96,7 +96,7 @@ public class TableRowUtils {
                     Number number = (Number) tableRow.getPropertyValue(columnName);
                     if (number == null) continue;
                     if (sum == null) {
-                        sum = MutableNumber.fromClass(number.getClass(), true);
+                        sum = MutableNumber.fromClass(number.getClass(), false);
                     }
                     sum.add(number);
                     count++;
@@ -113,7 +113,7 @@ public class TableRowUtils {
                     Number number = (Number) tableRow.getPropertyValue(columnName);
                     if (number == null) continue;
                     if (sum == null) {
-                        sum = MutableNumber.fromClass(number.getClass(), true);
+                        sum = MutableNumber.fromClass(number.getClass(), false);
                     }
                     sum.add(number);
                 }

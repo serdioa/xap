@@ -77,7 +77,7 @@ public class AverageAggregator extends AbstractPathAggregator<AverageAggregator.
         }
 
         public AverageTuple(Number sum) {
-            this.sum = MutableNumber.fromClass(sum.getClass(), true);
+            this.sum = MutableNumber.fromClass(sum.getClass(), false);
             this.sum.add(sum);
             this.count = 1;
         }

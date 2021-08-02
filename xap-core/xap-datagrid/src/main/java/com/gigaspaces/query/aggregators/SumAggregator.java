@@ -61,7 +61,7 @@ public class SumAggregator extends AbstractPathAggregator<MutableNumber> {
     private void add(Number number) {
         if (number != null) {
             if (result == null)
-                result = MutableNumber.fromClass(number.getClass(), true);
+                result = MutableNumber.fromClass(number.getClass(), false);
             result.add(number);
         }
     }
