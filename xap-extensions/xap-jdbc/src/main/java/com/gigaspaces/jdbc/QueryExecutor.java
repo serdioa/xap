@@ -1,7 +1,7 @@
 package com.gigaspaces.jdbc;
 
 import com.gigaspaces.jdbc.calcite.CalciteDefaults;
-import com.gigaspaces.jdbc.exceptions.ColumnNotFoundException;
+import com.gigaspaces.jdbc.exceptions.SQLExceptionWrapper;
 import com.gigaspaces.jdbc.explainplan.SubqueryExplainPlan;
 import com.gigaspaces.jdbc.model.QueryExecutionConfig;
 import com.gigaspaces.jdbc.model.result.*;
@@ -222,7 +222,7 @@ public class QueryExecutor {
                 }
             }
         }
-        throw new ColumnNotFoundException("Column " + column + " wasn't found in any table");
+        throw new SQLExceptionWrapper(new SQLException("Column " + column + " wasn't found in any table"));
     }
 
     public IQueryColumn getColumnByColumnName(String column) {
