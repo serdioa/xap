@@ -149,6 +149,8 @@ public class CalciteUtils {
                 query = "EXPLAIN PLAN FOR SELECT" + queryAfterSelect;
             }
         }
+
+        query = query.replaceAll("(?i)having \\(count\\(1\\) > 0\\)", "");
         return query;
     }
 
