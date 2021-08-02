@@ -23,6 +23,7 @@ import org.apache.calcite.rel.RelRoot;
 import org.apache.calcite.rel.logical.LogicalProject;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexBuilder;
+import org.apache.calcite.rex.RexExecutorImpl;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexProgram;
 import org.apache.calcite.sql.SqlNode;
@@ -96,6 +97,7 @@ public class GSOptimizer {
         planner.addRelTraitDef(ConventionTraitDef.INSTANCE);
         planner.addRelTraitDef(RelCollationTraitDef.INSTANCE);
         planner.setTopDownOpt(true);
+        planner.setExecutor(new RexExecutorImpl(new DummyDataContext()));
 
         cluster = RelOptCluster.create(planner, new RexBuilder(typeFactory));
     }
