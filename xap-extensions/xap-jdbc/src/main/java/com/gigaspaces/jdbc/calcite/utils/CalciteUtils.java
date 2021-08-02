@@ -5,7 +5,10 @@ import com.gigaspaces.jdbc.calcite.DateTypeResolver;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
 
+import java.awt.*;
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Properties;
 
 import static com.gigaspaces.jdbc.calcite.CalciteDefaults.isCalcitePropertySet;
@@ -150,7 +153,19 @@ public class CalciteUtils {
             }
         }
 
-        query = query.replaceAll("(?i)having \\(count\\(1\\) > 0\\)", "");
+        return replaceEmptyConditionsWithTrue(query);
+    }
+
+    private static String replaceEmptyConditionsWithTrue(String query) {
+        final List<String> emptyConditionsList = new ArrayList<>();
+        emptyConditionsList.add("(?i)count\\(\\d+\\) ?> ?0"); // count(x) > 0 ..
+        emptyConditionsList.add("[1-9][0-9]* ?> ?0"); // x > 0 ...
+        emptyConditionsList.add("(\\d+) ?= ?\\1"); // x = x ...
+
+        for (String regex : emptyConditionsList) {
+            query = query.replaceAll(regex, "true");
+        }
+
         return query;
     }
 

@@ -34,7 +34,6 @@ public class CalciteQueryHandler {
 
 
     public ResponsePacket handle(String query, IJSpace space, Object[] preparedValues) throws SQLException {
-        logger.info("Handling the query: " + query);
         Properties customProperties = space.getURL().getCustomProperties();
         GSRelNode calcitePlan = optimizeWithCalcite(query, space, customProperties);
         return executeStatement(space, calcitePlan, preparedValues, null);
