@@ -214,6 +214,10 @@ public class MessageProcessor extends ChannelInboundHandlerAdapter {
             ctx.write(buf);
 
             buf = null;
+        } catch (ProtocolException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new NonBreakingException(ErrorCodes.INTERNAL_ERROR, "Failed to execute query", e);
         } finally {
             ReferenceCountUtil.release(buf);
         }
@@ -279,9 +283,12 @@ public class MessageProcessor extends ChannelInboundHandlerAdapter {
             }
             ctx.write(buf);
             buf = null;
-        } catch (Exception e) {
+        } catch (ProtocolException e) {
             queryProvider.closeP(pName);
             throw e;
+        } catch (Exception e) {
+            queryProvider.closeP(pName);
+            throw new NonBreakingException(ErrorCodes.INTERNAL_ERROR, "Failed to execute operation", e);
         } finally {
             ReferenceCountUtil.release(buf);
         }

@@ -423,7 +423,7 @@ public class QueryProviderImpl implements QueryProvider {
                     LocalSession localSession = new LocalSession(session.getUsername());
                     ResponsePacket packet = handler.executeStatement(session.getSpace(), physicalPlan, params, localSession);
                     return new ArrayIterator<>(packet.getResultEntry().getFieldValues());
-                } catch (SQLException e) {
+                } catch (Exception e) {
                     throw new NonBreakingException(ErrorCodes.INTERNAL_ERROR, "Failed to execute operation.", e);
                 }
             };
