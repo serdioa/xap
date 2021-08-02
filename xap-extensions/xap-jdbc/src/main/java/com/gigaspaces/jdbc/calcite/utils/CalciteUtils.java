@@ -159,8 +159,6 @@ public class CalciteUtils {
     private static String replaceEmptyConditionsWithTrue(String query) {
         final List<String> emptyConditionsList = new ArrayList<>();
         emptyConditionsList.add("(?i)count\\(\\d+\\) ?> ?0"); // count(x) > 0 ..
-        emptyConditionsList.add("[1-9][0-9]* ?> ?0"); // x > 0 ...
-        emptyConditionsList.add("(\\d+) ?= ?\\1"); // x = x ...
 
         for (String regex : emptyConditionsList) {
             query = query.replaceAll(regex, "true");
