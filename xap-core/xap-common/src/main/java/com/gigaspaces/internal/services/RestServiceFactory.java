@@ -48,7 +48,9 @@ public class RestServiceFactory extends ServiceFactory {
                 .appendOptionalJars("jackson")
                 .appendOptionalJars("metrics")
                 .appendOptionalJars("jdbc")
-                .appendPlatformJars("zookeeper");
+                .appendPlatformJars("zookeeper")
+                .appendJars(SystemLocations.singleton().libPlatformExt())
+        ;
 
         // Prevents ClassDef Exception while using kubernetes because he uses okhttp3 client (3.14.3) while we use okhttp2 (2.7.5) in other places.
         if (SystemInfo.singleton().getManagerClusterInfo().getManagerClusterType() == ManagerClusterType.ELASTIC_GRID) {
