@@ -81,14 +81,32 @@ public class AggregationSet implements SmartExternalizable {
     }
 
     /**
-     * Sums values of paths of matching entries or scalar,
-     * when no non null values are applied zero is returned instead of null
+     * Sums scalar value, returns the same type as the path.
+     *
+     * @param path The column name or alias
+     * @param value Value to sum (must be a numeric type)
+     */
+    public AggregationSet typePreserveSum(String path, Number value) {
+        return add(new SumScalarValueAggregator().setValue(value).setPath(path));
+    }
+
+    /**
+     * Sums values of paths of matching entries, when no non null values are applied zero is returned instead of null
      * returns the same type as the path.
      * @param path Path to sum (must be a numeric type)
+     */
+    public AggregationSet typePreserveSumZero(Class<?> type, String path) {
+        return add(new SumZeroAggregator(type).setPath(path));
+    }
+
+    /**
+     * Sums scalar value, when no non null values are applied zero is returned instead of null
+     * returns the same type as the path.
+     * @param path The column name or alias
      * @param value Value to sum (must be a numeric type)
      */
     public AggregationSet typePreserveSumZero(Class<?> type, String path, Number value) {
-        return add(new SumZeroAggregator(type).setValue(value).setPath(path));
+        return add(new SumZeroScalarValueAggregator(type).setValue(value).setPath(path));
     }
 
     /**

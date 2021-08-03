@@ -128,13 +128,22 @@ public class TableRowUtils {
                             "[" + classType.getTypeName() + "], SUM supports only types of " + Number.class);
                 }
                 sum = null;
-                for (TableRow tableRow : tableRows) {
-                    Number number = (Number) tableRow.getPropertyValue(columnName);
-                    if (number == null) continue;
-                    if (sum == null) {
-                        sum = MutableNumber.fromClass(number.getClass(), false);
+                if (aggregationColumn.getQueryColumn().isLiteral()) {
+                    for (int i = 0; i < tableRows.size(); i++) {
+                        if (sum == null) {
+                            sum = MutableNumber.fromClass(classType, false);
+                        }
+                        sum.add((Number) aggregationColumn.getQueryColumn().getCurrentValue());
                     }
-                    sum.add(number);
+                } else {
+                    for (TableRow tableRow : tableRows) {
+                        Number number = (Number) tableRow.getPropertyValue(columnName);
+                        if (number == null) continue;
+                        if (sum == null) {
+                            sum = MutableNumber.fromClass(number.getClass(), false);
+                        }
+                        sum.add(number);
+                    }
                 }
                 value = sum == null ? null : sum.toNumber();
                 break;

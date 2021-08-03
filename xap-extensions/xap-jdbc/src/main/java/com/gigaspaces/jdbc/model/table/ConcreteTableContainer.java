@@ -254,11 +254,15 @@ public class ConcreteTableContainer extends TableContainer {
                         aggregationSet.typePreserveSumZero(aggregationColumn.getReturnType(), columnName,
                                 (Number) aggregationColumn.getQueryColumn().getCurrentValue());
                     } else {
-                        aggregationSet.typePreserveSumZero(aggregationColumn.getReturnType(), columnName, null);
+                        aggregationSet.typePreserveSumZero(aggregationColumn.getReturnType(), columnName);
                     }
                     break;
                 case SUM:
-                    aggregationSet.typePreserveSum(columnName);
+                    if (aggregationColumn.getQueryColumn().isLiteral()) {
+                        aggregationSet.typePreserveSum(columnName, (Number) aggregationColumn.getQueryColumn().getCurrentValue());
+                    } else {
+                        aggregationSet.typePreserveSum(columnName);
+                    }
                     break;
             }
         }

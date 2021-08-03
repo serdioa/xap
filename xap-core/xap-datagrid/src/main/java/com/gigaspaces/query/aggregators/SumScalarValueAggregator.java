@@ -29,29 +29,36 @@ import java.io.ObjectOutput;
  * @since 16.0
  */
 
-public class SumZeroAggregator extends AbstractPathAggregator<MutableNumber> {
+public class SumScalarValueAggregator extends AbstractPathAggregator<MutableNumber> {
 
     private static final long serialVersionUID = 1L;
 
     private transient MutableNumber result;
 
-    private Class<?> type;
+    private Number value;
 
-    public SumZeroAggregator() {
+    public SumScalarValueAggregator() {
     }
 
-    public SumZeroAggregator(Class<?> type) {
-        this.type = type;
+    public Number getValue() {
+        return value;
     }
+
+    public SumScalarValueAggregator setValue(Number value) {
+        this.value = value;
+        return this;
+    }
+
 
     @Override
     public String getDefaultAlias() {
-        return "sum0(" + getPath() + ")";
+        return "sum(" + getPath() + ")";
     }
 
     @Override
     public void aggregate(SpaceEntriesAggregatorContext context) {
-        add((Number) getPathValue(context));
+        add(value);
+
     }
 
     private void add(Number number) {
@@ -79,18 +86,18 @@ public class SumZeroAggregator extends AbstractPathAggregator<MutableNumber> {
 
     @Override
     public Object getFinalResult() {
-        return result != null ? result.toNumber() : MutableNumber.fromClass(type, false).toNumber();
+        return result != null ? result.toNumber() : null;
     }
 
     @Override
     public void writeExternal(ObjectOutput out) throws IOException {
         super.writeExternal(out);
-        IOUtils.writeObject(out, type);
+        IOUtils.writeObject(out, value);
     }
 
     @Override
     public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         super.readExternal(in);
-        type = IOUtils.readObject(in);
+        value = IOUtils.readObject(in);
     }
 }
