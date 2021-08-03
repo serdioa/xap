@@ -114,7 +114,7 @@ public class SingleTableProjectionHandler extends RexShuttle {
                             break;
                         case PLUS:
                         case MINUS:
-                            addQueryColumns(inner, innerColumns, inputFields, outputFields,-1);
+                            addQueryColumns(inner, innerColumns, inputFields, outputFields,index);
                             queryColumns.add(new FunctionColumn(session, innerColumns, inner.getKind().name(), inner.getKind().name(),
                                     null, false, EMPTY_ORDINAL, inner.getOperands().get(1).getType().getSqlTypeName().name()));
                             break;
@@ -123,13 +123,6 @@ public class SingleTableProjectionHandler extends RexShuttle {
                 }
             }
         }
-    }
-
-    private String getAlias(List<String> outputFields, int index) {
-        if (index < 0) {
-            return null;
-        }
-        return outputFields.get(index);
     }
 
     private void addCaseCondition(RexCall call, CaseColumn caseColumn) {

@@ -18,7 +18,10 @@
 package com.gigaspaces.query.aggregators;
 
 import com.gigaspaces.internal.io.IOUtils;
+import com.gigaspaces.internal.version.PlatformLogicalVersion;
+import com.gigaspaces.lrmi.LRMIInvocationContext;
 import com.gigaspaces.serialization.SmartExternalizable;
+import com.j_spaces.jdbc.FunctionCallColumn;
 
 import java.io.IOException;
 import java.io.ObjectInput;
@@ -35,8 +38,10 @@ public abstract class AbstractPathAggregator<T extends Serializable> extends Spa
 
     private String path;
 
+    private FunctionCallColumn functionCallColumn;
+
     public String getPath() {
-        return path;
+        return functionCallColumn == null ? path : functionCallColumn.getAlias();
     }
 
     public AbstractPathAggregator setPath(String path) {
@@ -44,17 +49,34 @@ public abstract class AbstractPathAggregator<T extends Serializable> extends Spa
         return this;
     }
 
+    public FunctionCallColumn getFunctionCallColumn() {
+        return functionCallColumn;
+    }
+
+    public AbstractPathAggregator setFunctionCallColumn(FunctionCallColumn functionCallColumn) {
+        this.functionCallColumn = functionCallColumn;
+        return this;
+    }
+
     protected Object getPathValue(SpaceEntriesAggregatorContext context) {
-        return context.getPathValue(path);
+        return functionCallColumn == null ? context.getPathValue(path) : functionCallColumn.apply(context.getPathValue(path));
     }
 
     @Override
     public void writeExternal(ObjectOutput out) throws IOException {
         IOUtils.writeString(out, path);
+        final PlatformLogicalVersion version = LRMIInvocationContext.getEndpointLogicalVersion();
+        if (version.greaterOrEquals(PlatformLogicalVersion.v16_0_0)) {
+            IOUtils.writeObject(out, functionCallColumn);
+        }
     }
 
     @Override
     public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         this.path = IOUtils.readString(in);
+        final PlatformLogicalVersion version = LRMIInvocationContext.getEndpointLogicalVersion();
+        if (version.greaterOrEquals(PlatformLogicalVersion.v16_0_0)) {
+            functionCallColumn = IOUtils.readObject(in);
+        }
     }
 }

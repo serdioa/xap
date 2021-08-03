@@ -67,7 +67,7 @@ public class FunctionColumn implements IQueryColumn {
 
     @Override
     public TableContainer getTableContainer() {
-        throw new UnsupportedOperationException("Unsupported method getName");
+        return null;
     }
 
     @Override
@@ -313,6 +313,19 @@ public class FunctionColumn implements IQueryColumn {
     }
 
     public FunctionCallColumn toFunctionCallColumn(){
-        return new FunctionCallColumn(functionName, params.stream().map(IQueryColumn::getName).collect(Collectors.toList()));
+        return new FunctionCallColumn(functionName, getPath(), getAlias(), params.stream().map(IQueryColumn::getName).collect(Collectors.toList()), type, session);
+    }
+
+    public String getPath(){
+        for (IQueryColumn param : params) {
+            if(param.isLiteral()){
+                continue;
+            }
+            if(param.isFunction()){
+                return ((FunctionColumn) param).getPath();
+            }
+            return param.getName();
+        }
+        return null;
     }
 }

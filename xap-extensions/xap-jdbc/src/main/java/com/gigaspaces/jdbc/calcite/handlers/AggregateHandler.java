@@ -81,7 +81,14 @@ public class AggregateHandler {
             } else {
                 int index = aggregateCall.getArgList().get(0);
                 final TableContainer table = queryExecutor.isJoinQuery() ? queryExecutor.getTableByColumnIndex(index) : queryExecutor.getTableByColumnName(column);
-                final IQueryColumn queryColumn = queryExecutor.isJoinQuery() ? queryExecutor.getColumnByColumnIndex(index) : queryExecutor.getColumnByColumnName(column);
+                final IQueryColumn queryColumn;
+                if(queryExecutor.isJoinQuery()){
+                    queryColumn = queryExecutor.getColumnByColumnIndex(index);
+                }else if(column.startsWith("$f")){
+                    queryColumn = queryExecutor.getColumnByColumnName(column);
+                }else{
+                    queryColumn = table.addQueryColumnWithoutOrdinal(column, null, false);
+                }
                 queryExecutor.addColumn(queryColumn, false);
                 aggregationColumn = new AggregationColumn(aggregationFunctionType, aggregateCall.getName(), queryColumn, true
                         , false, EMPTY_ORDINAL);
