@@ -46,7 +46,12 @@ public class AggregationInternalUtils {
         result.add(MaxEntryAggregator.class);
         result.add(MinValueAggregator.class);
         result.add(MinEntryAggregator.class);
+        result.add(SumZeroAggregator.class);
+        result.add(SumScalarValueAggregator.class);
+        result.add(SumZeroScalarValueAggregator.class);
         result.add(SpaceIteratorAggregator.class);
+        result.add(SingleValueFunctionAggregator.class);
+        result.add(SingleValueAggregator.class);
         return result;
     }
 
