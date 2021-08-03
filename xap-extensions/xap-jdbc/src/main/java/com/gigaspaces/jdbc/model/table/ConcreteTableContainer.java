@@ -253,16 +253,16 @@ public class ConcreteTableContainer extends TableContainer {
                     break;
                 case SUM0:
                     if (aggregationColumn.getQueryColumn().isLiteral()) {
-                        aggregator = new SumZeroAggregator(aggregationColumn.getReturnType()).setValue((Number) aggregationColumn.getQueryColumn().getCurrentValue());
+                        aggregator = new SumZeroScalarValueAggregator(aggregationColumn.getReturnType()).setValue((Number) aggregationColumn.getQueryColumn().getCurrentValue());
                     } else {
-                        aggregationSet.typePreserveSumZero(aggregationColumn.getReturnType(), columnName);
+                        aggregator = new SumZeroAggregator(aggregationColumn.getReturnType());
                     }
                     break;
                 case SUM:
                     if (aggregationColumn.getQueryColumn().isLiteral()) {
-                        aggregationSet.typePreserveSum(columnName, (Number) aggregationColumn.getQueryColumn().getCurrentValue());
+                        aggregator = new SumScalarValueAggregator().setValue((Number) aggregationColumn.getQueryColumn().getCurrentValue());
                     } else {
-                        aggregationSet.typePreserveSum(columnName);
+                        aggregator = new SumStrictAggregator();
                     }
                     break;
                 default:
