@@ -125,6 +125,13 @@ public class SingleTableProjectionHandler extends RexShuttle {
         }
     }
 
+    private String getAlias(List<String> outputFields, int index) {
+        if (index < 0) {
+            return null;
+        }
+        return outputFields.get(index);
+    }
+
     private void addCaseCondition(RexCall call, CaseColumn caseColumn) {
         CaseConditionHandler caseHandler = new CaseConditionHandler(program, queryExecutor, inputFields,
                 tableContainer, caseColumn);

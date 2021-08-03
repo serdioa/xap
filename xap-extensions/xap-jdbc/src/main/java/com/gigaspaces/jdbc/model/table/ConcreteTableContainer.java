@@ -232,27 +232,28 @@ public class ConcreteTableContainer extends TableContainer {
 
         for (AggregationColumn aggregationColumn : getAggregationColumns()) {
             String columnName = aggregationColumn.getColumnName();
+            FunctionCallColumn functionCallColumn = null;
+            if(aggregationColumn.getQueryColumn() != null && aggregationColumn.getQueryColumn().isFunction()){
+                columnName = ((FunctionColumn) aggregationColumn.getQueryColumn()).getPath();
+                functionCallColumn = ((FunctionColumn) aggregationColumn.getQueryColumn()).toFunctionCallColumn();
+            }
+            AbstractPathAggregator aggregator;
             switch (aggregationColumn.getType()) {
                 case COUNT:
-                    if (aggregationColumn.isAllColumns()) {
-                        aggregationSet.count();
-                    } else {
-                        aggregationSet.count(columnName);
-                    }
+                    aggregator = new CountAggregator();
                     break;
                 case MAX:
-                    aggregationSet.maxValue(columnName);
+                    aggregator = new MaxValueAggregator();
                     break;
                 case MIN:
-                    aggregationSet.minValue(columnName);
+                    aggregator = new MinValueAggregator();
                     break;
                 case AVG:
-                    aggregationSet.typePreserveAverage(columnName);
+                    aggregator = new AverageStrictAggregator();
                     break;
                 case SUM0:
                     if (aggregationColumn.getQueryColumn().isLiteral()) {
-                        aggregationSet.typePreserveSumZero(aggregationColumn.getReturnType(), columnName,
-                                (Number) aggregationColumn.getQueryColumn().getCurrentValue());
+                        aggregator = new SumZeroAggregator(aggregationColumn.getReturnType()).setValue((Number) aggregationColumn.getQueryColumn().getCurrentValue());
                     } else {
                         aggregationSet.typePreserveSumZero(aggregationColumn.getReturnType(), columnName);
                     }
@@ -264,7 +265,16 @@ public class ConcreteTableContainer extends TableContainer {
                         aggregationSet.typePreserveSum(columnName);
                     }
                     break;
+                default:
+                    throw new IllegalStateException("Unexpected value: " + aggregationColumn.getType());
             }
+            if(functionCallColumn != null){
+                aggregator.setFunctionCallColumn(functionCallColumn);
+            }
+            if(!aggregationColumn.isAllColumns()){
+                aggregator.setPath(columnName);
+            }
+            aggregationSet.add(aggregator);
         }
 
         for( IQueryColumn visibleColumn : getVisibleColumns()){

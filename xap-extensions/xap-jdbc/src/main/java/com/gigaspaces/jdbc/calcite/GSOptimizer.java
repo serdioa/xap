@@ -97,7 +97,7 @@ public class GSOptimizer {
         planner.addRelTraitDef(ConventionTraitDef.INSTANCE);
         planner.addRelTraitDef(RelCollationTraitDef.INSTANCE);
         planner.setTopDownOpt(true);
-        planner.setExecutor(new RexExecutorImpl(new DummyDataContext()));
+//        planner.setExecutor(new RexExecutorImpl(new DummyDataContext()));
 
         cluster = RelOptCluster.create(planner, new RexBuilder(typeFactory));
     }
