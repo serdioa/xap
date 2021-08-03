@@ -18,6 +18,12 @@
 package com.gigaspaces.query.aggregators;
 
 import com.gigaspaces.internal.utils.math.MutableNumber;
+import com.gigaspaces.internal.version.PlatformLogicalVersion;
+import com.gigaspaces.lrmi.LRMIInvocationContext;
+
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 
 /**
  * @author Niv Ingberg
@@ -29,6 +35,7 @@ public class SumAggregator extends AbstractPathAggregator<MutableNumber> {
     private static final long serialVersionUID = 1L;
 
     protected transient MutableNumber result;
+    private boolean widest = true;
 
     public SumAggregator() {
     }
@@ -64,8 +71,31 @@ public class SumAggregator extends AbstractPathAggregator<MutableNumber> {
     protected void add(Number number) {
         if (number != null) {
             if (result == null)
-                result = MutableNumber.fromClass(number.getClass(), true);
+                result = MutableNumber.fromClass(number.getClass(), widest);
             result.add(number);
+        }
+    }
+
+    public SumAggregator setWidest(boolean widest) {
+        this.widest = widest;
+        return this;
+    }
+
+    @Override
+    public void writeExternal(ObjectOutput out) throws IOException {
+        super.writeExternal(out);
+        PlatformLogicalVersion logicalVersion = LRMIInvocationContext.getEndpointLogicalVersion();
+        if(logicalVersion.greaterOrEquals(PlatformLogicalVersion.v16_0_0)){
+            out.writeBoolean(widest);
+        }
+    }
+
+    @Override
+    public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        super.readExternal(in);
+        PlatformLogicalVersion logicalVersion = LRMIInvocationContext.getEndpointLogicalVersion();
+        if(logicalVersion.greaterOrEquals(PlatformLogicalVersion.v16_0_0)){
+            widest = in.readBoolean();
         }
     }
 }

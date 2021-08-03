@@ -249,7 +249,7 @@ public class ConcreteTableContainer extends TableContainer {
                     aggregator = new MinValueAggregator();
                     break;
                 case AVG:
-                    aggregator = new AverageStrictAggregator();
+                    aggregator = new AverageAggregator().setWidest(false);
                     break;
                 case SUM0:
                     if (aggregationColumn.getQueryColumn().isLiteral()) {
@@ -262,7 +262,7 @@ public class ConcreteTableContainer extends TableContainer {
                     if (aggregationColumn.getQueryColumn().isLiteral()) {
                         aggregator = new SumScalarValueAggregator().setValue((Number) aggregationColumn.getQueryColumn().getCurrentValue());
                     } else {
-                        aggregator = new SumStrictAggregator();
+                        aggregator = new SumAggregator().setWidest(false);
                     }
                     break;
                 default:
