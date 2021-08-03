@@ -52,7 +52,9 @@ public class AggregateHandler {
         }
 
         for (AggregateCall aggregateCall : gsAggregate.getAggCallList()) {
-            AggregationFunctionType aggregationFunctionType = AggregationFunctionType.valueOf(aggregateCall.getAggregation().getName().toUpperCase());
+            AggregationFunctionType aggregationFunctionType =
+                    //replace $ used for $SUM0.
+                    AggregationFunctionType.valueOf(aggregateCall.getAggregation().getName().toUpperCase().replace("$",""));
             if (aggregateCall.getArgList().size() > 1) {
                 throw new IllegalArgumentException("Wrong number of arguments to aggregation function ["
                         + aggregateCall.getAggregation().getName().toUpperCase() + "()], expected 1 column but was " + aggregateCall.getArgList().size());
@@ -79,7 +81,7 @@ public class AggregateHandler {
             } else {
                 int index = aggregateCall.getArgList().get(0);
                 final TableContainer table = queryExecutor.isJoinQuery() ? queryExecutor.getTableByColumnIndex(index) : queryExecutor.getTableByColumnName(column);
-                final IQueryColumn queryColumn = queryExecutor.isJoinQuery() ? queryExecutor.getColumnByColumnIndex(index) : table.addQueryColumnWithoutOrdinal(column, null, false);
+                final IQueryColumn queryColumn = queryExecutor.isJoinQuery() ? queryExecutor.getColumnByColumnIndex(index) : queryExecutor.getColumnByColumnName(column);
                 queryExecutor.addColumn(queryColumn, false);
                 aggregationColumn = new AggregationColumn(aggregationFunctionType, aggregateCall.getName(), queryColumn, true
                         , false, EMPTY_ORDINAL);

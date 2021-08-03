@@ -62,7 +62,7 @@ public class AverageStrictAggregator extends AverageAggregator {
             this.count = 1;
         }
 
-        public AverageAggregator.AverageTuple add(Number deltaSum, long deltaCount) {
+        public AverageAggregator.AverageTuple add(Number deltaSum, long deltaCount) { //TODO: @sagiv why AverageAggregator.AverageTuple?
             this.count += deltaCount;
             this.sum.add(deltaSum);
             return this;

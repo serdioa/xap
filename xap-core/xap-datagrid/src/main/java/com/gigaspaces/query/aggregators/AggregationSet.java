@@ -81,6 +81,17 @@ public class AggregationSet implements SmartExternalizable {
     }
 
     /**
+     * Sums values of paths of matching entries or scalar,
+     * when no non null values are applied zero is returned instead of null
+     * returns the same type as the path.
+     * @param path Path to sum (must be a numeric type)
+     * @param value Value to sum (must be a numeric type)
+     */
+    public AggregationSet typePreserveSumZero(Class<?> type, String path, Number value) {
+        return add(new SumZeroAggregator(type).setValue(value).setPath(path));
+    }
+
+    /**
      * Calculates average of path values of matching entries, infers the return type of the path.
      *
      * @param path Path to average (must be a numeric type)

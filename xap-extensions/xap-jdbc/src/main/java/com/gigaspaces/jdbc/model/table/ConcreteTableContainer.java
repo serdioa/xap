@@ -249,6 +249,14 @@ public class ConcreteTableContainer extends TableContainer {
                 case AVG:
                     aggregationSet.typePreserveAverage(columnName);
                     break;
+                case SUM0:
+                    if (aggregationColumn.getQueryColumn().isLiteral()) {
+                        aggregationSet.typePreserveSumZero(aggregationColumn.getReturnType(), columnName,
+                                (Number) aggregationColumn.getQueryColumn().getCurrentValue());
+                    } else {
+                        aggregationSet.typePreserveSumZero(aggregationColumn.getReturnType(), columnName, null);
+                    }
+                    break;
                 case SUM:
                     aggregationSet.typePreserveSum(columnName);
                     break;
@@ -261,6 +269,9 @@ public class ConcreteTableContainer extends TableContainer {
                 aggregationSet = aggregationSet.add(new SingleValueFunctionAggregator(functionCallColumn).setPath(functionCallColumn.getName()));
             }
             else{
+                if (visibleColumn.isLiteral()) {
+                    continue; //skip literal columns
+                }
                 aggregationSet = aggregationSet.add(new SingleValueAggregator().setPath(visibleColumn.getName()));
             }
         }
