@@ -57,9 +57,36 @@ public class CastSqlFunction extends SqlFunction {
             if(types.get(type) == null){
                 throw new RuntimeException("Cast function - casting to type " + type + " is not supported");
             }
-            return ObjectConverter.convert(value, types.get(type));
+            if(value.getClass().getName().equals(type)) {
+                return ObjectConverter.convert(value, types.get(type));
+            }
+            value = ObjectConverter.convert(value, value.getClass());
+            return castToNumberType((Number) value, types.get(type));
         } catch (SQLException throwable) {
             throw new RuntimeException("Cast function - Invalid input: " + value + " for data type: " + type, throwable);
         }
+    }
+
+    private Object castToNumberType(Number valueNum, Class targetType) {
+        if (targetType == Integer.class || targetType == int.class) {
+            return valueNum.intValue();
+        }
+        if (targetType == Long.class || targetType == long.class) {
+            return valueNum.longValue();
+        }
+        if (targetType == Float.class || targetType == float.class) {
+            return valueNum.floatValue();
+        }
+        if (targetType == Byte.class || targetType == byte.class) {
+            return valueNum.byteValue();
+        }
+        if (targetType == Double.class || targetType == double.class) {
+            return valueNum.doubleValue();
+        }
+        if (targetType == Short.class || targetType == short.class) {
+            return valueNum.shortValue();
+        }
+
+        throw new IllegalArgumentException("Unexpected type, value = " + valueNum + ", targetType = " + targetType);
     }
 }

@@ -17,11 +17,12 @@
 package com.gigaspaces.internal.utils;
 
 import com.gigaspaces.internal.utils.parsers.*;
-import org.slf4j.LoggerFactory;
 
 import java.sql.SQLException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author Niv Ingberg
@@ -42,13 +43,10 @@ public abstract class ObjectConverter {
         if (type.equals(Object.class))
             return obj;
 
-        if(obj instanceof Number)
-            obj = castToNumberType((Number) obj, type);
 
         AbstractParser parser = getParserFromType(type);
-        if (parser == null) {
+        if (parser == null)
             throw new SQLException("Failed converting [" + obj + "] from '" + obj.getClass().getName() + "' to '" + type.getName() + "' - converter not found.");
-        }
         try {
             obj = parser.parse(obj.toString());
             return obj;
@@ -154,28 +152,5 @@ public abstract class ObjectConverter {
             LoggerFactory.getLogger("ObjectConverter").info("clearing runtime generated parser cache");
             _runtimeGeneratedParserMap.clear();
         }
-    }
-
-    private static Object castToNumberType(Number valueNum, Class targetType) {
-        if (targetType == Integer.class || targetType == int.class) {
-            return valueNum.intValue();
-        }
-        if (targetType == Long.class || targetType == long.class) {
-            return valueNum.longValue();
-        }
-        if (targetType == Float.class || targetType == float.class) {
-            return valueNum.floatValue();
-        }
-        if (targetType == Byte.class || targetType == byte.class) {
-            return valueNum.byteValue();
-        }
-        if (targetType == Double.class || targetType == double.class) {
-            return valueNum.doubleValue();
-        }
-        if (targetType == Short.class || targetType == short.class) {
-            return valueNum.shortValue();
-        }
-
-        throw new IllegalArgumentException("Unexpected type, value = " + valueNum + ", targetType = " + targetType);
     }
 }
