@@ -60,7 +60,7 @@ public class CastSqlFunction extends SqlFunction {
             if(value.getClass().getName().equals(type)) {
                 return ObjectConverter.convert(value, types.get(type));
             }
-            value = ObjectConverter.convert(value, value.getClass());
+            value = ObjectConverter.convert(value, value.getClass()); //TODO fine tune this to avoid ClassCastException
             return castToNumberType((Number) value, types.get(type));
         } catch (SQLException throwable) {
             throw new RuntimeException("Cast function - Invalid input: " + value + " for data type: " + type, throwable);
