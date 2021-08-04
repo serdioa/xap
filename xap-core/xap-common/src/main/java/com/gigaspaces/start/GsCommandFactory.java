@@ -206,12 +206,26 @@ public class GsCommandFactory {
         return locations().config("log").resolve("xap_logging.properties").toString();
     }
 
-    protected void appendServiceOptions(JavaCommandBuilder command, String serviceType) {
-        String envVarKey = GsEnv.key(serviceType.toUpperCase() + "_OPTIONS");
+    private boolean getKeyAddOptionsFromEnv(String serviceType){
+        String envVarKey = GsEnv.key(serviceType.toUpperCase() +  "_OPTIONS");
         if (envVarKey != null) {
             command.optionsFromEnv(envVarKey);
-        } else {
-            command.options(getDefaultOptions(serviceType));
+            return true;
+        }
+        return false;
+    }
+
+    protected void appendServiceOptions(JavaCommandBuilder command, String serviceType) {
+        if (!getKeyAddOptionsFromEnv(serviceType)) {
+            //is service type == LH , try GsEnv.key(with LUS_OPTIONS) when LH_OPTIONS was not used
+            if (serviceType.toUpperCase().equals("LH")) {
+                 if (!getKeyAddOptionsFromEnv("LUS")) {
+                    command.options(getDefaultOptions(serviceType));
+                }
+            }
+            else {
+                command.options(getDefaultOptions(serviceType));
+            }
         }
     }
 
