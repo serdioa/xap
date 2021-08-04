@@ -45,7 +45,11 @@ public class CaseConditionHandler extends RexShuttle {
                         TableContainer tableForColumn = getTableForColumn(fieldName);
                         IQueryColumn queryColumn = tableForColumn.addQueryColumnWithoutOrdinal(fieldName, null, false);
                         queryExecutor.addColumn(queryColumn, false);
-                        caseCondition.setResult(queryColumn);
+                        if (caseCondition != null) {
+                            caseCondition.setResult(queryColumn);
+                        } else {
+                            caseCondition = new SingleCaseCondition(SingleCaseCondition.ConditionCode.DEFAULT_TRUE, queryColumn);
+                        }
                         caseColumn.addCaseCondition(caseCondition);
                         caseCondition = null;
                         break;
@@ -71,10 +75,15 @@ public class CaseConditionHandler extends RexShuttle {
                             caseCondition = handleTwoOperandsCall(leftOp, rightOp, rexNode.getKind(), false);
                         } else if (caseCondition instanceof CompoundCaseCondition) {
                             ((CompoundCaseCondition) caseCondition).addCaseCondition(handleTwoOperandsCall(leftOp, rightOp, rexNode.getKind(), false));
+                        } else {
+                            throw new IllegalStateException("Should not arrive here, caseCondition type is [" + caseCondition.getClass() + "]");
                         }
                         break;
                     case OR:
                         if (!(caseCondition instanceof CompoundCaseCondition)) {
+                            if (caseCondition != null) {
+                                caseColumn.addCaseCondition(caseCondition);
+                            }
                             caseCondition = new CompoundCaseCondition();
                         }
                         ((CompoundCaseCondition) caseCondition).addCompoundConditionCode(CompoundCaseCondition.CompoundConditionCode.OR);
@@ -82,6 +91,9 @@ public class CaseConditionHandler extends RexShuttle {
                         break;
                     case AND:
                         if (!(caseCondition instanceof CompoundCaseCondition)) {
+                            if (caseCondition != null) {
+                                caseColumn.addCaseCondition(caseCondition);
+                            }
                             caseCondition = new CompoundCaseCondition();
                         }
                         ((CompoundCaseCondition) caseCondition).addCompoundConditionCode(CompoundCaseCondition.CompoundConditionCode.AND);
@@ -93,7 +105,11 @@ public class CaseConditionHandler extends RexShuttle {
                         CaseConditionHandler caseHandler = new CaseConditionHandler(program, queryExecutor, inputFields,
                                 tableContainer, nestedCaseColumn);
                         caseHandler.handleRexCall((RexCall) rexNode, null);
-                        caseCondition.setResult(nestedCaseColumn);
+                        if (caseCondition != null) {
+                            caseCondition.setResult(nestedCaseColumn);
+                        } else {
+                            caseCondition = new SingleCaseCondition(SingleCaseCondition.ConditionCode.DEFAULT_TRUE, nestedCaseColumn);
+                        }
                         caseColumn.addCaseCondition(caseCondition);
                         caseCondition = null;
                         break;
@@ -114,6 +130,7 @@ public class CaseConditionHandler extends RexShuttle {
         switch (leftOp.getKind()){
             case LITERAL:
                 value = CalciteUtils.getValue((RexLiteral) leftOp);
+                break;
             case INPUT_REF:
                 column = inputFields.get(((RexInputRef) leftOp).getIndex());
                 break;
