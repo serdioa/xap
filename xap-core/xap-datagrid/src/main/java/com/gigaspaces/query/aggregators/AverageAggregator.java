@@ -19,6 +19,8 @@ package com.gigaspaces.query.aggregators;
 
 import com.gigaspaces.internal.io.IOUtils;
 import com.gigaspaces.internal.utils.math.MutableNumber;
+import com.gigaspaces.internal.version.PlatformLogicalVersion;
+import com.gigaspaces.lrmi.LRMIInvocationContext;
 import com.gigaspaces.serialization.SmartExternalizable;
 
 import java.io.IOException;
@@ -36,6 +38,8 @@ public class AverageAggregator extends AbstractPathAggregator<AverageAggregator.
 
     private transient AverageTuple result;
 
+    private boolean widest = true;
+
     @Override
     public String getDefaultAlias() {
         return "avg(" + getPath() + ")";
@@ -45,7 +49,7 @@ public class AverageAggregator extends AbstractPathAggregator<AverageAggregator.
     public void aggregate(SpaceEntriesAggregatorContext context) {
         Number value = (Number) getPathValue(context);
         if (value != null)
-            result = result != null ? result.add(value, 1) : new AverageTuple(value);
+            result = result != null ? result.add(value, 1) : new AverageTuple(value, widest);
     }
 
     @Override
@@ -66,20 +70,27 @@ public class AverageAggregator extends AbstractPathAggregator<AverageAggregator.
         return result == null ? null : result.getAverage();
     }
 
+    public AverageAggregator setWidest(boolean widest) {
+        this.widest = widest;
+        return this;
+    }
+
     public static class AverageTuple implements SmartExternalizable {
 
         private static final long serialVersionUID = 1L;
 
         private MutableNumber sum;
         private long count;
+        private boolean widest = true;
 
         public AverageTuple() {
         }
 
-        public AverageTuple(Number sum) {
-            this.sum = MutableNumber.fromClass(sum.getClass(), true);
+        public AverageTuple(Number sum, boolean widest) {
+            this.sum = MutableNumber.fromClass(sum.getClass(), widest);
             this.sum.add(sum);
             this.count = 1;
+            this.widest = widest;
         }
 
         public AverageTuple add(Number deltaSum, long deltaCount) {
@@ -98,12 +109,20 @@ public class AverageAggregator extends AbstractPathAggregator<AverageAggregator.
         public void writeExternal(ObjectOutput out) throws IOException {
             out.writeLong(count);
             IOUtils.writeObject(out, sum);
+            PlatformLogicalVersion logicalVersion = LRMIInvocationContext.getEndpointLogicalVersion();
+            if(logicalVersion.greaterThan(PlatformLogicalVersion.v16_0_0)){
+                out.writeBoolean(widest);
+            }
         }
 
         @Override
         public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
             this.count = in.readLong();
             this.sum = IOUtils.readObject(in);
+            PlatformLogicalVersion logicalVersion = LRMIInvocationContext.getEndpointLogicalVersion();
+            if(logicalVersion.greaterThan(PlatformLogicalVersion.v16_0_0)){
+                widest = in.readBoolean();
+            }
         }
     }
 }

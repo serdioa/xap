@@ -48,6 +48,11 @@ public class MutableFloat extends MutableNumber {
     }
 
     @Override
+    public Number calcDivisionPreserveType(long count) {
+        return calcDivision(count);
+    }
+
+    @Override
     public void writeExternal(ObjectOutput out) throws IOException {
         out.writeFloat(value);
     }

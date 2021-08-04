@@ -35,6 +35,11 @@ public abstract class MutableNumber implements SmartExternalizable {
 
     public abstract Number calcDivision(long count);
 
+    /**
+     *  Returns the same type as the value
+     */
+    public abstract Number calcDivisionPreserveType(long count);
+
     public static MutableNumber fromClass(Class<?> type, boolean widest) {
         if (widest) {
             if (type == Byte.class || type == Short.class || type == Integer.class || type == Long.class)

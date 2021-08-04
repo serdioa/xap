@@ -48,6 +48,11 @@ public class MutableShort extends MutableNumber {
     }
 
     @Override
+    public Number calcDivisionPreserveType(long count) {
+        return ((short) (value / count));
+    }
+
+    @Override
     public void writeExternal(ObjectOutput out) throws IOException {
         out.writeShort(value);
     }

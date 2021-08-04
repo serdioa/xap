@@ -228,45 +228,61 @@ public class ConcreteTableContainer extends TableContainer {
     }
 
     private void setAggregationFunctions() {
-        if(!hasAggregationFunctions()) {
+        if (!hasAggregationFunctions()) {
             return;
         }
 
         AggregationSet aggregationSet;
-        if( queryTemplatePacket.getAggregationSet() == null ) {
+        if (queryTemplatePacket.getAggregationSet() == null) {
             aggregationSet = new AggregationSet();
             queryTemplatePacket.setAggregationSet(aggregationSet);
-        }
-        else{
+        } else {
             aggregationSet = queryTemplatePacket.getAggregationSet();
         }
 
         for (AggregationColumn aggregationColumn : getAggregationColumns()) {
             String columnName = aggregationColumn.getColumnName();
+            AbstractPathAggregator aggregator;
             switch (aggregationColumn.getType()) {
                 case COUNT:
-                    if (aggregationColumn.isAllColumns()) {
-                        aggregationSet.count();
-                    } else {
-                        aggregationSet.count(columnName);
-                    }
+                    aggregator = new CountAggregator();
                     break;
                 case MAX:
-                    aggregationSet.maxValue(columnName);
+                    aggregator = new MaxValueAggregator();
                     break;
                 case MIN:
-                    aggregationSet.minValue(columnName);
+                    aggregator = new MinValueAggregator();
                     break;
                 case AVG:
-                    aggregationSet.average(columnName);
+                    aggregator = new AverageAggregator().setWidest(false);
+                    break;
+                case SUM0:
+                    if (aggregationColumn.getQueryColumn().isLiteral()) {
+                        aggregator = new SumZeroScalarValueAggregator(aggregationColumn.getReturnType()).setValue((Number) aggregationColumn.getQueryColumn().getCurrentValue());
+                    } else {
+                        aggregator = new SumZeroAggregator(aggregationColumn.getReturnType());
+                    }
                     break;
                 case SUM:
-                    aggregationSet.sum(columnName);
+                    if (aggregationColumn.getQueryColumn().isLiteral()) {
+                        aggregator = new SumScalarValueAggregator().setValue((Number) aggregationColumn.getQueryColumn().getCurrentValue());
+                    } else {
+                        aggregator = new SumAggregator().setWidest(false);
+                    }
                     break;
+                default:
+                    throw new IllegalStateException("Unexpected value: " + aggregationColumn.getType());
             }
+            if(!aggregationColumn.isAllColumns()){
+                aggregator.setPath(columnName);
+            }
+            aggregationSet.add(aggregator);
         }
 
-        for( IQueryColumn visibleColumn : getVisibleColumns() ){
+        for (IQueryColumn visibleColumn : getVisibleColumns()) {
+            if (visibleColumn.isLiteral()) {
+                continue; //skip literal columns
+            }
             aggregationSet = aggregationSet.add(new SingleValueAggregator().setPath(visibleColumn.getName()));
         }
     }

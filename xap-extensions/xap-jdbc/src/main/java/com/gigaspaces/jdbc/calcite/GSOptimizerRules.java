@@ -99,7 +99,8 @@ public class GSOptimizerRules {
         CoreRules.SORT_REMOVE_CONSTANT_KEYS,
         CoreRules.SORT_UNION_TRANSPOSE,
         CoreRules.EXCHANGE_REMOVE_CONSTANT_KEYS,
-        CoreRules.SORT_EXCHANGE_REMOVE_CONSTANT_KEYS
+        CoreRules.SORT_EXCHANGE_REMOVE_CONSTANT_KEYS,
+        CoreRules.FILTER_REDUCE_EXPRESSIONS
     );
 
     private static final List<RelOptRule> GS_RULES = Arrays.asList(

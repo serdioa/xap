@@ -126,6 +126,15 @@ public class PlatformLogicalVersion implements SmartExternalizable, Comparable<P
     }
 
     /**
+     * Returns true if this logical version is greater than other ( > )
+     *
+     * @return true if this logical version is greater than other ( > )
+     */
+    public boolean greaterThan(PlatformLogicalVersion otherVersion) {
+        return compareTo(otherVersion) > 0;
+    }
+
+    /**
      * Returns true if this logical version is greater or equals to the other ( >= )
      *
      * @return true if this logical version is greater or equals to the other ( >= )

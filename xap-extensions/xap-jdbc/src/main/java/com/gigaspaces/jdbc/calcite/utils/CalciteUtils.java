@@ -45,14 +45,18 @@ public class CalciteUtils {
             case VARCHAR:
                 return literal.getValueAs(String.class);
             case TINYINT:
+                return literal.getValueAs(Byte.class);
             case SMALLINT:
+                return literal.getValueAs(Short.class);
             case INTEGER:
+                return literal.getValueAs(Integer.class);
             case BIGINT:
-                //avoid returning BigDecimal
-                return literal.getValue2();
-            case REAL:
+                return literal.getValueAs(Long.class);
             case FLOAT:
+                return literal.getValueAs(Float.class);
             case DOUBLE:
+                return literal.getValueAs(Double.class);
+            case REAL:
             case DECIMAL:
                 return literal.getValue3();
             case DATE:
@@ -164,7 +168,12 @@ public class CalciteUtils {
                 query = "EXPLAIN PLAN FOR SELECT" + queryAfterSelect;
             }
         }
-        return query;
+
+        return replaceEmptyConditionsWithTrue(query);
+    }
+
+    private static String replaceEmptyConditionsWithTrue(String query) {
+        return query.replaceAll("(?i)count\\(\\d+\\) ?> ?0", "true");
     }
 
     public static String replaceRowNum(String query) {

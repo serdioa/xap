@@ -20,11 +20,7 @@ package com.gigaspaces.query.aggregators;
 import com.gigaspaces.client.iterator.internal.SpaceIteratorAggregator;
 import com.gigaspaces.internal.query.RawEntryConverter;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 /**
  * This class is intended for internal usage only.
@@ -46,7 +42,12 @@ public class AggregationInternalUtils {
         result.add(MaxEntryAggregator.class);
         result.add(MinValueAggregator.class);
         result.add(MinEntryAggregator.class);
+        result.add(SumZeroAggregator.class);
+        result.add(SumScalarValueAggregator.class);
+        result.add(SumZeroScalarValueAggregator.class);
         result.add(SpaceIteratorAggregator.class);
+        result.add(SingleValueFunctionAggregator.class);
+        result.add(SingleValueAggregator.class);
         return result;
     }
 

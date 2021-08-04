@@ -17,38 +17,51 @@
 
 package com.gigaspaces.query.aggregators;
 
+import com.gigaspaces.internal.io.IOUtils;
 import com.gigaspaces.internal.utils.math.MutableNumber;
-import com.gigaspaces.internal.version.PlatformLogicalVersion;
-import com.gigaspaces.lrmi.LRMIInvocationContext;
 
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 
 /**
- * @author Niv Ingberg
- * @since 10.0
+ * Sums values of paths of matching entries, when no non null values are applied zero is returned instead of null
+ * returns the same type as the path.
+ * @author Sagiv Michael
+ * @since 16.0.1
  */
 
-public class SumAggregator extends AbstractPathAggregator<MutableNumber> {
+public class SumZeroAggregator extends AbstractPathAggregator<MutableNumber> {
 
     private static final long serialVersionUID = 1L;
 
     private transient MutableNumber result;
 
-    private boolean widest = true;
+    private Class<?> type;
 
-    public SumAggregator() {
+    public SumZeroAggregator() {
+    }
+
+    public SumZeroAggregator(Class<?> type) {
+        this.type = type;
     }
 
     @Override
     public String getDefaultAlias() {
-        return "sum(" + getPath() + ")";
+        return "sum0(" + getPath() + ")";
     }
 
     @Override
     public void aggregate(SpaceEntriesAggregatorContext context) {
         add((Number) getPathValue(context));
+    }
+
+    private void add(Number number) {
+        if (number != null) {
+            if (result == null)
+                result = MutableNumber.fromClass(number.getClass(), false);
+            result.add(number);
+        }
     }
 
     @Override
@@ -58,45 +71,28 @@ public class SumAggregator extends AbstractPathAggregator<MutableNumber> {
 
     @Override
     public void aggregateIntermediateResult(MutableNumber partitionResult) {
-        if (result == null)
+        if (result == null) {
             result = partitionResult;
-        else
+        }
+        else {
             result.add(partitionResult.toNumber());
+        }
     }
 
     @Override
     public Object getFinalResult() {
-        return result != null ? result.toNumber() : null;
-    }
-
-    private void add(Number number) {
-        if (number != null) {
-            if (result == null)
-                result = MutableNumber.fromClass(number.getClass(), widest);
-            result.add(number);
-        }
-    }
-
-    public SumAggregator setWidest(boolean widest) {
-        this.widest = widest;
-        return this;
+        return result != null ? result.toNumber() : MutableNumber.fromClass(type, false).toNumber();
     }
 
     @Override
     public void writeExternal(ObjectOutput out) throws IOException {
         super.writeExternal(out);
-        PlatformLogicalVersion logicalVersion = LRMIInvocationContext.getEndpointLogicalVersion();
-        if(logicalVersion.greaterThan(PlatformLogicalVersion.v16_0_0)){
-            out.writeBoolean(widest);
-        }
+        IOUtils.writeObject(out, type);
     }
 
     @Override
     public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         super.readExternal(in);
-        PlatformLogicalVersion logicalVersion = LRMIInvocationContext.getEndpointLogicalVersion();
-        if(logicalVersion.greaterThan(PlatformLogicalVersion.v16_0_0)){
-            widest = in.readBoolean();
-        }
+        type = IOUtils.readObject(in);
     }
 }
