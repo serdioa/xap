@@ -48,6 +48,11 @@ public class MutableByte extends MutableNumber {
     }
 
     @Override
+    public Number calcDivisionPreserveType(long count) {
+        return ((byte) (value / count));
+    }
+
+    @Override
     public void writeExternal(ObjectOutput out) throws IOException {
         out.writeByte(value);
     }

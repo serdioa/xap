@@ -1,9 +1,9 @@
 package com.gigaspaces.jdbc.calcite;
 
 import com.gigaspaces.jdbc.calcite.parser.GSSqlParserFactoryWrapper;
-import com.google.common.collect.ImmutableList;
-import com.gigaspaces.jdbc.calcite.sql.extension.GSSqlOperatorTable;
 import com.gigaspaces.jdbc.calcite.pg.PgCalciteSchema;
+import com.gigaspaces.jdbc.calcite.sql.extension.GSSqlOperatorTable;
+import com.google.common.collect.ImmutableList;
 import com.j_spaces.core.IJSpace;
 import org.apache.calcite.avatica.util.Casing;
 import org.apache.calcite.config.CalciteConnectionConfig;
@@ -39,8 +39,8 @@ import org.apache.calcite.sql2rel.StandardConvertletTable;
 import org.apache.calcite.tools.Program;
 import org.apache.calcite.util.Pair;
 
-import java.util.Arrays;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -96,6 +96,8 @@ public class GSOptimizer {
         planner.addRelTraitDef(ConventionTraitDef.INSTANCE);
         planner.addRelTraitDef(RelCollationTraitDef.INSTANCE);
         planner.setTopDownOpt(true);
+        //TODO: @sagiv comment out because row_number() not working with it, missing Executor implementation/predefined function.
+//        planner.setExecutor(new RexExecutorImpl(new DummyDataContext()));
 
         cluster = RelOptCluster.create(planner, new RexBuilder(typeFactory));
     }

@@ -56,7 +56,7 @@ public class QueryExecutor {
                 TableRow row = TableRowFactory.createTableRowFromSpecificColumns(visibleColumns, Collections.emptyList(), Collections.emptyList());
                 return new LocalSingleRowQueryResult(visibleColumns, row);
             } else {
-                throw new SQLException("No tables has been detected");
+                return new ConcreteQueryResult(Collections.emptyList(), Collections.emptyList());
             }
         }
         if (tables.size() == 1) { //Simple Query

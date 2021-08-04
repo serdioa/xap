@@ -49,7 +49,11 @@ public class AggregateHandler {
         }
 
         for (AggregateCall aggregateCall : gsAggregate.getAggCallList()) {
-            AggregationFunctionType aggregationFunctionType = AggregationFunctionType.valueOf(aggregateCall.getAggregation().getName().toUpperCase());
+            String aggregationType = aggregateCall.getAggregation().getName().toUpperCase();
+            if (aggregationType.startsWith("$")) { //remove $ used for $SUM0.
+                aggregationType = aggregationType.substring(1);
+            }
+            AggregationFunctionType aggregationFunctionType = AggregationFunctionType.valueOf(aggregationType);
             if (aggregateCall.getArgList().size() > 1) {
                 throw new IllegalArgumentException("Wrong number of arguments to aggregation function ["
                         + aggregateCall.getAggregation().getName().toUpperCase() + "()], expected 1 column but was " + aggregateCall.getArgList().size());
@@ -76,7 +80,14 @@ public class AggregateHandler {
             } else {
                 int index = aggregateCall.getArgList().get(0);
                 final TableContainer table = queryExecutor.isJoinQuery() ? queryExecutor.getTableByColumnIndex(index) : queryExecutor.getTableByColumnName(column);
-                final IQueryColumn queryColumn = queryExecutor.isJoinQuery() ? queryExecutor.getColumnByColumnIndex(index) : table.addQueryColumnWithoutOrdinal(column, null, false);
+                final IQueryColumn queryColumn;
+                if(queryExecutor.isJoinQuery()){
+                    queryColumn = queryExecutor.getColumnByColumnIndex(index);
+                }else if(column.startsWith("$f")){
+                    queryColumn = queryExecutor.getColumnByColumnName(column);
+                }else{
+                    queryColumn = table.addQueryColumnWithoutOrdinal(column, null, false);
+                }
                 queryExecutor.addColumn(queryColumn, false);
                 aggregationColumn = new AggregationColumn(aggregationFunctionType, aggregateCall.getName(), queryColumn, true
                         , false, EMPTY_ORDINAL);

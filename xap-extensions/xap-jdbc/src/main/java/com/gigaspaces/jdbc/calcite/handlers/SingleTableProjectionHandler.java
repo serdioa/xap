@@ -59,26 +59,16 @@ public class SingleTableProjectionHandler extends RexShuttle {
                         addQueryColumns(call, queryColumns, inputFields, outputFields, i);
                         functionCallColumn = new FunctionCallColumn(session, queryColumns, sqlFunction.getName(),
                                 sqlFunction.toString(), outputFields.get(i), isRoot, EMPTY_ORDINAL);
-                        if(isRoot) {
-                            tableContainer.getVisibleColumns().add(functionCallColumn);
-                            tableContainer.addProjectedColumn(functionCallColumn);
-                        }
-                        else
-                            tableContainer.getInvisibleColumns().add(functionCallColumn);
+                        tableContainer.getVisibleColumns().add(functionCallColumn);
+                        tableContainer.addProjectedColumn(functionCallColumn);
                         break;
                     case CAST:
                         sqlFunction = (SqlCastFunction) call.op;
                         addQueryColumns(call, queryColumns, inputFields, outputFields, i);
                         functionCallColumn = new FunctionCallColumn(session, queryColumns, sqlFunction.getName(),
-                                sqlFunction.toString(), outputFields.get(i), isRoot, EMPTY_ORDINAL,
-                                call.getType().getFullTypeString());
-                        if(isRoot) {
-                            tableContainer.addProjectedColumn(functionCallColumn);
-                            tableContainer.getVisibleColumns().add(functionCallColumn);
-                        }
-                        else {
-                            tableContainer.getInvisibleColumns().add(functionCallColumn);
-                        }
+                                sqlFunction.toString(), outputFields.get(i), isRoot, EMPTY_ORDINAL, call.getType().getFullTypeString());
+                        tableContainer.addProjectedColumn(functionCallColumn);
+                        tableContainer.getVisibleColumns().add(functionCallColumn);
                         break;
                     case CASE:
                         CaseColumn caseColumn = new CaseColumn(outputFields.get(i), CalciteUtils.getJavaType(call), EMPTY_ORDINAL);
@@ -90,12 +80,8 @@ public class SingleTableProjectionHandler extends RexShuttle {
                         addQueryColumns(call, queryColumns, inputFields, outputFields, i);
                         functionCallColumn = new FunctionCallColumn(session, queryColumns, call.getKind().name(), call.getKind().name(),
                                 outputFields.get(i), true, i, call.getOperands().get(1).getType().getSqlTypeName().name());
-                        if(isRoot) {
-                            tableContainer.getVisibleColumns().add(functionCallColumn);
-                            tableContainer.addProjectedColumn(functionCallColumn);
-                        }
-                        else
-                            tableContainer.getInvisibleColumns().add(functionCallColumn);
+                        tableContainer.getVisibleColumns().add(functionCallColumn);
+                        tableContainer.addProjectedColumn(functionCallColumn);
                         break;
                     }
                     default:
@@ -106,12 +92,8 @@ public class SingleTableProjectionHandler extends RexShuttle {
             else if(node.isA(SqlKind.LITERAL)){
                 RexLiteral literal = (RexLiteral) node;
                 LiteralColumn literalColumn = new LiteralColumn(CalciteUtils.getValue(literal), EMPTY_ORDINAL, outputFields.get(i), true);
-                if(isRoot) {
-                    tableContainer.addProjectedColumn(literalColumn);
-                    tableContainer.getVisibleColumns().add(literalColumn);
-                } else {
-                    tableContainer.getInvisibleColumns().add(literalColumn);
-                }
+                tableContainer.addProjectedColumn(literalColumn);
+                tableContainer.getVisibleColumns().add(literalColumn);
             }
         }
     }

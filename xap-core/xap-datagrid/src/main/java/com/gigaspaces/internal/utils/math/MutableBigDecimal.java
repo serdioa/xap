@@ -53,6 +53,11 @@ public class MutableBigDecimal extends MutableNumber {
     }
 
     @Override
+    public Number calcDivisionPreserveType(long count) {
+        return calcDivision(count);
+    }
+
+    @Override
     public void writeExternal(ObjectOutput out) throws IOException {
         IOUtils.writeObject(out, value);
     }

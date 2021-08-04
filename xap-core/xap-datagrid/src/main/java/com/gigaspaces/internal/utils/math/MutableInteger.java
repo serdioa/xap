@@ -48,6 +48,11 @@ public class MutableInteger extends MutableNumber {
     }
 
     @Override
+    public Number calcDivisionPreserveType(long count) {
+        return ((int) (value / count));
+    }
+
+    @Override
     public void writeExternal(ObjectOutput out) throws IOException {
         out.writeInt(value);
     }
