@@ -57,7 +57,7 @@ public class CastSqlFunction extends SqlFunction {
             if(types.get(type) == null){
                 throw new RuntimeException("Cast function - casting to type " + type + " is not supported");
             }
-            if(value.getClass().getName().equals(type)) {
+            if(value instanceof String || value.getClass().getName().equals(type)) {
                 return ObjectConverter.convert(value, types.get(type));
             }
             value = ObjectConverter.convert(value, value.getClass()); //TODO fine tune this to avoid ClassCastException
