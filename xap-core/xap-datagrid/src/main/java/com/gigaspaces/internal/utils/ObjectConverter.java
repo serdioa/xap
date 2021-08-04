@@ -42,10 +42,11 @@ public abstract class ObjectConverter {
         if (type.equals(Object.class))
             return obj;
 
+        if(obj instanceof Number)
+            obj = castToNumberType((Number) obj, type);
+
         AbstractParser parser = getParserFromType(type);
         if (parser == null) {
-            if(obj instanceof Number)
-                return castToNumberType((Number) obj, type);
             throw new SQLException("Failed converting [" + obj + "] from '" + obj.getClass().getName() + "' to '" + type.getName() + "' - converter not found.");
         }
         try {
