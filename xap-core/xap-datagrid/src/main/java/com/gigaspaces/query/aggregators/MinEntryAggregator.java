@@ -67,6 +67,11 @@ public class MinEntryAggregator extends AbstractPathAggregator<MinEntryAggregato
         return result == null ? null : toObject(result.getRawEntry());
     }
 
+    @Override
+    public String getName() {
+        return "MIN";
+    }
+
     public static class MinEntryScannerResult implements SmartExternalizable {
 
         private static final long serialVersionUID = 1L;

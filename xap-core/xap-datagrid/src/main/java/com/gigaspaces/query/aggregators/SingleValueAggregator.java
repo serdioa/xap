@@ -54,4 +54,9 @@ public class SingleValueAggregator<T extends Serializable & Comparable> extends 
     public T getIntermediateResult() {
         return result;
     }
+
+    @Override
+    public String getName() {
+        return "FUNC";
+    }
 }

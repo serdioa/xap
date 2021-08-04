@@ -69,7 +69,7 @@ public class QueryExecutor {
                     SubqueryExplainPlan subquery = new SubqueryExplainPlan(getSelectedColumns(),
                             config.getTempTableNameGenerator().generate(),
                             explainResult.getExplainPlanInfo(), null, Collections.unmodifiableList(getOrderColumns()),
-                            Collections.unmodifiableList(getGroupByColumns()), false);
+                            Collections.unmodifiableList(getGroupByColumns()), false, getAggregationColumns());
                     return new ExplainPlanQueryResult(getSelectedColumns(), subquery, singleTable);
                 } else {
                     List<TableRow> rows = queryResult.getRows().stream().map(row -> TableRowFactory.createProjectedTableRow(row, this)).collect(Collectors.toList());

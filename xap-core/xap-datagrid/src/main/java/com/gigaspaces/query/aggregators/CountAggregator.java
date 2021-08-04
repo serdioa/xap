@@ -42,6 +42,11 @@ public class CountAggregator extends AbstractPathAggregator<Long> {
     }
 
     @Override
+    public String getName() {
+        return "COUNT";
+    }
+
+    @Override
     public void aggregate(SpaceEntriesAggregatorContext context) {
         if (getPath() == null || getPathValue(context) != null)
             result++;

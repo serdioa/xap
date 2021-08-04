@@ -90,6 +90,11 @@ public class SingleValueFunctionAggregator<T extends Serializable & Comparable> 
         functionCallColumn = IOUtils.readObject(in);
     }
 
+    @Override
+    public String getName() {
+        return "FUNC";
+    }
+
 
     public Object apply(Object value){
         return functionCallColumn.apply(value);

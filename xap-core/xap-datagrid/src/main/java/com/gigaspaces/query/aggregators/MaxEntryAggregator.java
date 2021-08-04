@@ -67,6 +67,11 @@ public class MaxEntryAggregator extends AbstractPathAggregator<MaxEntryAggregato
         return result == null ? null : toObject(result.getRawEntry());
     }
 
+    @Override
+    public String getName() {
+        return "MAX";
+    }
+
     public static class MaxEntryScannerResult implements SmartExternalizable {
 
         private static final long serialVersionUID = 1L;

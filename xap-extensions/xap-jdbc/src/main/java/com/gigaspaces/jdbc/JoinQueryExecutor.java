@@ -114,6 +114,7 @@ public class JoinQueryExecutor {
         joinExplainPlan.setOrderColumns(orderColumns);
         joinExplainPlan.setGroupByColumns(groupByColumns);
         joinExplainPlan.setDistinct(isDistinct);
+        joinExplainPlan.setAggregationColumns(aggregationColumns);
         return new ExplainPlanQueryResult(visibleColumns, joinExplainPlan, null);
     }
 }

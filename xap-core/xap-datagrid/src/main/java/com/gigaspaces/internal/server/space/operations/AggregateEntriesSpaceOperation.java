@@ -61,15 +61,8 @@ public class AggregateEntriesSpaceOperation extends AbstractSpaceOperation<Aggre
                     else if (aggregator instanceof DistinctAggregator){
                         DistinctAggregator distinctAggregator = (DistinctAggregator)aggregator;
                         String[] distinctPaths = distinctAggregator.getDistinctPaths();
-                        if(distinctAggregator.isGroupByAggregator()){ //group by
-                            for(int i=0; i < distinctPaths.length ; i++) {
-                                answerHolder.getExplainPlan().addAggregatorsInfo("GroupBy", distinctPaths[i]);
-                            }
-                        }
-                        else{ //distinct
-                            for(int i=0; i < distinctPaths.length ; i++) {
-                                answerHolder.getExplainPlan().addAggregatorsInfo("Distinct", distinctPaths[i]);
-                            }
+                        for(int i=0; i < distinctPaths.length ; i++) {
+                            answerHolder.getExplainPlan().addAggregatorsInfo("GroupBy", distinctPaths[i]);
                         }
                     }
                     else if (aggregator instanceof GroupByAggregator){
@@ -78,6 +71,10 @@ public class AggregateEntriesSpaceOperation extends AbstractSpaceOperation<Aggre
                         for(int i=0; i < groupByPaths.length ; i++) {
                             answerHolder.getExplainPlan().addAggregatorsInfo("GroupBy", groupByPaths[i]);
                         }
+                    }
+                    else if (aggregator instanceof AbstractPathAggregator){
+                        AbstractPathAggregator functionAggregator = (AbstractPathAggregator) aggregator;
+                        answerHolder.getExplainPlan().addAggregatorsInfo(functionAggregator.getName(), functionAggregator.getPath());
                     }
                 }
                 result.setExplainPlan(answerHolder.getExplainPlan());

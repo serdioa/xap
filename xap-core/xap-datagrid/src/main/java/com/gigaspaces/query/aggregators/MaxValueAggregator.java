@@ -51,4 +51,9 @@ public class MaxValueAggregator<T extends Serializable & Comparable> extends Abs
     public T getIntermediateResult() {
         return result;
     }
+
+    @Override
+    public String getName() {
+        return "MAX";
+    }
 }

@@ -4,6 +4,7 @@ import com.gigaspaces.internal.query.explainplan.TextReportFormatter;
 import com.gigaspaces.internal.query.explainplan.model.JdbcExplainPlan;
 import com.gigaspaces.jdbc.model.join.JoinInfo;
 import com.gigaspaces.jdbc.model.result.Cursor;
+import com.gigaspaces.jdbc.model.table.AggregationColumn;
 import com.gigaspaces.jdbc.model.table.IQueryColumn;
 import com.gigaspaces.jdbc.model.table.OrderColumn;
 
@@ -15,6 +16,7 @@ public class JoinExplainPlan extends JdbcExplainPlan {
     private List<String> selectColumns;
     private List<OrderColumn> orderColumns;
     private List<IQueryColumn> groupByColumns;
+    private List<AggregationColumn> aggregationColumns;
     private boolean distinct;
     private final JdbcExplainPlan left;
     private final JdbcExplainPlan right;
@@ -41,6 +43,8 @@ public class JoinExplainPlan extends JdbcExplainPlan {
         this.distinct = distinct;
     }
 
+    public void setAggregationColumns(List<AggregationColumn> aggregationColumns) { this.aggregationColumns = aggregationColumns; }
+
     @Override
     public void format(TextReportFormatter formatter, boolean verbose) {
         if (!joinInfo.isEquiJoin()) {
@@ -58,6 +62,9 @@ public class JoinExplainPlan extends JdbcExplainPlan {
             }
             if (groupByColumns != null && !groupByColumns.isEmpty()) {
                 formatter.line("GroupBy: " + groupByColumns.stream().map(IQueryColumn::toString).collect(Collectors.joining(", ")));
+            }
+            if (aggregationColumns != null && !aggregationColumns.isEmpty()){
+                aggregationColumns.forEach(aggregateColumn -> formatter.line(aggregateColumn.getType().name() + ": " + aggregateColumn.getColumnName()));
             }
             formatter.line(String.format("Join condition: (%s = %s)", joinInfo.getLeftColumn(), joinInfo.getRightColumn()));
             formatter.withPrefix("|", () -> {

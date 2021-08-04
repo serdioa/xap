@@ -65,4 +65,9 @@ public class SumAggregator extends AbstractPathAggregator<MutableNumber> {
             result.add(number);
         }
     }
+
+    @Override
+    public String getName() {
+        return "SUM";
+    }
 }

@@ -57,4 +57,6 @@ public abstract class AbstractPathAggregator<T extends Serializable> extends Spa
     public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         this.path = IOUtils.readString(in);
     }
+
+    public abstract String getName();
 }

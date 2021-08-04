@@ -66,6 +66,11 @@ public class AverageAggregator extends AbstractPathAggregator<AverageAggregator.
         return result == null ? null : result.getAverage();
     }
 
+    @Override
+    public String getName() {
+        return "AVG";
+    }
+
     public static class AverageTuple implements SmartExternalizable {
 
         private static final long serialVersionUID = 1L;
