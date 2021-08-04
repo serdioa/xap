@@ -68,9 +68,6 @@ public class GroupByKey extends CompoundResult {
                     break;
                 }
             }
-
-//            if (values[i] == null)
-//                return false;
         }
 
         return true;

@@ -25,6 +25,8 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 
 /**
+ * Sums values of paths of matching entries, when no non null values are applied zero is returned instead of null
+ * returns the same type as the path.
  * @author Sagiv Michael
  * @since 16.0
  */

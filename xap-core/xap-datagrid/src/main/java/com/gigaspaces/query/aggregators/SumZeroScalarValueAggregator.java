@@ -25,6 +25,8 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 
 /**
+ * Sums scalar value, when no non null values are applied zero is returned instead of null
+ * returns the same type as the value.
  * @author Sagiv Michael
  * @since 16.0
  */
