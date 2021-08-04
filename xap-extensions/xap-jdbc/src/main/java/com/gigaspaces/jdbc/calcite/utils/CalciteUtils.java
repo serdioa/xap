@@ -35,7 +35,7 @@ public class CalciteUtils {
     }
 
     public static Object getValue(RexLiteral literal, DateTypeResolver dateTypeResolver) {
-        if (literal == null) {
+        if (literal == null || literal.isNull()) {
             return null;
         }
         switch (literal.getType().getSqlTypeName()) {
