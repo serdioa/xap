@@ -37,7 +37,9 @@ public class PlusSqlFunction extends SqlFunction {
         Object right = context.getArgument(1);
         Object res = null;
         Class originalClass = null;
-
+        if(left == null || right == null){
+            return null;
+        }
         try {
             if (left instanceof Time) {
                 originalClass = left.getClass();

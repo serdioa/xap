@@ -32,6 +32,9 @@ public class UpperSqlFunction extends SqlFunction {
     public Object apply(SqlFunctionExecutionContext context) {
         assertNumberOfArguments(1, context);
         Object arg = context.getArgument(0);
+        if(arg == null){
+            return null;
+        }
         if (arg instanceof String) {
             return String.valueOf(arg).toUpperCase();
         } else {

@@ -33,6 +33,9 @@ public class CharLengthSqlFunction extends SqlFunction {
     public Object apply(SqlFunctionExecutionContext context) {
         assertNumberOfArguments(1, context);
         Object arg = context.getArgument(0);
+        if(arg == null){
+            return null;
+        }
         if (arg instanceof String) {
             return arg.toString().length();
         } else if (arg instanceof char[]) {

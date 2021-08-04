@@ -40,7 +40,9 @@ public class RoundSqlFunction extends SqlFunction {
     public Object apply(SqlFunctionExecutionContext context) {
         Object arg = context.getArgument(0);
         Integer decimalPlaces = 0;
-
+        if(arg == null){
+            return null;
+        }
         if (context.getNumberOfArguments() >= 2) {
             decimalPlaces = (Integer) context.getArgument(1);
         }

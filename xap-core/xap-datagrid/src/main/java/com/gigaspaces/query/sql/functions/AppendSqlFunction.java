@@ -32,7 +32,9 @@ public class AppendSqlFunction extends SqlFunction {
     public Object apply(SqlFunctionExecutionContext context) {
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < context.getNumberOfArguments(); i++) {
-            sb.append(context.getArgument(i));
+            if (context.getArgument(i) != null) {
+                sb.append(context.getArgument(i));
+            }
         }
         return sb.toString();
     }

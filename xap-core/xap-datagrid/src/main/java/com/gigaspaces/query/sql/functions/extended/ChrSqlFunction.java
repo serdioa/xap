@@ -8,8 +8,9 @@ public class ChrSqlFunction extends SqlFunction {
     public Object apply(SqlFunctionExecutionContext context) {
         assertNumberOfArguments(1, context);
         Object arg = context.getArgument(0);
-
-
+        if(arg == null){
+            return null;
+        }
         if (arg instanceof Integer || arg instanceof Character)
             return Character.toString((char) arg);
         throw new RuntimeException("Upper function - wrong argument type: " + arg);

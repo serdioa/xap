@@ -40,6 +40,9 @@ abstract class AbstractDateRelatedSqlFunction extends SqlFunction {
     protected Date verifyArgumentsAndGetDate( String functionName, SqlFunctionExecutionContext context) {
         assertNumberOfArguments(1, context);
         Object arg = context.getArgument(0);
+        if(arg == null){
+            return null;
+        }
         Date date = null;
         if( arg instanceof String ) {
             try {

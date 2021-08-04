@@ -131,7 +131,7 @@ public class FunctionColumn implements IQueryColumn {
         throw new RuntimeException("Unknown function [" + getFunctionName() + "]");
     }
 
-    private double getValueFromExtract(IEntryPacket entryPacket) {
+    private Double getValueFromExtract(IEntryPacket entryPacket) {
         SqlFunctionExecutionContext extractContext = new SqlFunctionExecutionContext() {
             @Override
             public int getNumberOfArguments() {
@@ -157,7 +157,9 @@ public class FunctionColumn implements IQueryColumn {
             throw new RuntimeException("Extract function - first argument isn't of type TimeUnitRange");
         }
         TimeUnitRange symbol = ((TimeUnitRange) symbolObject);
-
+        if(date == null){
+            return null;
+        }
         if (date instanceof TemporalAccessor) {
             return extractLocalDateTime(((TemporalAccessor) date), symbol);
         } else if (date instanceof java.util.Date) {

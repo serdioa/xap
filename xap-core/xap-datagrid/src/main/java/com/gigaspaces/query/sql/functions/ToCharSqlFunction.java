@@ -54,6 +54,9 @@ public class ToCharSqlFunction extends SqlFunction {
     private Object oldToChar(SqlFunctionExecutionContext context){
         Object arg = context.getArgument(0);
         Object format = null;
+        if(arg == null){
+            return null;
+        }
         if (context.getNumberOfArguments() >= 2) {
             format = context.getArgument(1);
         }
@@ -79,6 +82,9 @@ public class ToCharSqlFunction extends SqlFunction {
         assertNumberOfArguments(2, context);
         Object arg = context.getArgument(0);
         Object pattern = context.getArgument(1);
+        if(arg == null){
+            return null;
+        }
         if (!isString(pattern)) {
             throw new RuntimeException("To_Char function - 2nd argument must be a String");
         }

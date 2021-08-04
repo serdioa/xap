@@ -42,6 +42,9 @@ public class CastSqlFunction extends SqlFunction {
         assertNumberOfArguments(1, context);
         Object value = context.getArgument(0);
         String type = context.getType();
+        if(value == null){
+            return null;
+        }
         try {
             if (type.startsWith("BOOLEAN")) {
                 String boolValue = (String) value;

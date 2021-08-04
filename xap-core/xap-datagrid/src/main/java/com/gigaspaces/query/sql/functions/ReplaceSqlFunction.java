@@ -32,6 +32,9 @@ public class ReplaceSqlFunction extends SqlFunction {
     public Object apply(SqlFunctionExecutionContext context) {
         assertNumberOfArguments(3, context);
         Object arg = context.getArgument(0);
+        if(arg == null){
+            return null;
+        }
         if (!(arg instanceof String))
             throw new RuntimeException("Replace function - wrong argument type: " + arg);
         Object subStringToReplace = context.getArgument(1);

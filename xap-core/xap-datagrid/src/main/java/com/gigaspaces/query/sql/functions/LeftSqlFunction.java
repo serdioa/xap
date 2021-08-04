@@ -20,6 +20,9 @@ public class LeftSqlFunction extends SqlFunction{
         assertNumberOfArguments(2, context);
         Object strObj = context.getArgument(0);
         Object numObj = context.getArgument(1);
+        if(strObj == null){
+            return null;
+        }
         if (!isString(strObj))
             throw new RuntimeException("Left function - 1st argument must be a String:" + strObj);
         if (!isWholeNumber(numObj))

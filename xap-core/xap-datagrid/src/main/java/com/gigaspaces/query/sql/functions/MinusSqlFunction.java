@@ -38,7 +38,9 @@ public class MinusSqlFunction extends SqlFunction {
         Object right = context.getArgument(1);
         Object res = null;
         Class originalClass = null;
-
+        if(left == null || right == null){
+            return null;
+        }
         if(left instanceof Number && right instanceof Number){
             MutableNumber mutableNumber = MutableNumber.fromClass(left.getClass(), false);
             mutableNumber.add((Number) left);
