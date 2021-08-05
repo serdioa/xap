@@ -206,7 +206,7 @@ public class GsCommandFactory {
         return locations().config("log").resolve("xap_logging.properties").toString();
     }
 
-    private boolean getKeyAddOptionsFromEnv(String serviceType){
+    private boolean addOptionsIfKeyExists(String serviceType){
         String envVarKey = GsEnv.key(serviceType.toUpperCase() +  "_OPTIONS");
         if (envVarKey != null) {
             command.optionsFromEnv(envVarKey);
@@ -216,16 +216,15 @@ public class GsCommandFactory {
     }
 
     protected void appendServiceOptions(JavaCommandBuilder command, String serviceType) {
-        if (!getKeyAddOptionsFromEnv(serviceType)) {
+        boolean keyExists = addOptionsIfKeyExists(serviceType);
+        if (!keyExists) {
             //is service type == LH , try GsEnv.key(with LUS_OPTIONS) when LH_OPTIONS was not used
             if (serviceType.toUpperCase().equals("LH")) {
-                 if (!getKeyAddOptionsFromEnv("LUS")) {
-                    command.options(getDefaultOptions(serviceType));
-                }
+                keyExists = addOptionsIfKeyExists("LUS");
             }
-            else {
-                command.options(getDefaultOptions(serviceType));
-            }
+        }
+        if (!keyExists){
+            command.options(getDefaultOptions(serviceType));
         }
     }
 
