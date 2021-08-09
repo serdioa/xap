@@ -127,9 +127,11 @@ public class CaseConditionHandler extends RexShuttle {
         boolean isRowNum = false; //TODO: @sagiv needed?
         Object value = null;
         SingleCaseCondition singleCaseCondition = null;
+        boolean isLeftLiteral = false;
         switch (leftOp.getKind()){
             case LITERAL:
                 value = CalciteUtils.getValue((RexLiteral) leftOp);
+                isLeftLiteral = true;
                 break;
             case INPUT_REF:
                 column = inputFields.get(((RexInputRef) leftOp).getIndex());
@@ -178,35 +180,42 @@ public class CaseConditionHandler extends RexShuttle {
         } catch (SQLException e) {
             throw new SQLExceptionWrapper(e);//throw as runtime.
         }
-        assert value != null;
-        assert column != null;
 
+        if (column == null) {
+            throw new IllegalStateException("column can't be null");
+        }
+        if (value == null) {
+            throw new IllegalStateException("value can't be null");
+        }
         IQueryColumn queryColumn = tableForColumn.addQueryColumnWithoutOrdinal(column, null, false);
         queryExecutor.addColumn(queryColumn, false);
 
+        sqlKind = isLeftLiteral ? sqlKind.reverse() : sqlKind;
         sqlKind = isNot ? sqlKind.negateNullSafe() : sqlKind;
+        SingleCaseCondition.ConditionCode conditionCode = null;
         switch (sqlKind) {
             case EQUALS:
-                singleCaseCondition = new SingleCaseCondition(SingleCaseCondition.ConditionCode.EQ, value, value.getClass(), column);
+                conditionCode = SingleCaseCondition.ConditionCode.EQ;
                 break;
             case NOT_EQUALS:
-                singleCaseCondition = new SingleCaseCondition(SingleCaseCondition.ConditionCode.NE, value, value.getClass(), column);
+                conditionCode = SingleCaseCondition.ConditionCode.NE;
                 break;
             case LESS_THAN:
-                singleCaseCondition = new SingleCaseCondition(SingleCaseCondition.ConditionCode.LT, value, value.getClass(), column);
+                conditionCode = SingleCaseCondition.ConditionCode.LT;
                 break;
             case LESS_THAN_OR_EQUAL:
-                singleCaseCondition = new SingleCaseCondition(SingleCaseCondition.ConditionCode.LE, value, value.getClass(), column);
+                conditionCode = SingleCaseCondition.ConditionCode.LE;
                 break;
             case GREATER_THAN:
-                singleCaseCondition = new SingleCaseCondition(SingleCaseCondition.ConditionCode.GT, value, value.getClass(), column);
+                conditionCode = SingleCaseCondition.ConditionCode.GT;
                 break;
             case GREATER_THAN_OR_EQUAL:
-                singleCaseCondition = new SingleCaseCondition(SingleCaseCondition.ConditionCode.GE, value, value.getClass(), column);
+                conditionCode = SingleCaseCondition.ConditionCode.GE;
                 break;
             default:
                 throw new UnsupportedOperationException(String.format("Queries with %s are not supported",sqlKind));
         }
+        singleCaseCondition = new SingleCaseCondition(conditionCode, value, value.getClass(), column);
         return singleCaseCondition;
     }
 

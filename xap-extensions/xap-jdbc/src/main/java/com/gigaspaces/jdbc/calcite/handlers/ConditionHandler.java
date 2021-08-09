@@ -226,9 +226,12 @@ public class ConditionHandler extends RexShuttle {
         boolean isRowNum = false;
         Object value = null;
         Range range = null;
+        boolean isLeftLiteral = false;
         switch (leftOp.getKind()) {
             case LITERAL:
                 value = CalciteUtils.getValue((RexLiteral) leftOp);
+                isLeftLiteral = true;
+                break;
             case INPUT_REF:
                 column = fields.get(((RexInputRef) leftOp).getIndex());
                 break;
@@ -279,6 +282,7 @@ public class ConditionHandler extends RexShuttle {
         } catch (SQLException e) {
             throw new SQLExceptionWrapper(e);//throw as runtime.
         }
+        sqlKind = isLeftLiteral ? sqlKind.reverse() : sqlKind;
         sqlKind = isNot ? sqlKind.negateNullSafe() : sqlKind;
         switch (sqlKind) {
             case EQUALS:
