@@ -107,7 +107,7 @@ public class AverageAggregator extends AbstractPathAggregator<AverageAggregator.
         public Number getAverage() {
             if (count == 0)
                 return null;
-            return sum.calcDivision(count);
+            return widest ? sum.calcDivision(count) : sum.calcDivisionPreserveType(count);
         }
 
         @Override
@@ -128,6 +128,24 @@ public class AverageAggregator extends AbstractPathAggregator<AverageAggregator.
             if(logicalVersion.greaterThan(PlatformLogicalVersion.v16_0_0)){
                 widest = in.readBoolean();
             }
+        }
+    }
+
+    @Override
+    public void writeExternal(ObjectOutput out) throws IOException {
+        super.writeExternal(out);
+        PlatformLogicalVersion logicalVersion = LRMIInvocationContext.getEndpointLogicalVersion();
+        if(logicalVersion.greaterThan(PlatformLogicalVersion.v16_0_0)){
+            out.writeBoolean(widest);
+        }
+    }
+
+    @Override
+    public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        super.readExternal(in);
+        PlatformLogicalVersion logicalVersion = LRMIInvocationContext.getEndpointLogicalVersion();
+        if(logicalVersion.greaterThan(PlatformLogicalVersion.v16_0_0)){
+            widest = in.readBoolean();
         }
     }
 }
