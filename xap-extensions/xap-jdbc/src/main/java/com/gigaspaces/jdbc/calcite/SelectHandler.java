@@ -38,7 +38,6 @@ public class SelectHandler extends RelShuttleImpl {
     }
 
     @Override
-    // TODO check inserting of same table
     public RelNode visit(TableScan scan) {
         RelNode result = super.visit(scan);
         RelOptTable relOptTable = scan.getTable();
@@ -156,12 +155,17 @@ public class SelectHandler extends RelShuttleImpl {
             OrderColumn orderColumn = new OrderColumn(new ConcreteColumn(columnName,null, columnName,
                     qc != null, table, columnCounter++), !direction.isDescending(),
                     nullDirection == RelFieldCollation.NullDirection.LAST);
-            table.addOrderColumns(orderColumn);
+            table.addOrderColumn(orderColumn);
         }
     }
 
     private void handleAggregate(GSAggregate gsAggregate) {
-        AggregateHandler.instance().apply(gsAggregate, queryExecutor, childToCalc.containsKey(gsAggregate));
+        if(gsAggregate.getInput() instanceof GSCalc && queryExecutor.isJoinQuery()){
+            AggregateHandler.instance().applyForJoinWithChildCalc(gsAggregate, queryExecutor, childToCalc.containsKey(gsAggregate));
+        }
+        else{
+            AggregateHandler.instance().apply(gsAggregate, queryExecutor, childToCalc.containsKey(gsAggregate));
+        }
         if(childToCalc.containsKey(gsAggregate)){
             handleCalc(childToCalc.get(gsAggregate), false);
         }

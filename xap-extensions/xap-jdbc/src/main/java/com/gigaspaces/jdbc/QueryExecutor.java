@@ -5,10 +5,7 @@ import com.gigaspaces.jdbc.exceptions.ColumnNotFoundException;
 import com.gigaspaces.jdbc.explainplan.SubqueryExplainPlan;
 import com.gigaspaces.jdbc.model.QueryExecutionConfig;
 import com.gigaspaces.jdbc.model.result.*;
-import com.gigaspaces.jdbc.model.table.AggregationColumn;
-import com.gigaspaces.jdbc.model.table.CaseColumn;
-import com.gigaspaces.jdbc.model.table.IQueryColumn;
-import com.gigaspaces.jdbc.model.table.TableContainer;
+import com.gigaspaces.jdbc.model.table.*;
 import com.j_spaces.core.IJSpace;
 
 import java.sql.SQLException;
@@ -29,6 +26,7 @@ public class QueryExecutor {
     private final LinkedList<Integer> fieldCountList = new LinkedList<>();
     private final List<CaseColumn> caseColumns = new ArrayList<>();
     private final List<IQueryColumn> groupByColumns = new ArrayList<>();
+    private final List<OrderColumn> orderColumns = new ArrayList<>();
 
 
     public QueryExecutor(IJSpace space, QueryExecutionConfig config, Object[] preparedValues) {
@@ -246,13 +244,21 @@ public class QueryExecutor {
         return Stream.concat(getVisibleColumns().stream(), getAggregationColumns().stream()).sorted().collect(Collectors.toList());
     }
 
-    public List<IQueryColumn> getOrderColumns() {
-        List<IQueryColumn> result = new ArrayList<>();
-        tables.forEach(table -> result.addAll(table.getOrderColumns()));
-        return result;
+    public List<OrderColumn> getOrderColumns() {
+        if(this.orderColumns.isEmpty()){
+            tables.forEach(table -> this.orderColumns.addAll(table.getOrderColumns()));
+        }
+        return this.orderColumns;
+    }
+
+    public void addOrderColumn(OrderColumn orderColumn){
+        this.orderColumns.add(orderColumn);
     }
 
     public List<IQueryColumn> getGroupByColumns() {
+        if(this.groupByColumns.isEmpty()){
+            tables.forEach(table -> this.groupByColumns.addAll(table.getGroupByColumns()));
+        }
         return this.groupByColumns;
     }
 

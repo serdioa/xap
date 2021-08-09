@@ -21,13 +21,13 @@ public class JoinQueryExecutor {
     private final List<AggregationColumn> aggregationColumns;
     private final List<IQueryColumn> allQueryColumns;
     private final List<IQueryColumn> selectedQueryColumns;
-    private final List<IQueryColumn> groupByColumns = new ArrayList<>();
-    private final List<OrderColumn> orderColumns = new ArrayList<>();
+    private final List<IQueryColumn> groupByColumns;
+    private final List<OrderColumn> orderColumns;
 
     public JoinQueryExecutor(QueryExecutor queryExecutor) {
         this.tables = queryExecutor.getTables();
-        tables.forEach(table -> this.groupByColumns.addAll(table.getGroupByColumns()));
-        tables.forEach(table -> this.orderColumns.addAll(table.getOrderColumns()));
+        this.groupByColumns = queryExecutor.getGroupByColumns();
+        this.orderColumns = queryExecutor.getOrderColumns();
         this.invisibleColumns = queryExecutor.getInvisibleColumns();
         this.visibleColumns = (queryExecutor.getVisibleColumns().isEmpty() && queryExecutor.getAggregationColumns().isEmpty()) ? this.groupByColumns : queryExecutor.getVisibleColumns();
         this.config = queryExecutor.getConfig();
