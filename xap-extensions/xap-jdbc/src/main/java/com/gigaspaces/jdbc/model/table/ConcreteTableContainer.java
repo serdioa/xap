@@ -119,6 +119,30 @@ public class ConcreteTableContainer extends TableContainer {
         }
     }
 
+    @Override
+    public int executeTake(QueryExecutionConfig config) throws SQLException {
+
+        try {
+            if (queryTemplatePacket == null) {
+                queryTemplatePacket = createEmptyQueryTemplatePacket();
+            }
+
+            validate(config);
+
+            setAggregations(config.isJoinUsed());
+
+            queryTemplatePacket.prepareForSpace(typeDesc);
+
+            ArrayList<IEntryPacket> takenObjects = queryTemplatePacket.take(space, queryTemplatePacket.getRoutingFieldValue(),
+                    queryTemplatePacket.getProjectionTemplate(), null, 0, ReadModifiers.REPEATABLE_READ,
+                    false, limit, 0, QueryResultTypeInternal.NOT_SET);
+
+            return takenObjects.size();
+        } catch (Exception e) {
+            throw new SQLException("Failed to get results from space", e);
+        }
+    }
+
     private String[] createProjectionTable() {
         return Stream.concat(visibleColumns.stream(), getInvisibleColumns().stream()).map(IQueryColumn::getName).distinct().toArray(String[]::new);
     }

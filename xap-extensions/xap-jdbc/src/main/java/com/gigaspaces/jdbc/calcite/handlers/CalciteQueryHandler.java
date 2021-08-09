@@ -1,10 +1,7 @@
 package com.gigaspaces.jdbc.calcite.handlers;
 
 import com.gigaspaces.jdbc.QueryExecutor;
-import com.gigaspaces.jdbc.calcite.GSOptimizer;
-import com.gigaspaces.jdbc.calcite.GSOptimizerValidationResult;
-import com.gigaspaces.jdbc.calcite.GSRelNode;
-import com.gigaspaces.jdbc.calcite.SelectHandler;
+import com.gigaspaces.jdbc.calcite.*;
 import com.gigaspaces.jdbc.model.QueryExecutionConfig;
 import com.gigaspaces.jdbc.model.result.ExplainPlanQueryResult;
 import com.gigaspaces.jdbc.model.result.QueryResult;
@@ -12,6 +9,7 @@ import com.gigaspaces.query.sql.functions.extended.LocalSession;
 import com.j_spaces.core.IJSpace;
 import com.j_spaces.jdbc.ResponsePacket;
 import com.j_spaces.kernel.SystemProperties;
+import org.apache.calcite.rel.core.TableModify;
 import org.apache.calcite.rel.externalize.RelWriterImpl;
 import org.apache.calcite.runtime.CalciteException;
 import org.apache.calcite.sql.SqlExplain;
@@ -52,12 +50,33 @@ public class CalciteQueryHandler {
         QueryExecutor qE = new QueryExecutor(space, queryExecutionConfig, preparedValues);
         SelectHandler selectHandler = new SelectHandler(qE, session);
         relNode.accept(selectHandler);
-        QueryResult queryResult = qE.execute();
-        if (explainPlan) {
-            packet.setResultEntry(((ExplainPlanQueryResult) queryResult).convertEntriesToResultArrays(queryExecutionConfig));
-        } else {
-            packet.setResultEntry(queryResult.convertEntriesToResultArrays());
+
+        if( relNode instanceof GSTableModify){
+            GSTableModify gsTableModify = (GSTableModify)relNode;
+            TableModify.Operation operation = gsTableModify.getOperation();
+            switch( operation ){
+                case INSERT:
+                    //packet.setIntResult( qE.executeWrite().size() ); ??
+                    break;
+                case UPDATE:
+                    //packet.setIntResult( qE.executeUpdate().size() ); ??
+                    break;
+                case DELETE:
+                    packet.setIntResult( qE.executeTake().size() );
+                    break;
+                case MERGE:
+                    break;
+            }
         }
+        else{
+            QueryResult queryResult = qE.execute();
+            if (explainPlan) {
+                packet.setResultEntry(((ExplainPlanQueryResult) queryResult).convertEntriesToResultArrays(queryExecutionConfig));
+            } else {
+                packet.setResultEntry(queryResult.convertEntriesToResultArrays());
+            }
+        }
+
         return packet;
     }
 
