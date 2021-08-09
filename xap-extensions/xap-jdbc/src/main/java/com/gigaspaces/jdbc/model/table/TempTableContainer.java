@@ -80,6 +80,11 @@ public class TempTableContainer extends TableContainer {
     }
 
     @Override
+    public int executeTake(QueryExecutionConfig config) throws SQLException {
+        return 0;
+    }
+
+    @Override
     public IQueryColumn addQueryColumnWithColumnOrdinal(String columnName, String columnAlias, boolean isVisible, int columnOrdinal) {
         String columnNameOrAlias = columnAlias == null ? columnName : columnAlias;
         IQueryColumn queryColumn = tableColumns.stream() //TODO: @sagiv change to set?

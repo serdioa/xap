@@ -95,6 +95,17 @@ public class QueryExecutor {
         return joinE.execute();
     }
 
+    public QueryResult executeTake() throws SQLException {
+
+        if (tables.size() == 1) { //Simple Query
+            TableContainer singleTable = tables.get(0);
+            int affectedRowsCount = singleTable.executeTake(config);
+            return new ModifyOperationQueryResult(affectedRowsCount);
+        }
+        JoinQueryExecutor joinE = new JoinQueryExecutor(this);
+        return joinE.execute();
+    }
+
     private boolean reIterateOverSingleTableResult(TableContainer singleTable) {
         if (!config.isCalcite()) {
             return false;
