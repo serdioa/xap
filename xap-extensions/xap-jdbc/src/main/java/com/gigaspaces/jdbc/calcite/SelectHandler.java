@@ -241,9 +241,10 @@ public class SelectHandler extends RelShuttleImpl {
             List<TableContainer> tables = queryExecutor.getTables();
             leftContainer = tables.get(tables.size() - 2);
             TableContainer rightTable = tables.get(tables.size() - 1);
-            if (leftContainer.getJoinedTable() != null)
+            if (leftContainer.getJoinedTable() != null || rightTable.isJoined())
                 throw new IllegalArgumentException("left table shouldn't be joined yet!");
             leftContainer.setJoinedTable(rightTable);
+            rightTable.setJoined(true);
         }
         else if (joinCondition instanceof RexCall) {
             RexCall rexCall = (RexCall) join.getCondition();
