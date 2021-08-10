@@ -187,11 +187,28 @@ public class GsCommandFactory {
     }
 
     protected void appendServiceOptions(JavaCommandBuilder command, String serviceType) {
-        String envVarKey = GsEnv.key(serviceType.toUpperCase() + "_OPTIONS");
+        String envVarKey = getServiceOptionsEnvVarKey(serviceType.toUpperCase());
         if (envVarKey != null) {
             command.optionsFromEnv(envVarKey);
         } else {
             command.options(getDefaultOptions(serviceType));
+        }
+    }
+
+    private String getServiceOptionsEnvVarKey(String serviceType){
+        String envVarKey = GsEnv.key(serviceType +  "_OPTIONS");
+        if (envVarKey == null) {
+            String serviceTypeAlias = getServiceTypeAlias(serviceType);
+            if (serviceTypeAlias != null)
+                envVarKey = GsEnv.key(serviceTypeAlias +  "_OPTIONS");
+        }
+        return envVarKey;
+    }
+
+    private static String getServiceTypeAlias(String serviceType) {
+        switch (serviceType) {
+            case "LH": return "LUS";
+            default:   return null;
         }
     }
 
