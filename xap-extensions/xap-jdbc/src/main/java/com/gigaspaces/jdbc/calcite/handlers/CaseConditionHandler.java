@@ -79,6 +79,7 @@ public class CaseConditionHandler extends RexShuttle {
                             throw new IllegalStateException("Should not arrive here, caseCondition type is [" + caseCondition.getClass() + "]");
                         }
                         break;
+                    case AND:
                     case OR:
                         if (!(caseCondition instanceof CompoundCaseCondition)) {
                             if (caseCondition != null) {
@@ -86,17 +87,7 @@ public class CaseConditionHandler extends RexShuttle {
                             }
                             caseCondition = new CompoundCaseCondition();
                         }
-                        ((CompoundCaseCondition) caseCondition).addCompoundConditionCode(CompoundCaseCondition.CompoundConditionCode.OR);
-                        handleRexCall((RexCall) rexNode, caseCondition);
-                        break;
-                    case AND:
-                        if (!(caseCondition instanceof CompoundCaseCondition)) {
-                            if (caseCondition != null) {
-                                caseColumn.addCaseCondition(caseCondition);
-                            }
-                            caseCondition = new CompoundCaseCondition();
-                        }
-                        ((CompoundCaseCondition) caseCondition).addCompoundConditionCode(CompoundCaseCondition.CompoundConditionCode.AND);
+                        ((CompoundCaseCondition) caseCondition).addCompoundConditionCode(new CompoundCaseCondition.CompoundConditionCode(rexNode.getKind(), ((RexCall) rexNode).getOperands().size()));
                         handleRexCall((RexCall) rexNode, caseCondition);
                         break;
                     case CASE:

@@ -1,48 +1,66 @@
 package com.gigaspaces.jdbc.model.table;
 
 import com.gigaspaces.jdbc.model.result.TableRow;
+import org.apache.calcite.sql.SqlKind;
 
-import java.util.ArrayDeque;
-import java.util.Deque;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Stack;
 
 public class CompoundCaseCondition implements ICaseCondition {
 
-    private final Deque<Object> stack;
+    private final List<Object> conditionsList = new ArrayList<>();
     private Object result;
 
     public CompoundCaseCondition() {
-        this.stack = new ArrayDeque<>();
     }
 
     @Override
     public boolean check(TableRow tableRow) {
-        ArrayDeque<Object> stackCopy = new ArrayDeque<>(this.stack);
-        Object top = stackCopy.poll();
-        return checkHelper(tableRow, stackCopy, top);
-    }
+        Stack<Object> stack = new Stack<>();
+        for (int i = conditionsList.size() - 1; i >= 0; i--) {
+            Object current = conditionsList.get(i);
+            if (current == null) {
+                return false;
+            } else if (current instanceof CompoundConditionCode) {
+                int numOfOp = ((CompoundConditionCode) current).getNumberOfOperands();
+                switch (((CompoundConditionCode) current).getSqlKind()) {
+                    case AND: {
+                        SingleCaseCondition.ConditionCode conditionCode = SingleCaseCondition.ConditionCode.DEFAULT_TRUE;
+                        for (int j = 0; j < numOfOp; j++) {
+                            Object pop = stack.pop();
+                            if (pop instanceof ICaseCondition && conditionCode.equals(SingleCaseCondition.ConditionCode.DEFAULT_TRUE)) {
+                                if (!((ICaseCondition) pop).check(tableRow)) {
+                                    conditionCode = SingleCaseCondition.ConditionCode.DEFAULT_FALSE;
+                                }
+                            }
+                        }
+                        stack.add(new SingleCaseCondition(conditionCode, null));
+                        break;
+                    }
+                    case OR: {
+                        SingleCaseCondition.ConditionCode conditionCode = SingleCaseCondition.ConditionCode.DEFAULT_FALSE;
+                        for (int j = 0; j < numOfOp; j++) {
+                            Object pop = stack.pop();
+                            if (pop instanceof ICaseCondition && conditionCode.equals(SingleCaseCondition.ConditionCode.DEFAULT_FALSE)) {
+                                if (((ICaseCondition) pop).check(tableRow)) {
+                                    conditionCode = SingleCaseCondition.ConditionCode.DEFAULT_TRUE;
+                                }
+                            }
+                        }
+                        stack.add(new SingleCaseCondition(conditionCode, null));
+                        break;
+                    }
+                    default:
+                        throw new IllegalStateException("CompoundConditionCode [" +
+                                 ((CompoundConditionCode) current).getSqlKind() + "] not supported.");
 
-    private boolean checkHelper(TableRow tableRow, Deque<Object> stack, Object obj) {
-        if (obj == null) {
-            return false;
-        } else if (stack.size() == 1) {
-            return ((ICaseCondition) obj).check(tableRow);
-        } else if (obj instanceof CompoundConditionCode) {
-            Object first = stack.poll();
-            boolean firstEvaluation = checkHelper(tableRow, stack, first);
-            Object second = stack.poll();
-            boolean secondEvaluation = checkHelper(tableRow, stack, second);
-            switch ((CompoundConditionCode) obj) {
-                case AND:
-                    return firstEvaluation && secondEvaluation;
-                case OR:
-                    return firstEvaluation || secondEvaluation;
-                default:
-                    throw new UnsupportedOperationException("unsupported compound condition code: " + obj);
+                }
+            } else { //current instanceof ICaseCondition
+                stack.add(current);
             }
-        } else if (obj instanceof ICaseCondition) {
-            return ((ICaseCondition) obj).check(tableRow);
         }
-        throw new IllegalStateException("should not arrive here");
+        return ((ICaseCondition) stack.pop()).check(tableRow);
     }
 
     @Override
@@ -56,14 +74,28 @@ public class CompoundCaseCondition implements ICaseCondition {
     }
 
     public void addCompoundConditionCode(CompoundConditionCode code) {
-        this.stack.add(code);
+        this.conditionsList.add(code);
     }
 
     public void addCaseCondition(ICaseCondition condition) {
-        this.stack.add(condition);
+        this.conditionsList.add(condition);
     }
 
-    public enum CompoundConditionCode {
-        AND, OR
+    public static class CompoundConditionCode {
+        private final SqlKind sqlKind;
+        private final int numberOfOperands;
+
+        public CompoundConditionCode(SqlKind sqlKind, int numberOfOperands) {
+            this.sqlKind = sqlKind;
+            this.numberOfOperands = numberOfOperands;
+        }
+
+        public SqlKind getSqlKind() {
+            return sqlKind;
+        }
+
+        public int getNumberOfOperands() {
+            return numberOfOperands;
+        }
     }
 }
