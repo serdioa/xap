@@ -30,11 +30,10 @@ import org.slf4j.Logger;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.nio.charset.Charset;
-import java.sql.SQLException;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static com.gigaspaces.sql.datagateway.netty.utils.DateTimeUtils.*;
+import static com.gigaspaces.sql.datagateway.netty.utils.DateTimeUtils.convertTimeZone;
 import static java.util.Collections.singletonList;
 
 @SuppressWarnings({"unchecked", "rawtypes"})
@@ -423,7 +422,7 @@ public class QueryProviderImpl implements QueryProvider {
                     LocalSession localSession = new LocalSession(session.getUsername());
                     ResponsePacket packet = handler.executeStatement(session.getSpace(), physicalPlan, params, localSession);
                     return new ArrayIterator<>(packet.getResultEntry().getFieldValues());
-                } catch (SQLException e) {
+                } catch (Exception e) {
                     throw new NonBreakingException(ErrorCodes.INTERNAL_ERROR, "Failed to execute operation.", e);
                 }
             };
