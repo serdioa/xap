@@ -1,19 +1,18 @@
 package com.gigaspaces.sql.datagateway.netty.query;
 
+import com.gigaspaces.sql.datagateway.netty.exception.ExceptionUtil;
 import com.gigaspaces.sql.datagateway.netty.exception.ProtocolException;
 
 import java.util.NoSuchElementException;
 
-class DmlPortal<T> implements Portal<T> {
+class CommandPortal implements Portal<Void> {
     private final QueryProviderImpl queryProvider;
     private final String name;
     private final Statement statement;
     private final PortalCommand command;
-    private final ThrowingSupplier<Integer, ProtocolException> op;
+    private final CommandOp op;
 
-    private Integer processed;
-
-    DmlPortal(QueryProviderImpl queryProvider, String name, Statement statement, PortalCommand command, ThrowingSupplier<Integer, ProtocolException> op) {
+    CommandPortal(QueryProviderImpl queryProvider, String name, Statement statement, PortalCommand command, CommandOp op) {
         this.queryProvider = queryProvider;
         this.name = name;
         this.statement = statement;
@@ -38,19 +37,16 @@ class DmlPortal<T> implements Portal<T> {
 
     @Override
     public String tag() {
-        switch (command) {
-            case DEALLOCATE:
-                return command.tag();
-            case SET:
-                return String.format("%s %d", command.tag(), processed);
-            default:
-                return String.format("%s 0 %d", command.tag(), processed);
-        }
+        return command.tag();
     }
 
     @Override
     public void execute() throws ProtocolException {
-        processed = op.apply();
+        try {
+            op.execute();
+        } catch (Exception e) {
+            throw ExceptionUtil.wrapException("Failed to execute statement", e);
+        }
     }
 
     @Override
@@ -64,7 +60,7 @@ class DmlPortal<T> implements Portal<T> {
     }
 
     @Override
-    public T next() {
+    public Void next() {
         throw new NoSuchElementException();
     }
 }

@@ -4,9 +4,15 @@ import com.gigaspaces.sql.datagateway.netty.authentication.Authentication;
 import com.gigaspaces.sql.datagateway.netty.authentication.AuthenticationProvider;
 import com.gigaspaces.sql.datagateway.netty.authentication.ClearTextPassword;
 import com.gigaspaces.sql.datagateway.netty.exception.BreakingException;
-import com.gigaspaces.sql.datagateway.netty.exception.NonBreakingException;
 import com.gigaspaces.sql.datagateway.netty.exception.ProtocolException;
-import com.gigaspaces.sql.datagateway.netty.query.*;
+import com.gigaspaces.sql.datagateway.netty.query.ColumnDescription;
+import com.gigaspaces.sql.datagateway.netty.query.ParameterDescription;
+import com.gigaspaces.sql.datagateway.netty.query.ParametersDescription;
+import com.gigaspaces.sql.datagateway.netty.query.Portal;
+import com.gigaspaces.sql.datagateway.netty.query.QueryProvider;
+import com.gigaspaces.sql.datagateway.netty.query.RowDescription;
+import com.gigaspaces.sql.datagateway.netty.query.Session;
+import com.gigaspaces.sql.datagateway.netty.query.StatementDescription;
 import com.gigaspaces.sql.datagateway.netty.utils.ErrorCodes;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
@@ -20,7 +26,11 @@ import java.util.List;
 import java.util.TimeZone;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static com.gigaspaces.sql.datagateway.netty.utils.Constants.*;
+import static com.gigaspaces.sql.datagateway.netty.exception.ExceptionUtil.wrapException;
+import static com.gigaspaces.sql.datagateway.netty.utils.Constants.BATCH_SIZE;
+import static com.gigaspaces.sql.datagateway.netty.utils.Constants.CANCEL_REQUEST;
+import static com.gigaspaces.sql.datagateway.netty.utils.Constants.PROTOCOL_3_0;
+import static com.gigaspaces.sql.datagateway.netty.utils.Constants.SSL_REQUEST;
 import static com.gigaspaces.sql.datagateway.netty.utils.DateTimeUtils.convertTimeZone;
 
 public class MessageProcessor extends ChannelInboundHandlerAdapter {
@@ -145,7 +155,7 @@ public class MessageProcessor extends ChannelInboundHandlerAdapter {
     }
 
     @Override
-    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
+    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
         // TODO log exception properly
         cause.printStackTrace();
 
@@ -184,12 +194,23 @@ public class MessageProcessor extends ChannelInboundHandlerAdapter {
         ByteBuf buf = null;
         try {
             buf = ctx.alloc().ioBuffer();
-            List<Portal<?>> multiline = queryProvider.executeQueryMultiline(session, query);
+
+            List<Portal<?>> multiline;
+            try {
+                multiline = queryProvider.executeQueryMultiline(session, query);
+            } catch (Exception e) {
+                throw wrapException("Failed to prepare query", e);
+            }
+
             for (Portal<?> portal : multiline) {
                 if (portal.empty()) {
                     writeEmptyResponse(buf);
                 } else {
-                    portal.execute();
+                    try {
+                        portal.execute();
+                    } catch (Exception e) {
+                        throw wrapException("Failed to execute query", e);
+                    }
 
                     RowDescription rowDesc = portal.getDescription();
                     if (rowDesc.getColumnsCount() == 0) {
@@ -239,12 +260,20 @@ public class MessageProcessor extends ChannelInboundHandlerAdapter {
     }
 
     private void onClosePortal(ChannelHandlerContext ctx, String portal) throws ProtocolException {
-        queryProvider.closeP(portal);
+        try {
+            queryProvider.closeP(portal);
+        } catch (Exception e) {
+            throw wrapException("Failed to close portal", e);
+        }
         writeCloseComplete(ctx);
     }
 
     private void onCloseStatement(ChannelHandlerContext ctx, String stmt) throws ProtocolException {
-        queryProvider.closeS(stmt);
+        try {
+            queryProvider.closeS(stmt);
+        } catch (Exception e) {
+            throw wrapException("Failed to close statement", e);
+        }
         writeCloseComplete(ctx);
     }
 
@@ -254,7 +283,14 @@ public class MessageProcessor extends ChannelInboundHandlerAdapter {
         ByteBuf buf = null;
         try {
             buf = ctx.alloc().ioBuffer();
-            Portal<?> portal = queryProvider.execute(pName);
+
+            Portal<?> portal;
+            try {
+                portal = queryProvider.execute(pName);
+            } catch (Exception e) {
+                throw wrapException("Failed to execute statement", e);
+            }
+
             if (portal.empty()) {
                 writeEmptyResponse(buf);
             } else {
@@ -305,12 +341,22 @@ public class MessageProcessor extends ChannelInboundHandlerAdapter {
     }
 
     private void onDescribePortal(ChannelHandlerContext ctx, String portal) throws ProtocolException {
-        RowDescription desc = queryProvider.describeP(portal);
+        RowDescription desc;
+        try {
+            desc = queryProvider.describeP(portal);
+        } catch (Exception e) {
+            throw wrapException("Failed to describe portal", e);
+        }
         writeRowDescription(ctx, desc);
     }
 
     private void onDescribeStatement(ChannelHandlerContext ctx, String stmt) throws ProtocolException {
-        StatementDescription desc = queryProvider.describeS(stmt);
+        StatementDescription desc;
+        try {
+            desc = queryProvider.describeS(stmt);
+        } catch (Exception e) {
+            throw wrapException("Failed to describe statement", e);
+        }
         writeParametersDescription(ctx, desc.getParametersDescription());
         writeRowDescription(ctx, desc.getRowDescription());
     }
@@ -318,7 +364,15 @@ public class MessageProcessor extends ChannelInboundHandlerAdapter {
     private void onBind(ChannelHandlerContext ctx, ByteBuf msg) throws ProtocolException {
         String portal = readString(msg);
         String stmt = readString(msg);
-        ParametersDescription desc = queryProvider.describeS(stmt).getParametersDescription();
+
+        StatementDescription stmtDesc;
+        try {
+            stmtDesc = queryProvider.describeS(stmt);
+        } catch (Exception e) {
+            throw wrapException("Failed to describe statement", e);
+        }
+
+        ParametersDescription desc = stmtDesc.getParametersDescription();
 
         int inFcLen = msg.readShort();
 
@@ -349,10 +403,8 @@ public class MessageProcessor extends ChannelInboundHandlerAdapter {
 
         try {
             queryProvider.bind(session, portal, stmt, params, outFc);
-        } catch (ProtocolException e) {
-            throw e;
         } catch (Exception e) {
-            throw new NonBreakingException(ErrorCodes.INTERNAL_ERROR /* internal error */, "cannot bind statement", e);
+            throw wrapException("Failed to bind statement", e);
         }
 
         // BindComplete message
@@ -368,10 +420,8 @@ public class MessageProcessor extends ChannelInboundHandlerAdapter {
             paramTypes[i] = msg.readInt();
         try {
             queryProvider.prepare(session, stmt, query, paramTypes);
-        } catch (ProtocolException e) {
-            throw e;
         } catch (Exception e) {
-            throw new NonBreakingException(ErrorCodes.INTERNAL_ERROR, "cannot prepare statement", e);
+            throw wrapException("Failed to prepare statement", e);
         }
 
         // ParseComplete message
@@ -379,7 +429,13 @@ public class MessageProcessor extends ChannelInboundHandlerAdapter {
     }
 
     private void onPassword(ChannelHandlerContext ctx, ByteBuf msg) throws ProtocolException {
-        Authentication auth = authProvider.authenticate(new ClearTextPassword(readString(msg)));
+        Authentication auth;
+        try {
+            auth = authProvider.authenticate(new ClearTextPassword(readString(msg)));
+        } catch (Exception e) {
+            throw new BreakingException(ErrorCodes.INTERNAL_ERROR, "Authentication failed", e);
+        }
+
         if (auth != Authentication.OK)
             throw new BreakingException(ErrorCodes.INVALID_CREDENTIALS, "Authentication failed");
 
@@ -464,7 +520,7 @@ public class MessageProcessor extends ChannelInboundHandlerAdapter {
         }
     }
 
-    private void onAuthenticationOK(ChannelHandlerContext ctx) throws ProtocolException {
+    private void onAuthenticationOK(ChannelHandlerContext ctx) {
         ByteBuf buf = ctx.alloc().ioBuffer();
         writeAuthenticationOK(buf);
         writeParameterStatus(buf, "client_encoding", session.getCharset().name());

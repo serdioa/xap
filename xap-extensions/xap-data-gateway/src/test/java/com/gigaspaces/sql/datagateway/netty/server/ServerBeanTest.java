@@ -70,7 +70,7 @@ class ServerBeanTest extends AbstractServerTest{
     void testSet(boolean simple) throws Exception {
         try (Connection conn = connect(simple)) {
             final Statement statement = conn.createStatement();
-            assertEquals(1, statement.executeUpdate("SET DateStyle = 'ISO'"));
+            statement.execute("SET DateStyle = 'ISO'"); // SET statement should not return any result
         }
     }
 
@@ -148,7 +148,8 @@ class ServerBeanTest extends AbstractServerTest{
 
             qry = "SET TimeZone='GMT-1'"; // PG uses posix timezones which are negated
             try (PreparedStatement statement = conn.prepareStatement(qry)) {
-                assertEquals(1, statement.executeUpdate());
+                // SET statement should not return any result
+                statement.execute();
             }
 
             qry = String.format("SELECT \"timestamp\" FROM \"%s\" where first_name = 'Adam'", MyPojo.class.getName());
@@ -339,8 +340,7 @@ class ServerBeanTest extends AbstractServerTest{
 "| Adam       | Bb        | Adam@msn.com  | 30  |\n";
             DumpUtils.checkResult(res, expected);
             statement.getMoreResults();
-            int updateCount = statement.getUpdateCount();
-            assertEquals(1, updateCount);
+            // SET statement should not return any result
             statement.getMoreResults();
             res = statement.getResultSet();
             expected = "" +

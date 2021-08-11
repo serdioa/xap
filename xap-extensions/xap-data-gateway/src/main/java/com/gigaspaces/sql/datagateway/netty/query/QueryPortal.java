@@ -1,6 +1,7 @@
 package com.gigaspaces.sql.datagateway.netty.query;
 
 import com.gigaspaces.sql.datagateway.netty.exception.BreakingException;
+import com.gigaspaces.sql.datagateway.netty.exception.ExceptionUtil;
 import com.gigaspaces.sql.datagateway.netty.exception.ProtocolException;
 import com.gigaspaces.sql.datagateway.netty.utils.ErrorCodes;
 
@@ -17,12 +18,12 @@ class QueryPortal<T> implements Portal<T> {
     private final Statement stmt;
     private final RowDescription description;
     private final PortalCommand command;
-    private final ThrowingSupplier<Iterator<T>, ProtocolException> op;
+    private final QueryOp<T> op;
 
     private int processed;
     private Iterator<T> it;
 
-    public QueryPortal(QueryProviderImpl queryProvider, String name, Statement stmt, PortalCommand command, int[] formatCodes, ThrowingSupplier<Iterator<T>, ProtocolException> op) {
+    public QueryPortal(QueryProviderImpl queryProvider, String name, Statement stmt, PortalCommand command, int[] formatCodes, QueryOp<T> op) {
         this.queryProvider = queryProvider;
         this.name = name;
         this.stmt = stmt;
@@ -77,7 +78,11 @@ class QueryPortal<T> implements Portal<T> {
     public void execute() throws ProtocolException {
         if (it != null)
             throw new BreakingException(ErrorCodes.PROTOCOL_VIOLATION, "Duplicate execute message");
-        it = op.apply();
+        try {
+            it = op.execute();
+        } catch (Exception e) {
+            throw ExceptionUtil.wrapException("Failed to execute statement", e);
+        }
     }
 
     @Override

@@ -9,8 +9,8 @@ import com.gigaspaces.jdbc.calcite.sql.extension.SqlDeallocate;
 import com.gigaspaces.jdbc.calcite.sql.extension.SqlShowOption;
 import com.gigaspaces.jdbc.calcite.utils.CalciteUtils;
 import com.gigaspaces.query.sql.functions.extended.LocalSession;
+import com.gigaspaces.sql.datagateway.netty.exception.ExceptionUtil;
 import com.gigaspaces.sql.datagateway.netty.exception.NonBreakingException;
-import com.gigaspaces.sql.datagateway.netty.exception.ParseException;
 import com.gigaspaces.sql.datagateway.netty.exception.ProtocolException;
 import com.gigaspaces.sql.datagateway.netty.utils.*;
 import com.google.common.collect.ImmutableList;
@@ -20,16 +20,14 @@ import org.apache.calcite.rel.RelRoot;
 import org.apache.calcite.rel.externalize.RelWriterImpl;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeField;
-import org.apache.calcite.runtime.CalciteException;
 import org.apache.calcite.sql.*;
-import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.calcite.sql.type.SqlTypeName;
-import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.nio.charset.Charset;
+import java.nio.charset.UnsupportedCharsetException;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -39,7 +37,6 @@ import static java.util.Collections.singletonList;
 @SuppressWarnings({"unchecked", "rawtypes"})
 public class QueryProviderImpl implements QueryProvider {
 
-    private static final int DML_SINGLE_VALUE_MODIFIED = 1;
     private static final String SELECT_NULL_NULL_NULL = "SELECT NULL, NULL, NULL";
 
     private final CalciteQueryHandler handler;
@@ -59,13 +56,7 @@ public class QueryProviderImpl implements QueryProvider {
         else if (statements.containsKey(stmt))
             throw new NonBreakingException(ErrorCodes.INVALID_STATEMENT_NAME, "Duplicate statement name");
 
-        try {
-            statements.put(stmt, prepareStatement(session, stmt, qry, paramTypes));
-        } catch (ProtocolException e) {
-            throw e;
-        } catch (Exception e) {
-            throw new NonBreakingException(ErrorCodes.SYNTAX_ERROR, "Failed to prepare statement", e);
-        }
+        statements.put(stmt, prepareStatement(session, stmt, qry, paramTypes));
     }
 
     @Override
@@ -78,13 +69,7 @@ public class QueryProviderImpl implements QueryProvider {
         else if (portals.containsKey(portal))
             throw new NonBreakingException(ErrorCodes.INVALID_CURSOR_NAME, "Duplicate cursor name");
 
-        try {
-            portals.put(portal, preparePortal(session, portal, statements.get(stmt), params, formatCodes));
-        } catch (ProtocolException e) {
-            throw e;
-        } catch (Exception e) {
-            throw new NonBreakingException(ErrorCodes.INTERNAL_ERROR, "Failed to bind statement to a portal", e);
-        }
+        portals.put(portal, preparePortal(session, portal, statements.get(stmt), params, formatCodes));
     }
 
     @Override
@@ -147,33 +132,28 @@ public class QueryProviderImpl implements QueryProvider {
             );
             StatementDescription statementDescription = new StatementDescription(ParametersDescription.EMPTY, new RowDescription(columns));
             StatementImpl statement = new StatementImpl(this, Constants.EMPTY_STRING, null, null, statementDescription);
-            ThrowingSupplier op = () -> singletonList(new Object[]{null, null, null}).iterator();
-            return Collections.singletonList(new QueryPortal(this, Constants.EMPTY_STRING, statement, PortalCommand.SELECT, Constants.EMPTY_INT_ARRAY, op));
+            QueryOp<Object[]> op = () -> singletonList(new Object[]{null, null, null}).iterator();
+            return Collections.singletonList(new QueryPortal<>(this, Constants.EMPTY_STRING, statement, PortalCommand.SELECT, Constants.EMPTY_INT_ARRAY, op));
         }
-        try {
-            // TODO possibly it's worth to add SqlEmptyNode to sql parser
-            if (query.trim().isEmpty()) {
-                StatementImpl statement = new StatementImpl(this, Constants.EMPTY_STRING, null, null, StatementDescription.EMPTY);
-                EmptyPortal<Object> portal = new EmptyPortal<>(this, Constants.EMPTY_STRING, statement);
-                return Collections.singletonList(portal);
-            }
 
-            query = prepareQueryForCalcite(session, query);
-            GSOptimizer optimizer = new GSOptimizer(session.getSpace());
-
-            SqlNodeList nodes = optimizer.parseMultiline(query);
-
-            List<Portal<?>> result = new ArrayList<>();
-            for (SqlNode node : nodes) {
-                StatementImpl statement = prepareStatement(session, Constants.EMPTY_STRING, optimizer, Constants.EMPTY_INT_ARRAY, node);
-                result.add(preparePortal(session, Constants.EMPTY_STRING, statement, Constants.EMPTY_OBJECT_ARRAY, Constants.EMPTY_INT_ARRAY));
-            }
-            return result;
-        } catch (ProtocolException e) {
-            throw e;
-        } catch (Exception e) {
-            throw new NonBreakingException(ErrorCodes.INTERNAL_ERROR, "Failed to execute query", e);
+        // TODO possibly it's worth to add SqlEmptyNode to sql parser
+        if (query.trim().isEmpty()) {
+            StatementImpl statement = new StatementImpl(this, Constants.EMPTY_STRING, null, null, StatementDescription.EMPTY);
+            EmptyPortal<Object> portal = new EmptyPortal<>(this, Constants.EMPTY_STRING, statement);
+            return Collections.singletonList(portal);
         }
+
+        query = prepareQueryForCalcite(session, query);
+        GSOptimizer optimizer = new GSOptimizer(session.getSpace());
+
+        SqlNodeList nodes = parseMultiline(optimizer, query);
+
+        List<Portal<?>> result = new ArrayList<>();
+        for (SqlNode node : nodes) {
+            StatementImpl statement = prepareStatement(session, Constants.EMPTY_STRING, optimizer, Constants.EMPTY_INT_ARRAY, node);
+            result.add(preparePortal(session, Constants.EMPTY_STRING, statement, Constants.EMPTY_OBJECT_ARRAY, Constants.EMPTY_INT_ARRAY));
+        }
+        return result;
     }
 
     private StatementImpl prepareStatement(Session session, String name, String query, int[] paramTypes) throws ProtocolException {
@@ -184,11 +164,10 @@ public class QueryProviderImpl implements QueryProvider {
         }
         query = prepareQueryForCalcite(session, query);
         GSOptimizer optimizer = new GSOptimizer(session.getSpace());
-        try {
-            return prepareStatement(session, name, optimizer, paramTypes, optimizer.parse(query));
-        } catch (CalciteException | SqlParseException e) {
-            throw new ParseException(e.getMessage(), e);
-        }
+
+        SqlNode ast = parse(optimizer, query);
+
+        return prepareStatement(session, name, optimizer, paramTypes, ast);
     }
 
     private StatementImpl prepareStatement(Session session, String name, GSOptimizer optimizer, int[] paramTypes, SqlNode ast) throws ProtocolException {
@@ -209,7 +188,7 @@ public class QueryProviderImpl implements QueryProvider {
                 SqlExplainLevel detailLevel = explain.getDetailLevel();
                 SqlExplainFormat format = explain.getFormat();
 
-                GSOptimizerValidationResult validated = optimizer.validate(explicandum);
+                GSOptimizerValidationResult validated = validate(optimizer, explicandum);
                 explicandum = validated.getValidatedAst();
                 RelDataType rowType = validated.getRowType();
 
@@ -217,7 +196,7 @@ public class QueryProviderImpl implements QueryProvider {
             }
             throw new NonBreakingException(ErrorCodes.UNSUPPORTED_FEATURE, "cannot explain non-query statement. query: " + ast);
         } else {
-            GSOptimizerValidationResult validated = optimizer.validate(ast);
+            GSOptimizerValidationResult validated = validate(optimizer, ast);
 
             ParametersDescription paramDesc;
             if (paramTypes.length > 0) {
@@ -300,37 +279,28 @@ public class QueryProviderImpl implements QueryProvider {
         throw new NonBreakingException(ErrorCodes.UNSUPPORTED_FEATURE, "Unsupported query kind: " + query.getKind());
     }
 
-    @NotNull
-    private QueryPortal<Object[]> prepareExplain(Session session, String name, ExplainStatement statement, Object[] params, int[] formatCodes, SqlNode query) throws NonBreakingException {
-        try {
-            ThrowingSupplier<Iterator<Object[]>, ProtocolException> op = () -> {
-                try {
-                    SqlExplain.Depth depth = statement.getDepth();
-                    if (depth == SqlExplain.Depth.LOGICAL)
-                        throw new NonBreakingException(ErrorCodes.UNSUPPORTED_FEATURE, "Logical explanation is unsupported.");
+    private Portal<Object[]> prepareExplain(Session session, String name, ExplainStatement statement, Object[] params, int[] formatCodes, SqlNode query) {
+            QueryOp<Object[]> op = () -> {
+                SqlExplain.Depth depth = statement.getDepth();
+                if (depth == SqlExplain.Depth.LOGICAL)
+                    throw new NonBreakingException(ErrorCodes.UNSUPPORTED_FEATURE, "Logical explanation is unsupported.");
 
-                    if (depth == SqlExplain.Depth.TYPE) {
-                        String dump = RelOptUtil.dumpType(statement.getRowType());
-                        return singletonList(new Object[]{dump}).iterator();
-                    }
-
-                    GSOptimizer optimizer = statement.getOptimizer();
-                    RelRoot relRoot = optimizer.optimizeLogical(query);
-                    GSRelNode physicalPlan = optimizer.optimizePhysical(relRoot);
-                    LocalSession localSession = new LocalSession(session.getUsername());
-                    ResponsePacket packet = handler.executeExplain(session.getSpace(), physicalPlan, params, localSession);
-                    return new ArrayIterator<>(packet.getResultEntry().getFieldValues());
-                } catch (Exception e) {
-                    throw new NonBreakingException(ErrorCodes.INTERNAL_ERROR, "Failed to execute operation.", e);
+                if (depth == SqlExplain.Depth.TYPE) {
+                    String dump = RelOptUtil.dumpType(statement.getRowType());
+                    return singletonList(new Object[]{dump}).iterator();
                 }
+
+                GSOptimizer optimizer = statement.getOptimizer();
+                RelRoot relRoot = optimizer.optimizeLogical(query);
+                GSRelNode physicalPlan = optimizer.optimizePhysical(relRoot);
+                LocalSession localSession = new LocalSession(session.getUsername());
+                ResponsePacket packet = handler.executeExplain(session.getSpace(), physicalPlan, params, localSession);
+                return new ArrayIterator<>(packet.getResultEntry().getFieldValues());
             };
             return new QueryPortal<>(this, name, statement, PortalCommand.SELECT, formatCodes, op);
-        } catch (Exception e) {
-            throw new NonBreakingException(ErrorCodes.INTERNAL_ERROR, "Failed to prepare portal", e);
-        }
     }
 
-    private Portal<?> prepareShowOption(Session session, String name, Statement statement, SqlShowOption show) {
+    private Portal<Object[]> prepareShowOption(Session session, String name, Statement statement, SqlShowOption show) {
         String var = show.getName().toString();
         switch (var.toLowerCase(Locale.ROOT)) {
             case "transaction_isolation":
@@ -352,11 +322,7 @@ public class QueryProviderImpl implements QueryProvider {
 
     private Portal<?> prepareDeallocate(Session session, String name, Statement statement, SqlDeallocate query) {
         String resource = query.getResourceName().toString();
-        ThrowingSupplier<Integer, ProtocolException> op = () -> {
-            closeS(resource);
-            return DML_SINGLE_VALUE_MODIFIED;
-        };
-        return new DmlPortal<>(this, name, statement, PortalCommand.DEALLOCATE, op);
+        return new CommandPortal(this, name, statement, PortalCommand.DEALLOCATE, () -> closeS(resource));
     }
 
     private Portal<?> prepareSetOption(Session session, String name, Statement statement, SqlSetOption query) throws NonBreakingException {
@@ -370,66 +336,49 @@ public class QueryProviderImpl implements QueryProvider {
         switch (var.toLowerCase(Locale.ROOT)) {
             case "client_encoding": {
                 String val = asString(literal);
-                ThrowingSupplier<Integer, ProtocolException> op = () -> {
+                CommandOp op = () -> {
                     try {
                         session.setCharset(Charset.forName(val));
-                    } catch (Exception e) {
+                    } catch (UnsupportedCharsetException e) {
                         throw new NonBreakingException(ErrorCodes.INVALID_PARAMETER_VALUE, literal.getParserPosition(), "Unknown charset");
                     }
-                    return DML_SINGLE_VALUE_MODIFIED;
                 };
 
-                return new DmlPortal<>(this, name, statement, PortalCommand.SET, op);
+                return new CommandPortal(this, name, statement, PortalCommand.SET, op);
             }
 
             case "datestyle": {
                 String val = asString(literal);
-                ThrowingSupplier<Integer, ProtocolException> op = () -> {
-                    session.setDateStyle(val.indexOf(',') < 0 ? val + ", MDY" : val);
-                    return DML_SINGLE_VALUE_MODIFIED;
-                };
-
-                return new DmlPortal<>(this, name, statement, PortalCommand.SET, op);
+                CommandOp op = () -> session.setDateStyle(val.indexOf(',') < 0 ? val + ", MDY" : val);
+                return new CommandPortal(this, name, statement, PortalCommand.SET, op);
             }
 
             case "timezone" : {
                 String val = asString(literal);
-                ThrowingSupplier<Integer, ProtocolException> op = () -> {
-                    session.setTimeZone(TimeZone.getTimeZone(convertTimeZone(val)));
-                    return DML_SINGLE_VALUE_MODIFIED;
-                };
-
-                return new DmlPortal<>(this, name, statement, PortalCommand.SET, op);
+                CommandOp op = () -> session.setTimeZone(TimeZone.getTimeZone(convertTimeZone(val)));
+                return new CommandPortal(this, name, statement, PortalCommand.SET, op);
             }
 
             default:
                 // TODO support missing variables
-                return new DmlPortal<>(this, name, statement, PortalCommand.SET, () -> 0);
+                return new CommandPortal(this, name, statement, PortalCommand.SET, () -> {});
         }
     }
 
-    private Portal<?> prepareQuery(Session session, String name, Statement statement, Object[] params, int[] formatCodes, SqlNode query) throws ProtocolException {
-        try {
-            ThrowingSupplier<Iterator<Object[]>, ProtocolException> op = () -> {
-                try {
-                    GSRelNode physicalPlan = statement.getOptimizer().optimize(query);
-                    StringWriter sw = new StringWriter();
-                    PrintWriter pw = new PrintWriter(sw);
-                    RelWriterImpl writer = new RelWriterImpl(pw, SqlExplainLevel.EXPPLAN_ATTRIBUTES, false);
-                    physicalPlan.explain(writer);
-                    System.out.println(sw);
+    private Portal<Object[]> prepareQuery(Session session, String name, Statement statement, Object[] params, int[] formatCodes, SqlNode query) {
+        QueryOp<Object[]> op = () -> {
+            GSRelNode physicalPlan = statement.getOptimizer().optimize(query);
+            StringWriter sw = new StringWriter();
+            PrintWriter pw = new PrintWriter(sw);
+            RelWriterImpl writer = new RelWriterImpl(pw, SqlExplainLevel.EXPPLAN_ATTRIBUTES, false);
+            physicalPlan.explain(writer);
+            System.out.println(sw);
 
-                    LocalSession localSession = new LocalSession(session.getUsername());
-                    ResponsePacket packet = handler.executeStatement(session.getSpace(), physicalPlan, params, localSession);
-                    return new ArrayIterator<>(packet.getResultEntry().getFieldValues());
-                } catch (Exception e) {
-                    throw new NonBreakingException(ErrorCodes.INTERNAL_ERROR, "Failed to execute operation.", e);
-                }
-            };
-            return new QueryPortal<>(this, name, statement, PortalCommand.SELECT, formatCodes, op);
-        } catch (Exception e) {
-            throw new NonBreakingException(ErrorCodes.INTERNAL_ERROR, "Failed to prepare portal", e);
-        }
+            LocalSession localSession = new LocalSession(session.getUsername());
+            ResponsePacket packet = handler.executeStatement(session.getSpace(), physicalPlan, params, localSession);
+            return new ArrayIterator<>(packet.getResultEntry().getFieldValues());
+        };
+        return new QueryPortal<>(this, name, statement, PortalCommand.SELECT, formatCodes, op);
     }
 
     private String asString(SqlLiteral literal) throws NonBreakingException {
@@ -437,6 +386,30 @@ public class QueryProviderImpl implements QueryProvider {
             throw new NonBreakingException(ErrorCodes.INVALID_PARAMETER_VALUE,
                     literal.getParserPosition(), "String literal is expected.");
         return literal.getValueAs(String.class);
+    }
+
+    private SqlNode parse(GSOptimizer optimizer, String query) throws ProtocolException {
+        try {
+            return optimizer.parse(query);
+        } catch (Exception e) {
+            throw ExceptionUtil.wrapException("Failed to prepare query", e);
+        }
+    }
+
+    private SqlNodeList parseMultiline(GSOptimizer optimizer, String query) throws ProtocolException {
+        try {
+            return optimizer.parseMultiline(query);
+        } catch (Exception e) {
+            throw ExceptionUtil.wrapException("Failed to prepare query", e);
+        }
+    }
+
+    private GSOptimizerValidationResult validate(GSOptimizer optimizer, SqlNode ast) throws ProtocolException {
+        try {
+            return optimizer.validate(ast);
+        } catch (Exception e) {
+            throw ExceptionUtil.wrapException("Failed to prepare query", e);
+        }
     }
 
     private static String prepareQueryForCalcite(Session session, String query) {
