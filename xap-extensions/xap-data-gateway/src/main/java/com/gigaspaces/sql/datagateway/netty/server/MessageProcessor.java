@@ -5,14 +5,7 @@ import com.gigaspaces.sql.datagateway.netty.authentication.AuthenticationProvide
 import com.gigaspaces.sql.datagateway.netty.authentication.ClearTextPassword;
 import com.gigaspaces.sql.datagateway.netty.exception.BreakingException;
 import com.gigaspaces.sql.datagateway.netty.exception.ProtocolException;
-import com.gigaspaces.sql.datagateway.netty.query.ColumnDescription;
-import com.gigaspaces.sql.datagateway.netty.query.ParameterDescription;
-import com.gigaspaces.sql.datagateway.netty.query.ParametersDescription;
-import com.gigaspaces.sql.datagateway.netty.query.Portal;
-import com.gigaspaces.sql.datagateway.netty.query.QueryProvider;
-import com.gigaspaces.sql.datagateway.netty.query.RowDescription;
-import com.gigaspaces.sql.datagateway.netty.query.Session;
-import com.gigaspaces.sql.datagateway.netty.query.StatementDescription;
+import com.gigaspaces.sql.datagateway.netty.query.*;
 import com.gigaspaces.sql.datagateway.netty.utils.ErrorCodes;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
@@ -22,15 +15,13 @@ import org.slf4j.Logger;
 
 import java.nio.charset.Charset;
 import java.security.SecureRandom;
+import java.util.HashMap;
 import java.util.List;
 import java.util.TimeZone;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.gigaspaces.sql.datagateway.netty.exception.ExceptionUtil.wrapException;
-import static com.gigaspaces.sql.datagateway.netty.utils.Constants.BATCH_SIZE;
-import static com.gigaspaces.sql.datagateway.netty.utils.Constants.CANCEL_REQUEST;
-import static com.gigaspaces.sql.datagateway.netty.utils.Constants.PROTOCOL_3_0;
-import static com.gigaspaces.sql.datagateway.netty.utils.Constants.SSL_REQUEST;
+import static com.gigaspaces.sql.datagateway.netty.utils.Constants.*;
 import static com.gigaspaces.sql.datagateway.netty.utils.DateTimeUtils.convertTimeZone;
 
 public class MessageProcessor extends ChannelInboundHandlerAdapter {
@@ -481,6 +472,35 @@ public class MessageProcessor extends ChannelInboundHandlerAdapter {
                             } catch (Exception e) {
                                 log.warn("Unknown TimeZone: " + value, e);
                             }
+                            break;
+                        }
+                        case "options": {
+                            String[] pairs = value.split("-c");
+                            HashMap<String, String> options = new HashMap<>();
+                            for (String pair : pairs) {
+                                if (pair.isEmpty()) continue;
+
+                                String[] keyValue = pair.split("=");
+                                if (keyValue.length != 2) {
+                                    throw new BreakingException(ErrorCodes.PROTOCOL_VIOLATION, "Corrupted options, wrong key value provided: " + pair);
+                                }
+
+                                String oKey = keyValue[0].trim();
+                                String oValue = keyValue[1].trim();
+                                options.put(oKey, oValue);
+                            }
+
+                            options.forEach((k, v) -> {
+                                switch (k) {
+                                    case ("locators"): {
+                                        session.setSpaceLocators(v);
+                                        break;
+                                    }
+                                    default:
+                                        log.error("Unsupported options param=" + k + "; value=" + v);
+                                }
+                            });
+
                             break;
                         }
 
