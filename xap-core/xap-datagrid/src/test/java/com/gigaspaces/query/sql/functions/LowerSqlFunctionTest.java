@@ -19,8 +19,7 @@ package com.gigaspaces.query.sql.functions;
 import org.junit.Before;
 import org.junit.Test;
 
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 
 /**
@@ -36,7 +35,6 @@ public class LowerSqlFunctionTest {
         lowerSqlFunction = new LowerSqlFunction();
     }
 
-    @Test(expected = RuntimeException.class)
     public void testApplyNullString() throws Exception {
         SqlFunctionExecutionContext sqlFunctionExecutionContext = new SqlFunctionExecutionContext() {
             @Override
@@ -50,7 +48,7 @@ public class LowerSqlFunctionTest {
             }
         };
 
-        lowerSqlFunction.apply(sqlFunctionExecutionContext);
+        assertNull(lowerSqlFunction.apply(sqlFunctionExecutionContext));
 
     }
 

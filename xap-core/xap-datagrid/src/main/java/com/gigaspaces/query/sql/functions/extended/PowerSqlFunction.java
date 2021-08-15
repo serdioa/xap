@@ -38,6 +38,9 @@ public class PowerSqlFunction extends SqlFunction {
 
         Object num = context.getArgument(0);
         Object power = context.getArgument(1);
+        if(num == null){
+            return null;
+        }
         if (!(num instanceof Number) || !(power instanceof Number)) {
             throw new RuntimeException("Power function - wrong arguments types, both arguments should be Number. First argument:[" + num + "]. Second argument:" + power + "].");
         }

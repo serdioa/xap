@@ -33,6 +33,9 @@ public class ModSqlFunction extends SqlFunction {
         assertNumberOfArguments(2, context);
         Object leftNum = context.getArgument(0);
         Object rightNum = context.getArgument(1);
+        if(leftNum == null || rightNum == null){
+            return null;
+        }
         if (!(leftNum instanceof Number) || !(rightNum instanceof Number)) { // fail fast
             throw new RuntimeException("Mod function - wrong arguments types, both arguments should be Double, Long or Integer. First argument:[" + leftNum + "]. Second argument:[ " + rightNum + "]");
         }

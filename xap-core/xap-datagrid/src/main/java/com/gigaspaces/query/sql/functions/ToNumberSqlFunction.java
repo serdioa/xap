@@ -36,6 +36,9 @@ public class ToNumberSqlFunction extends SqlFunction {
     public Object apply(SqlFunctionExecutionContext context) {
         Object arg = context.getArgument(0);
         Object format = null;
+        if(arg == null){
+            return null;
+        }
         if (context.getNumberOfArguments() >= 2) {
             format = context.getArgument(1);
         }

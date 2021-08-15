@@ -19,8 +19,7 @@ package com.gigaspaces.query.sql.functions;
 import org.junit.Before;
 import org.junit.Test;
 
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 /**
  * Created by yaeln on 3/17/16.
@@ -55,7 +54,6 @@ public class CharLengthSqlFunctionTest {
         assertTrue(res.equals(0));
     }
 
-    @Test(expected = RuntimeException.class)
     public void testApplyNullField() throws Exception {
 
         SqlFunctionExecutionContext sqlFunctionExecutionContext = new SqlFunctionExecutionContext() {
@@ -70,7 +68,7 @@ public class CharLengthSqlFunctionTest {
             }
         };
 
-        charLengthSqlFunction.apply(sqlFunctionExecutionContext);
+        assertNull(charLengthSqlFunction.apply(sqlFunctionExecutionContext));
     }
 
     @Test

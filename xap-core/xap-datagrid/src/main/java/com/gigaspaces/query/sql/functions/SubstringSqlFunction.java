@@ -24,6 +24,9 @@ public class SubstringSqlFunction extends SqlFunction {
     public Object apply(SqlFunctionExecutionContext context) {
         assertNumberOfArguments(2, 3, context);
         Object textObject = context.getArgument(0);
+        if(textObject == null){
+            return null;
+        }
         if (!isString(textObject)) {
             throw new RuntimeException("Substring function - 1st argument must be a String");
         }

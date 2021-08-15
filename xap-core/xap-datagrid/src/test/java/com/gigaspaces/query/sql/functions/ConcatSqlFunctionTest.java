@@ -73,7 +73,7 @@ public class ConcatSqlFunctionTest {
 
         Object res = concatSqlFunction.apply(sqlFunctionExecutionContext);
         assertNotNull(res);
-        String s = "abnull";
+        String s = "ab";
         assertTrue(s.equals(res));
     }
 

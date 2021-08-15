@@ -54,7 +54,7 @@ public class AppendSqlFunctionTest {
 
         Object res = appendSqlFunction.apply(sqlFunctionExecutionContext);
         assertNotNull(res);
-        String string = "anull";
+        String string = "a";
         assertTrue(string.equals(res));
     }
 

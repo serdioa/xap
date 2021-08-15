@@ -36,6 +36,9 @@ public class TruncSqlFunction extends SqlFunction {
     public Object apply(SqlFunctionExecutionContext context) {
         assertNumberOfArguments(1, 2, context);
         Object number = context.getArgument(0);
+        if(number == null){
+            return null;
+        }
         int numberOfArguments = context.getNumberOfArguments();
         if (!(number instanceof Number)) {// fast fail
             throw new RuntimeException("Trunc function - wrong argument type, should be a Number - : " + number);

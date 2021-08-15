@@ -21,6 +21,9 @@ public class StrposFunction extends SqlFunction {
         assertNumberOfArguments(2, context);
         Object str = context.getArgument(0);
         Object subStr = context.getArgument(1);
+        if(str == null){
+            return null;
+        }
         if (!isString(str))
             throw new RuntimeException("Strpos function - 1st argument must be a String: " + str);
         if (!isString(subStr))

@@ -19,8 +19,7 @@ package com.gigaspaces.query.sql.functions;
 import org.junit.Before;
 import org.junit.Test;
 
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 /**
  * Created by yaeln on 3/20/16.
@@ -233,7 +232,7 @@ public class ModSqlFunctionTest {
         assertTrue(res.equals(1L));
     }
 
-    @Test(expected = RuntimeException.class)
+    @Test
     public void applyNullModNull() throws Exception {
 
         SqlFunctionExecutionContext sqlFunctionExecutionContext = new SqlFunctionExecutionContext() {
@@ -248,10 +247,10 @@ public class ModSqlFunctionTest {
             }
         };
 
-        modSqlFunction.apply(sqlFunctionExecutionContext);
+        assertNull(modSqlFunction.apply(sqlFunctionExecutionContext));
     }
 
-    @Test(expected = RuntimeException.class)
+    @Test
     public void applyNullModInt() throws Exception {
 
         SqlFunctionExecutionContext sqlFunctionExecutionContext = new SqlFunctionExecutionContext() {
@@ -268,10 +267,10 @@ public class ModSqlFunctionTest {
             }
         };
 
-        modSqlFunction.apply(sqlFunctionExecutionContext);
+        assertNull(modSqlFunction.apply(sqlFunctionExecutionContext));
     }
 
-    @Test(expected = RuntimeException.class)
+    @Test
     public void applyIntModNull() throws Exception {
 
         SqlFunctionExecutionContext sqlFunctionExecutionContext = new SqlFunctionExecutionContext() {
@@ -288,7 +287,7 @@ public class ModSqlFunctionTest {
             }
         };
 
-        modSqlFunction.apply(sqlFunctionExecutionContext);
+        assertNull(modSqlFunction.apply(sqlFunctionExecutionContext));
     }
 
     @Test(expected = RuntimeException.class)

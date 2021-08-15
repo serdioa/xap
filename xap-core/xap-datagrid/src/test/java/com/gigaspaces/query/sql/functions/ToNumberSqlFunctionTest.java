@@ -19,8 +19,7 @@ package com.gigaspaces.query.sql.functions;
 import org.junit.Before;
 import org.junit.Test;
 
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 
 /**
@@ -140,7 +139,7 @@ public class ToNumberSqlFunctionTest {
         toNumberSqlFunction.apply(sqlFunctionExecutionContext);
     }
 
-    @Test(expected = RuntimeException.class)
+    @Test
     public void applyWrongType_1() throws Exception {
 
         SqlFunctionExecutionContext sqlFunctionExecutionContext = new SqlFunctionExecutionContext() {
@@ -155,6 +154,6 @@ public class ToNumberSqlFunctionTest {
             }
         };
 
-        toNumberSqlFunction.apply(sqlFunctionExecutionContext);
+        assertNull(toNumberSqlFunction.apply(sqlFunctionExecutionContext));
     }
 }
