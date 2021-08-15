@@ -16,6 +16,7 @@ import com.gigaspaces.query.aggregators.*;
 import com.j_spaces.core.IJSpace;
 import com.j_spaces.core.client.Modifiers;
 import com.j_spaces.core.client.ReadModifiers;
+import com.j_spaces.jdbc.FunctionCallColumn;
 import com.j_spaces.jdbc.SQLUtil;
 import com.j_spaces.jdbc.builder.QueryTemplatePacket;
 import com.j_spaces.jdbc.builder.range.Range;
@@ -33,7 +34,7 @@ public class ConcreteTableContainer extends TableContainer {
     private final ITypeDesc typeDesc;
     private final List<String> allColumnNamesSorted;
     private final List<IQueryColumn> visibleColumns = new ArrayList<>();
-    private final Set<IQueryColumn> invisibleColumns = new HashSet<>();
+    private final Map<String, IQueryColumn> invisibleColumns = new HashMap<>();
     private final String name;
     private final String alias;
     private Integer limit = Integer.MAX_VALUE;
@@ -103,8 +104,13 @@ public class ConcreteTableContainer extends TableContainer {
                     getProjectedColumns().addAll(getGroupByColumns());
                 }
                 queryResult = new ConcreteQueryResult(res, this);
-                if( hasGroupByColumns() && hasOrderColumns() ){
-                    queryResult.sort();
+                if( hasGroupByColumns()){
+                    if(getGroupByColumns().stream().anyMatch(IQueryColumn::isFunction)){
+                        queryResult.groupBy();
+                    }
+                    if(hasOrderColumns()) {
+                        queryResult.sort();
+                    }
                 }
             }
             return queryResult;
@@ -114,7 +120,7 @@ public class ConcreteTableContainer extends TableContainer {
     }
 
     private String[] createProjectionTable() {
-        return Stream.concat(visibleColumns.stream(), invisibleColumns.stream()).map(IQueryColumn::getName).distinct().toArray(String[]::new);
+        return Stream.concat(visibleColumns.stream(), getInvisibleColumns().stream()).map(IQueryColumn::getName).distinct().toArray(String[]::new);
     }
 
     private void setAggregations(boolean isJoinUsed) {
@@ -164,7 +170,7 @@ public class ConcreteTableContainer extends TableContainer {
 
     private void setGroupByAggregation() {
         //groupBy in server
-        List<IQueryColumn> groupByColumns = getGroupByColumns();
+        List<IQueryColumn> groupByColumns = getGroupByColumns().stream().filter(qc -> !qc.isFunction()).collect(Collectors.toList());
         if(!groupByColumns.isEmpty()){
             int groupByColumnsCount = groupByColumns.size();
             String[] groupByColumnsArray = new String[ groupByColumnsCount ];
@@ -213,20 +219,26 @@ public class ConcreteTableContainer extends TableContainer {
     }
 
     private void setAggregationFunctions() {
-        if (!hasAggregationFunctions()) {
+        if(!hasAggregationFunctions()) {
             return;
         }
 
         AggregationSet aggregationSet;
-        if (queryTemplatePacket.getAggregationSet() == null) {
+        if( queryTemplatePacket.getAggregationSet() == null ) {
             aggregationSet = new AggregationSet();
             queryTemplatePacket.setAggregationSet(aggregationSet);
-        } else {
+        }
+        else{
             aggregationSet = queryTemplatePacket.getAggregationSet();
         }
 
         for (AggregationColumn aggregationColumn : getAggregationColumns()) {
             String columnName = aggregationColumn.getColumnName();
+            FunctionCallColumn functionCallColumn = null;
+            if(aggregationColumn.getQueryColumn() != null && aggregationColumn.getQueryColumn().isFunction()){
+                columnName = ((FunctionColumn) aggregationColumn.getQueryColumn()).getPath();
+                functionCallColumn = ((FunctionColumn) aggregationColumn.getQueryColumn()).toFunctionCallColumn();
+            }
             AbstractPathAggregator aggregator;
             switch (aggregationColumn.getType()) {
                 case COUNT:
@@ -258,17 +270,26 @@ public class ConcreteTableContainer extends TableContainer {
                 default:
                     throw new IllegalStateException("Unexpected value: " + aggregationColumn.getType());
             }
+            if(functionCallColumn != null){
+                aggregator.setFunctionCallColumn(functionCallColumn);
+            }
             if(!aggregationColumn.isAllColumns()){
                 aggregator.setPath(columnName);
             }
             aggregationSet.add(aggregator);
         }
 
-        for (IQueryColumn visibleColumn : getVisibleColumns()) {
-            if (visibleColumn.isLiteral()) {
-                continue; //skip literal columns
+        for( IQueryColumn visibleColumn : getVisibleColumns()){
+            if(visibleColumn.isFunction()){
+                FunctionCallColumn functionCallColumn = ((FunctionColumn) visibleColumn).toFunctionCallColumn();
+                aggregationSet = aggregationSet.add(new SingleValueFunctionAggregator(functionCallColumn).setPath(functionCallColumn.getName()));
             }
-            aggregationSet = aggregationSet.add(new SingleValueAggregator().setPath(visibleColumn.getName()));
+            else{
+                if (visibleColumn.isLiteral()) {
+                    continue; //skip literal columns
+                }
+                aggregationSet = aggregationSet.add(new SingleValueAggregator().setPath(visibleColumn.getName()));
+            }
         }
     }
 
@@ -286,7 +307,7 @@ public class ConcreteTableContainer extends TableContainer {
             if (isVisible) {
                 this.visibleColumns.add(concreteColumn);
             } else {
-                this.invisibleColumns.add(concreteColumn);
+                this.invisibleColumns.putIfAbsent(concreteColumn.getName(), concreteColumn);
             }
             return concreteColumn;
         } catch (SQLException e) {
@@ -300,7 +321,7 @@ public class ConcreteTableContainer extends TableContainer {
 
     @Override
     public Set<IQueryColumn> getInvisibleColumns() {
-        return this.invisibleColumns;
+        return new HashSet<>(this.invisibleColumns.values());
     }
 
     @Override

@@ -27,6 +27,12 @@ public interface IQueryColumn extends Comparable<IQueryColumn> {
 
     Object getValue(IEntryPacket entryPacket);
 
+    default IQueryColumn copy(){
+        throw new UnsupportedOperationException("Copy is unsupported!");
+    }
+
+    default boolean isConcrete() {return false;}
+
     default boolean isAggregate(){
         return false;
     }

@@ -30,7 +30,7 @@ public class GroupByHandler extends UnsupportedExpressionVisitor implements Grou
             String columnName = getColumn().getColumnName();
             TableContainer table = getTable();
             ConcreteColumn groupByColumn = new ConcreteColumn(columnName, null, null,  isVisibleColumn( columnName ), table, columnCounter++);
-            table.addGroupByColumns(groupByColumn);
+            table.addGroupByColumn(groupByColumn);
         }
     }
 
