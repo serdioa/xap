@@ -3,9 +3,13 @@ package com.gigaspaces.jdbc.calcite.utils;
 import com.gigaspaces.jdbc.calcite.CalciteDefaults;
 import com.gigaspaces.jdbc.calcite.DateTypeResolver;
 import org.apache.calcite.rex.RexLiteral;
+import org.apache.calcite.rex.RexLocalRef;
 import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.rex.RexProgram;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Properties;
 
 import static com.gigaspaces.jdbc.calcite.CalciteDefaults.isCalcitePropertySet;
@@ -165,7 +169,9 @@ public class CalciteUtils {
         return query.replaceAll(" (?i)rownum", " row_number()");
     }
 
-
+    public static RexNode getNode(RexLocalRef localRef, RexProgram program) {
+        return program.getExprList().get(localRef.getIndex());
+    }
 
 }
 

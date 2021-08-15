@@ -2,6 +2,7 @@ package com.gigaspaces.jdbc.model.result;
 
 import com.gigaspaces.internal.metadata.ITypeDesc;
 import com.gigaspaces.internal.transport.IEntryPacket;
+import com.gigaspaces.jdbc.ProcessLayer;
 import com.gigaspaces.jdbc.QueryExecutor;
 import com.gigaspaces.jdbc.model.table.*;
 import com.j_spaces.jdbc.builder.QueryEntryPacket;
@@ -17,7 +18,7 @@ public class TableRow implements Comparable<TableRow> {
     private final Object[] groupByValues;
 
     public TableRow(IQueryColumn[] columns, Object... values) {
-        this(columns, values, new OrderColumn[0], new Object[0], new ConcreteColumn[0], new Object[0]);
+        this(columns, values, new OrderColumn[0], new Object[0], new IQueryColumn[0], new Object[0]);
     }
 
     public TableRow(IQueryColumn[] columns, Object[] values, OrderColumn[] orderColumns, Object[] orderValues,
@@ -117,7 +118,7 @@ public class TableRow implements Comparable<TableRow> {
             orderValues[i] = orderColumns.get(i).getCurrentValue();
         }
 
-        this.groupByColumns = groupByColumns.toArray(new ConcreteColumn[0]);
+        this.groupByColumns = groupByColumns.toArray(new IQueryColumn[0]);
         groupByValues = new Object[this.groupByColumns.length];
         for (int i = 0; i < groupByColumns.size(); i++) {
             groupByValues[i] = groupByColumns.get(i).getCurrentValue();
@@ -151,15 +152,15 @@ public class TableRow implements Comparable<TableRow> {
             this.orderValues[i] = row.getPropertyValue(this.orderColumns[i].getName());
         }
 
-        this.groupByColumns = tempTableContainer.getGroupByColumns().toArray(new ConcreteColumn[0]);
+        this.groupByColumns = tempTableContainer.getGroupByColumns().toArray(new IQueryColumn[0]);
         this.groupByValues = new Object[this.groupByColumns.length];
         for (int i = 0; i < this.groupByColumns.length; i++) {
             this.groupByValues[i] = row.getPropertyValue(this.groupByColumns[i].getName());
         }
     }
 
-    public TableRow(TableRow row, QueryExecutor queryExecutor) {
-        this.columns = queryExecutor.getSelectedColumns().toArray(new IQueryColumn[0]);
+    public TableRow(TableRow row, ProcessLayer processLayer) {
+        this.columns = processLayer.getProjectedColumns().toArray(new IQueryColumn[0]);
         this.values = new Object[this.columns.length];
         for (int i = 0; i < this.columns.length; i++) {
             Object value = null;
@@ -168,23 +169,59 @@ public class TableRow implements Comparable<TableRow> {
             } else if (this.columns[i].isLiteral()) {
                 value = this.columns[i].getCurrentValue();
             } else if (this.columns[i].isFunction()) {
-                value = this.columns[i].getCurrentValue(); //function of scalar argument
-            } else { // this.columns[i] instanceof AggregationColumn || this.columns[i] instanceof ConcreteColumn
+                FunctionColumn functionColumn = ((FunctionColumn) this.columns[i]);
+                if(functionColumn.getPath() == null) {
+                    value = this.columns[i].getCurrentValue(); //function of scalar argument
+                }else{
+                    value = row.getPropertyValue(this.columns[i].getAlias());
+                }
+            } else if (columns[i].isAggregate() && processLayer.isJoin()){
+                value = row.getPropertyValue(((AggregationColumn) columns[i]).getColumnName());
+            } else { //this.columns[i] instanceof ConcreteColumn
                 value = row.getPropertyValue(this.columns[i].getAlias());
             }
             this.values[i] = value;
         }
 
-        this.orderColumns = queryExecutor.getOrderColumns().toArray(new OrderColumn[0]);
+        this.orderColumns = processLayer.getOrderColumns().toArray(new OrderColumn[0]);
         this.orderValues = new Object[this.orderColumns.length];
         for (int i = 0; i < this.orderColumns.length; i++) {
-            this.orderValues[i] = row.getPropertyValue(this.orderColumns[i].getName());
+            this.orderValues[i] = row.getPropertyValue(this.orderColumns[i].getAlias());
         }
 
-        this.groupByColumns = queryExecutor.getGroupByColumns().toArray(new ConcreteColumn[0]);
+        this.groupByColumns = processLayer.getGroupByColumns().toArray(new IQueryColumn[0]);
         this.groupByValues = new Object[this.groupByColumns.length];
         for (int i = 0; i < this.groupByColumns.length; i++) {
-            this.groupByValues[i] = row.getPropertyValue(this.groupByColumns[i].getName());
+            this.groupByValues[i] = row.getPropertyValue(this.groupByColumns[i].getAlias());
+        }
+    }
+
+
+    public TableRow(TableRow row, IQueryColumn[] projections){
+        this.orderColumns = null;
+        this.orderValues = null;
+        this.groupByColumns = null;
+        this.groupByValues = null;
+        this.columns = projections;
+        this.values = new Object[this.columns.length];
+        for (int i = 0; i < this.columns.length; i++) {
+            IQueryColumn qc =  this.columns[i];
+            Object value;
+            if(qc.isCaseColumn()){
+                value =((CaseColumn) qc).getValue(row);
+            } else if(qc.isLiteral()){
+                value = qc.getCurrentValue();
+            } else if (this.columns[i].isFunction()) {
+                FunctionColumn functionColumn = ((FunctionColumn) this.columns[i]);
+                if(functionColumn.getPath() == null) {
+                    value = this.columns[i].getCurrentValue(); //function of scalar argument
+                } else{
+                    value = row.getPropertyValue(qc.getAlias());
+                }
+            } else {
+                value =  row.getPropertyValue(qc);
+            }
+            values[i] = value;
         }
     }
 
@@ -278,6 +315,25 @@ public class TableRow implements Comparable<TableRow> {
             }
         }
         return results;
+    }
+
+    private Object extractValue(TableRow row, IQueryColumn qc){
+        Object value = null;
+        if(qc.isCaseColumn()){
+            value = ((CaseColumn) qc).getValue(row);
+        } else if(qc.isLiteral()){
+            value = qc.getCurrentValue();
+        } else if(qc.isFunction()){
+            FunctionColumn functionColumn = ((FunctionColumn) qc);
+            if(functionColumn.getPath() == null) {
+                value = qc.getCurrentValue(); //function of scalar argument
+            }
+        } else if (qc.isAggregate()){
+            value = row.getPropertyValue(((AggregationColumn) qc).getColumnName());
+        } else { //this.columns[i] instanceof ConcreteColumn
+            value = row.getPropertyValue(qc.getAlias());
+        }
+        return value;
     }
 
 //    public static Object getEntryPacketValue(IEntryPacket entryPacket, IQueryColumn queryColumn) {
