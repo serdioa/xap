@@ -18,6 +18,7 @@ public class Session implements Closeable {
     private String username = "";
     private String database = "";
     private ISpaceProxy space;
+    private String spaceLocators = "localhost";
     private DateTimeUtils dateTimeUtils;
 
     public DateTimeUtils getDateTimeUtils() {
@@ -66,13 +67,17 @@ public class Session implements Closeable {
         this.database = database;
     }
 
+    public void setSpaceLocators(String spaceLocators) {
+        this.spaceLocators = spaceLocators;
+    }
+
     public ISpaceProxy getSpace() {
         if (database == null || database.length() == 0) {
             throw new RuntimeException("Space name is not provided");
         }
         if (space == null) {
             try {
-                space = (ISpaceProxy) SpaceFinder.find("jini://localhost/*/" + database);
+                space = (ISpaceProxy) SpaceFinder.find(String.format("jini://*/*/%s?locators=%s", database, spaceLocators));
             } catch (FinderException e) {
                 throw new RuntimeException("Could not find space", e);
             }
