@@ -33,6 +33,12 @@ public abstract class MutableNumber implements SmartExternalizable {
 
     public abstract void add(Number x);
 
+    public abstract void subtract(Number x);
+
+    public abstract void multiply(Number x);
+
+    public abstract void divide(Number x);
+
     public abstract Number calcDivision(long count);
 
     /**

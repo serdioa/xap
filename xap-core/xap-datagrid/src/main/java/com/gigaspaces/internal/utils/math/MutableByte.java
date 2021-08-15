@@ -19,6 +19,7 @@ package com.gigaspaces.internal.utils.math;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.math.BigInteger;
 
 /**
  * @author Niv Ingberg
@@ -40,6 +41,26 @@ public class MutableByte extends MutableNumber {
     public void add(Number x) {
         if (x != null)
             value += x.byteValue();
+    }
+
+    @Override
+    public void subtract(Number x) {
+        if (x != null)
+            value -= x.byteValue();
+    }
+
+    @Override
+    public void multiply(Number x) {
+        if (x == null)
+            return;
+        value *= x.byteValue();
+    }
+
+    @Override
+    public void divide(Number x) {
+        if (x == null)
+            return;
+        value /= x.byteValue();
     }
 
     @Override

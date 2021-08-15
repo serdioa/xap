@@ -43,6 +43,26 @@ public class MutableShort extends MutableNumber {
     }
 
     @Override
+    public void subtract(Number x) {
+        if (x != null)
+            value -= x.shortValue();
+    }
+
+    @Override
+    public void multiply(Number x) {
+        if (x == null)
+            return;
+        value *= x.shortValue();
+    }
+
+    @Override
+    public void divide(Number x) {
+        if (x == null)
+            return;
+        value /= x.shortValue();
+    }
+
+    @Override
     public Number calcDivision(long count) {
         return (double) value / count;
     }

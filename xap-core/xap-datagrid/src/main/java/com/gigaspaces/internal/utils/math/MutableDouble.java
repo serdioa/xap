@@ -43,6 +43,26 @@ public class MutableDouble extends MutableNumber {
     }
 
     @Override
+    public void subtract(Number x) {
+        if (x != null)
+            value -= x.doubleValue();
+    }
+
+    @Override
+    public void multiply(Number x) {
+        if (x == null)
+            return;
+        value *= x.doubleValue();
+    }
+
+    @Override
+    public void divide(Number x) {
+        if (x == null)
+            return;
+        value /= x.doubleValue();
+    }
+
+    @Override
     public Number calcDivision(long count) {
         return value / count;
     }

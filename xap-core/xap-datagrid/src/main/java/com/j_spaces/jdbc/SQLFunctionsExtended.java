@@ -58,6 +58,8 @@ public class SQLFunctionsExtended {
         functions.put("EXTRACT", new ExtractSqlFunction());
         functions.put("MINUS", new MinusSqlFunction());
         functions.put("PLUS", new PlusSqlFunction());
+        functions.put("TIMES", new MultiplySqlFunction());
+        functions.put("DIVIDE", new DivideSqlFunction());
     }
 
     public static Map<String, SqlFunction> getFunctions() {
