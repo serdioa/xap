@@ -199,6 +199,11 @@ public class TableRow implements Comparable<TableRow> {
                 return values[i];
             }
         }
+        for (int i = 0; i < groupByColumns.length; i++) {
+            if (groupByColumns[i].equals(column)) {
+                return groupByValues[i];
+            }
+        }
         return null;
     }
 
