@@ -1,15 +1,25 @@
 package com.gigaspaces.jdbc.calcite.parser.impl;
 
 import com.gigaspaces.jdbc.calcite.parser.GSSqlParserFactoryWrapper;
+import com.gigaspaces.jdbc.calcite.sql.extension.GSSqlOperatorTable;
 import com.gigaspaces.jdbc.calcite.sql.extension.SqlDeallocate;
 import com.gigaspaces.jdbc.calcite.sql.extension.SqlShowOption;
 import org.apache.calcite.avatica.util.Casing;
-import org.apache.calcite.sql.*;
+import org.apache.calcite.avatica.util.TimeUnit;
+import org.apache.calcite.sql.SqlCall;
+import org.apache.calcite.sql.SqlDynamicParam;
+import org.apache.calcite.sql.SqlLiteral;
+import org.apache.calcite.sql.SqlNode;
+import org.apache.calcite.sql.SqlNodeList;
+import org.apache.calcite.sql.SqlOperator;
+import org.apache.calcite.sql.SqlSelect;
+import org.apache.calcite.sql.SqlSetOption;
 import org.apache.calcite.sql.parser.SqlParser;
 import org.apache.calcite.sql.util.SqlShuttle;
 import org.junit.Assert;
 import org.junit.Test;
 
+import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class GSSqlParserImplTest {
@@ -84,6 +94,40 @@ public class GSSqlParserImplTest {
         SqlLiteral literal = (SqlLiteral) valueNode;
         String value = literal.getValueAs(String.class);
         Assert.assertEquals("SERIALIZABLE", value);
+    }
+
+    @Test
+    public void testDateAdd() throws Exception {
+        String sql = "SELECT dateadd(year, 1, '2017/08/25');";
+        SqlNode parseResult = parse(sql);
+        Assert.assertTrue(parseResult instanceof SqlSelect);
+        SqlSelect select = (SqlSelect) parseResult;
+        SqlNodeList selectList = select.getSelectList();
+        Assert.assertNotNull(selectList);
+        Assert.assertEquals(1, selectList.size());
+        SqlNode sqlNode = selectList.get(0);
+        Assert.assertTrue(sqlNode instanceof SqlCall);
+        SqlCall sqlCall = (SqlCall) sqlNode;
+
+        SqlOperator operator = sqlCall.getOperator();
+        Assert.assertSame(operator, GSSqlOperatorTable.DATE_ADD);
+        List<SqlNode> operands = sqlCall.getOperandList();
+        Assert.assertEquals(3, operands.size());
+
+        SqlNode operand0 = operands.get(0);
+        Assert.assertTrue(operand0 instanceof SqlLiteral);
+        TimeUnit timeUnit = ((SqlLiteral) operand0).symbolValue(TimeUnit.class);
+        Assert.assertSame(timeUnit, TimeUnit.YEAR);
+
+        SqlNode operand1 = operands.get(1);
+        Assert.assertTrue(operand1 instanceof SqlLiteral);
+        int amount = ((SqlLiteral) operand1).getValueAs(Integer.class);
+        Assert.assertEquals(1, amount);
+
+        SqlNode operand2 = operands.get(2);
+        Assert.assertTrue(operand2 instanceof SqlLiteral);
+        String dateString = ((SqlLiteral) operand2).getValueAs(String.class);
+        Assert.assertEquals("2017/08/25", dateString);
     }
 
     @Test

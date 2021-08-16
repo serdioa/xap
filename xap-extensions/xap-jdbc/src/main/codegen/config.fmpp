@@ -43,11 +43,13 @@ data: {
     imports: [
       "com.gigaspaces.jdbc.calcite.sql.extension.SqlShowOption"
       "com.gigaspaces.jdbc.calcite.sql.extension.SqlDeallocate"
+      "com.gigaspaces.jdbc.calcite.sql.extension.GSSqlOperatorTable"
     ]
 
     # List of new keywords. Example: "DATABASES", "TABLES". If the keyword is not a reserved
     # keyword add it to 'nonReservedKeywords' section.
     keywords: [
+      "DATEADD"
     ]
 
     # List of keywords from "keywords" section that are not reserved.
@@ -409,6 +411,7 @@ data: {
     # Return type of method implementation should be "SqlNode".
     # Example: DateFunctionCall().
     builtinFunctionCallMethods: [
+      "DateAddFunctionCall()"
     ]
 
     # List of methods for parsing extensions to "ALTER <scope>" calls.
