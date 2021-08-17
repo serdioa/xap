@@ -20,8 +20,6 @@ public class ClusterTopology implements SmartExternalizable {
     private int numOfBackups;
     private Map<Integer, Set<Integer>> partitionsToChunksMap;
     private transient Map<Integer, Integer> chunksToPartitionMap;
-    public static final ClusterTopology SINGLE_TOPOLOGY = new ClusterTopology(1).setGeneration(0).setSchema("single").setNumOfInstances(1).setNumOfBackups(0);
-    public static final ClusterTopologyState SINGLE_TOPOLOGY_STATE = new ClusterTopologyState(0,1);
 
     public ClusterTopology() {
     }
