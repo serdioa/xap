@@ -298,6 +298,4 @@ public class GSSqlOperatorTable extends ReflectiveSqlOperatorTable {
                     SqlFunctionCategory.STRING);
 
     public static final SqlFunction EXTRACT = new GSExtractFunction();
-
-    public static final SqlFunction DATE_ADD = new SqlDateAddFunction();
 }
