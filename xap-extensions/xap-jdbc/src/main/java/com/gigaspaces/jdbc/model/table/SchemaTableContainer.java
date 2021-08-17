@@ -13,6 +13,7 @@ import org.slf4j.LoggerFactory;
 
 import java.sql.SQLException;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -40,6 +41,15 @@ public class SchemaTableContainer extends TempTableContainer {
             tableResult.filter(x -> queryTemplatePacket.eval(x));
         }
         return tableResult = new TempQueryResult(this);
+    }
+
+    @Override
+    public List<IQueryColumn> getSelectedColumns() {
+        List<IQueryColumn> selectedColumns = super.getSelectedColumns();
+        if (selectedColumns.isEmpty()) {
+            return tableColumns;
+        }
+        return selectedColumns;
     }
 
     @Override
