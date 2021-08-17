@@ -40,6 +40,17 @@ public class CaseConditionHandler extends RexShuttle {
             if (operand.isA(SqlKind.LOCAL_REF)) {
                 RexNode rexNode = getNode(((RexLocalRef) operand));
                 switch (rexNode.getKind()) {
+                    case IS_NULL:
+                    case IS_NOT_NULL:
+                        RexNode op = getNode(((RexLocalRef) ((RexCall) rexNode).getOperands().get(0)));
+                        if (caseCondition == null) {
+                            caseCondition = handleSingleOperandsCall(op, rexNode.getKind());
+                        } else if (caseCondition instanceof CompoundCaseCondition) {
+                            ((CompoundCaseCondition) caseCondition).addCaseCondition(handleSingleOperandsCall(op, rexNode.getKind()));
+                        } else {
+                            throw new IllegalStateException("CaseCondition type [" + caseCondition.getClass() + "] not supported");
+                        }
+                        break;
                     case INPUT_REF:
                         String fieldName = inputFields.get(((RexInputRef) rexNode).getIndex());
                         TableContainer tableForColumn = getTableForColumn(fieldName);
@@ -76,7 +87,7 @@ public class CaseConditionHandler extends RexShuttle {
                         } else if (caseCondition instanceof CompoundCaseCondition) {
                             ((CompoundCaseCondition) caseCondition).addCaseCondition(handleTwoOperandsCall(leftOp, rightOp, rexNode.getKind(), false));
                         } else {
-                            throw new IllegalStateException("Should not arrive here, caseCondition type is [" + caseCondition.getClass() + "]");
+                            throw new IllegalStateException("CaseCondition type [" + caseCondition.getClass() + "] not supported");
                         }
                         break;
                     case AND:
@@ -111,6 +122,35 @@ public class CaseConditionHandler extends RexShuttle {
                 throw new IllegalStateException("CASE operand kind should be LOCAL_REF but was [" + operand.getKind() + "]");
             }
         }
+    }
+
+    private ICaseCondition handleSingleOperandsCall(RexNode operand, SqlKind sqlKind) {
+        String column = null;
+        if (operand.isA(SqlKind.INPUT_REF)) {
+            column = inputFields.get(((RexInputRef) operand).getIndex());
+        } else {
+            throw new IllegalStateException("operand of type [" + operand.getKind() + "] not supported yet");
+        }
+        TableContainer table = getTableForColumn(column);
+        if (table == null) {
+            throw new IllegalStateException("table can't be null");
+        }
+
+        IQueryColumn queryColumn = table.addQueryColumnWithoutOrdinal(column, null, false);
+        queryExecutor.addColumn(queryColumn, false);
+
+        SingleCaseCondition.ConditionCode conditionCode = null;
+        switch (sqlKind) {
+            case IS_NULL:
+                conditionCode = SingleCaseCondition.ConditionCode.IS_NULL;
+                break;
+            case IS_NOT_NULL:
+                conditionCode = SingleCaseCondition.ConditionCode.IS_NOT_NULL;
+                break;
+            default:
+                throw new UnsupportedOperationException(String.format("Case with %s are not supported", sqlKind));
+        }
+        return new SingleCaseCondition(conditionCode, null, null, column);
     }
 
     private SingleCaseCondition handleTwoOperandsCall(RexNode leftOp, RexNode rightOp, SqlKind sqlKind, boolean isNot){
@@ -164,7 +204,15 @@ public class CaseConditionHandler extends RexShuttle {
             return null; //return and don't continue.
         }
 
+        if (column == null) {
+            throw new IllegalStateException("column can't be null");
+        }
+
         TableContainer tableForColumn = getTableForColumn(column);
+        if (tableForColumn == null) {
+            throw new IllegalStateException("table can't be null");
+        }
+
         try {
             if (tableForColumn instanceof ConcreteTableContainer)
                 value = SQLUtil.cast(((ConcreteTableContainer) tableForColumn).getTypeDesc(), column, value, false);
@@ -172,12 +220,10 @@ public class CaseConditionHandler extends RexShuttle {
             throw new SQLExceptionWrapper(e);//throw as runtime.
         }
 
-        if (column == null) {
-            throw new IllegalStateException("column can't be null");
-        }
         if (value == null) {
             throw new IllegalStateException("value can't be null");
         }
+
         IQueryColumn queryColumn = tableForColumn.addQueryColumnWithoutOrdinal(column, null, false);
         queryExecutor.addColumn(queryColumn, false);
 

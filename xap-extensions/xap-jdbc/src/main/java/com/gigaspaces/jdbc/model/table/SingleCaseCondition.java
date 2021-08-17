@@ -31,10 +31,15 @@ public class SingleCaseCondition implements ICaseCondition{
 
     @Override
     public boolean check(TableRow tableRow) {
-        if (conditionCode.equals(ConditionCode.DEFAULT_TRUE)) {
-            return true;
-        }else if (conditionCode.equals(ConditionCode.DEFAULT_FALSE)) {
-            return false;
+        switch (conditionCode) {
+            case DEFAULT_FALSE:
+                return false;
+            case DEFAULT_TRUE:
+                return true;
+            case IS_NULL:
+                return tableRow.getPropertyValue(this.fieldName) == null;
+            case IS_NOT_NULL:
+                return tableRow.getPropertyValue(this.fieldName) != null;
         }
         if (this.fieldName != null && tableRow != null) {
             Object fieldValue = null;
@@ -82,7 +87,7 @@ public class SingleCaseCondition implements ICaseCondition{
     }
 
     public enum ConditionCode {
-        GT, LT, GE, LE, EQ, NE, DEFAULT_TRUE, DEFAULT_FALSE
+        GT, LT, GE, LE, EQ, NE, DEFAULT_TRUE, DEFAULT_FALSE, IS_NULL, IS_NOT_NULL
     }
 
     @Override
