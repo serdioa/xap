@@ -5,7 +5,6 @@ import com.gigaspaces.sql.datagateway.netty.exception.ProtocolException;
 import com.gigaspaces.sql.datagateway.netty.query.ColumnDescription;
 import com.gigaspaces.sql.datagateway.netty.query.ParameterDescription;
 import com.gigaspaces.sql.datagateway.netty.query.Session;
-import com.google.common.collect.ImmutableSet;
 import io.netty.buffer.ByteBuf;
 import io.netty.util.collection.IntObjectHashMap;
 import org.apache.calcite.rel.type.RelDataType;
@@ -13,6 +12,7 @@ import org.apache.calcite.sql.type.SqlTypeName;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -32,19 +32,11 @@ public class TypeUtils {
     public static final PgType PG_TYPE_DATE = TypeDate.INSTANCE;
     public static final PgType PG_TYPE_TIME = TypeTime.INSTANCE;
     public static final PgType PG_TYPE_TIMESTAMP = TypeTimestamp.INSTANCE;
-    public static final PgType PG_TYPE_TIMESTAMPTZ = TypeTamestampTZ.INSTANCE;
+    public static final PgType PG_TYPE_TIMESTAMPTZ = TypeTimestampTZ.INSTANCE;
     public static final PgType PG_TYPE_INTERVAL = TypeInterval.INSTANCE;
     public static final PgType PG_TYPE_TIMETZ = TypeTimeTZ.INSTANCE;
     public static final PgType PG_TYPE_NUMERIC = TypeNumeric.INSTANCE;
     public static final PgType PG_TYPE_CURSOR = TypeCursor.INSTANCE;
-
-    private static final Set<PgType> DATE_TIME_TYPES = ImmutableSet.of(
-        PG_TYPE_DATE,
-        PG_TYPE_TIME,
-        PG_TYPE_TIMESTAMP,
-        PG_TYPE_TIMESTAMPTZ,
-        PG_TYPE_TIMETZ
-    );
 
     private static final IntObjectHashMap<PgType> elementToArray;
     private static final IntObjectHashMap<PgType> typeIdToType;
@@ -158,19 +150,6 @@ public class TypeUtils {
         }
     }
 
-    public static int formatCode(PgType type, int[] formatCodes, int idx) {
-        if (type.getElementType() != 0)
-            return formatCode(getType(type.getElementType()), formatCodes, idx);
-
-        // TODO implement binary serialization for date time types
-        if (DATE_TIME_TYPES.contains(type)) {
-            // Only text formats implemented for date time types
-            return 0;
-        }
-
-        return formatCodes.length == 1 ? formatCodes[0] : formatCodes[idx];
-    }
-
     public static <T> T readParameter(Session session, ByteBuf dst, ParameterDescription desc, int format) throws ProtocolException {
         if (format == Constants.TEXT)
             return desc.getType().fromText(session, dst);
@@ -204,6 +183,37 @@ public class TypeUtils {
         if (type.isInstance(value))
             return;
         throw new BreakingException(ErrorCodes.PROTOCOL_VIOLATION, "Unexpected value type: " + value.getClass()+". Expecting: " + type.getName());
+    }
+
+    protected static void checkType(Object value, Class<?> type1, Class<?> type2) throws ProtocolException {
+        if (type1.isInstance(value))
+            return;
+        if (type2.isInstance(value))
+            return;
+
+        String[] names = {type1.getName(), type2.getName()};
+        throw new BreakingException(ErrorCodes.PROTOCOL_VIOLATION, "Unexpected value type: " + value.getClass()+". Expecting one of: " + Arrays.toString(names));
+    }
+
+    protected static void checkType(Object value, Class<?> type1, Class<?> type2, Class<?>... types) throws ProtocolException {
+        if (type1.isInstance(value))
+            return;
+        if (type2.isInstance(value))
+            return;
+        for (Class<?> type : types) {
+            if (type.isInstance(value))
+                return;
+        }
+
+        int idx = 0;
+        String[] names = new String[types.length + 2];
+        names[idx++] = type1.getName();
+        names[idx++] = type2.getName();
+        for (Class<?> type : types) {
+            names[idx++] = type.getName();
+        }
+
+        throw new BreakingException(ErrorCodes.PROTOCOL_VIOLATION, "Unexpected value type: " + value.getClass()+". Expecting one of: " + Arrays.toString(names));
     }
 
     protected static void checkLen(ByteBuf src, int expected) throws ProtocolException {

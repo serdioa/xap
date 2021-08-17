@@ -23,8 +23,7 @@ import java.sql.Date;
 import java.sql.SQLException;
 import java.sql.Time;
 import java.sql.Timestamp;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
+import java.time.*;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -234,17 +233,17 @@ public class PgCalciteTable extends AbstractTable {
                 case CHAR:
                     return Character.class;
                 case DATE:
-                    return Date.class;
+                    return LocalDate.class;
                 case TIME:
-                    return Time.class;
-                case TIME_WITH_LOCAL_TIME_ZONE:
                     return LocalTime.class;
+                case TIME_WITH_LOCAL_TIME_ZONE:
+                    return OffsetTime.class;
                 case INTEGER:
                     return Integer.class;
                 case TIMESTAMP:
-                    return Timestamp.class;
-                case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
                     return LocalDateTime.class;
+                case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
+                    return OffsetDateTime.class;
                 case BIGINT:
                     return Long.class;
                 case SMALLINT:

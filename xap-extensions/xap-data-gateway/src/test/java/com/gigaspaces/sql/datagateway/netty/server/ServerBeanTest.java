@@ -56,11 +56,11 @@ class ServerBeanTest extends AbstractServerTest{
             Assertions.assertTrue(statement.execute(query));
             ResultSet resultSet = statement.getResultSet();
             String expected = "" +
-"| Explain Plan                                                                |\n" +
-"| --------------------------------------------------------------------------- |\n" +
-"| 'FullScan: com.gigaspaces.sql.datagateway.netty.server.MyPojo as MyPojo'    |\n" +
-"| '  Select: first_name, last_name, email, age'                               |\n" +
-"| '  Filter: (last_name = Aa)'                                                |";
+"| 'Explain Plan'                                |\n" +
+"| --------------------------------------------- |\n" +
+"| 'FullScan: MyPojo'                            |\n" +
+"| '  Select: first_name, last_name, email, age' |\n" +
+"| '  Filter: (last_name = Aa)'                  |";
             DumpUtils.checkResult(resultSet, expected);
         }
     }
@@ -107,8 +107,11 @@ class ServerBeanTest extends AbstractServerTest{
     @ValueSource(booleans = {true, false})
     void testDateTypes(boolean simple) throws Exception {
         try (Connection conn = connect(simple)) {
-            final String qry = String.format("SELECT birthDate, birthTime, \"timestamp\" FROM \"%s\"", MyPojo.class.getName());
+            final String qry = String.format("SELECT birthDate, birthTime, \"timestamp\" FROM \"%s\" where \"timestamp\" > ? ORDER BY birthDate", MyPojo.class.getName());
             final PreparedStatement statement = conn.prepareStatement(qry);
+
+            Timestamp timestamp = Timestamp.valueOf("2001-09-10 05:20:00.100");
+            statement.setTimestamp(1, timestamp);
 
             assertTrue(statement.execute());
 

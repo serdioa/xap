@@ -198,14 +198,19 @@ public class QueryProviderImpl implements QueryProvider {
         } else {
             GSOptimizerValidationResult validated = validate(optimizer, ast);
 
+            RelDataType paramType = validated.getParameterRowType();
             ParametersDescription paramDesc;
-            if (paramTypes.length > 0) {
-                paramDesc = new ParametersDescription(paramTypes);
+            List<RelDataTypeField> fieldList = paramType.getFieldList();
+            if (fieldList.isEmpty()) {
+                paramDesc = ParametersDescription.EMPTY;
             } else {
-                RelDataType paramType = validated.getParameterRowType();
                 List<ParameterDescription> params = new ArrayList<>(paramType.getFieldCount());
-                for (RelDataTypeField field : paramType.getFieldList()) {
-                    params.add(new ParameterDescription(TypeUtils.fromInternal(field.getType())));
+                for (int i = 0; i < fieldList.size(); i++) {
+                    if (paramTypes.length <= i || paramTypes[i] == 0) {
+                        params.add(new ParameterDescription(TypeUtils.fromInternal(fieldList.get(i).getType())));
+                    } else {
+                        params.add(new ParameterDescription(TypeUtils.getType(paramTypes[i])));
+                    }
                 }
                 paramDesc = new ParametersDescription(params);
             }

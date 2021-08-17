@@ -10,8 +10,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
 
-import static com.gigaspaces.sql.datagateway.netty.utils.TypeUtils.formatCode;
-
 class QueryPortal<T> implements Portal<T> {
     private final QueryProviderImpl queryProvider;
     private final String name;
@@ -38,13 +36,12 @@ class QueryPortal<T> implements Portal<T> {
             List<ColumnDescription> newColumns = new ArrayList<>();
             for (int i = 0, rowDescColumnsSize = columns.size(); i < rowDescColumnsSize; i++) {
                 ColumnDescription c = columns.get(i);
-                int format = formatCode(c.getType(), formatCodes, i);
                 newColumns.add(new ColumnDescription(
                         c.getName(),
                         c.getType(),
                         c.getTypeLen(),
                         c.getTypeModifier(),
-                        format,
+                        formatCodes.length == 1 ? formatCodes[0] : formatCodes[i],
                         c.getTableId(),
                         c.getTableIndex()));
             }

@@ -1,6 +1,7 @@
 package com.gigaspaces.sql.datagateway.netty.utils;
 
 public class ErrorCodes {
+    public static final String BAD_DATETIME_FORMAT = "22007";
     public static final String INVALID_PARAMETER_VALUE = "22023";
     public static final String PROTOCOL_VIOLATION = "08P01";
     public static final String INTERNAL_ERROR = "XX000";

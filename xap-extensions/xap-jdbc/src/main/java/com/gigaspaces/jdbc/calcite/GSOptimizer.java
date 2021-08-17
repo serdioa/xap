@@ -22,9 +22,11 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelRoot;
 import org.apache.calcite.rel.logical.LogicalProject;
 import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexProgram;
+import org.apache.calcite.sql.SqlDynamicParam;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNodeList;
 import org.apache.calcite.sql.fun.SqlLibrary;
@@ -32,6 +34,7 @@ import org.apache.calcite.sql.fun.SqlLibraryOperatorTableFactory;
 import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.calcite.sql.parser.SqlParser;
 import org.apache.calcite.sql.util.ChainedSqlOperatorTable;
+import org.apache.calcite.sql.util.SqlShuttle;
 import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.sql.validate.SqlValidatorUtil;
 import org.apache.calcite.sql2rel.SqlToRelConverter;
@@ -42,7 +45,9 @@ import org.apache.calcite.util.Pair;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import static org.apache.calcite.sql.validate.SqlConformanceEnum.LENIENT;
 
@@ -145,9 +150,13 @@ public class GSOptimizer {
     public GSOptimizerValidationResult validate(SqlNode ast) {
         SqlNode validatedAst = validator.validate(ast);
         RelDataType rowType = validator.getValidatedNodeType(validatedAst);
-        RelDataType parameterRowType = validator.getParameterRowType(validatedAst);
+        RelDataType parameterRowType = getParameterRowType(validatedAst);
 
         return new GSOptimizerValidationResult(validatedAst, rowType, parameterRowType);
+    }
+
+    private RelDataType getParameterRowType(SqlNode ast) {
+        return new ParametersFinder(validator).go(ast);
     }
 
     public GSRelNode optimize(SqlNode validatedAst) {
@@ -324,5 +333,38 @@ public class GSOptimizer {
         if (Character.isWhitespace(curr.charAt(curr.length() - 1)))
             return curr;
         return curr.append(' ');
+    }
+
+    private static class ParametersFinder extends SqlShuttle {
+        final SqlValidator validator;
+
+        final Set<SqlNode> visited = new HashSet<>();
+        final ArrayList<RelDataType> parameterTypes = new ArrayList<>();
+
+        private ParametersFinder(SqlValidator validator) {
+            this.validator = validator;
+        }
+
+        @Override public SqlNode visit(SqlDynamicParam param) {
+            if (visited.add(param)) {
+                RelDataType type = validator.getValidatedNodeType(param);
+                parameterTypes.ensureCapacity(param.getIndex() + 1);
+                while (parameterTypes.size() <= param.getIndex())
+                    parameterTypes.add(null);
+                parameterTypes.set(param.getIndex(), type);
+            }
+            return param;
+        }
+
+        public RelDataType go(SqlNode ast) {
+            ast.accept(this);
+            RelDataTypeFactory typeFactory = validator.getTypeFactory();
+            RelDataTypeFactory.Builder b = new RelDataTypeFactory.Builder(typeFactory);
+            for (int i = 0; i < parameterTypes.size(); i++) {
+                RelDataType type = parameterTypes.get(i);
+                b.add("?" + i, type == null ? typeFactory.createUnknownType() : type);
+            }
+            return b.build();
+        }
     }
 }

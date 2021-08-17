@@ -23,7 +23,7 @@ public class Session implements Closeable {
 
     public DateTimeUtils getDateTimeUtils() {
         if (dateTimeUtils == null)
-            dateTimeUtils = new DateTimeUtils(this);
+            dateTimeUtils = new DateTimeUtils(this::getTimeZone);
         return dateTimeUtils;
     }
 
