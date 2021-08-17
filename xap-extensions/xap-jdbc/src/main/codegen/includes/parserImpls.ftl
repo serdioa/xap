@@ -139,3 +139,27 @@ SqlNode PgEscapeStringLiteral() :
         return SqlLiteral.createCharString(p, null, getPos());
     }
 }
+
+SqlCall DateAddFunctionCall() :
+{
+    List<SqlNode> args;
+    SqlNode e;
+    final Span s;
+    TimeUnit interval;
+    SqlNode node;
+}
+{
+    <DATEADD> { s = span(); }
+    <LPAREN>
+    interval = TimestampInterval() {
+        args = startList(SqlLiteral.createSymbol(interval, getPos()));
+    }
+    <COMMA>
+    e = Expression(ExprContext.ACCEPT_SUB_QUERY) { args.add(e); }
+    <COMMA>
+    e = Expression(ExprContext.ACCEPT_SUB_QUERY) { args.add(e); }
+    <RPAREN> {
+        return GSSqlOperatorTable.DATE_ADD.createCall(
+            s.end(this), args);
+    }
+}
