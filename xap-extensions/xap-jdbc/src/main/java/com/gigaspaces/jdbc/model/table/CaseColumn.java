@@ -105,12 +105,7 @@ public class CaseColumn implements IQueryColumn{
 
     @Override
     public String toString() {
-        return "CaseColumn{" +
-                "columnName='" + columnName + '\'' +
-                ", returnType=" + returnType +
-                ", columnOrdinal=" + columnOrdinal +
-                ", caseConditions=" + caseConditions +
-                '}';
+        return getAlias();
     }
 
     @Override

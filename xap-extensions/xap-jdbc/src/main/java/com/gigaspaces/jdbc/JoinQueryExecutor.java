@@ -9,7 +9,10 @@ import com.gigaspaces.jdbc.model.table.OrderColumn;
 import com.gigaspaces.jdbc.model.table.TableContainer;
 
 import java.sql.SQLException;
-import java.util.*;
+import java.util.Collections;
+import java.util.List;
+import java.util.Set;
+import java.util.Stack;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -50,7 +53,8 @@ public class JoinQueryExecutor {
                 List<IQueryColumn> allColumns = Stream.concat(visibleColumns.stream(), invisibleColumns.stream()).collect(Collectors.toList());
                 JoinTablesIterator joinTablesIterator = new JoinTablesIterator(tables);
                 if (config.isExplainPlan()) {
-                    return explain(joinTablesIterator, processLayer.getOrderColumns(), processLayer.getGroupByColumns(), processLayer.getAggregationColumns(), isDistinct);
+                    List<IQueryColumn> projectedColumns = processLayers.get(processLayers.size()-1).getProjectedColumns();
+                    return explain(joinTablesIterator, projectedColumns, processLayer.getOrderColumns(), processLayer.getGroupByColumns(), processLayer.getAggregationColumns(), isDistinct);
                 }
                 res = new JoinQueryResult(allColumns);
                 while (joinTablesIterator.hasNext()) {
@@ -63,7 +67,7 @@ public class JoinQueryExecutor {
         return res;
     }
 
-    private QueryResult explain(JoinTablesIterator joinTablesIterator, List<OrderColumn> orderColumns,
+    private QueryResult explain(JoinTablesIterator joinTablesIterator, List<IQueryColumn> projectedColumns, List<OrderColumn> orderColumns,
                                 List<IQueryColumn> groupByColumns, List<AggregationColumn> aggregationColumns, boolean isDistinct) {
         Stack<TableContainer> stack = new Stack<>();
         TableContainer current = joinTablesIterator.getStartingPoint();
@@ -81,7 +85,7 @@ public class JoinQueryExecutor {
             joinExplainPlan = new JoinExplainPlan(last.getJoinInfo(), joinExplainPlan, ((ExplainPlanQueryResult) curr.getQueryResult()).getExplainPlanInfo());
             last = curr;
         }
-        joinExplainPlan.setSelectColumns(visibleColumns.stream().map(IQueryColumn::toString).collect(Collectors.toList()));
+        joinExplainPlan.setSelectColumns(projectedColumns.stream().map(IQueryColumn::toString).collect(Collectors.toList()));
         joinExplainPlan.setOrderColumns(orderColumns);
         joinExplainPlan.setGroupByColumns(groupByColumns);
         joinExplainPlan.setDistinct(isDistinct);
