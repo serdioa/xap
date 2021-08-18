@@ -18,7 +18,7 @@ import javax.annotation.PreDestroy;
 
 public final class ServerBean implements AutoCloseable {
     static {
-        CalciteDefaults.setCalciteDriverSystemProperty();
+        CalciteDefaults.setCalciteDriverSystemProperties();
     }
     public static final int DEFAULT_PORT = 5432;
     private static final boolean SSL = System.getProperty("ssl") != null;

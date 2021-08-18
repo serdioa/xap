@@ -1,5 +1,6 @@
 package com.gigaspaces.jdbc.calcite.handlers;
 
+import com.gigaspaces.internal.utils.GsEnv;
 import com.gigaspaces.jdbc.QueryExecutor;
 import com.gigaspaces.jdbc.calcite.GSOptimizer;
 import com.gigaspaces.jdbc.calcite.GSOptimizerValidationResult;
@@ -11,6 +12,7 @@ import com.gigaspaces.jdbc.model.result.QueryResult;
 import com.gigaspaces.query.sql.functions.extended.LocalSession;
 import com.j_spaces.core.IJSpace;
 import com.j_spaces.jdbc.ResponsePacket;
+import com.j_spaces.kernel.SystemProperties;
 import org.apache.calcite.rel.externalize.RelWriterImpl;
 import org.apache.calcite.runtime.CalciteException;
 import org.apache.calcite.sql.SqlExplain;
@@ -30,6 +32,7 @@ import static com.gigaspaces.jdbc.calcite.utils.CalciteUtils.prepareQueryForCalc
 
 public class CalciteQueryHandler {
     private static final Logger logger = LoggerFactory.getLogger("com.gigaspaces.jdbc.v3");
+    private static final boolean printPlan = GsEnv.propertyBoolean(SystemProperties.JDBC_V3_PRINT_PLAN).get();
     private boolean explainPlan;
 
 
@@ -82,7 +85,7 @@ public class CalciteQueryHandler {
             }
             GSOptimizerValidationResult validated = optimizer.validate(ast);
             GSRelNode physicalPlan = optimizer.optimize(validated.getValidatedAst());
-            if (explainPlan || logger.isDebugEnabled()) {
+            if (printPlan) {
                 StringWriter sw = new StringWriter();
                 PrintWriter pw = new PrintWriter(sw);
                 RelWriterImpl writer = new RelWriterImpl(pw, SqlExplainLevel.EXPPLAN_ATTRIBUTES, false);
