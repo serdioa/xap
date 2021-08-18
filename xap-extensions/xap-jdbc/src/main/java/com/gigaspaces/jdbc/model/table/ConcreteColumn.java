@@ -72,7 +72,11 @@ public class ConcreteColumn implements IQueryColumn {
 
     @Override
     public String toString() {
-        return tableContainer.getTableNameOrAlias() + "." + getAlias();
+        if (tableContainer != null) {
+            return tableContainer.getTableNameOrAlias() + "." + getAlias();
+        } else {
+            return getAlias();
+        }
     }
 
     @Override
