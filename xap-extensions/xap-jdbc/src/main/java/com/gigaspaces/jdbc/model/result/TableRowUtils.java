@@ -70,7 +70,7 @@ public class TableRowUtils {
             case COUNT:
                 boolean isAllColumn = aggregationColumn.isAllColumns();
                 if (isAllColumn) {
-                    value = tableRows.size();
+                    value = ((long) tableRows.size());
                 } else {
                     value = tableRows.stream().map(tr -> tr.getPropertyValue(aggregationColumn))
                             .filter(Objects::nonNull).count();
