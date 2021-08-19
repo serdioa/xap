@@ -32,7 +32,7 @@ public class OrderByHandler extends UnsupportedExpressionVisitor implements Orde
         OrderColumn orderColumn = new OrderColumn(new ConcreteColumn(columnName,null, getColumnAlias(),
                 isVisibleColumn(), table, columnCounter++), orderByElement.isAsc(),
                 orderByElement.getNullOrdering() == OrderByElement.NullOrdering.NULLS_LAST);
-        table.addOrderColumn(orderColumn);
+        table.addOrderColumns(orderColumn);
     }
 
     private boolean isVisibleColumn() {

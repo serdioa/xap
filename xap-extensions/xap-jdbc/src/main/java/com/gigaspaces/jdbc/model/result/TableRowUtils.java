@@ -66,29 +66,34 @@ public class TableRowUtils {
         Object value = null;
         Class<?> classType = aggregationColumn.getReturnType();
         AggregationFunctionType type = aggregationColumn.getType();
+        String columnName = aggregationColumn.getColumnName();
         switch (type) {
             case COUNT:
                 boolean isAllColumn = aggregationColumn.isAllColumns();
                 if (isAllColumn) {
                     value = tableRows.size();
                 } else {
-                    value = tableRows.stream().map(tr -> tr.getPropertyValue(aggregationColumn))
+                    value = tableRows.stream().map(tr -> tr.getPropertyValue(columnName))
                             .filter(Objects::nonNull).count();
                 }
                 break;
             case MAX:
-                value = tableRows.stream().map(tr -> tr.getPropertyValue(aggregationColumn))
+                value = tableRows.stream().map(tr -> tr.getPropertyValue(columnName))
                         .filter(Objects::nonNull).max(getObjectComparator()).orElse(null);
                 break;
             case MIN:
-                value = tableRows.stream().map(tr -> tr.getPropertyValue(aggregationColumn))
+                value = tableRows.stream().map(tr -> tr.getPropertyValue(columnName))
                         .filter(Objects::nonNull).min(getObjectComparator()).orElse(null);
                 break;
             case AVG:
+                if (!Number.class.isAssignableFrom(classType)) {
+                    throw new UnsupportedOperationException("Can't perform AVG aggregation function on type " +
+                            "[" + classType.getTypeName() + "], AVG supports only types of " + Number.class);
+                }
                 MutableNumber sum = null;
                 long count = 0;
                 for (TableRow tableRow : tableRows) {
-                    Number number = (Number) tableRow.getPropertyValue(aggregationColumn);
+                    Number number = (Number) tableRow.getPropertyValue(columnName);
                     if (number == null) continue;
                     if (sum == null) {
                         sum = MutableNumber.fromClass(number.getClass(), false);
@@ -99,6 +104,10 @@ public class TableRowUtils {
                 value = count == 0 ? 0 : sum.calcDivisionPreserveType(count);
                 break;
             case SUM0:
+                if (!Number.class.isAssignableFrom(classType)) {
+                    throw new UnsupportedOperationException("Can't perform SUM aggregation function on type " +
+                            "[" + classType.getTypeName() + "], SUM supports only types of " + Number.class);
+                }
                 sum = MutableNumber.fromClass(classType, false);
                 if (aggregationColumn.getQueryColumn().isLiteral()) {
                     for (int i = 0; i < tableRows.size(); i++) {
@@ -106,7 +115,7 @@ public class TableRowUtils {
                     }
                 } else {
                     for (TableRow tableRow : tableRows) {
-                        Number number = (Number) tableRow.getPropertyValue(aggregationColumn);
+                        Number number = (Number) tableRow.getPropertyValue(columnName);
                         if (number == null) continue;
                         sum.add(number);
                     }
@@ -114,6 +123,10 @@ public class TableRowUtils {
                 value = sum.toNumber();
                 break;
             case SUM:
+                if (!Number.class.isAssignableFrom(classType)) {
+                    throw new UnsupportedOperationException("Can't perform SUM aggregation function on type " +
+                            "[" + classType.getTypeName() + "], SUM supports only types of " + Number.class);
+                }
                 sum = null;
                 if (aggregationColumn.getQueryColumn().isLiteral()) {
                     for (int i = 0; i < tableRows.size(); i++) {
@@ -124,7 +137,7 @@ public class TableRowUtils {
                     }
                 } else {
                     for (TableRow tableRow : tableRows) {
-                        Number number = (Number) tableRow.getPropertyValue(aggregationColumn);
+                        Number number = (Number) tableRow.getPropertyValue(columnName);
                         if (number == null) continue;
                         if (sum == null) {
                             sum = MutableNumber.fromClass(number.getClass(), false);

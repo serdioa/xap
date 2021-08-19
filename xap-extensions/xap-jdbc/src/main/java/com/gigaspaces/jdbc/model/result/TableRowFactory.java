@@ -1,7 +1,6 @@
 package com.gigaspaces.jdbc.model.result;
 
 import com.gigaspaces.internal.transport.IEntryPacket;
-import com.gigaspaces.jdbc.ProcessLayer;
 import com.gigaspaces.jdbc.QueryExecutor;
 import com.gigaspaces.jdbc.model.table.*;
 
@@ -23,8 +22,8 @@ public class TableRowFactory {
         return new TableRow(row, tempTableContainer);
     }
 
-    public static TableRow createProjectedTableRow(TableRow row, ProcessLayer processLayer) {
-        return new TableRow(row, processLayer);
+    public static TableRow createProjectedTableRow(TableRow row, QueryExecutor queryExecutor) {
+        return new TableRow(row, queryExecutor);
     }
 
     public static TableRow applyCaseColumnToTableRow(TableRow row, List<CaseColumn> caseColumns) {

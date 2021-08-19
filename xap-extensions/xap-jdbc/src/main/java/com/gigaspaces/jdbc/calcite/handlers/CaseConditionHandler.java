@@ -11,8 +11,6 @@ import org.apache.calcite.sql.SqlKind;
 import java.sql.SQLException;
 import java.util.List;
 
-import static com.gigaspaces.jdbc.calcite.utils.CalciteUtils.getNode;
-
 public class CaseConditionHandler extends RexShuttle {
     private final RexProgram program;
     private final QueryExecutor queryExecutor;
@@ -40,11 +38,11 @@ public class CaseConditionHandler extends RexShuttle {
         for (int i = 0; i < call.getOperands().size(); i++) {
             RexNode operand = call.getOperands().get(i);
             if (operand.isA(SqlKind.LOCAL_REF)) {
-                RexNode rexNode = getNode((RexLocalRef) operand, program);
+                RexNode rexNode = getNode(((RexLocalRef) operand));
                 switch (rexNode.getKind()) {
                     case IS_NULL:
                     case IS_NOT_NULL:
-                        RexNode op = getNode(((RexLocalRef) ((RexCall) rexNode).getOperands().get(0)), program);
+                        RexNode op = getNode(((RexLocalRef) ((RexCall) rexNode).getOperands().get(0)));
                         if (caseCondition == null) {
                             caseCondition = handleSingleOperandsCall(op, rexNode.getKind());
                         } else if (caseCondition instanceof CompoundCaseCondition) {
@@ -82,8 +80,8 @@ public class CaseConditionHandler extends RexShuttle {
                     case LESS_THAN:
                     case LESS_THAN_OR_EQUAL:
                         List<RexNode> operands = ((RexCall) rexNode).getOperands();
-                        RexNode leftOp = getNode((RexLocalRef) operands.get(0), program);
-                        RexNode rightOp = getNode((RexLocalRef) operands.get(1), program);
+                        RexNode leftOp = getNode(((RexLocalRef) operands.get(0)));
+                        RexNode rightOp = getNode(((RexLocalRef) operands.get(1)));
                         if (caseCondition == null) {
                             caseCondition = handleTwoOperandsCall(leftOp, rightOp, rexNode.getKind(), false);
                         } else if (caseCondition instanceof CompoundCaseCondition) {
@@ -170,7 +168,7 @@ public class CaseConditionHandler extends RexShuttle {
                 column = inputFields.get(((RexInputRef) leftOp).getIndex());
                 break;
             case CAST:
-                return handleTwoOperandsCall(getNode((RexLocalRef) ((RexCall) leftOp).getOperands().get(0), program), rightOp,
+                return handleTwoOperandsCall(getNode((RexLocalRef) ((RexCall) leftOp).getOperands().get(0)), rightOp,
                         sqlKind, isNot);//return from recursion
             case DYNAMIC_PARAM:
                 value = queryExecutor.getPreparedValues()[((RexDynamicParam) leftOp).getIndex()];
@@ -189,7 +187,7 @@ public class CaseConditionHandler extends RexShuttle {
                 column = inputFields.get(((RexInputRef) rightOp).getIndex());
                 break;
             case CAST:
-                return handleTwoOperandsCall(leftOp, getNode((RexLocalRef) ((RexCall) rightOp).getOperands().get(0), program),
+                return handleTwoOperandsCall(leftOp, getNode((RexLocalRef) ((RexCall) rightOp).getOperands().get(0)),
                         sqlKind, isNot); //return from recursion
             case DYNAMIC_PARAM:
                 value = queryExecutor.getPreparedValues()[((RexDynamicParam) rightOp).getIndex()];
@@ -290,5 +288,9 @@ public class CaseConditionHandler extends RexShuttle {
             }
         }
         throw new IllegalStateException("Could not find table for column [" + column + "]");
+    }
+
+    private RexNode getNode(RexLocalRef localRef){
+        return program.getExprList().get(localRef.getIndex());
     }
 }

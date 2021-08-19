@@ -6,7 +6,6 @@ import com.gigaspaces.query.sql.functions.SqlFunction;
 import com.gigaspaces.query.sql.functions.SqlFunctionExecutionContext;
 import com.gigaspaces.query.sql.functions.extended.ExtractSqlFunction;
 import com.gigaspaces.query.sql.functions.extended.LocalSession;
-import com.j_spaces.jdbc.FunctionCallColumn;
 import com.j_spaces.jdbc.SQLFunctions;
 import org.apache.calcite.avatica.util.TimeUnitRange;
 
@@ -17,10 +16,9 @@ import java.time.temporal.TemporalAccessor;
 import java.time.temporal.WeekFields;
 import java.util.Calendar;
 import java.util.List;
-import java.util.Locale;
 import java.util.stream.Collectors;
 
-public class FunctionColumn implements IQueryColumn {
+public class FunctionCallColumn implements IQueryColumn {
     protected final List<IQueryColumn> params;
     protected final String columnName;
     protected final String functionName;
@@ -30,7 +28,18 @@ public class FunctionColumn implements IQueryColumn {
     private final LocalSession session;
     protected final String type;
 
-    public FunctionColumn(LocalSession session, List<IQueryColumn> params, String functionName, String columnName, String columnAlias, boolean isVisible, int columnOrdinal, String type) {
+    public FunctionCallColumn(LocalSession session, List<IQueryColumn> params, String functionName, String columnName, String columnAlias, boolean isVisible, int columnOrdinal) {
+        this.params = params;
+        this.columnName = columnName;
+        this.functionName = functionName;
+        this.columnAlias = columnAlias;
+        this.isVisible = isVisible;
+        this.columnOrdinal = columnOrdinal;
+        this.session = session;
+        type = null;
+    }
+
+    public FunctionCallColumn(LocalSession session, List<IQueryColumn> params, String functionName, String columnName, String columnAlias, boolean isVisible, int columnOrdinal, String type) {
         this.params = params;
         this.columnName = columnName;
         this.functionName = functionName;
@@ -48,7 +57,7 @@ public class FunctionColumn implements IQueryColumn {
 
     @Override
     public String getName() {
-        return functionName + "(" + params.stream().map(IQueryColumn::getName).collect(Collectors.joining(", ")) + ")";
+        return functionName + "(" + String.join(", ", params.stream().map(IQueryColumn::getName).collect(Collectors.toList())) + ")";
     }
 
     @Override
@@ -68,7 +77,7 @@ public class FunctionColumn implements IQueryColumn {
 
     @Override
     public TableContainer getTableContainer() {
-        return null;
+        throw new UnsupportedOperationException("Unsupported method getName");
     }
 
     @Override
@@ -78,7 +87,6 @@ public class FunctionColumn implements IQueryColumn {
 
     @Override
     public Class<?> getReturnType() {
-//        return functionName.toLowerCase(Locale.ROOT).contains("ln") ? Double.class : Object.class;
         return Object.class;
     }
 
@@ -133,7 +141,7 @@ public class FunctionColumn implements IQueryColumn {
         throw new RuntimeException("Unknown function [" + getFunctionName() + "]");
     }
 
-    private Double getValueFromExtract(IEntryPacket entryPacket) {
+    private double getValueFromExtract(IEntryPacket entryPacket) {
         SqlFunctionExecutionContext extractContext = new SqlFunctionExecutionContext() {
             @Override
             public int getNumberOfArguments() {
@@ -159,9 +167,7 @@ public class FunctionColumn implements IQueryColumn {
             throw new RuntimeException("Extract function - first argument isn't of type TimeUnitRange");
         }
         TimeUnitRange symbol = ((TimeUnitRange) symbolObject);
-        if(date == null){
-            return null;
-        }
+
         if (date instanceof TemporalAccessor) {
             return extractLocalDateTime(((TemporalAccessor) date), symbol);
         } else if (date instanceof java.util.Date) {
@@ -307,29 +313,7 @@ public class FunctionColumn implements IQueryColumn {
     }
 
     @Override
-    public IQueryColumn copy() {
-        return new FunctionColumn(this.session, this.params, this.functionName, this.columnName, this.columnAlias, this.isVisible, this.columnOrdinal, this.type);
-    }
-
-    @Override
     public boolean isFunction() {
         return true;
-    }
-
-    public FunctionCallColumn toFunctionCallColumn(){
-        return new FunctionCallColumn(functionName, getPath(), getAlias(), params.stream().map(IQueryColumn::getName).collect(Collectors.toList()), type, session);
-    }
-
-    public String getPath(){
-        for (IQueryColumn param : params) {
-            if(param.isLiteral()){
-                continue;
-            }
-            if(param.isFunction()){
-                return ((FunctionColumn) param).getPath();
-            }
-            return param.getName();
-        }
-        return null;
     }
 }

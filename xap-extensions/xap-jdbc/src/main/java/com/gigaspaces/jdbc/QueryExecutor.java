@@ -14,17 +14,18 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class QueryExecutor {
+    private final List<IQueryColumn> projectedColumns = new ArrayList<>();
     private final List<TableContainer> tables = new ArrayList<>();
     private final Set<IQueryColumn> invisibleColumns = new HashSet<>();
     private final List<IQueryColumn> visibleColumns = new ArrayList<>();
+    private final List<AggregationColumn> aggregationColumns = new ArrayList<>();
     private final IJSpace space;
     private final QueryExecutionConfig config;
     private final Object[] preparedValues;
     private boolean isAllColumnsSelected = false;
     private final LinkedList<Integer> fieldCountList = new LinkedList<>();
-    private final List<ProcessLayer> processLayers = new ArrayList<>();
-    private int insertIndex = -1;
-    private int searchIndex = -2;
+    private final List<CaseColumn> caseColumns = new ArrayList<>();
+    private final List<IQueryColumn> groupByColumns = new ArrayList<>();
 
 
     public QueryExecutor(IJSpace space, QueryExecutionConfig config, Object[] preparedValues) {
@@ -37,28 +38,15 @@ public class QueryExecutor {
         this(space, new QueryExecutionConfig().setCalcite(false), preparedValues);
     }
 
-    public void addProcessLayer(){
-        this.processLayers.add(new ProcessLayer(isJoinQuery()));
-        insertIndex++;
-        searchIndex++;
-    }
-
     public void addProjectedColumn(IQueryColumn column) {
         if (!column.isVisible()) {
             throw new IllegalStateException("Projected column must be visible");
         }
-        if(insertIndex < 0){
-            addProcessLayer();
-        }
-        this.processLayers.get(insertIndex).addProjectedColumn(column);
-    }
-
-    public void addProjectedColumns(List<IQueryColumn> projectedColumns){
-        projectedColumns.forEach(this::addProjectedColumn);
+        this.projectedColumns.add(column);
     }
 
     public List<IQueryColumn> getProjectedColumns() {
-        return processLayers.isEmpty() ? Collections.emptyList() : processLayers.get(insertIndex).getProjectedColumns();
+        return projectedColumns;
     }
 
     public QueryResult execute() throws SQLException {
@@ -74,6 +62,7 @@ public class QueryExecutor {
         if (tables.size() == 1) { //Simple Query
             TableContainer singleTable = tables.get(0);
             QueryResult queryResult = singleTable.executeRead(config);
+            final List<IQueryColumn> selectedColumns = getSelectedColumns();
             if (reIterateOverSingleTableResult(singleTable)) {
                 if (config.isExplainPlan()) {
                     ExplainPlanQueryResult explainResult = ((ExplainPlanQueryResult) queryResult);
@@ -83,12 +72,10 @@ public class QueryExecutor {
                             Collections.unmodifiableList(getGroupByColumns()), false, getAggregationColumns());
                     return new ExplainPlanQueryResult(getSelectedColumns(), subquery, singleTable);
                 } else {
-                    for (ProcessLayer processLayer : processLayers) {
-                        queryResult = processLayer.process(queryResult);
-                    }
+                    List<TableRow> rows = queryResult.getRows().stream().map(row -> TableRowFactory.createProjectedTableRow(row, this)).collect(Collectors.toList());
+                    return new ConcreteQueryResult(selectedColumns, rows);
                 }
             }
-            queryResult.applyCaseColumnsOnResult();
             return queryResult;
         }
         JoinQueryExecutor joinE = new JoinQueryExecutor(this);
@@ -120,7 +107,7 @@ public class QueryExecutor {
     private boolean hasOnlyFunctions() {
         if( !visibleColumns.isEmpty() ){
             for( IQueryColumn column : visibleColumns ){
-                if(!column.isFunction()){
+                if( !( column instanceof FunctionCallColumn) ){
                     return false;
                 }
             }
@@ -153,8 +140,8 @@ public class QueryExecutor {
         this.isAllColumnsSelected = isAllColumnsSelected;
     }
 
-    private List<AggregationColumn> getAggregationColumns() {
-        return this.processLayers.get(insertIndex).getAggregationColumns();
+    public List<AggregationColumn> getAggregationColumns() {
+        return aggregationColumns;
     }
 
     public IJSpace getSpace() {
@@ -166,9 +153,6 @@ public class QueryExecutor {
     }
 
     public void addColumn(IQueryColumn column, boolean isVisible) {
-        if(!column.isConcrete() && !column.isFunction() && !column.isLiteral()){
-            return;
-        }
         if (isVisible) {
             visibleColumns.add(column);
         } else {
@@ -181,10 +165,7 @@ public class QueryExecutor {
     }
 
     public void addAggregationColumn(AggregationColumn aggregationColumn) {
-        if(insertIndex < 0){
-            addProcessLayer();
-        }
-        this.processLayers.get(insertIndex).addAggregationColumn(aggregationColumn);
+        this.aggregationColumns.add(aggregationColumn);
     }
 
     public TableContainer getTableByColumnIndex(int columnIndex){
@@ -198,9 +179,6 @@ public class QueryExecutor {
     }
 
     public IQueryColumn getColumnByColumnIndex(int globalColumnIndex){
-        if(searchIndex >= 0){
-            return this.processLayers.get(searchIndex).getProjectedColumns().get(globalColumnIndex);
-        }
         initFieldCount();
         for (int i = 0; i < fieldCountList.size(); i++) {
             if(globalColumnIndex < fieldCountList.get(i)){
@@ -229,10 +207,7 @@ public class QueryExecutor {
     }
 
     public void addCaseColumn(CaseColumn caseColumn) {
-        if(insertIndex < 0){
-            addProcessLayer();
-        }
-        this.processLayers.get(insertIndex).addCaseColumn(caseColumn);
+        this.caseColumns.add(caseColumn);
     }
 
     public TableContainer getTableByColumnName(String column) {
@@ -267,32 +242,18 @@ public class QueryExecutor {
         return Stream.concat(getVisibleColumns().stream(), getAggregationColumns().stream()).sorted().collect(Collectors.toList());
     }
 
-    private List<OrderColumn> getOrderColumns() {
-        if(this.processLayers.get(insertIndex).getOrderColumns().isEmpty()){
-            tables.forEach(table -> table.getOrderColumns().forEach(this::addOrderColumn));
-        }
-        return this.processLayers.get(insertIndex).getOrderColumns();
+    public List<IQueryColumn> getOrderColumns() {
+        List<IQueryColumn> result = new ArrayList<>();
+        tables.forEach(table -> result.addAll(table.getOrderColumns()));
+        return result;
     }
 
-    public void addOrderColumn(OrderColumn orderColumn){
-        if(insertIndex < 0){
-            addProcessLayer();
-        }
-        this.processLayers.get(insertIndex).addOrderColumn(orderColumn);
-    }
-
-    private List<IQueryColumn> getGroupByColumns() {
-        if(this.processLayers.get(insertIndex).getGroupByColumns().isEmpty()){
-            tables.forEach(table -> table.getGroupByColumns().forEach(this::addGroupByColumn));
-        }
-        return this.processLayers.get(insertIndex).getGroupByColumns();
+    public List<IQueryColumn> getGroupByColumns() {
+        return this.groupByColumns;
     }
 
     public void addGroupByColumn(IQueryColumn groupByColumn){
-        if(insertIndex < 0){
-            addProcessLayer();
-        }
-        this.processLayers.get(insertIndex).addGroupByColumn(groupByColumn);
+        this.groupByColumns.add(groupByColumn);
     }
 
     public TableContainer getTableByPhysicalColumnName(String name) {
@@ -307,9 +268,5 @@ public class QueryExecutor {
             }
         }
         return toReturn;
-    }
-
-    public List<ProcessLayer> getProcessLayers() {
-        return this.processLayers;
     }
 }

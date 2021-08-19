@@ -129,6 +129,7 @@ public abstract class QueryResult {
     }
 
     public ResultEntry convertEntriesToResultArrays() {
+        applyCaseColumnsOnResult();
         // Column (field) names and labels (aliases)
         int columns = getSelectedColumns().size();
 
@@ -193,7 +194,7 @@ public abstract class QueryResult {
 
     }
 
-    public void applyCaseColumnsOnResult() {
+    private void applyCaseColumnsOnResult() {
         if (this instanceof ExplainPlanQueryResult) return;
         List<CaseColumn> caseColumns =
                 getSelectedColumns().stream().filter(qc -> qc instanceof CaseColumn).map(qc -> ((CaseColumn) qc)).collect(Collectors.toList());

@@ -110,12 +110,15 @@ public abstract class TableContainer {
         return exprTree;
     }
 
-    public void addOrderColumn(OrderColumn orderColumn) {
+    public void addOrderColumns(OrderColumn orderColumn) {
         this.orderColumns.add(orderColumn);
     }
 
-    public void addGroupByColumn(IQueryColumn groupByColumn) {
+    public void addGroupByColumns(IQueryColumn groupByColumn) {
         this.groupByColumns.add(groupByColumn);
+        if( !groupByColumn.isVisible() ) {
+            this.getInvisibleColumns().add(groupByColumn);
+        }
     }
 
     public List<IQueryColumn> getGroupByColumns() {
