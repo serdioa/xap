@@ -377,7 +377,7 @@ public class QueryProviderImpl implements QueryProvider {
             PrintWriter pw = new PrintWriter(sw);
             RelWriterImpl writer = new RelWriterImpl(pw, SqlExplainLevel.EXPPLAN_ATTRIBUTES, false);
             physicalPlan.explain(writer);
-            System.out.println(sw);
+            log.info("Query physical plan: \n" + query + "\n-\n" + sw);
 
             LocalSession localSession = new LocalSession(session.getUsername());
             ResponsePacket packet = handler.executeStatement(session.getSpace(), physicalPlan, params, localSession);
