@@ -1,6 +1,5 @@
 package com.gigaspaces.jdbc.calcite.handlers;
 
-import com.gigaspaces.internal.utils.GsEnv;
 import com.gigaspaces.jdbc.QueryExecutor;
 import com.gigaspaces.jdbc.calcite.GSOptimizer;
 import com.gigaspaces.jdbc.calcite.GSOptimizerValidationResult;
@@ -32,7 +31,7 @@ import static com.gigaspaces.jdbc.calcite.utils.CalciteUtils.prepareQueryForCalc
 
 public class CalciteQueryHandler {
     private static final Logger logger = LoggerFactory.getLogger("com.gigaspaces.jdbc.v3");
-    private static final boolean printPlan = GsEnv.propertyBoolean(SystemProperties.JDBC_V3_PRINT_PLAN).get();
+    private static final boolean printPlan = Boolean.getBoolean(SystemProperties.JDBC_V3_PRINT_PLAN);
     private boolean explainPlan;
 
 
