@@ -26,7 +26,8 @@ public class CalciteDefaults {
         return "true".equals(value);
     }
 
-    public static void setCalciteDriverSystemProperty() {
+    public static void setCalciteDriverSystemProperties() {
         System.setProperty(SystemProperties.JDBC_DRIVER, SystemProperties.JDBC_V3_DRIVER);
+        System.setProperty(SystemProperties.JDBC_V3_PRINT_PLAN, "true");
     }
 }
