@@ -1,8 +1,11 @@
 package com.gigaspaces.sql.datagateway.netty.exception;
 
+import com.gigaspaces.jdbc.SqlErrorCodes;
 import com.gigaspaces.sql.datagateway.netty.utils.ErrorCodes;
 import org.apache.calcite.runtime.CalciteContextException;
 import org.apache.calcite.sql.parser.SqlParseException;
+
+import java.sql.SQLException;
 
 public class ExceptionUtil {
     public static ProtocolException wrapException(String baseMessage, Throwable cause) {
@@ -32,6 +35,29 @@ public class ExceptionUtil {
         }
 
         String message = baseMessage + ": " + cause.getMessage();
-        return new NonBreakingException(ErrorCodes.INTERNAL_ERROR, message, cause);
+        return new NonBreakingException(resolveInternalError(cause), message, cause);
+    }
+
+    /**
+     * Convert JDBC error code into ODBC error.
+     */
+    private static String resolveInternalError(Throwable cause) {
+        int errorCode = 0;
+        if (cause == null) {
+            return ErrorCodes.INTERNAL_ERROR;
+        }
+
+        if (cause instanceof SQLException) {
+            errorCode = ((SQLException) cause).getErrorCode();
+        } else if (cause.getCause() instanceof SQLException){
+            errorCode = ((SQLException) cause.getCause()).getErrorCode();
+        }
+
+        switch (errorCode) {
+            case (SqlErrorCodes._378):
+                return ErrorCodes.BAD_DATETIME_FORMAT;
+            default:
+                return ErrorCodes.INTERNAL_ERROR;
+        }
     }
 }

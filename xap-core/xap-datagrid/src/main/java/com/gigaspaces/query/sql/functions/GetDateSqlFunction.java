@@ -16,8 +16,7 @@
 
 package com.gigaspaces.query.sql.functions;
 
-import java.text.SimpleDateFormat;
-import java.util.Date;
+import java.time.LocalDateTime;
 
 /**
  * Returns current date formatted
@@ -28,15 +27,13 @@ import java.util.Date;
 @com.gigaspaces.api.InternalApi
 public class GetDateSqlFunction extends SqlFunction {
 
-    private final SimpleDateFormat dateFormat = new SimpleDateFormat( "yyyy-MM-dd HH:mm:ss.SSS" );
-
     /**
      * @param context with no arguments.
-     * @return the current date in the format 'yyyy-MM-dd HH:mm:ss.SSS'.
+     * @return the current date.
      */
     @Override
     public Object apply(SqlFunctionExecutionContext context) {
         assertNumberOfArguments(0, context);
-        return dateFormat.format( new Date() );
+        return LocalDateTime.now();
     }
 }

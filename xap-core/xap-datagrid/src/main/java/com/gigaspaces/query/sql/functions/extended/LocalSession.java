@@ -1,6 +1,8 @@
 package com.gigaspaces.query.sql.functions.extended;
 
-public class LocalSession {
+import java.io.Serializable;
+
+public class LocalSession implements Serializable {
     private String username;
 
     public LocalSession() {
