@@ -4,7 +4,6 @@ import com.gigaspaces.internal.utils.ObjectConverter;
 import com.gigaspaces.internal.utils.math.MutableNumber;
 
 import java.math.BigDecimal;
-import java.sql.Date;
 import java.sql.SQLException;
 import java.sql.Time;
 import java.sql.Timestamp;
@@ -44,18 +43,16 @@ public class PlusSqlFunction extends SqlFunction {
             if (left instanceof Time) {
                 originalClass = left.getClass();
                 left = ObjectConverter.convert(left, LocalTime.class);
-            }
-            if (left instanceof Date || left instanceof java.util.Date) {
+            } else if (left instanceof Timestamp) {
+                originalClass = left.getClass();
+                left = ObjectConverter.convert(left, LocalDateTime.class);
+            } else if (left instanceof java.util.Date) {
                 originalClass = left.getClass();
                 left = ObjectConverter.convert(left, LocalDate.class);
             }
-            if (left instanceof Timestamp) {
-                originalClass = left.getClass();
-                left = ObjectConverter.convert(left, LocalDateTime.class);
-            }
         }
-        catch (Exception e){
-            throw new RuntimeException("adding " + left + " to " + right + " is not supported");
+        catch (SQLException e){
+            throw new RuntimeException("adding " + left + " to " + right + " is not supported", e);
         }
 
         if (left instanceof LocalTime) {
@@ -108,8 +105,8 @@ public class PlusSqlFunction extends SqlFunction {
             else{
                 try {
                     return ObjectConverter.convert(res, originalClass);
-                } catch (SQLException throwables) {
-                    throw new RuntimeException("adding " + left + " to " + right + " is not supported");
+                } catch (SQLException e) {
+                    throw new RuntimeException("adding " + left + " to " + right + " is not supported", e);
                 }
             }
         }
