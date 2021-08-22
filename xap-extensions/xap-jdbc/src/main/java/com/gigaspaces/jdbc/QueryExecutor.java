@@ -102,8 +102,21 @@ public class QueryExecutor {
             int affectedRowsCount = singleTable.executeTake(config);
             return new ModifyOperationQueryResult(affectedRowsCount);
         }
-        JoinQueryExecutor joinE = new JoinQueryExecutor(this);
-        return joinE.execute();
+        else{
+            throw new UnsupportedOperationException("Take is supported now only for one table.");
+        }
+    }
+
+    public QueryResult executeUpdate( List<String> updateColumnList, List<Object> updatedValues ) throws SQLException {
+
+        if (tables.size() == 1) { //Simple Query
+            TableContainer singleTable = tables.get(0);
+            int affectedRowsCount = singleTable.executeUpdate(config, updateColumnList, updatedValues);
+            return new ModifyOperationQueryResult(affectedRowsCount);
+        }
+        else{
+            throw new UnsupportedOperationException("Update is supported now only for one table.");
+        }
     }
 
     private boolean reIterateOverSingleTableResult(TableContainer singleTable) {
