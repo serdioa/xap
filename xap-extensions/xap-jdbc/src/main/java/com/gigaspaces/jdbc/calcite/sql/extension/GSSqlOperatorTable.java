@@ -2,10 +2,8 @@ package com.gigaspaces.jdbc.calcite.sql.extension;
 
 import com.gigaspaces.internal.utils.LazySingleton;
 import org.apache.calcite.sql.*;
-import org.apache.calcite.sql.type.OperandTypes;
-import org.apache.calcite.sql.type.ReturnTypes;
-import org.apache.calcite.sql.type.SqlTypeFamily;
-import org.apache.calcite.sql.type.SqlTypeName;
+import org.apache.calcite.sql.fun.SqlMonotonicBinaryOperator;
+import org.apache.calcite.sql.type.*;
 import org.apache.calcite.sql.util.ReflectiveSqlOperatorTable;
 import org.apache.calcite.sql.validate.SqlNameMatcher;
 import org.apache.calcite.sql.validate.SqlNameMatchers;
@@ -296,6 +294,28 @@ public class GSSqlOperatorTable extends ReflectiveSqlOperatorTable {
                             OperandTypes.family(SqlTypeFamily.TIMESTAMP, SqlTypeFamily.STRING),
                             OperandTypes.family(SqlTypeFamily.TIME, SqlTypeFamily.STRING)),
                     SqlFunctionCategory.STRING);
+
+    public static final SqlFunction GETDATE =
+            new SqlFunction(
+                    "GETDATE",
+                    SqlKind.OTHER_FUNCTION,
+                    ReturnTypes.TIMESTAMP,
+                    null,
+                    OperandTypes.NILADIC,
+                    SqlFunctionCategory.TIMEDATE);
+
+
+    public static final SqlBinaryOperator MINUS =
+            new SqlMonotonicBinaryOperator(
+                    "-",
+                    SqlKind.MINUS,
+                    40,
+                    true,
+                    ReturnTypes.ARG0,
+                    InferTypes.FIRST_KNOWN,
+                    OperandTypes.or(
+                            OperandTypes.MINUS_OPERATOR,
+                            OperandTypes.family(SqlTypeFamily.DATETIME, SqlTypeFamily.INTEGER)));
 
     public static final SqlFunction EXTRACT = new GSExtractFunction();
 
