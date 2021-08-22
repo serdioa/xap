@@ -16,6 +16,7 @@ import com.gigaspaces.query.aggregators.*;
 import com.j_spaces.core.IJSpace;
 import com.j_spaces.core.client.Modifiers;
 import com.j_spaces.core.client.ReadModifiers;
+import com.j_spaces.core.client.UpdateModifiers;
 import com.j_spaces.jdbc.FunctionCallColumn;
 import com.j_spaces.jdbc.SQLUtil;
 import com.j_spaces.jdbc.builder.QueryTemplatePacket;
@@ -129,8 +130,6 @@ public class ConcreteTableContainer extends TableContainer {
 
             validate(config);
 
-            setAggregations(config.isJoinUsed());
-
             queryTemplatePacket.prepareForSpace(typeDesc);
 
             ArrayList<IEntryPacket> takenObjects = queryTemplatePacket.take(space, queryTemplatePacket.getRoutingFieldValue(),
@@ -139,7 +138,76 @@ public class ConcreteTableContainer extends TableContainer {
 
             return takenObjects.size();
         } catch (Exception e) {
-            throw new SQLException("Failed to get results from space", e);
+            throw new SQLException("Failed to take results from space", e);
+        }
+    }
+
+    @Override
+    public int executeUpdate(QueryExecutionConfig config, List<String> updateColumnList, List<Object> updatedValues) throws SQLException {
+
+        try {
+            if (queryTemplatePacket == null) {
+                queryTemplatePacket = createEmptyQueryTemplatePacket();
+            }
+
+            validate(config);
+
+            queryTemplatePacket.prepareForSpace(typeDesc);
+
+            IQueryResultSet<IEntryPacket> entries = queryTemplatePacket.readMultiple(space.getDirectProxy(), null, limit, ReadModifiers.REPEATABLE_READ);
+            //if no objects were read
+            if( entries.size() == 0 ){
+                return 0;
+            }
+
+            Iterator<IEntryPacket> iter = entries.iterator();
+
+            ITypeDesc info = queryTemplatePacket.getTypeDescriptor();
+            int j = 0;
+
+            int updatedColumnsCount = updateColumnList.size();
+            //search each required column for update in the m_FieldsNames member
+            int[] indices = new int[updatedColumnsCount];
+
+            Object[] convertedUpdateValues = new Object[updatedColumnsCount];
+
+            for( int updatedCoulmnIndex = 0; updatedCoulmnIndex < updatedColumnsCount; updatedCoulmnIndex++ ) {
+                String columnName = updateColumnList.get( updatedCoulmnIndex );
+                for (int i = 0; i < info.getNumOfFixedProperties(); i++) {
+                    if (info.getFixedProperty(i).getName().equalsIgnoreCase(columnName)) {
+                        Object value = updatedValues.get(updatedCoulmnIndex);
+                        if( value != null ) {
+                            convertedUpdateValues[j] = SQLUtil.cast(typeDesc, columnName, value, false);
+                            indices[j] = i;
+                            j++;
+                        }
+                        break;
+                    }
+                }
+            }
+
+            //now update the entries with the requested values
+            //entries for update
+            //take one entry for its structure
+            while (iter.hasNext()) {
+                IEntryPacket entry = iter.next();
+                for (int i = 0; i < indices.length; i++) {
+                    final int propertyIndex = indices[i];
+                        entry.setFieldValue(propertyIndex, convertedUpdateValues[i]);
+                }
+            }
+
+            IEntryPacket[] originalEntries = entries.toArray(new IEntryPacket[0]);
+
+            int modifiers = UpdateModifiers.UPDATE_ONLY;
+/*                if (doPartialUpdate)
+                    modifiers = modifiers | UpdateModifiers.PARTIAL_UPDATE;*/
+
+            Object[] updatedEntries = space.writeMultiple( originalEntries, null, 0, modifiers);
+
+            return updatedEntries.length;
+        } catch (Exception e) {
+            throw new SQLException("Failed to update data in space", e);
         }
     }
 

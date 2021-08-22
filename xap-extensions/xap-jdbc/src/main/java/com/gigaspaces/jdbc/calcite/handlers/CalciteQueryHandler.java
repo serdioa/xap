@@ -2,6 +2,7 @@ package com.gigaspaces.jdbc.calcite.handlers;
 
 import com.gigaspaces.jdbc.QueryExecutor;
 import com.gigaspaces.jdbc.calcite.*;
+import com.gigaspaces.jdbc.calcite.utils.CalciteUtils;
 import com.gigaspaces.jdbc.model.QueryExecutionConfig;
 import com.gigaspaces.jdbc.model.result.ExplainPlanQueryResult;
 import com.gigaspaces.jdbc.model.result.QueryResult;
@@ -11,9 +12,12 @@ import com.j_spaces.jdbc.ResponsePacket;
 import com.j_spaces.kernel.SystemProperties;
 import org.apache.calcite.rel.core.TableModify;
 import org.apache.calcite.rel.externalize.RelWriterImpl;
+import org.apache.calcite.rex.RexLiteral;
+import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.runtime.CalciteException;
 import org.apache.calcite.sql.SqlExplain;
 import org.apache.calcite.sql.SqlExplainLevel;
+import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.calcite.sql.validate.SqlValidatorException;
@@ -23,6 +27,8 @@ import org.slf4j.LoggerFactory;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Properties;
 
 import static com.gigaspaces.jdbc.calcite.utils.CalciteUtils.prepareQueryForCalcite;
@@ -59,7 +65,9 @@ public class CalciteQueryHandler {
                     //packet.setIntResult( qE.executeWrite().size() ); ??
                     break;
                 case UPDATE:
-                    //packet.setIntResult( qE.executeUpdate().size() ); ??
+                    packet.setIntResult( qE.executeUpdate(
+                                gsTableModify.getUpdateColumnList(),
+                                getUpdatedValues( gsTableModify.getSourceExpressionList() )).size() );
                     break;
                 case DELETE:
                     packet.setIntResult( qE.executeTake().size() );
@@ -78,6 +86,20 @@ public class CalciteQueryHandler {
         }
 
         return packet;
+    }
+
+    private List<Object> getUpdatedValues(List<RexNode> sourceExpressionList) {
+
+        int updatedValuesSize = sourceExpressionList.size();
+        List<Object> updatedValues = new ArrayList<>( updatedValuesSize );
+        for( int i = 0; i < updatedValuesSize; i++ ){
+            RexNode rexNode = sourceExpressionList.get(i);
+            if( rexNode.isA( SqlKind.LITERAL ) ) {
+                updatedValues.add( i, ((RexLiteral) rexNode).getValueAs( CalciteUtils.getJavaType( rexNode ) ) );
+            }
+        }
+
+        return updatedValues;
     }
 
     public ResponsePacket executeExplain(IJSpace space, GSRelNode relNode, Object[] preparedValues, LocalSession session) throws SQLException {

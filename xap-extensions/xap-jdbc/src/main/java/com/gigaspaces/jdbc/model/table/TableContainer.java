@@ -40,6 +40,8 @@ public abstract class TableContainer {
 
     public abstract int executeTake(QueryExecutionConfig config) throws SQLException;
 
+    public abstract int executeUpdate(QueryExecutionConfig config, List<String> updateColumnList, List<Object> updatedValues) throws SQLException;
+
     public abstract IQueryColumn addQueryColumnWithColumnOrdinal(String columnName, String columnAlias, boolean isVisible, int columnOrdinal);
 
     public abstract List<IQueryColumn> getVisibleColumns();
