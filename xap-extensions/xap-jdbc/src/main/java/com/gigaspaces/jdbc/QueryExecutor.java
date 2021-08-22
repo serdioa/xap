@@ -261,10 +261,12 @@ public class QueryExecutor {
     }
 
     public List<IQueryColumn> getSelectedColumns(){
-        if (CalciteDefaults.isCalciteDriverPropertySet()) {
-            return getProjectedColumns();
+        if (CalciteDefaults.isJSqlDriverPropertySet()) {
+            //v3 jsql path
+            return Stream.concat(getVisibleColumns().stream(), getAggregationColumns().stream()).sorted().collect(Collectors.toList());
         }
-        return Stream.concat(getVisibleColumns().stream(), getAggregationColumns().stream()).sorted().collect(Collectors.toList());
+        //v3 calcite path
+        return getProjectedColumns();
     }
 
     private List<OrderColumn> getOrderColumns() {

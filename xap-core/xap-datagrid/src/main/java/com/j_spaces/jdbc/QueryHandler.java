@@ -158,10 +158,15 @@ public class QueryHandler {
                     Object newQueryHandler = clazz.newInstance();
                     response = (ResponsePacket) clazz.getDeclaredMethod("handle", String.class, IJSpace.class, Object[].class).invoke(newQueryHandler, request.getStatement(), space, request.getPreparedValues());
                 } catch (InvocationTargetException e) {
-                    if (e.getCause() != null && e.getCause() instanceof SQLException) {
+                    if (_logger.isDebugEnabled()) {
+                        //if debug is enabled, show exception with full trace
+                        _logger.error("Invocation exception while handling request", e);
+                    }
+                    final Throwable cause = e.getCause();
+                    if (cause instanceof SQLException) {
                         throw ((SQLException) e.getCause());
                     }
-                    throw new SQLException("Unable to execute query", e.getCause());
+                    throw new SQLException("Unable to execute query: " + e, cause == null ? e : cause);
                 } catch (InstantiationException | IllegalAccessException | NoSuchMethodException | ClassNotFoundException e) {
                     throw new SQLException("Unable to execute query", e);
                 }
