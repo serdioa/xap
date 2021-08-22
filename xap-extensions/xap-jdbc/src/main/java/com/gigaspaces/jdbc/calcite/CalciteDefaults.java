@@ -13,8 +13,14 @@ public class CalciteDefaults {
     public static final String SUPPORT_PRIMARY_KEY_FIRST = "com.gs.jdbc.v3.support.primary_key_first";
 
 
+    //calcite path (should be default)
     public static boolean isCalciteDriverPropertySet() {
         return SystemProperties.JDBC_V3_DRIVER.equals(System.getProperty(SystemProperties.JDBC_DRIVER));
+    }
+
+    //jsql path
+    public static boolean isJSqlDriverPropertySet() {
+        return SystemProperties.JDBC_V3_DRIVER_JSQL.equals(System.getProperty(SystemProperties.JDBC_DRIVER));
     }
 
     public static boolean isCalcitePropertySet(String key, Properties properties) {
