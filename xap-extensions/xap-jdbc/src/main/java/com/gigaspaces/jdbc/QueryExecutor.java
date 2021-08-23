@@ -103,7 +103,7 @@ public class QueryExecutor {
             return new ModifyOperationQueryResult(affectedRowsCount);
         }
         else{
-            throw new UnsupportedOperationException("Take is supported now only for one table.");
+            throw new UnsupportedOperationException("SQL DELETE command is only supported for a single table.");
         }
     }
 
@@ -115,7 +115,7 @@ public class QueryExecutor {
             return new ModifyOperationQueryResult(affectedRowsCount);
         }
         else{
-            throw new UnsupportedOperationException("Update is supported now only for one table.");
+            throw new UnsupportedOperationException("SQL UPDATE command is only supported for a single table.");
         }
     }
 
