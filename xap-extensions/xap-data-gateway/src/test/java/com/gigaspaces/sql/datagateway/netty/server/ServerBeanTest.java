@@ -51,9 +51,10 @@ class ServerBeanTest extends AbstractServerTest{
     @ValueSource(booleans = {true, false})
     void testExplain(boolean simple) throws Exception {
         try (Connection conn = connect(simple)) {
-            String query = String.format("EXPLAIN PLAN FOR SELECT first_name, last_name, email, age FROM \"%s\" as T where T.last_name = 'Aa'", MyPojo.class.getName());
-            final Statement statement = conn.createStatement();
-            Assertions.assertTrue(statement.execute(query));
+            String query = String.format("EXPLAIN PLAN FOR SELECT first_name, last_name, email, age FROM \"%s\" as T where T.last_name = ?", MyPojo.class.getName());
+            final PreparedStatement statement = conn.prepareStatement(query);
+            statement.setString(1, "Aa");
+            Assertions.assertTrue(statement.execute());
             ResultSet resultSet = statement.getResultSet();
             String expected = "" +
 "| 'Explain Plan'                                |\n" +
