@@ -197,6 +197,15 @@ public class ClusterRemoteOperationRouter extends AbstractRemoteOperationRouter 
     }
 
     @Override
+    public RemoteOperationsExecutorProxy getAnyAvailableCachedMember() {
+        RemoteOperationsExecutorProxy member = getCachedMember();
+        if (RemoteOperationsExecutorProxy.isAvailable(member, false)){
+            return member;
+        }
+        return null;
+    }
+
+    @Override
     public RemoteOperationsExecutorProxy getAnyActiveMember() {
         return _cluster.getLoadBalancer().findAnyAvailableMember(true);
     }

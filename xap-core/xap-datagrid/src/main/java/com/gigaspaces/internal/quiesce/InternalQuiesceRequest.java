@@ -45,6 +45,11 @@ public class InternalQuiesceRequest implements SmartExternalizable {
         this.token = QuiesceTokenFactory.createUUIDToken();
     }
 
+    public InternalQuiesceRequest(String description, QuiesceToken token) {
+        this.description = description;
+        this.token = token;
+    }
+
     public String getDescription() {
         return description;
     }

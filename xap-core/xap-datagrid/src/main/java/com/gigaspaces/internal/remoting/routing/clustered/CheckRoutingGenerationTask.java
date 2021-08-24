@@ -32,7 +32,7 @@ public class CheckRoutingGenerationTask implements com.gigaspaces.internal.utils
     @Override
     public boolean execute(boolean isLastIteration) {
         try {
-            RemoteOperationsExecutorProxy executorProxy = ((SpacePartitionedClusterRemoteOperationRouter) this.spaceProxy.getProxyRouter().getOperationRouter()).getAnyAvailableCachedMember();
+            RemoteOperationsExecutorProxy executorProxy = this.spaceProxy.getProxyRouter().getOperationRouter().getAnyAvailableCachedMember();
             if (executorProxy == null) {
                 logger.debug("couldn't find any cached member");
                 return false;

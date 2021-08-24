@@ -135,6 +135,15 @@ public class EmbeddedRemoteOperationRouter extends AbstractRemoteOperationRouter
     }
 
     @Override
+    public RemoteOperationsExecutorProxy getAnyAvailableCachedMember() {
+        RemoteOperationsExecutorProxy member = getCachedMember();
+        if (RemoteOperationsExecutorProxy.isAvailable(member, false)){
+                return member;
+        }
+        return null;
+    }
+
+    @Override
     public void getAllAvailableMembers(List<RemoteOperationsExecutorProxy> availableMembers) {
         availableMembers.add(_memberProxy);
     }

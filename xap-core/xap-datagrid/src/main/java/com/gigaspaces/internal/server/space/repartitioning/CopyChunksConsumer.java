@@ -1,7 +1,11 @@
 package com.gigaspaces.internal.server.space.repartitioning;
 
+import com.gigaspaces.client.WriteMultipleException;
+import com.gigaspaces.internal.client.spaceproxy.IDirectSpaceProxy;
 import com.gigaspaces.internal.client.spaceproxy.ISpaceProxy;
+import com.j_spaces.core.client.EntryAlreadyInSpaceException;
 import com.j_spaces.core.client.Modifiers;
+import com.j_spaces.core.multiple.write.WriteMultiplePartialFailureException;
 import net.jini.core.lease.Lease;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,7 +45,17 @@ public class CopyChunksConsumer implements Runnable {
                     if (batch != null) {
                         writeBatch = ((WriteBatch) batch);
                         ISpaceProxy spaceProxy = proxyMap.get(writeBatch.getPartitionId());
-                        spaceProxy.writeMultiple(writeBatch.getEntries().toArray(), null, Lease.FOREVER, Modifiers.BACKUP_ONLY);
+                        try {
+                            int modifiers = Modifiers.add(Modifiers.WRITE, Modifiers.BACKUP_ONLY);
+                            spaceProxy.writeMultiple(writeBatch.getEntries().toArray(), null, Lease.FOREVER, modifiers);
+                        } catch (WriteMultipleException e){
+                            WriteMultipleException.IWriteResult[] results = e.getResults();
+                            for(com.gigaspaces.client.WriteMultipleException.IWriteResult result: results){
+                                if(!(result.getError() instanceof EntryAlreadyInSpaceException)){ //in case of pu failover
+                                    throw e;
+                                }
+                            }
+                        }
                         responseInfo.getMovedToPartition().get((short) writeBatch.getPartitionId()).addAndGet(writeBatch.getEntries().size());
                     }
                 } catch (InterruptedException e) {

@@ -1,4 +1,4 @@
-package com.gigaspaces.internal.extension;
+package com.gigaspaces.internal.server.space.repartitioning;
 
 import com.gigaspaces.internal.space.requests.SpaceRequestInfo;
 import com.j_spaces.core.SpaceContext;
@@ -7,18 +7,18 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 
-public class WaitForDataDrainRequest implements SpaceRequestInfo {
-
+public class DrainRequestInfo implements SpaceRequestInfo {
     static final long serialVersionUID = -216455811647301189L;
     private long timeout;
     private long minTimeToWait;
     private boolean isBackupOnly;
     private SpaceContext context;
 
-    public WaitForDataDrainRequest() {
+
+    public DrainRequestInfo() {
     }
 
-    public WaitForDataDrainRequest(long timeout, long minTimeToWait, boolean isBackupOnly) {
+    public DrainRequestInfo(long timeout, long minTimeToWait, boolean isBackupOnly) {
         this.timeout = timeout;
         this.minTimeToWait = minTimeToWait;
         this.isBackupOnly = isBackupOnly;

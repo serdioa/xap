@@ -17,6 +17,8 @@
 
 package org.openspaces.admin.quiesce;
 
+import com.gigaspaces.admin.quiesce.QuiesceToken;
+
 /**
  * A request which includes all needed information about the quiesce request (e.g reason for
  * entering to QUIESCE mode , the user name which triggered the operation, the time and date and so
@@ -28,15 +30,24 @@ package org.openspaces.admin.quiesce;
 public class QuiesceRequest {
 
     private String description;
+    private QuiesceToken token;
 
     public QuiesceRequest(String description) {
         this.description = description;
+    }
+
+    public QuiesceRequest(String description, QuiesceToken token) {
+        this.description = description;
+        this.token = token;
     }
 
     public String getDescription() {
         return description;
     }
 
+    public QuiesceToken getToken() {
+        return token;
+    }
 
     @Override
     public boolean equals(Object o) {
@@ -48,11 +59,17 @@ public class QuiesceRequest {
         if (description != null ? !description.equals(that.description) : that.description != null)
             return false;
 
+        if (token != null ? !token.equals(that.token) : that.token != null)
+            return false;
+
         return true;
     }
 
     @Override
     public int hashCode() {
+        if (token != null){
+            return token.hashCode();
+        }
         return description != null ? description.hashCode() : 0;
     }
 

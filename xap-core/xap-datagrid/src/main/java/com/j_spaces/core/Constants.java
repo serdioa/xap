@@ -1009,4 +1009,8 @@ public interface Constants {
         }
     }
 
+    public interface Scale{
+        String HORIZONTAL_SCALE_INTERVAL = "com.gs.manager.horizontal_scale_interval";
+        String HORIZONTAL_SCALE_INTERVAL_DEFAULT = "2000";
+    }
 }

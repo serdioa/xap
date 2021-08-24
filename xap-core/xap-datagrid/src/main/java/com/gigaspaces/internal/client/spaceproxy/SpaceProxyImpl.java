@@ -41,6 +41,7 @@ import com.gigaspaces.internal.metadata.ITypeDesc;
 import com.gigaspaces.internal.server.space.IClusterInfoChangedListener;
 import com.gigaspaces.internal.server.space.IRemoteSpace;
 import com.gigaspaces.internal.server.space.SpaceImpl;
+import com.gigaspaces.internal.server.space.ZookeeperTopologyHandler;
 import com.gigaspaces.internal.server.space.tiered_storage.error.TieredStorageMetadataException;
 import com.gigaspaces.internal.server.space.tiered_storage.error.TieredStorageOperationException;
 import com.gigaspaces.internal.transport.ITemplatePacket;
@@ -616,6 +617,14 @@ public class SpaceProxyImpl extends AbstractDirectSpaceProxy implements SameProx
             _proxyRouter = new SpaceProxyRouter(this);
             _initializedNewRouter = true;
             return _proxyRouter;
+        }
+    }
+
+
+    public void initProxyRouter(int partitionId) {
+        synchronized (_spaceInitializeLock) {
+            _proxyRouter = new SpaceProxyRouter(this, partitionId);
+            _initializedNewRouter = true;
         }
     }
 

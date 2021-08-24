@@ -18,10 +18,7 @@ package com.gigaspaces.internal.server.space;
 
 import com.gigaspaces.admin.ManagerClusterType;
 import com.gigaspaces.admin.demote.DemoteFailedException;
-import com.gigaspaces.admin.quiesce.DefaultQuiesceToken;
-import com.gigaspaces.admin.quiesce.QuiesceException;
-import com.gigaspaces.admin.quiesce.QuiesceState;
-import com.gigaspaces.admin.quiesce.QuiesceStateChangedEvent;
+import com.gigaspaces.admin.quiesce.*;
 import com.gigaspaces.annotation.SupportCodeChange;
 import com.gigaspaces.attribute_store.AttributeStore;
 import com.gigaspaces.attribute_store.SharedLock;
@@ -93,6 +90,7 @@ import com.gigaspaces.internal.server.space.recovery.direct_persistency.DirectPe
 import com.gigaspaces.internal.server.space.recovery.direct_persistency.DirectPersistencyRecoveryHelper;
 import com.gigaspaces.internal.server.space.recovery.direct_persistency.StorageConsistencyModes;
 import com.gigaspaces.internal.server.space.recovery.strategy.SpaceRecoverStrategy;
+import com.gigaspaces.internal.server.space.repartitioning.*;
 import com.gigaspaces.internal.server.space.suspend.SuspendTypeChangedInternalListener;
 import com.gigaspaces.internal.server.space.tiered_storage.TieredStorageUtils;
 import com.gigaspaces.internal.server.storage.EntryTieredMetaData;
@@ -1104,6 +1102,22 @@ public class SpaceImpl extends AbstractService implements IRemoteSpace, IInterna
         if (useEmbeddedCredentials && _embeddedCredentialsProvider != null)
             spaceProxy.login(_embeddedCredentialsProvider);
         return spaceProxy;
+    }
+
+    public SpaceSettings createSpaceSettingsWithNewClusterTopology(ClusterTopology newTopology){
+        SpaceConfig newSpaceConfig = getConfig().cloneAndUpdate(newTopology);
+        return new SpaceSettings(_containerName,
+                _containerProxyRemote,
+                getSpaceUuid(),
+                _secondary,
+                _serializationType,
+                newSpaceConfig,
+                _spaceName,
+                _url,
+                _stubHandler,
+                isSecuredSpace(),
+                _stubHandler.getTransportConfig(),
+                _cleanUnusedEmbeddedGlobalXtns);
     }
 
     private SpaceSettings createSpaceSettings(boolean isClustered) {
@@ -4027,8 +4041,8 @@ public class SpaceImpl extends AbstractService implements IRemoteSpace, IInterna
         _demoteHandler.demote(maxSuspendTime, unit);
     }
 
-    public void waitForDrain(long timeoutMs, long minTimeToWait, boolean isDemote, Logger logger) throws TimeoutException {
-        WaitForDrainUtils.waitForDrain(this, timeoutMs, minTimeToWait, isDemote, logger);
+    public void waitForDrain(long timeoutMs, long minTimeToWait, boolean isBackupOnly, Logger logger) throws TimeoutException {
+        WaitForDrainUtils.waitForDrain(this, timeoutMs, minTimeToWait, isBackupOnly, logger);
     }
 
     public SuspendType addSpaceSuspendTypeListener(SuspendTypeChangedInternalListener listener) {
@@ -4061,6 +4075,25 @@ public class SpaceImpl extends AbstractService implements IRemoteSpace, IInterna
             throw new IllegalStateException("Nothing to update, CHUNKS_SPACE_ROUTING is disabled");
         }
     }
+
+    public String getPuName() {
+        return _puName;
+    }
+
+    public AttributeStore getAttributeStore() {
+        return attributeStore;
+    }
+
+    public void waitForZkUpdate(Step step, String key, Status status)  {
+        try {
+            while (!ZKScaleOutUtils.setStepIfPossible(attributeStore, _puName, step.getName(), key, status.getStatus())) {
+                Thread.sleep(1000);
+            }
+        } catch (InterruptedException e) {
+            _logger.warn("Failed to update ZK step [" + step + "] status [" + status + "]");
+        }
+    }
+
 
     private void setOrUpdateBlobstoreRocksDBAllowDuplicateUIDs(SpaceConfig spaceConfig, SpaceConfigReader spaceConfigReader) {
         String rocksDBStoreHandlerClassName = "com.gigaspaces.blobstore.rocksdb.RocksDBBlobStoreHandler";

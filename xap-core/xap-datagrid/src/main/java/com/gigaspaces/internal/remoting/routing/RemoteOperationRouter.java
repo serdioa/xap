@@ -43,6 +43,8 @@ public interface RemoteOperationRouter {
 
     RemoteOperationsExecutorProxy getAnyActiveMember();
 
+    RemoteOperationsExecutorProxy getAnyAvailableCachedMember();
+
     void getAllAvailableMembers(List<RemoteOperationsExecutorProxy> availableMembers);
 
     void close();

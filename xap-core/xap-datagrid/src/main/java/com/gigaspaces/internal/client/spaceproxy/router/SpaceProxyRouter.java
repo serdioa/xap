@@ -90,6 +90,7 @@ public class SpaceProxyRouter {
         }
         this._proxyLocator = createProxyLocator(spaceProxy);
         this._asyncHandlerProvider = new ScheduledThreadPoolAsyncHandlerProvider(spaceProxy.getName() + "-router-threadpool", _config.getThreadPoolSize());
+
         if (spaceProxy.isEmbedded() && (!_clusterInfo.isPartitioned() || !spaceProxy.isClustered())) {
             int partitionId = PartitionedClusterUtils.extractPartitionIdFromSpaceName(spaceProxy.getRemoteMemberName());
             this._postponedAsyncOperationsQueue = null;
@@ -99,10 +100,49 @@ public class SpaceProxyRouter {
             if (spaceProxy.isClustered()) {
                 if (_clusterInfo.isPartitioned())
                     this._router = createPartitionedRouter(spaceProxy, _clusterInfo, _config);
-                else
+                else {
                     this._router = createClusteredRouter(spaceProxy, _clusterInfo.getMembersNames(), _config);
+                }
             } else
                 this._router = createClusteredRouter(spaceProxy, CollectionUtils.toList(spaceProxy.getRemoteMemberName()), _config);
+        }
+
+        warnIfOldConfigIsUsed(properties);
+    }
+
+    public SpaceProxyRouter(SpaceProxyImpl spaceProxy, int partitionNum) {
+        this._logger = LoggerFactory.getLogger(com.gigaspaces.logger.Constants.LOGGER_SPACEPROXY_ROUTER + '.' + spaceProxy.getName());
+        this._clusterInfo = spaceProxy.getSpaceClusterInfo();
+        this.isGateway = spaceProxy.isGatewayProxy();
+        this.isSecured = spaceProxy.isSecured();
+        this.clusteredProxy = spaceProxy.isClustered() && !spaceProxy.isEmbedded();
+        this.quiesceTokenProvider = new QuiesceTokenProviderImpl();
+        updateDefaultSpaceContext(null);
+        Properties properties = loadConfig(spaceProxy.getProxySettings().getCustomProperties(), _clusterInfo);
+        this._config = new SpaceRemoteOperationsExecutorsClusterConfig(properties);
+        if (_clusterInfo.isPartitioned() && _config.getLoadBalancerType() == SpaceProxyLoadBalancerType.ROUND_ROBIN)
+            throw new IllegalStateException("Cannot use round robin load balancing with a partitioned space.");
+        if (_logger.isDebugEnabled()) {
+            _logger.debug("Initializing space proxy router - [" +
+                    "Active server lookup timeout=" + _config.getActiveServerLookupTimeout() +
+                    ", Active server lookup sampling interval=" + _config.getActiveServerLookupSamplingInterval() +
+                    ", Thread pool size=" + _config.getThreadPoolSize() +
+                    "]");
+        }
+        this._proxyLocator = createProxyLocator(spaceProxy);
+        this._asyncHandlerProvider = new ScheduledThreadPoolAsyncHandlerProvider(spaceProxy.getName() + "-router-threadpool", _config.getThreadPoolSize());
+
+        if (spaceProxy.isEmbedded() && (!_clusterInfo.isPartitioned() || !spaceProxy.isClustered())) { //todo- all this part
+            int partitionId = PartitionedClusterUtils.extractPartitionIdFromSpaceName(spaceProxy.getRemoteMemberName());
+            this._postponedAsyncOperationsQueue = null;
+            this._router = new SpaceEmbeddedRemoteOperationRouter(spaceProxy, partitionId, quiesceTokenProvider);
+        } else {
+            this._postponedAsyncOperationsQueue = new PostponedAsyncOperationsQueue(spaceProxy.getName());
+            if (spaceProxy.isClustered()) {
+                this._router = createOnePartitionRouter(spaceProxy, _clusterInfo, _config, partitionNum);
+            } else {
+                this._router = createClusteredRouter(spaceProxy, CollectionUtils.toList(spaceProxy.getRemoteMemberName()), _config);
+            }
         }
 
         warnIfOldConfigIsUsed(properties);
@@ -132,6 +172,14 @@ public class SpaceProxyRouter {
         final RemoteOperationsExecutorProxy defaultProxy = new RemoteOperationsExecutorProxy(spaceProxy.getRemoteMemberName(), spaceProxy.getRemoteJSpace(), quiesceTokenProvider);
         final RemoteOperationsExecutorsCluster cluster = new RemoteOperationsExecutorsCluster(spaceProxy, spaceProxy.getName(), _clusterInfo, -1,
                 membersNames, config, _asyncHandlerProvider, _proxyLocator, defaultProxy);
+        return new SpaceClusterRemoteOperationRouter(cluster, _postponedAsyncOperationsQueue, spaceProxy);
+    }
+
+    private SpaceProxyRemoteOperationRouter createOnePartitionRouter(SpaceProxyImpl spaceProxy, SpaceClusterInfo clusterInfo,
+                                                                     RemoteOperationsExecutorsClusterConfig config, int partitionId){
+        final List<String> members = clusterInfo.getPartitionMembersNames(partitionId);
+        final RemoteOperationsExecutorsCluster cluster = new RemoteOperationsExecutorsCluster(spaceProxy, spaceProxy.getName(),
+                    clusterInfo, partitionId , members, config, _asyncHandlerProvider, _proxyLocator, null);
         return new SpaceClusterRemoteOperationRouter(cluster, _postponedAsyncOperationsQueue, spaceProxy);
     }
 

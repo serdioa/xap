@@ -13,7 +13,7 @@ import java.util.concurrent.TimeoutException;
 public class WaitForDrainUtils {
     private static Logger logger = LoggerFactory.getLogger("com.gigaspaces.internal.server.space.quiesce.waitForDrain");
 
-    public static void waitForDrain(SpaceImpl spaceImpl, long timeoutMs, long minTimeToWait, boolean isDemote, Logger customLogger) throws TimeoutException {
+    public static void waitForDrain(SpaceImpl spaceImpl, long timeoutMs, long minTimeToWait, boolean isBackupOnly, Logger customLogger) throws TimeoutException {
         final Logger loggerToUse = customLogger != null ? customLogger : logger;
         final String containerName = spaceImpl.getContainerName();
         long start = System.currentTimeMillis();
@@ -33,7 +33,7 @@ public class WaitForDrainUtils {
                         final TransactionHandler handler = spaceImpl.getEngine().getTransactionHandler();
                         boolean result;
                         try {
-                            result = isDemote ? handler.waitForActiveTransactions(innerTimeout) : handler.waitForFinalizingTransactions(innerTimeout);
+                            result = isBackupOnly ? handler.waitForActiveTransactions(innerTimeout) : handler.waitForFinalizingTransactions(innerTimeout);
                         } catch (InterruptedException e) {
                             result = false;
                             Thread.currentThread().interrupt();
@@ -68,9 +68,9 @@ public class WaitForDrainUtils {
             }
 
             if(hasReplication(spaceImpl)) {
-                loggerToUse.info("[{}]: Waiting for " + (isDemote ? "backup" : "all targets ") + " replication to drain", containerName);
+                loggerToUse.info("[{}]: Waiting for " + (isBackupOnly ? "backup" : "all targets ") + " replication to drain", containerName);
                 long startReplication = System.currentTimeMillis();
-                repetitiveTryWithinTimeout(isDemote ? "Backup is not synced" : "Some targets are not synced", remainingTime, () -> isDemote ? isBackupSynced(spaceImpl) : isAllTargetSync(spaceImpl, loggerToUse));
+                repetitiveTryWithinTimeout(isBackupOnly ? "Backup is not synced" : "Some targets are not synced", remainingTime, () -> isBackupOnly ? isBackupSynced(spaceImpl) : isAllTargetSync(spaceImpl, loggerToUse));
                 loggerToUse.info("[{}]: Replication drained, duration: " + (System.currentTimeMillis() - startReplication) + " ms", containerName);
             }
         } catch (Exception e){
