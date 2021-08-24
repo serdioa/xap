@@ -185,4 +185,13 @@ public class AggregationSet implements SmartExternalizable {
             aggregators.add(IOUtils.readObject(in));
         }
     }
+
+    public boolean containsOrderByAggregator(){
+        for (int i = 0; i < aggregators.size(); i++){
+            if (aggregators.get(i) instanceof OrderByAggregator){
+                return true;
+            }
+        }
+        return false;
+    }
 }

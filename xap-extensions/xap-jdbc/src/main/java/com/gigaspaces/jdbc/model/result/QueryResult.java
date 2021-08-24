@@ -193,6 +193,13 @@ public abstract class QueryResult {
 
     }
 
+    public void limit(Integer limit) {
+        if (getRows() != null) {
+            List<TableRow> limitedRows = getRows().subList(0, Math.min(limit, size()));
+            setRows(limitedRows);
+        }
+    }
+
     public void applyCaseColumnsOnResult() {
         if (this instanceof ExplainPlanQueryResult) return;
         List<CaseColumn> caseColumns =

@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 
 import static com.gigaspaces.jdbc.calcite.utils.CalciteUtils.getNode;
+import static com.gigaspaces.jdbc.calcite.utils.CalciteUtils.getValue;
 import static com.gigaspaces.jdbc.model.table.IQueryColumn.EMPTY_ORDINAL;
 
 public class SelectHandler extends RelShuttleImpl {
@@ -85,10 +86,13 @@ public class SelectHandler extends RelShuttleImpl {
             handleSort((GSSort) other);
         } else if(other instanceof GSAggregate){
             handleAggregate((GSAggregate) other);
+        } else if(other instanceof GSLimit){
+            handleLimit((GSLimit) other);
         }
 
         return result;
     }
+
 
     private void handleValues(GSValues gsValues) {
         if (childToCalc.containsKey(gsValues)) {
@@ -151,6 +155,17 @@ public class SelectHandler extends RelShuttleImpl {
                     qc != null, table, columnCounter++), !direction.isDescending(),
                     nullDirection == RelFieldCollation.NullDirection.LAST);
             table.addOrderColumn(orderColumn);
+            if ( sort.fetch != null){
+                if (!(sort.fetch instanceof RexLiteral)){
+                    throw new UnsupportedOperationException("Limit does not support type: " + sort.fetch.getType());
+                }
+                Object limitValue = getValue((RexLiteral) sort.fetch);
+                if (!(limitValue instanceof Integer)) {
+                    throw new UnsupportedOperationException("Limit does not support: " + limitValue.getClass() + " as an argument");
+                }
+                table.setLimit((Integer)limitValue);
+            }
+
             queryExecutor.addOrderColumn(orderColumn);
         }
     }
@@ -159,6 +174,30 @@ public class SelectHandler extends RelShuttleImpl {
         AggregateHandler.instance().apply(gsAggregate, queryExecutor, gsAggregate.equals(root));
         if(childToCalc.containsKey(gsAggregate)){
             handleCalc(childToCalc.get(gsAggregate));
+        }
+    }
+
+    private void handleLimit(GSLimit limit) {
+        RelNode input = limit.getInput();
+        if ( limit.fetch != null && !(limit.fetch instanceof RexLiteral)) {
+            throw new UnsupportedOperationException("Limit does not support type: " + limit.fetch.getType());
+        }
+        Object limitValue = getValue((RexLiteral) limit.fetch);
+        if (!(limitValue instanceof Integer)) {
+            throw new UnsupportedOperationException("Limit does not support type: " + limit.fetch.getType());
+        }
+        if (input instanceof GSTableScan) {
+            if (queryExecutor.getTables().size() == 1) {
+                queryExecutor.getTables().get(0).setLimit((Integer) limitValue);
+            }
+        } else if (input instanceof GSAggregate) {
+            if (queryExecutor.getTables().size() == 1) {
+                queryExecutor.getTables().get(0).setLimit((Integer) limitValue);
+            }
+        } else if (input instanceof GSSort) {
+            if (queryExecutor.getTables().size() == 1) {
+                queryExecutor.getTables().get(0).setLimit((Integer) limitValue);
+            }
         }
     }
 
@@ -193,6 +232,7 @@ public class SelectHandler extends RelShuttleImpl {
         }
         if(!childToCalc.containsKey(join)) { // it is SELECT *
             if(join.equals(root)
+                    || ((root instanceof GSLimit) && ((GSLimit) root).getInput().equals(join)) // root is GSLimit and its child is join
                     || ((root instanceof GSSort) && ((GSSort) root).getInput().equals(join))) { // root is GSSort and its child is join
                 if (join.isSemiJoin()) {
                     queryExecutor.getVisibleColumns().addAll(leftContainer.getVisibleColumns());

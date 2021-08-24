@@ -96,7 +96,8 @@ public class ConcreteTableContainer extends TableContainer {
 
             queryTemplatePacket.prepareForSpace(typeDesc);
 
-            IQueryResultSet<IEntryPacket> res = queryTemplatePacket.readMultiple(space.getDirectProxy(), null, limit, modifiers);
+            boolean limitInServer = !(hasOrderColumns() || (queryTemplatePacket.getAggregationSet() != null && queryTemplatePacket.getAggregationSet().containsOrderByAggregator()));
+            IQueryResultSet<IEntryPacket> res = queryTemplatePacket.readMultiple(space.getDirectProxy(), null, limitInServer ? limit : Integer.MAX_VALUE, modifiers);
             if (explainPlanImpl != null) {
                 queryResult = new ExplainPlanQueryResult(visibleColumns, explainPlanImpl.getExplainPlanInfo(), this);
             } else {
@@ -113,6 +114,9 @@ public class ConcreteTableContainer extends TableContainer {
                         queryResult.sort();
                     }
                 }
+            }
+            if (!limitInServer){
+                queryResult.limit(limit);
             }
             return queryResult;
         } catch (Exception e) {
