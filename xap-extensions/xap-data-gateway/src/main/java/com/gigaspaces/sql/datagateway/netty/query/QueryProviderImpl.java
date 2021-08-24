@@ -191,15 +191,29 @@ public class QueryProviderImpl implements QueryProvider {
                 GSOptimizerValidationResult validated = validate(optimizer, explicandum);
                 explicandum = validated.getValidatedAst();
                 RelDataType rowType = validated.getRowType();
-                ParametersDescription paramDesc = getParametersDescription(paramTypes, validated.getParameterRowType());
 
-                return new ExplainStatement(this, name, depth, detailLevel, format, rowType, paramDesc, explicandum, optimizer);
+                return new ExplainStatement(this, name, depth, detailLevel, format, rowType, explicandum, optimizer);
             }
             throw new NonBreakingException(ErrorCodes.UNSUPPORTED_FEATURE, "cannot explain non-query statement. query: " + ast);
         } else {
             GSOptimizerValidationResult validated = validate(optimizer, ast);
 
-            ParametersDescription paramDesc = getParametersDescription(paramTypes, validated.getParameterRowType());
+            RelDataType paramType = validated.getParameterRowType();
+            ParametersDescription paramDesc;
+            List<RelDataTypeField> fieldList = paramType.getFieldList();
+            if (fieldList.isEmpty()) {
+                paramDesc = ParametersDescription.EMPTY;
+            } else {
+                List<ParameterDescription> params = new ArrayList<>(paramType.getFieldCount());
+                for (int i = 0; i < fieldList.size(); i++) {
+                    if (paramTypes.length <= i || paramTypes[i] == 0) {
+                        params.add(new ParameterDescription(TypeUtils.fromInternal(fieldList.get(i).getType())));
+                    } else {
+                        params.add(new ParameterDescription(TypeUtils.getType(paramTypes[i])));
+                    }
+                }
+                paramDesc = new ParametersDescription(params);
+            }
 
             RelDataType rowType = validated.getRowType();
             List<ColumnDescription> columns = new ArrayList<>(rowType.getFieldCount());
@@ -211,25 +225,6 @@ public class QueryProviderImpl implements QueryProvider {
             StatementDescription description = new StatementDescription(paramDesc, rowDesc);
             return new StatementImpl(this, name, validated.getValidatedAst(), optimizer, description);
         }
-    }
-
-    private ParametersDescription getParametersDescription(int[] requestedTypes, RelDataType inferredTypes) {
-        ParametersDescription paramDesc;
-        List<RelDataTypeField> fieldList = inferredTypes.getFieldList();
-        if (fieldList.isEmpty()) {
-            paramDesc = ParametersDescription.EMPTY;
-        } else {
-            List<ParameterDescription> params = new ArrayList<>(inferredTypes.getFieldCount());
-            for (int i = 0; i < fieldList.size(); i++) {
-                if (requestedTypes.length <= i || requestedTypes[i] == 0) {
-                    params.add(new ParameterDescription(TypeUtils.fromInternal(fieldList.get(i).getType())));
-                } else {
-                    params.add(new ParameterDescription(TypeUtils.getType(requestedTypes[i])));
-                }
-            }
-            paramDesc = new ParametersDescription(params);
-        }
-        return paramDesc;
     }
 
     private StatementDescription describeShow(SqlShowOption node) {
