@@ -10,18 +10,16 @@ import org.apache.calcite.sql.SqlExplainLevel;
 import org.apache.calcite.sql.SqlNode;
 
 public class ExplainStatement extends StatementImpl {
-    private static final StatementDescription DESCRIPTION = new StatementDescription(
-            ParametersDescription.EMPTY,
-            new RowDescription(ImmutableList.of(
-                    new ColumnDescription("Explain Plan", TypeUtils.PG_TYPE_VARCHAR))));
+    public static final RowDescription ROW_DESCRIPTION = new RowDescription(ImmutableList.of(
+        new ColumnDescription("Explain Plan", TypeUtils.PG_TYPE_VARCHAR)));
 
     private final SqlExplain.Depth depth;
     private final SqlExplainLevel detailLevel;
     private final SqlExplainFormat format;
     private final RelDataType rowType;
 
-    public ExplainStatement(QueryProviderImpl queryProvider, String name, SqlExplain.Depth depth, SqlExplainLevel detailLevel, SqlExplainFormat format, RelDataType rowType, SqlNode explicandum, GSOptimizer optimizer) {
-        super(queryProvider, name, explicandum, optimizer, DESCRIPTION);
+    public ExplainStatement(QueryProviderImpl queryProvider, String name, SqlExplain.Depth depth, SqlExplainLevel detailLevel, SqlExplainFormat format, RelDataType rowType, ParametersDescription paramDesc, SqlNode explicandum, GSOptimizer optimizer) {
+        super(queryProvider, name, explicandum, optimizer, new StatementDescription(paramDesc, ROW_DESCRIPTION));
         this.depth = depth;
         this.detailLevel = detailLevel;
         this.format = format;
