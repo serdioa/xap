@@ -59,11 +59,13 @@ public class JoinQueryExecutor {
                 res = new JoinQueryResult(allColumns);
                 while (joinTablesIterator.hasNext()) {
                     if (tables.stream().allMatch(TableContainer::checkJoinCondition))
+                        //TODO limit
                         res.addRow(TableRowFactory.createTableRowFromSpecificColumns(allColumns, Collections.emptyList(), Collections.emptyList()));
                 }
             }
             res = processLayer.process(res);
         }
+        //TODO limit
         return res;
     }
 

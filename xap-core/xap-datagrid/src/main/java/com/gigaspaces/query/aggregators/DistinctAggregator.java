@@ -21,15 +21,10 @@ import com.gigaspaces.internal.io.IOUtils;
 import com.gigaspaces.internal.query.RawEntry;
 import com.gigaspaces.serialization.SmartExternalizable;
 
-import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Aggregator for fetching distinct entries - based on some fields.
