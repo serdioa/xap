@@ -15,7 +15,7 @@ public class WaitForDataDrainExecutors extends SpaceActionExecutor {
         final WaitForDataDrainRequest drainRequest = (WaitForDataDrainRequest) spaceRequestInfo;
         final WaitForDrainPartitionResponse response = new WaitForDrainPartitionResponse(space.getPartitionIdOneBased());
         try {
-            space.waitForDrain(drainRequest.getTimeout(), drainRequest.getMinTimeToWait(), drainRequest.isDemote(), null);
+            space.waitForDrain(drainRequest.getTimeout(), drainRequest.getMinTimeToWait(), drainRequest.isComprehensive(), null);
             response.setSuccessful(true);
         } catch (TimeoutException e) {
             response.setException(e);

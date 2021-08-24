@@ -24,10 +24,7 @@ import com.gigaspaces.internal.cluster.node.impl.config.ReplicationNodeConfigBui
 import com.gigaspaces.internal.cluster.node.impl.router.ReplicationRouterBuilderFactory;
 import com.gigaspaces.internal.server.space.executors.*;
 import com.gigaspaces.internal.server.space.quiesce.WaitForDataDrainExecutors;
-import com.gigaspaces.internal.server.space.repartitioning.CopyChunksTask;
-import com.gigaspaces.internal.server.space.repartitioning.DeleteChunksTask;
-import com.gigaspaces.internal.server.space.repartitioning.SpaceCopyChunksExecutor;
-import com.gigaspaces.internal.server.space.repartitioning.SpaceDeleteChunksExecutor;
+import com.gigaspaces.internal.server.space.repartitioning.*;
 import com.gigaspaces.internal.utils.XapRuntimeReporter;
 import com.gigaspaces.internal.version.PlatformLogicalVersion;
 import com.j_spaces.core.client.SpaceFinderListener;
@@ -83,6 +80,9 @@ public class XapExtensions {
         registerSystemTaskExecutor(BroadcastTableSpaceTask.class, new SpaceBroadcastTableExecutor());
         registerSystemTaskExecutor(GetEntriesTieredMetaDataTask.class, new SpaceGetEntriesTieredMetaDataExecutor());
         registerSystemTaskExecutor(WaitForDataDrainTask.class, new WaitForDataDrainExecutors());
+        registerSystemTaskExecutor(DrainTask.class, new SpaceDrainExecutor());
+        registerSystemTaskExecutor(CopyChunksPartitionTask.class, new SpaceCopyChunksPartitionExecutor());
+        registerSystemTaskExecutor(DeleteChunksPartitionTask.class, new SpaceDeleteChunksPartitionExecutor());
     }
 
     public ReplicationRouterBuilderFactory getReplicationRouterBuilderFactory() {
