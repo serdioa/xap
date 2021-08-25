@@ -33,7 +33,7 @@ public class MutableDouble extends MutableNumber {
 
     @Override
     public Number toNumber() {
-        return Double.valueOf(value);
+        return value;
     }
 
     @Override

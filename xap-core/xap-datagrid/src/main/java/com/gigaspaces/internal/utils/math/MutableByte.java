@@ -19,7 +19,6 @@ package com.gigaspaces.internal.utils.math;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.math.BigInteger;
 
 /**
  * @author Niv Ingberg
@@ -34,7 +33,7 @@ public class MutableByte extends MutableNumber {
 
     @Override
     public Number toNumber() {
-        return Byte.valueOf(value);
+        return value;
     }
 
     @Override

@@ -70,5 +70,16 @@ public abstract class SqlFunction {
         return object instanceof String;
     }
 
+    protected Class<?> fromSqlTypeName(String sqlTypeName, Class<?> def) {
+        switch (sqlTypeName) {
+            case "BOOLEAN": return Boolean.class;
+            case "DOUBLE": return Double.class;
+            case "INTEGER": return Integer.class;
+            case "SMALLINT": return Short.class;
+            case "BIGINT": return Long.class;
+            case "FLOAT": return Float.class;
+            default: return def;
+        }
+    }
 
 }

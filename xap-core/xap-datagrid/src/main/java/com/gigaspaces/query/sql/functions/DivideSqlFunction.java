@@ -1,9 +1,6 @@
 package com.gigaspaces.query.sql.functions;
 
-import com.gigaspaces.internal.utils.ObjectConverter;
 import com.gigaspaces.internal.utils.math.MutableNumber;
-
-import java.sql.SQLException;
 
 /**
  * Returns the the subtraction of two objects
@@ -31,7 +28,8 @@ public class DivideSqlFunction extends SqlFunction {
         if(!(right instanceof Number)){
             throw new RuntimeException("Cannot apply division function to type " + right.getClass().getName());
         }
-        MutableNumber mutableNumber = MutableNumber.fromClass(left.getClass(), false);
+        Class<?> type = fromSqlTypeName(context.getType(), left.getClass());
+        MutableNumber mutableNumber = MutableNumber.fromClass(type, false);
         mutableNumber.add((Number) left);
         mutableNumber.divide((Number) right);
         return mutableNumber.toNumber();

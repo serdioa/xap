@@ -1,18 +1,6 @@
 package com.gigaspaces.query.sql.functions;
 
-import com.gigaspaces.internal.utils.ObjectConverter;
 import com.gigaspaces.internal.utils.math.MutableNumber;
-
-import java.math.BigDecimal;
-import java.sql.Date;
-import java.sql.SQLException;
-import java.sql.Time;
-import java.sql.Timestamp;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.util.Arrays;
-import java.util.HashSet;
 
 /**
  * Returns the the subtraction of two objects
@@ -40,7 +28,8 @@ public class MultiplySqlFunction extends SqlFunction {
         if(!(right instanceof Number)){
             throw new RuntimeException("Cannot apply multiplication function to type " + right.getClass().getName());
         }
-        MutableNumber mutableNumber = MutableNumber.fromClass(left.getClass(), false);
+        Class<?> type = fromSqlTypeName(context.getType(), left.getClass());
+        MutableNumber mutableNumber = MutableNumber.fromClass(type, false);
         mutableNumber.add((Number) left);
         mutableNumber.multiply((Number) right);
         return mutableNumber.toNumber();

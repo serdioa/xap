@@ -134,8 +134,7 @@ public class SelectHandler extends RelShuttleImpl {
             int fieldIndex = relCollation.getFieldIndex();
             RelFieldCollation.Direction direction = relCollation.getDirection();
             RelFieldCollation.NullDirection nullDirection = relCollation.nullDirection;
-            String columnAlias = sort.getRowType().getFieldNames().get(fieldIndex);
-            String columnName = columnAlias;
+            String columnName = sort.getRowType().getFieldNames().get(fieldIndex);
             if(sort.getInput() instanceof GSAggregate){
                 final GSAggregate input = (GSAggregate) sort.getInput();
                 if(!input.getAggCallList().isEmpty()){
