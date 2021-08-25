@@ -44,10 +44,11 @@ public class PartitionedClusterUtils {
     public static int getPartitionId(Object routingValue, SpaceClusterInfo clusterInfo) {
         if (routingValue == null)
             return NO_PARTITION;
+        int numberOfPartitions = clusterInfo.getNumberOfPartitions() != 0 ? clusterInfo.getNumberOfPartitions() : 1;
         if (routingValue instanceof Long && PRECISE_LONG_ROUTING) {
-            return clusterInfo.isChunksRouting() ? clusterInfo.getPartitionId((safeAbs((Long) routingValue))) : (int) (safeAbs((Long) routingValue) % clusterInfo.getNumberOfPartitions());
+            return clusterInfo.isChunksRouting() ? clusterInfo.getPartitionId((safeAbs((Long) routingValue))) : (int) (safeAbs((Long) routingValue) % numberOfPartitions);
         }
-        return clusterInfo.isChunksRouting() ? clusterInfo.getPartitionId(safeAbs(routingValue.hashCode())) : safeAbs(routingValue.hashCode()) % clusterInfo.getNumberOfPartitions();
+        return clusterInfo.isChunksRouting() ? clusterInfo.getPartitionId(safeAbs(routingValue.hashCode())) : safeAbs(routingValue.hashCode()) % numberOfPartitions;
     }
 
     public static int getPartitionId(Object routingValue, ClusterTopology topology) {

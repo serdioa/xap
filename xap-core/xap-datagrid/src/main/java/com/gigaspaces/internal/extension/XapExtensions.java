@@ -16,8 +16,6 @@
 
 package com.gigaspaces.internal.extension;
 
-import com.gigaspaces.internal.client.spaceproxy.executors.SpaceDataSourceLoadTask;
-import com.gigaspaces.internal.server.space.executors.SpaceDataSourceLoadExecutor;
 import com.gigaspaces.internal.client.spaceproxy.executors.*;
 import com.gigaspaces.internal.cluster.node.impl.ReplicationUtils;
 import com.gigaspaces.internal.cluster.node.impl.config.ReplicationNodeConfigBuilder;
@@ -31,14 +29,13 @@ import com.gigaspaces.internal.server.space.repartitioning.SpaceDeleteChunksExec
 import com.gigaspaces.internal.utils.XapRuntimeReporter;
 import com.gigaspaces.internal.version.PlatformLogicalVersion;
 import com.j_spaces.core.client.SpaceFinderListener;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.Externalizable;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 @com.gigaspaces.api.InternalApi
 public class XapExtensions {
@@ -83,6 +80,7 @@ public class XapExtensions {
         registerSystemTaskExecutor(BroadcastTableSpaceTask.class, new SpaceBroadcastTableExecutor());
         registerSystemTaskExecutor(GetEntriesTieredMetaDataTask.class, new SpaceGetEntriesTieredMetaDataExecutor());
         registerSystemTaskExecutor(WaitForDataDrainTask.class, new WaitForDataDrainExecutors());
+        registerSystemTaskExecutor(GSMessageTask.class, new GSMessageTaskExecutor());
     }
 
     public ReplicationRouterBuilderFactory getReplicationRouterBuilderFactory() {

@@ -30,6 +30,7 @@ import com.gigaspaces.internal.server.space.SpaceConfigReader;
 import com.gigaspaces.internal.server.space.SpaceImpl;
 import com.gigaspaces.internal.utils.AbstractShutdownHook;
 import com.gigaspaces.internal.utils.GsEnv;
+import com.gigaspaces.internal.utils.LazySingleton;
 import com.gigaspaces.internal.utils.ValidationUtils;
 import com.gigaspaces.logger.GSLogConfigLoader;
 import com.gigaspaces.security.service.SecurityResolver;
@@ -58,6 +59,7 @@ import com.sun.jini.start.NonActivatableServiceDescriptor;
 import com.sun.jini.start.ServiceProxyAccessor;
 import net.jini.admin.Administrable;
 import net.jini.config.ConfigurationException;
+import net.jini.core.transaction.server.TransactionManager;
 import net.jini.export.Exporter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -366,7 +368,7 @@ public class JSpaceContainerImpl implements IJSpaceContainer, IJSpaceContainerAd
         String prevGroups = setLookupgroups(_url.getProperty(SpaceURL.GROUPS));
         String prevLocators = setLookupLocators(_customProperties.getProperty(XPathProperties.CONTAINER_JINI_LUS_UNICAST_HOSTS));
         _reggieCreatedRef = createLookupServiceIfNeeded(_containerName);
-        _mahaloCreatedRef = createMahaloIfNeeded(_containerName);
+        createMahaloIfNeeded(_containerName);
         SystemInfo.singleton().lookup().setGroups(prevGroups);
         SystemInfo.singleton().lookup().setLocators(prevLocators);
 
@@ -948,7 +950,7 @@ public class JSpaceContainerImpl implements IJSpaceContainer, IJSpaceContainerAd
             // Terminate a running Reggie service
             destroyIfNeeded(_reggieCreatedRef);
             // Terminate a running Mahalo service
-            destroyIfNeeded(_mahaloCreatedRef);
+            destroyIfNeeded(_mahaloCreatedRefSingleton.getRef());
 
             // If container/space constructed through jini ServiceStarter
             // invoke destroy method to inform the JSpaceService object
@@ -2180,12 +2182,17 @@ public class JSpaceContainerImpl implements IJSpaceContainer, IJSpaceContainerAd
      * Strong references to transient mahalo, this prevents the transient service from getting
      * garbage collected.
      */
-    private NonActivatableServiceDescriptor.Created _mahaloCreatedRef = null;
+    private LazySingleton<NonActivatableServiceDescriptor.Created> _mahaloCreatedRefSingleton = new LazySingleton<>(JSpaceContainerImpl::createMahalo);
+
+    public TransactionManager getEmbeddedTransactionManager() {
+        NonActivatableServiceDescriptor.Created mahaloRef = _mahaloCreatedRefSingleton.getOrCreate();
+        return mahaloRef == null ? null : ((TransactionManager) mahaloRef.proxy);
+    }
 
     /**
      * Run an embedded Mahalo Jini Transaction Manager.
      */
-    private static NonActivatableServiceDescriptor.Created createMahaloIfNeeded(String containerName) {
+    private NonActivatableServiceDescriptor.Created createMahaloIfNeeded(String containerName) {
         // starting embedded Mahalo TX service if the [start-embedded-mahalo] set to true in the container schema
         boolean isEmbeddedMahaloEnabled = Boolean.parseBoolean(JProperties.getContainerProperty(
                 containerName, CONTAINER_EMBEDDED_MAHALO_ENABLED_PROP,
@@ -2193,6 +2200,10 @@ public class JSpaceContainerImpl implements IJSpaceContainer, IJSpaceContainerAd
         if (!isEmbeddedMahaloEnabled)
             return null;
 
+        return _mahaloCreatedRefSingleton.getOrCreate();
+    }
+
+    private static NonActivatableServiceDescriptor.Created createMahalo() {
         try {
             Object instance = MahaloFactory.createMahalo();
             Object proxy = ((TxnManager) instance).getLocalProxy();

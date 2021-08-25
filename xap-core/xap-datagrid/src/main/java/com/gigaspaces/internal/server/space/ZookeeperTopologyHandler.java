@@ -1,15 +1,17 @@
 package com.gigaspaces.internal.server.space;
 
 import com.gigaspaces.attribute_store.AttributeStore;
-import com.gigaspaces.internal.cluster.ClusterTopologyState;
 import com.gigaspaces.internal.cluster.ClusterTopology;
+import com.gigaspaces.internal.cluster.ClusterTopologyState;
 import com.gigaspaces.internal.zookeeper.ZNodePathFactory;
 import com.gigaspaces.logger.Constants;
 import com.j_spaces.core.admin.SpaceConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.*;
+import java.io.Closeable;
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -39,6 +41,20 @@ public class ZookeeperTopologyHandler implements Closeable {
     public static String getHeapReportStatePath(String puName) {
         return getHeapReportStatePath2(puName)+"/heapreport";
     }
+
+    public static String getPipelineStatus(String pipelineName) {
+        return ZNodePathFactory.pipeline(pipelineName, "status");
+    }
+
+    public static String getPipeline(String pipelineName) {
+        return ZNodePathFactory.pipeline(pipelineName, "pipeline");
+    }
+
+
+    public static String pipelines() {
+        return ZNodePathFactory.pipelines();
+    }
+
 
     public static String getZkTopologyGenerationPath(String puName, int generation) {
         return getZkTopologyPath(puName)+"/"+generation;

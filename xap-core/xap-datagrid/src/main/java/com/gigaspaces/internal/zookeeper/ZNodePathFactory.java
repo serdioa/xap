@@ -12,6 +12,8 @@ public class ZNodePathFactory {
     private static final String PUS = "pus";
     private static final String LOCKS = "locks";
     private static final String SPACES = "spaces";
+    private static final String PIPELINES = "pipelines";
+    private static final String CONSUMERS = "consumers";
 
     public static String path(String ... elements) {
         return XAP_PREFIX + String.join("/", elements);
@@ -25,6 +27,10 @@ public class ZNodePathFactory {
 
     public static String processingUnit(String puName) {
         return path(PUS, puName);
+    }
+
+    public static String pipeline(String pipeline) {
+        return path(PIPELINES, pipeline);
     }
 
     public static String lockPuName(String puName) {
@@ -42,6 +48,17 @@ public class ZNodePathFactory {
     public static String processingUnit(String puName, String component) {
         return path(PUS, puName, component);
     }
+    
+    public static String pipeline(String pipeline, String component) {
+        return path(PIPELINES, pipeline, component);
+    }
+    public static String pipelines() {
+        return path(PIPELINES);
+    }
+
+    public static String consumers(){ return path(CONSUMERS);}
+    public static String consumer(String consumer){ return path(CONSUMERS, consumer);}
+    public static String consumer(String consumer, String component){ return path(CONSUMERS, consumer, component);}
 
     public static String processingUnit(String puName, String component, int partitionId, String ... elements) {
         return path(PUS, puName, component, String.valueOf(partitionId), elements);
