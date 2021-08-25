@@ -44,21 +44,24 @@ public class MutableBigDecimal extends MutableNumber {
     public void add(Number x) {
         if (x == null)
             return;
-        value = value == null ? (BigDecimal) x : value.add((BigDecimal) x);
+        BigDecimal n = convert(x);
+        value = value == null ? n : value.add(n);
     }
 
     @Override
     public void subtract(Number x) {
         if (x == null)
             return;
-        value = value == null ? ((BigDecimal) x).negate() : value.subtract((BigDecimal) x);
+        BigDecimal n = convert(x);
+        value = value == null ? n.negate() : value.subtract(n);
     }
 
     @Override
     public void multiply(Number x) {
         if (x == null)
             return;
-        value = value == null ? null : value.multiply((BigDecimal) x);
+        BigDecimal n = convert(x);
+        value = value == null ? null : value.multiply(n);
     }
 
     @Override
@@ -66,6 +69,13 @@ public class MutableBigDecimal extends MutableNumber {
         if (x == null)
             return;
         value = value == null ? null : value.divide((BigDecimal) x);
+    }
+
+    private BigDecimal convert(Number x) {
+        if (x instanceof BigDecimal) {
+            return ((BigDecimal) x);
+        }
+        return BigDecimal.valueOf(x.doubleValue());
     }
 
     @Override

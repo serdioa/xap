@@ -29,7 +29,7 @@ public class FunctionColumn implements IQueryColumn {
         this.columnAlias = columnAlias;
         this.isVisible = isVisible;
         this.columnOrdinal = columnOrdinal;
-        this.type = type;
+        this.type = type; //is a SqlTypeName
         this.session = session;
     }
 

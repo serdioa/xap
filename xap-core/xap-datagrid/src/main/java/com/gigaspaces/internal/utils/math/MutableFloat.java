@@ -33,7 +33,7 @@ public class MutableFloat extends MutableNumber {
 
     @Override
     public Number toNumber() {
-        return Float.valueOf(value);
+        return value;
     }
 
     @Override
