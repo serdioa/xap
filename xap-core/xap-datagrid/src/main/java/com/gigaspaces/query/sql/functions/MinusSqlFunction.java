@@ -44,7 +44,8 @@ public class MinusSqlFunction extends SqlFunction {
             return null;
         }
         if(left instanceof Number && right instanceof Number){
-            MutableNumber mutableNumber = MutableNumber.fromClass(left.getClass(), false);
+            Class<?> type = fromSqlTypeName(context.getType(), left.getClass());
+            MutableNumber mutableNumber = MutableNumber.fromClass(type, false);
             mutableNumber.add((Number) left);
             mutableNumber.subtract((Number) right);
             res = mutableNumber.toNumber();

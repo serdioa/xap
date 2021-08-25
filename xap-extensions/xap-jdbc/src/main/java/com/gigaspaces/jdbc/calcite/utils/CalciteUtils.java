@@ -6,10 +6,9 @@ import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexLocalRef;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexProgram;
+import org.apache.calcite.sql.type.SqlTypeName;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Properties;
 
 import static com.gigaspaces.jdbc.calcite.CalciteDefaults.isCalcitePropertySet;
@@ -83,7 +82,11 @@ public class CalciteUtils {
         if (rexNode == null) {
             return null;
         }
-        switch (rexNode.getType().getSqlTypeName()) {
+        return getJavaType (rexNode.getType().getSqlTypeName());
+    }
+
+    public static Class<?> getJavaType(SqlTypeName sqlTypeName) {
+        switch (sqlTypeName) {
             case BOOLEAN:
                 return Boolean.class;
             case CHAR:
@@ -126,7 +129,7 @@ public class CalciteUtils {
             case TIME:
                 return java.time.LocalTime.class;
             default:
-                throw new UnsupportedOperationException("Unsupported type: " + rexNode.getType().getSqlTypeName());
+                throw new UnsupportedOperationException("Unsupported type: " + sqlTypeName);
         }
 
     }

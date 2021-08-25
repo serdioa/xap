@@ -33,7 +33,7 @@ public class MutableShort extends MutableNumber {
 
     @Override
     public Number toNumber() {
-        return Short.valueOf(value);
+        return value;
     }
 
     @Override

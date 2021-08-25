@@ -33,7 +33,7 @@ public class MutableLong extends MutableNumber {
 
     @Override
     public Number toNumber() {
-        return Long.valueOf(value);
+        return value;
     }
 
     @Override

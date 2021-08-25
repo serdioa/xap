@@ -39,28 +39,40 @@ public class MutableBigInteger extends MutableNumber {
     public void add(Number x) {
         if (x == null)
             return;
-        value = value == null ? (BigInteger) x : value.add((BigInteger) x);
+        BigInteger n = convert(x);
+        value = value == null ? n : value.add(n);
     }
 
     @Override
     public void subtract(Number x) {
         if (x == null)
             return;
-        value = value == null ? ((BigInteger) x).negate() : value.subtract((BigInteger) x);
+        BigInteger n = convert(x);
+        value = value == null ? n.negate() : value.subtract(n);
     }
 
     @Override
     public void multiply(Number x) {
         if (x == null)
             return;
-        value = value == null ? null : value.multiply((BigInteger) x);
+        BigInteger n = convert(x);
+        value = value == null ? null : value.multiply(n);
     }
 
     @Override
     public void divide(Number x) {
         if (x == null)
             return;
-        value = value == null ? null : value.divide((BigInteger) x);
+        BigInteger n = convert(x);
+        value = value == null ? null : value.divide(n);
+    }
+
+
+    private BigInteger convert(Number x) {
+        if (x instanceof BigInteger) {
+            return ((BigInteger) x);
+        }
+        return BigInteger.valueOf(x.intValue());
     }
 
     @Override
