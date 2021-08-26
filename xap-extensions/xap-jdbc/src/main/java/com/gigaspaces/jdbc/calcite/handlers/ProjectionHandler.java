@@ -7,6 +7,7 @@ import com.gigaspaces.query.sql.functions.extended.LocalSession;
 import org.apache.calcite.rex.*;
 import org.apache.calcite.sql.SqlFunction;
 import org.apache.calcite.sql.SqlKind;
+import org.apache.calcite.sql.type.SqlTypeFamily;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -75,7 +76,8 @@ public class ProjectionHandler extends RexShuttle {
                         RexCall call = (RexCall)node;
                         List<IQueryColumn> queryColumns = new ArrayList<>();
                         addQueryColumns(call, queryColumns, program, inputFields, outputFields, i);
-                        FunctionColumn functionColumn = new FunctionColumn(session, queryColumns, call.getKind().name(), call.getKind().name(), column, true, i, call.getType().getSqlTypeName().name());
+                        String sqlTypeName = call.getType().getFamily().equals(SqlTypeFamily.TIMESTAMP) ? call.getOperands().get(1).getType().getSqlTypeName().name() : call.getType().getSqlTypeName().name();
+                        FunctionColumn functionColumn = new FunctionColumn(session, queryColumns, call.getKind().name(), call.getKind().name(), column, true, i, sqlTypeName);
                         queryExecutor.addColumn(functionColumn);
                         queryExecutor.addProjectedColumn(functionColumn);
                         break;
@@ -111,7 +113,8 @@ public class ProjectionHandler extends RexShuttle {
                         call = (RexCall)rexNode;
                         List<IQueryColumn> newQueryColumns = new ArrayList<>();
                         addQueryColumns(call, newQueryColumns, program, inputFields, outputFields, index);
-                        FunctionColumn functionColumn = new FunctionColumn(session, newQueryColumns, call.getKind().name(), call.getKind().name(), outputFields.get(index), false, index, call.getType().getSqlTypeName().name());
+                        String sqlTypeName = call.getType().getFamily().equals(SqlTypeFamily.TIMESTAMP) ? call.getOperands().get(1).getType().getSqlTypeName().name() : call.getType().getSqlTypeName().name();
+                        FunctionColumn functionColumn = new FunctionColumn(session, newQueryColumns, call.getKind().name(), call.getKind().name(), outputFields.get(index), false, index, sqlTypeName);
                         queryColumns.add(functionColumn);
                         break;
                     }
