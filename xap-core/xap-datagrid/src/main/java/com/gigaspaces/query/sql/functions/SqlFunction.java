@@ -71,6 +71,7 @@ public abstract class SqlFunction {
     }
 
     protected Class<?> fromSqlTypeName(String sqlTypeName, Class<?> def) {
+        if (sqlTypeName == null) return def;
         switch (sqlTypeName) {
             case "BOOLEAN": return Boolean.class;
             case "DOUBLE": return Double.class;
