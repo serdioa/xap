@@ -16,14 +16,15 @@
 
 package org.openspaces.memcached.protocol.text;
 
-import org.jboss.netty.buffer.ChannelBuffer;
-import org.jboss.netty.buffer.ChannelBufferIndexFinder;
-import org.jboss.netty.channel.ChannelHandlerContext;
-import org.jboss.netty.handler.codec.frame.FrameDecoder;
-import org.jboss.netty.handler.codec.frame.TooLongFrameException;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufUtil;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.handler.codec.ByteToMessageDecoder;
+import io.netty.handler.codec.TooLongFrameException;
 import org.openspaces.memcached.protocol.SessionStatus;
 import org.openspaces.memcached.protocol.exceptions.IncorrectlyTerminatedPayloadException;
 
+import java.util.List;
 
 /**
  * The frame decoder is responsible for breaking the original stream up into a series of lines. <p/>
@@ -31,7 +32,7 @@ import org.openspaces.memcached.protocol.exceptions.IncorrectlyTerminatedPayload
  * because the memcached protocol has two states: 1) processing CRLF delimited lines and 2) spooling
  * results for SET/ADD
  */
-public final class MemcachedFrameDecoder extends FrameDecoder {
+public final class MemcachedFrameDecoder extends ByteToMessageDecoder {
 
     private final SessionStatus status;
 
@@ -45,7 +46,7 @@ public final class MemcachedFrameDecoder extends FrameDecoder {
      *
      * @param status         session status instance for holding state of the session
      * @param maxFrameLength the maximum length of the decoded frame. A {@link
-     *                       org.jboss.netty.handler.codec.frame.TooLongFrameException} is thrown if
+     *                       io.netty.handler.codec.TooLongFrameException} is thrown if
      *                       frame length is exceeded
      */
     public MemcachedFrameDecoder(SessionStatus status, int maxFrameLength) {
@@ -54,17 +55,16 @@ public final class MemcachedFrameDecoder extends FrameDecoder {
         this.maxFrameLength = maxFrameLength;
     }
 
-
     @Override
-    protected Object decode(ChannelHandlerContext ctx, org.jboss.netty.channel.Channel channel, ChannelBuffer buffer) throws Exception {
+    protected void decode(ChannelHandlerContext ctx, ByteBuf buffer, List<Object> out) throws Exception {
         // check the state. if we're WAITING_FOR_DATA that means instead of breaking into lines, we need N bytes
         // otherwise, we're waiting for input
         if (status.state == SessionStatus.State.WAITING_FOR_DATA) {
             if (buffer.readableBytes() < status.bytesNeeded + MemcachedResponseEncoder.CRLF.capacity())
-                return null;
+                return;
 
             // verify delimiter matches at the right location
-            ChannelBuffer dest = buffer.slice(status.bytesNeeded + buffer.readerIndex(), 2);
+            ByteBuf dest = buffer.slice(status.bytesNeeded + buffer.readerIndex(), 2);
 
             if (!dest.equals(MemcachedResponseEncoder.CRLF)) {
                 // before we throw error... we're ready for the next command
@@ -76,14 +76,15 @@ public final class MemcachedFrameDecoder extends FrameDecoder {
             status.processingMultiline();
 
             // There's enough bytes in the buffer and the delimiter is at the end. Read it.
-            ChannelBuffer result = buffer.slice(buffer.readerIndex(), status.bytesNeeded);
+            ByteBuf result = buffer.slice(buffer.readerIndex(), status.bytesNeeded);
             buffer.skipBytes(status.bytesNeeded + MemcachedResponseEncoder.CRLF.capacity());
 
-            return result;
+            out.add(result);
+            return;
         }
         int minFrameLength = Integer.MAX_VALUE;
-        ChannelBuffer foundDelimiter = null;
-        int frameLength = buffer.bytesBefore(ChannelBufferIndexFinder.CRLF);
+        ByteBuf foundDelimiter = null;
+        int frameLength = bytesBefore(buffer, MemcachedResponseEncoder.CRLF);//buffer.bytesBefore(ChannelBufferIndexFinder.CRLF);
         if (frameLength >= 0 && frameLength < minFrameLength) {
             minFrameLength = frameLength;
             foundDelimiter = MemcachedResponseEncoder.CRLF;
@@ -108,12 +109,13 @@ public final class MemcachedFrameDecoder extends FrameDecoder {
                 fail(minFrameLength);
             }
 
-            ChannelBuffer frame = buffer.slice(buffer.readerIndex(), minFrameLength);
+            ByteBuf frame = buffer.slice(buffer.readerIndex(), minFrameLength);
             buffer.skipBytes(minFrameLength + minDelimLength);
 
             status.processing();
 
-            return frame;
+            out.add(frame);
+            return;
         }
         if (buffer.readableBytes() > maxFrameLength) {
             // Discard the content of the buffer until a delimiter is found.
@@ -121,8 +123,6 @@ public final class MemcachedFrameDecoder extends FrameDecoder {
             buffer.skipBytes(buffer.readableBytes());
             discardingTooLongFrame = true;
         }
-
-        return null;
     }
 
     private void fail(long frameLength) throws TooLongFrameException {
@@ -138,4 +138,8 @@ public final class MemcachedFrameDecoder extends FrameDecoder {
         }
     }
 
+    public static int bytesBefore(ByteBuf buf, ByteBuf pattern) {
+        int index = ByteBufUtil.indexOf(pattern, buf);
+        return index < 0 ? -1 : index - buf.readerIndex();
+    }
 }

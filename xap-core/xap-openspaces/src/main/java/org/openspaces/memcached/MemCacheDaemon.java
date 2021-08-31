@@ -18,19 +18,23 @@ package org.openspaces.memcached;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.jboss.netty.bootstrap.ServerBootstrap;
-import org.jboss.netty.channel.Channel;
-import org.jboss.netty.channel.ChannelPipeline;
-import org.jboss.netty.channel.ChannelPipelineFactory;
-import org.jboss.netty.channel.Channels;
-import org.jboss.netty.channel.group.ChannelGroupFuture;
-import org.jboss.netty.channel.group.DefaultChannelGroup;
-import org.jboss.netty.channel.socket.ServerSocketChannelFactory;
-import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
+import io.netty.bootstrap.ServerBootstrap;
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelInitializer;
+import io.netty.channel.ChannelOption;
+import io.netty.channel.EventLoopGroup;
+import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.socket.SocketChannel;
+import io.netty.channel.socket.nio.NioServerSocketChannel;
 import org.openspaces.core.GigaSpace;
+import org.openspaces.memcached.protocol.MemcachedCommandHandler;
+import org.openspaces.memcached.protocol.SessionStatus;
 import org.openspaces.memcached.protocol.UnifiedProtocolDecoder;
-import org.openspaces.memcached.protocol.binary.MemcachedBinaryPipelineFactory;
-import org.openspaces.memcached.protocol.text.MemcachedPipelineFactory;
+import org.openspaces.memcached.protocol.binary.MemcachedBinaryCommandDecoder;
+import org.openspaces.memcached.protocol.binary.MemcachedBinaryResponseEncoder;
+import org.openspaces.memcached.protocol.text.MemcachedCommandDecoder;
+import org.openspaces.memcached.protocol.text.MemcachedFrameDecoder;
+import org.openspaces.memcached.protocol.text.MemcachedResponseEncoder;
 import org.openspaces.pu.service.ServiceDetails;
 import org.openspaces.pu.service.ServiceDetailsProvider;
 import org.openspaces.pu.service.ServiceMonitors;
@@ -42,7 +46,6 @@ import org.springframework.beans.factory.InitializingBean;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.util.concurrent.Executors;
 
 /**
  * @author kimchy (shay.banon)
@@ -71,8 +74,9 @@ public class MemCacheDaemon implements InitializingBean, DisposableBean, BeanNam
     private int idleTime;
 
     private int boundedPort;
-    private ServerSocketChannelFactory channelFactory;
-    private DefaultChannelGroup allChannels;
+    private EventLoopGroup bossGroup;
+    private EventLoopGroup workerGroup;
+    private Channel serverChannel;
     private SpaceCache cache;
 
     public void setSpace(GigaSpace space) {
@@ -105,74 +109,66 @@ public class MemCacheDaemon implements InitializingBean, DisposableBean, BeanNam
 
     public void afterPropertiesSet() throws Exception {
         cache = new SpaceCache(space);
-        channelFactory = new NioServerSocketChannelFactory(Executors.newCachedThreadPool(), Executors.newCachedThreadPool());
 
-        allChannels = new DefaultChannelGroup("memcachedChannelGroup");
+        bossGroup = new NioEventLoopGroup();
+        workerGroup = new NioEventLoopGroup();
+        boolean verbose = false;
+        MemcachedCommandHandler commandHandler = new MemcachedCommandHandler(cache, memcachedVersion, verbose, idleTime);
+        ServerBootstrap bootstrap = new ServerBootstrap()
+                .channel(NioServerSocketChannel.class)
+                .group(bossGroup, workerGroup)
+                .option(ChannelOption.SO_SNDBUF, 65536)
+                .option(ChannelOption.SO_RCVBUF, 65536)
+                .childHandler(new ChannelInitializer<SocketChannel>() {
+                    @Override
+                    protected void initChannel(SocketChannel ch) {
+                        if ("binary".equalsIgnoreCase(protocol)) {
+                            ch.pipeline().addLast(
+                                    new MemcachedBinaryCommandDecoder(),
+                                    commandHandler,
+                                    new MemcachedBinaryResponseEncoder());
+                        } else if ("text".equalsIgnoreCase(protocol)) {
+                            SessionStatus status = new SessionStatus().ready();
+                            ch.pipeline().addLast(
+                                    new MemcachedFrameDecoder(status, frameSize),
+                                    new MemcachedCommandDecoder(status),
+                                    commandHandler,
+                                    new MemcachedResponseEncoder());
+                        } else {
+                            ch.pipeline().addLast(new UnifiedProtocolDecoder(commandHandler, threaded));
+                        }
+                    }
+                });
 
-        ServerBootstrap bootstrap = new ServerBootstrap(channelFactory);
+        serverChannel = bind(bootstrap, host, port, portRetries);
+        boundedPort = ((InetSocketAddress)serverChannel.localAddress()).getPort();
+        logger.info("memcached started on port [" + boundedPort + "]");
+    }
 
-        ChannelPipelineFactory pipelineFactory = new ChannelPipelineFactory() {
-            public ChannelPipeline getPipeline() throws Exception {
-                return Channels.pipeline(new UnifiedProtocolDecoder(cache, allChannels, memcachedVersion, idleTime, false, threaded));
-            }
-        };
-        if ("binary".equalsIgnoreCase(protocol)) {
-            pipelineFactory = createMemcachedBinaryPipelineFactory(cache, memcachedVersion, false, idleTime, allChannels);
-        } else if ("text".equalsIgnoreCase(protocol)) {
-            pipelineFactory = createMemcachedPipelineFactory(cache, memcachedVersion, false, idleTime, frameSize, allChannels);
-        }
-
-        bootstrap.setPipelineFactory(pipelineFactory);
-        bootstrap.setOption("sendBufferSize", 65536);
-        bootstrap.setOption("receiveBufferSize", 65536);
-
-        InetAddress address = null;
-        if (host != null) {
-            address = InetAddress.getByName(host);
-        }
+    private static Channel bind(ServerBootstrap bootstrap, String host, int port, int portRetries)
+            throws Exception {
+        final InetAddress address = host != null ? InetAddress.getByName(host) : null;
 
         Exception lastException = null;
-        boolean success = false;
-        int i;
-        for (i = 0; i < portRetries; i++) {
+        for (int i = 0; i < portRetries; i++) {
             try {
-                Channel serverChannel = bootstrap.bind(new InetSocketAddress(address, port + i));
-                allChannels.add(serverChannel);
-                success = true;
-                break;
+                return bootstrap.bind(new InetSocketAddress(address, port + i)).sync().channel();
             } catch (Exception e) {
                 lastException = e;
             }
         }
-        if (!success) {
-            throw lastException;
-        }
-        boundedPort = port + i;
-        logger.info("memcached started on port [" + boundedPort + "]");
-    }
-
-    protected ChannelPipelineFactory createMemcachedBinaryPipelineFactory(
-            SpaceCache cache, String memcachedVersion, boolean verbose, int idleTime, DefaultChannelGroup allChannels) {
-        return new MemcachedBinaryPipelineFactory(cache, memcachedVersion, verbose, idleTime, allChannels);
-    }
-
-    protected ChannelPipelineFactory createMemcachedPipelineFactory(
-            SpaceCache cache, String memcachedVersion, boolean verbose, int idleTime, int receiveBufferSize, DefaultChannelGroup allChannels) {
-        return new MemcachedPipelineFactory(cache, memcachedVersion, verbose, idleTime, receiveBufferSize, allChannels);
+        throw lastException;
     }
 
     public void destroy() throws Exception {
-        ChannelGroupFuture future = allChannels.close();
-        future.awaitUninterruptibly();
-        if (!future.isCompleteSuccess()) {
-            throw new RuntimeException("failure to complete closing all network channels");
-        }
+        bossGroup.shutdownGracefully().sync();
+        workerGroup.shutdownGracefully().sync();
+        serverChannel.closeFuture().sync();
         try {
             cache.close();
         } catch (IOException e) {
             throw new RuntimeException("exception while closing storage", e);
         }
-        channelFactory.releaseExternalResources();
         logger.info("memcached destroyed");
     }
 

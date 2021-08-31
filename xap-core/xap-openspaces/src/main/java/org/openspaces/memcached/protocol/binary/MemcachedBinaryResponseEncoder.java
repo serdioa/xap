@@ -18,20 +18,18 @@ package org.openspaces.memcached.protocol.binary;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.jboss.netty.buffer.ChannelBuffer;
-import org.jboss.netty.buffer.ChannelBuffers;
-import org.jboss.netty.channel.Channel;
-import org.jboss.netty.channel.ChannelHandler;
-import org.jboss.netty.channel.ChannelHandlerContext;
-import org.jboss.netty.channel.ExceptionEvent;
-import org.jboss.netty.channel.MessageEvent;
-import org.jboss.netty.channel.SimpleChannelUpstreamHandler;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelHandler;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInboundHandlerAdapter;
 import org.openspaces.memcached.LocalCacheElement;
 import org.openspaces.memcached.protocol.Op;
 import org.openspaces.memcached.protocol.ResponseMessage;
 import org.openspaces.memcached.protocol.exceptions.UnknownCommandException;
 
-import java.nio.ByteOrder;
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -41,9 +39,9 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 // TODO refactor so this can be unit tested separate from netty? scalacheck?
 @ChannelHandler.Sharable
-public class MemcachedBinaryResponseEncoder extends SimpleChannelUpstreamHandler {
+public class MemcachedBinaryResponseEncoder extends ChannelInboundHandlerAdapter {
 
-    private ConcurrentHashMap<Integer, ChannelBuffer> corkedBuffers = new ConcurrentHashMap<Integer, ChannelBuffer>();
+    private final ConcurrentHashMap<Integer, ByteBuf> corkedBuffers = new ConcurrentHashMap<>();
 
     protected final static Log logger = LogFactory.getLog(MemcachedBinaryResponseEncoder.class);
 
@@ -116,9 +114,9 @@ public class MemcachedBinaryResponseEncoder extends SimpleChannelUpstreamHandler
     }
 
 
-    public ChannelBuffer constructHeader(MemcachedBinaryCommandDecoder.BinaryOp bcmd, ChannelBuffer extrasBuffer, ChannelBuffer keyBuffer, ChannelBuffer valueBuffer, short responseCode, int opaqueValue, long casUnique) {
+    public ByteBuf constructHeader(MemcachedBinaryCommandDecoder.BinaryOp bcmd, ByteBuf extrasBuffer, ByteBuf keyBuffer, ByteBuf valueBuffer, short responseCode, int opaqueValue, long casUnique) {
         // take the ResponseMessage and turn it into a binary payload.
-        ChannelBuffer header = ChannelBuffers.buffer(ByteOrder.BIG_ENDIAN, 24);
+        ByteBuf header = Unpooled.buffer(24);
         header.writeByte((byte) 0x81);  // magic
         header.writeByte(bcmd.getCode()); // opcode
         short keyLength = (short) (keyBuffer != null ? keyBuffer.capacity() : 0);
@@ -143,55 +141,54 @@ public class MemcachedBinaryResponseEncoder extends SimpleChannelUpstreamHandler
      * Report accordingly.
      */
     @Override
-    public void exceptionCaught(ChannelHandlerContext ctx, ExceptionEvent e) throws Exception {
+    public void exceptionCaught(ChannelHandlerContext ctx, Throwable e) {
         try {
-            throw e.getCause();
+            throw e;
         } catch (UnknownCommandException unknownCommand) {
-            if (ctx.getChannel().isOpen())
-                ctx.getChannel().write(constructHeader(MemcachedBinaryCommandDecoder.BinaryOp.Noop, null, null, null, (short) 0x0081, 0, 0));
+            if (ctx.channel().isOpen())
+                ctx.channel().write(constructHeader(MemcachedBinaryCommandDecoder.BinaryOp.Noop, null, null, null, (short) 0x0081, 0, 0));
         } catch (Throwable err) {
             logger.error("error", err);
-            if (ctx.getChannel().isOpen())
-                ctx.getChannel().close();
+            if (ctx.channel().isOpen())
+                ctx.channel().close();
         }
     }
 
     @Override
-    public void messageReceived(ChannelHandlerContext channelHandlerContext, MessageEvent messageEvent) throws Exception {
-        ResponseMessage command = (ResponseMessage) messageEvent.getMessage();
-        Object additional = messageEvent.getMessage();
+    public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
+        ResponseMessage command = (ResponseMessage) msg;
 
         MemcachedBinaryCommandDecoder.BinaryOp bcmd = MemcachedBinaryCommandDecoder.BinaryOp.forCommandMessage(command.cmd);
 
         // write extras == flags & expiry
-        ChannelBuffer extrasBuffer = null;
+        ByteBuf extrasBuffer = null;
 
         // write key if there is one
-        ChannelBuffer keyBuffer = null;
+        ByteBuf keyBuffer = null;
         if (bcmd.isAddKeyToResponse() && command.cmd.keys != null && command.cmd.keys.size() != 0) {
-            keyBuffer = ChannelBuffers.wrappedBuffer(command.cmd.keys.get(0).bytes);
+            keyBuffer = Unpooled.wrappedBuffer(command.cmd.keys.get(0).bytes);
         }
 
         // write value if there is one
-        ChannelBuffer valueBuffer = null;
+        ByteBuf valueBuffer = null;
         if (command.elements != null) {
-            extrasBuffer = ChannelBuffers.buffer(ByteOrder.BIG_ENDIAN, 4);
+            extrasBuffer = Unpooled.buffer(4);
             LocalCacheElement element = command.elements[0];
             extrasBuffer.writeShort((short) (element != null ? element.getExpire() : 0));
             extrasBuffer.writeShort((short) (element != null ? element.getFlags() : 0));
 
             if ((command.cmd.op == Op.GET || command.cmd.op == Op.GETS)) {
                 if (element != null) {
-                    valueBuffer = ChannelBuffers.wrappedBuffer(ByteOrder.BIG_ENDIAN, element.getData());
+                    valueBuffer = Unpooled.wrappedBuffer(element.getData());
                 } else {
-                    valueBuffer = ChannelBuffers.buffer(0);
+                    valueBuffer = Unpooled.buffer(0);
                 }
             } else if (command.cmd.op == Op.INCR || command.cmd.op == Op.DECR) {
-                valueBuffer = ChannelBuffers.buffer(ByteOrder.BIG_ENDIAN, 8);
+                valueBuffer = Unpooled.buffer(8);
                 valueBuffer.writeLong(command.incrDecrResponse);
             }
         } else if (command.cmd.op == Op.INCR || command.cmd.op == Op.DECR) {
-            valueBuffer = ChannelBuffers.buffer(ByteOrder.BIG_ENDIAN, 8);
+            valueBuffer = Unpooled.buffer(8);
             valueBuffer.writeLong(command.incrDecrResponse);
         }
 
@@ -204,33 +201,29 @@ public class MemcachedBinaryResponseEncoder extends SimpleChannelUpstreamHandler
         if (command.cmd.op == Op.STATS) {
             // first uncork any corked buffers
             if (corkedBuffers.containsKey(command.cmd.opaque))
-                uncork(command.cmd.opaque, messageEvent.getChannel());
+                uncork(command.cmd.opaque, ctx.channel());
 
             for (Map.Entry<String, Set<String>> statsEntries : command.stats.entrySet()) {
                 for (String stat : statsEntries.getValue()) {
 
-                    // Move to use this in Java 6
-                    //                    keyBuffer = ChannelBuffers.wrappedBuffer(ByteOrder.BIG_ENDIAN, statsEntries.getKey().getBytes(MemcachedBinaryCommandDecoder.USASCII.toString()));
-                    //                    valueBuffer = ChannelBuffers.wrappedBuffer(ByteOrder.BIG_ENDIAN, stat.getBytes(MemcachedBinaryCommandDecoder.USASCII));
+                    keyBuffer = Unpooled.wrappedBuffer(statsEntries.getKey().getBytes(StandardCharsets.US_ASCII));
+                    valueBuffer = Unpooled.wrappedBuffer(stat.getBytes(StandardCharsets.US_ASCII));
 
-                    keyBuffer = ChannelBuffers.wrappedBuffer(ByteOrder.BIG_ENDIAN, statsEntries.getKey().getBytes("US-ASCII"));
-                    valueBuffer = ChannelBuffers.wrappedBuffer(ByteOrder.BIG_ENDIAN, stat.getBytes("US-ASCII"));
+                    ByteBuf headerBuffer = constructHeader(bcmd, extrasBuffer, keyBuffer, valueBuffer, getStatusCode(command).getCode(), command.cmd.opaque, casUnique);
 
-                    ChannelBuffer headerBuffer = constructHeader(bcmd, extrasBuffer, keyBuffer, valueBuffer, getStatusCode(command).getCode(), command.cmd.opaque, casUnique);
-
-                    writePayload(messageEvent, extrasBuffer, keyBuffer, valueBuffer, headerBuffer);
+                    writePayload(ctx.channel(), extrasBuffer, keyBuffer, valueBuffer, headerBuffer);
                 }
             }
 
             keyBuffer = null;
             valueBuffer = null;
 
-            ChannelBuffer headerBuffer = constructHeader(bcmd, extrasBuffer, keyBuffer, valueBuffer, getStatusCode(command).getCode(), command.cmd.opaque, casUnique);
+            ByteBuf headerBuffer = constructHeader(bcmd, extrasBuffer, keyBuffer, valueBuffer, getStatusCode(command).getCode(), command.cmd.opaque, casUnique);
 
-            writePayload(messageEvent, extrasBuffer, keyBuffer, valueBuffer, headerBuffer);
+            writePayload(ctx.channel(), extrasBuffer, keyBuffer, valueBuffer, headerBuffer);
 
         } else {
-            ChannelBuffer headerBuffer = constructHeader(bcmd, extrasBuffer, keyBuffer, valueBuffer, getStatusCode(command).getCode(), command.cmd.opaque, casUnique);
+            ByteBuf headerBuffer = constructHeader(bcmd, extrasBuffer, keyBuffer, valueBuffer, getStatusCode(command).getCode(), command.cmd.opaque, casUnique);
 
             // write everything
             // is the command 'quiet?' if so, then we append to our 'corked' buffer until a non-corked command comes along
@@ -238,7 +231,7 @@ public class MemcachedBinaryResponseEncoder extends SimpleChannelUpstreamHandler
                 int totalCapacity = headerBuffer.capacity() + (extrasBuffer != null ? extrasBuffer.capacity() : 0)
                         + (keyBuffer != null ? keyBuffer.capacity() : 0) + (valueBuffer != null ? valueBuffer.capacity() : 0);
 
-                ChannelBuffer corkedResponse = cork(command.cmd.opaque, totalCapacity);
+                ByteBuf corkedResponse = cork(command.cmd.opaque, totalCapacity);
 
 
                 corkedResponse.writeBytes(headerBuffer);
@@ -251,19 +244,19 @@ public class MemcachedBinaryResponseEncoder extends SimpleChannelUpstreamHandler
             } else {
                 // first write out any corked responses
                 if (corkedBuffers.containsKey(command.cmd.opaque))
-                    uncork(command.cmd.opaque, messageEvent.getChannel());
+                    uncork(command.cmd.opaque, ctx.channel());
 
 
-                writePayload(messageEvent, extrasBuffer, keyBuffer, valueBuffer, headerBuffer);
+                writePayload(ctx.channel(), extrasBuffer, keyBuffer, valueBuffer, headerBuffer);
             }
         }
     }
 
-    private ChannelBuffer cork(int opaque, int totalCapacity) {
+    private ByteBuf cork(int opaque, int totalCapacity) {
         if (corkedBuffers.containsKey(opaque)) {
-            ChannelBuffer corkedResponse = corkedBuffers.get(opaque);
-            ChannelBuffer oldBuffer = corkedResponse;
-            corkedResponse = ChannelBuffers.buffer(ByteOrder.BIG_ENDIAN, totalCapacity + corkedResponse.capacity());
+            ByteBuf corkedResponse = corkedBuffers.get(opaque);
+            ByteBuf oldBuffer = corkedResponse;
+            corkedResponse = Unpooled.buffer(totalCapacity + corkedResponse.capacity());
             corkedResponse.writeBytes(oldBuffer);
             oldBuffer.clear();
 
@@ -271,27 +264,28 @@ public class MemcachedBinaryResponseEncoder extends SimpleChannelUpstreamHandler
             corkedBuffers.put(opaque, corkedResponse);
             return corkedResponse;
         }
-        ChannelBuffer buffer = ChannelBuffers.buffer(ByteOrder.BIG_ENDIAN, totalCapacity);
+        ByteBuf buffer = Unpooled.buffer(totalCapacity);
         corkedBuffers.put(opaque, buffer);
         return buffer;
     }
 
     private void uncork(int opaque, Channel channel) {
-        ChannelBuffer corkedBuffer = corkedBuffers.get(opaque);
+        ByteBuf corkedBuffer = corkedBuffers.get(opaque);
         assert corkedBuffer != null;
         channel.write(corkedBuffer);
         corkedBuffers.remove(opaque);
     }
 
-    private void writePayload(MessageEvent messageEvent, ChannelBuffer extrasBuffer, ChannelBuffer keyBuffer, ChannelBuffer valueBuffer, ChannelBuffer headerBuffer) {
-        if (messageEvent.getChannel().isOpen()) {
-            messageEvent.getChannel().write(headerBuffer);
+    private void writePayload(Channel channel, ByteBuf extrasBuffer, ByteBuf keyBuffer, ByteBuf valueBuffer, ByteBuf headerBuffer) {
+        if (channel.isOpen()) {
+            channel.write(headerBuffer);
             if (extrasBuffer != null)
-                messageEvent.getChannel().write(extrasBuffer);
+                channel.write(extrasBuffer);
             if (keyBuffer != null)
-                messageEvent.getChannel().write(keyBuffer);
+                channel.write(keyBuffer);
             if (valueBuffer != null)
-                messageEvent.getChannel().write(valueBuffer);
+                channel.write(valueBuffer);
+            channel.flush();
         }
     }
 }

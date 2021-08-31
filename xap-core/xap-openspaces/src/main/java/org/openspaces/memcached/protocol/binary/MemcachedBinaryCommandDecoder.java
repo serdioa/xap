@@ -16,12 +16,11 @@
 
 package org.openspaces.memcached.protocol.binary;
 
-import org.jboss.netty.buffer.ChannelBuffer;
-import org.jboss.netty.buffer.ChannelBuffers;
-import org.jboss.netty.channel.Channel;
-import org.jboss.netty.channel.ChannelHandler;
-import org.jboss.netty.channel.ChannelHandlerContext;
-import org.jboss.netty.handler.codec.frame.FrameDecoder;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
+import io.netty.channel.ChannelHandler;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.handler.codec.ByteToMessageDecoder;
 import org.openspaces.memcached.Key;
 import org.openspaces.memcached.LocalCacheElement;
 import org.openspaces.memcached.SpaceCache;
@@ -29,18 +28,15 @@ import org.openspaces.memcached.protocol.CommandMessage;
 import org.openspaces.memcached.protocol.Op;
 import org.openspaces.memcached.protocol.exceptions.MalformedCommandException;
 
-import java.nio.ByteOrder;
-import java.nio.charset.Charset;
 import java.util.ArrayList;
+import java.util.List;
 
 /**
  */
 @ChannelHandler.Sharable
-public class MemcachedBinaryCommandDecoder extends FrameDecoder {
+public class MemcachedBinaryCommandDecoder extends ByteToMessageDecoder {
 
-    public static final Charset USASCII = Charset.forName("US-ASCII");
-
-    public static enum BinaryOp {
+    public enum BinaryOp {
         Get(0x00, Op.GET, false),
         Set(0x01, Op.SET, false),
         Add(0x02, Op.ADD, false),
@@ -122,15 +118,14 @@ public class MemcachedBinaryCommandDecoder extends FrameDecoder {
     }
 
     @Override
-    protected Object decode(ChannelHandlerContext channelHandlerContext, Channel channel, ChannelBuffer channelBuffer) throws Exception {
-
+    protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) throws Exception {
         // need at least 24 bytes, to get header
-        if (channelBuffer.readableBytes() < 24) return null;
+        if (in.readableBytes() < 24) return;
 
         // get the header
-        channelBuffer.markReaderIndex();
-        ChannelBuffer headerBuffer = ChannelBuffers.buffer(ByteOrder.BIG_ENDIAN, 24);
-        channelBuffer.readBytes(headerBuffer);
+        in.markReaderIndex();
+        ByteBuf headerBuffer = Unpooled.buffer(24);
+        in.readBytes(headerBuffer);
 
         short magic = headerBuffer.readUnsignedByte();
 
@@ -151,9 +146,9 @@ public class MemcachedBinaryCommandDecoder extends FrameDecoder {
         long cas = headerBuffer.readLong();
 
         // we want the whole of totalBodyLength; otherwise, keep waiting.
-        if (channelBuffer.readableBytes() < totalBodyLength) {
-            channelBuffer.resetReaderIndex();
-            return null;
+        if (in.readableBytes() < totalBodyLength) {
+            in.resetReaderIndex();
+            return;
         }
 
         // This assumes correct order in the enum. If that ever changes, we will have to scan for 'code' field.
@@ -167,13 +162,13 @@ public class MemcachedBinaryCommandDecoder extends FrameDecoder {
         cmdMessage.addKeyToResponse = bcmd.isAddKeyToResponse();
 
         // get extras. could be empty.
-        ChannelBuffer extrasBuffer = ChannelBuffers.buffer(ByteOrder.BIG_ENDIAN, extraLength);
-        channelBuffer.readBytes(extrasBuffer);
+        ByteBuf extrasBuffer = Unpooled.buffer(extraLength);
+        in.readBytes(extrasBuffer);
 
         // get the key if any
         if (keyLength != 0) {
-            ChannelBuffer keyBuffer = ChannelBuffers.buffer(ByteOrder.BIG_ENDIAN, keyLength);
-            channelBuffer.readBytes(keyBuffer);
+            ByteBuf keyBuffer = Unpooled.buffer(keyLength);
+            in.readBytes(keyBuffer);
 
             ArrayList<Key> keys = new ArrayList<Key>();
             byte[] key = keyBuffer.array();
@@ -204,7 +199,7 @@ public class MemcachedBinaryCommandDecoder extends FrameDecoder {
 
                 cmdMessage.element = new LocalCacheElement(new Key(key), flags, expire, 0L);
                 cmdMessage.element.setData(new byte[size]);
-                channelBuffer.readBytes(cmdMessage.element.getData(), 0, size);
+                in.readBytes(cmdMessage.element.getData(), 0, size);
             } else if (cmdType == Op.INCR || cmdType == Op.DECR) {
                 long initialValue = extrasBuffer.readUnsignedInt();
                 long amount = extrasBuffer.readUnsignedInt();
@@ -216,6 +211,6 @@ public class MemcachedBinaryCommandDecoder extends FrameDecoder {
             }
         }
 
-        return cmdMessage;
+        out.add(cmdMessage);
     }
 }
