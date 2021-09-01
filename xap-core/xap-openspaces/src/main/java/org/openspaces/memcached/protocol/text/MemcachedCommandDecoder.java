@@ -16,12 +16,9 @@
 
 package org.openspaces.memcached.protocol.text;
 
-import org.jboss.netty.buffer.ChannelBuffer;
-import org.jboss.netty.channel.Channel;
-import org.jboss.netty.channel.ChannelHandlerContext;
-import org.jboss.netty.channel.Channels;
-import org.jboss.netty.channel.MessageEvent;
-import org.jboss.netty.channel.SimpleChannelUpstreamHandler;
+import io.netty.buffer.ByteBuf;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInboundHandlerAdapter;
 import org.openspaces.memcached.Key;
 import org.openspaces.memcached.LocalCacheElement;
 import org.openspaces.memcached.SpaceCache;
@@ -43,7 +40,7 @@ import java.util.List;
  * Protocol status is held in the SessionStatus instance which is shared between each of the
  * decoders in the pipeline.
  */
-public final class MemcachedCommandDecoder extends SimpleChannelUpstreamHandler {
+public final class MemcachedCommandDecoder extends ChannelInboundHandlerAdapter {
 
     private SessionStatus status;
 
@@ -58,12 +55,13 @@ public final class MemcachedCommandDecoder extends SimpleChannelUpstreamHandler 
      * Process an inbound string from the pipeline's downstream, and depending on the state (waiting
      * for data or processing commands), turn them into the correct type of command.
      *
-     * @param channelHandlerContext netty channel handler context
-     * @param messageEvent          the netty event that corresponds to the message
+     * @param ctx netty channel handler context
+     * @param msg the netty event that corresponds to the message
      */
     @Override
-    public void messageReceived(ChannelHandlerContext channelHandlerContext, MessageEvent messageEvent) throws Exception {
-        ChannelBuffer in = (ChannelBuffer) messageEvent.getMessage();
+    public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
+  //public void messageReceived(ChannelHandlerContext channelHandlerContext, MessageEvent messageEvent) throws Exception {
+        ByteBuf in = (ByteBuf) msg;
 
         try {
             // Because of the frame handler, we are assured that we are receiving only complete lines or payloads.
@@ -84,12 +82,12 @@ public final class MemcachedCommandDecoder extends SimpleChannelUpstreamHandler 
                 in.readBytes(remainder);
                 pieces.add(remainder);
 
-                processLine(pieces, messageEvent.getChannel(), channelHandlerContext);
+                processLine(pieces, ctx);
             } else if (status.state == SessionStatus.State.PROCESSING_MULTILINE) {
-                ChannelBuffer slice = in.copy();
+                ByteBuf slice = in.copy();
                 byte[] payload = slice.array();
                 in.skipBytes(in.readableBytes());
-                continueSet(messageEvent.getChannel(), status, payload, channelHandlerContext);
+                continueSet(status, payload, ctx);
             } else {
                 throw new InvalidProtocolStateException("invalid protocol state");
             }
@@ -108,10 +106,9 @@ public final class MemcachedCommandDecoder extends SimpleChannelUpstreamHandler 
      * sets the session into a state to wait for additional data.
      *
      * @param parts                 the (originally space separated) parts of the command
-     * @param channel               the netty channel to operate on
-     * @param channelHandlerContext the netty channel handler context
+     * @param ctx the netty channel handler context
      */
-    private void processLine(List<byte[]> parts, Channel channel, ChannelHandlerContext channelHandlerContext) throws UnknownCommandException, MalformedCommandException {
+    private void processLine(List<byte[]> parts, ChannelHandlerContext ctx) throws UnknownCommandException, MalformedCommandException {
         final int numParts = parts.size();
 
         // Turn the command into an enum for matching on
@@ -143,7 +140,8 @@ public final class MemcachedCommandDecoder extends SimpleChannelUpstreamHandler 
                         throw new MalformedCommandException("invalid delete command");
                     }
                 }
-                Channels.fireMessageReceived(channelHandlerContext, cmd, channel.getRemoteAddress());
+
+                ctx.fireChannelRead(cmd);
                 break;
 
             case DECR: // decr <key> <value> [noreply]\r\n
@@ -158,7 +156,7 @@ public final class MemcachedCommandDecoder extends SimpleChannelUpstreamHandler 
                     cmd.noreply = true;
                 }
 
-                Channels.fireMessageReceived(channelHandlerContext, cmd, channel.getRemoteAddress());
+                ctx.fireChannelRead(cmd);
                 break;
 
             case FLUSH_ALL: // flush_all [time] [noreply]\r\n
@@ -170,7 +168,7 @@ public final class MemcachedCommandDecoder extends SimpleChannelUpstreamHandler 
                     } else if (numParts == 2)
                         cmd.time = BufferUtils.atoi((parts.get(1)));
                 }
-                Channels.fireMessageReceived(channelHandlerContext, cmd, channel.getRemoteAddress());
+                ctx.fireChannelRead(cmd);
                 break;
             case VERBOSITY: // verbosity <time> [noreply]\r\n
                 // Malformed
@@ -181,7 +179,7 @@ public final class MemcachedCommandDecoder extends SimpleChannelUpstreamHandler 
 
                 if (numParts > 1 && Arrays.equals(parts.get(2), NOREPLY))
                     cmd.noreply = true;
-                Channels.fireMessageReceived(channelHandlerContext, cmd, channel.getRemoteAddress());
+                ctx.fireChannelRead(cmd);
                 break;
             case APPEND: // <command name> <key> <flags> <exptime> <bytes> [noreply]\r\n
             case PREPEND:
@@ -228,14 +226,14 @@ public final class MemcachedCommandDecoder extends SimpleChannelUpstreamHandler 
                 cmd.setKeys(parts.subList(1, numParts));
 
                 // Pass it on.
-                Channels.fireMessageReceived(channelHandlerContext, cmd, channel.getRemoteAddress());
+                ctx.fireChannelRead(cmd);
                 break;
             case VERSION: // version\r\n
             case QUIT: // quit\r\n
                 if (numParts > 1) { //malformed
                     throw new MalformedCommandException("invalid command length");
                 }
-                Channels.fireMessageReceived(channelHandlerContext, cmd, channel.getRemoteAddress());
+                ctx.fireChannelRead(cmd);
                 break;
             default:
                 throw new UnknownCommandException("unknown command: " + op);
@@ -245,13 +243,12 @@ public final class MemcachedCommandDecoder extends SimpleChannelUpstreamHandler 
     /**
      * Handles the continuation of a SET/ADD/REPLACE command with the data it was waiting for.
      *
-     * @param channel               netty channel
      * @param state                 the current session status (unused)
      * @param remainder             the bytes picked up
-     * @param channelHandlerContext netty channel handler context
+     * @param ctx netty channel handler context
      */
-    private void continueSet(Channel channel, SessionStatus state, byte[] remainder, ChannelHandlerContext channelHandlerContext) {
+    private void continueSet(SessionStatus state, byte[] remainder, ChannelHandlerContext ctx) {
         state.cmd.element.setData(remainder);
-        Channels.fireMessageReceived(channelHandlerContext, state.cmd, channelHandlerContext.getChannel().getRemoteAddress());
+        ctx.fireChannelRead(state.cmd);
     }
 }
