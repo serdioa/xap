@@ -13,15 +13,15 @@ public class PipelineConfiguration implements SmartExternalizable {
     private String pipelineName;
     private String spaceName;
     private String host;
-    private String ip;
+    private String port;
 
 
 
-    public PipelineConfiguration(String pipelineName, String spaceName, String host, String ip) {
+    public PipelineConfiguration(String pipelineName, String spaceName, String host, String port) {
         this.pipelineName = pipelineName;
         this.spaceName = spaceName;
         this.host = host;
-        this.ip = ip;
+        this.port = port;
     }
 
     public String getHost() {
@@ -32,12 +32,12 @@ public class PipelineConfiguration implements SmartExternalizable {
         this.host = host;
     }
 
-    public String getIp() {
-        return ip;
+    public String getPort() {
+        return port;
     }
 
-    public void setIp(String ip) {
-        this.ip = ip;
+    public void setPort(String port) {
+        this.port = port;
     }
 
     public PipelineConfiguration() {
@@ -64,12 +64,16 @@ public class PipelineConfiguration implements SmartExternalizable {
     public void writeExternal(ObjectOutput out) throws IOException {
         IOUtils.writeString(out, pipelineName);
         IOUtils.writeString(out, spaceName);
+        IOUtils.writeString(out, host);
+        IOUtils.writeString(out, spaceName);
     }
 
     @Override
     public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         this.pipelineName =  IOUtils.readString(in);
         this.spaceName =  IOUtils.readString(in);
+        this.host =  IOUtils.readString(in);
+        this.port =  IOUtils.readString(in);
     }
 
 
