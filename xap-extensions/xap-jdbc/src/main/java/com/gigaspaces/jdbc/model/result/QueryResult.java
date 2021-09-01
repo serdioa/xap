@@ -5,6 +5,8 @@ import com.gigaspaces.jdbc.model.table.CaseColumn;
 import com.gigaspaces.jdbc.model.table.IQueryColumn;
 import com.gigaspaces.jdbc.model.table.TableContainer;
 import com.j_spaces.jdbc.ResultEntry;
+import org.apache.calcite.rel.RelRoot;
+import org.apache.calcite.util.Pair;
 
 import java.util.*;
 import java.util.function.Predicate;
@@ -128,12 +130,24 @@ public abstract class QueryResult {
         return Cursor.Type.SCAN;
     }
 
-    public ResultEntry convertEntriesToResultArrays() {
+    public ResultEntry convertEntriesToResultArrays(RelRoot logicalRel) {
         // Column (field) names and labels (aliases)
         int columns = getSelectedColumns().size();
 
         String[] fieldNames = getSelectedColumns().stream().map(IQueryColumn::getName).toArray(String[]::new);
         String[] columnLabels = getSelectedColumns().stream().map(qC -> qC.getAlias() == null ? qC.getName() : qC.getAlias()).toArray(String[]::new);
+
+        // use logical rel to extract final projected columns and alias
+        if (logicalRel !=null && logicalRel.fields != null && logicalRel.fields.size() <= columnLabels.length) {
+            for (Pair<Integer, String> field : logicalRel.fields) {
+                String columnLabel = columnLabels[field.getKey()];
+                String newLabel = field.getValue();
+                //e.g. when newLabel == id0 and columnLabel == id then skip, otherwise replace
+                if (!(newLabel.length() > columnLabel.length() && newLabel.startsWith(columnLabel))) {
+                    columnLabels[field.getKey()] = newLabel;
+                }
+            }
+        }
 
         //the field values for the result
         Object[][] fieldValues = new Object[size()][columns];
