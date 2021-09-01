@@ -24,7 +24,7 @@
             <useProjectArtifact>false</useProjectArtifact>
             <outputDirectory>product/deploy/templates/memcached/lib</outputDirectory>
             <includes>
-                <include>io.netty:netty</include>
+                <include>io.netty:netty-all</include>
             </includes>
         </dependencySet>
 

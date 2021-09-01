@@ -18,14 +18,11 @@ package org.openspaces.memcached.protocol.text;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.jboss.netty.buffer.ChannelBuffer;
-import org.jboss.netty.buffer.ChannelBuffers;
-import org.jboss.netty.channel.Channel;
-import org.jboss.netty.channel.ChannelHandlerContext;
-import org.jboss.netty.channel.Channels;
-import org.jboss.netty.channel.ExceptionEvent;
-import org.jboss.netty.channel.MessageEvent;
-import org.jboss.netty.channel.SimpleChannelUpstreamHandler;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInboundHandlerAdapter;
 import org.openspaces.memcached.LocalCacheElement;
 import org.openspaces.memcached.SpaceCache;
 import org.openspaces.memcached.protocol.Op;
@@ -33,57 +30,58 @@ import org.openspaces.memcached.protocol.ResponseMessage;
 import org.openspaces.memcached.protocol.exceptions.ClientException;
 import org.openspaces.memcached.util.BufferUtils;
 
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.Set;
 
 import static java.lang.String.valueOf;
-import static org.openspaces.memcached.protocol.text.MemcachedPipelineFactory.USASCII;
 
 /**
  * Response encoder for the memcached text protocol. Produces strings destined for the
  * StringEncoder
  */
-public final class MemcachedResponseEncoder extends SimpleChannelUpstreamHandler {
+public final class MemcachedResponseEncoder extends ChannelInboundHandlerAdapter {
 
     protected final static Log logger = LogFactory.getLog(MemcachedResponseEncoder.class);
+    private static final Charset USASCII = StandardCharsets.US_ASCII;
 
 
-    public static final ChannelBuffer CRLF = ChannelBuffers.copiedBuffer("\r\n", USASCII);
-    private static final ChannelBuffer VALUE = ChannelBuffers.copiedBuffer("VALUE ", USASCII);
-    private static final ChannelBuffer EXISTS = ChannelBuffers.copiedBuffer("EXISTS\r\n", USASCII);
-    private static final ChannelBuffer NOT_FOUND = ChannelBuffers.copiedBuffer("NOT_FOUND\r\n", USASCII);
-    private static final ChannelBuffer NOT_STORED = ChannelBuffers.copiedBuffer("NOT_STORED\r\n", USASCII);
-    private static final ChannelBuffer STORED = ChannelBuffers.copiedBuffer("STORED\r\n", USASCII);
-    private static final ChannelBuffer DELETED = ChannelBuffers.copiedBuffer("DELETED\r\n", USASCII);
-    private static final ChannelBuffer END = ChannelBuffers.copiedBuffer("END\r\n", USASCII);
-    private static final ChannelBuffer OK = ChannelBuffers.copiedBuffer("OK\r\n", USASCII);
-    private static final ChannelBuffer ERROR = ChannelBuffers.copiedBuffer("ERROR\r\n", USASCII);
-    private static final ChannelBuffer CLIENT_ERROR = ChannelBuffers.copiedBuffer("CLIENT_ERROR\r\n", USASCII);
+    public static final ByteBuf CRLF = Unpooled.copiedBuffer("\r\n", USASCII);
+    private static final ByteBuf VALUE = Unpooled.copiedBuffer("VALUE ", USASCII);
+    private static final ByteBuf EXISTS = Unpooled.copiedBuffer("EXISTS\r\n", USASCII);
+    private static final ByteBuf NOT_FOUND = Unpooled.copiedBuffer("NOT_FOUND\r\n", USASCII);
+    private static final ByteBuf NOT_STORED = Unpooled.copiedBuffer("NOT_STORED\r\n", USASCII);
+    private static final ByteBuf STORED = Unpooled.copiedBuffer("STORED\r\n", USASCII);
+    private static final ByteBuf DELETED = Unpooled.copiedBuffer("DELETED\r\n", USASCII);
+    private static final ByteBuf END = Unpooled.copiedBuffer("END\r\n", USASCII);
+    private static final ByteBuf OK = Unpooled.copiedBuffer("OK\r\n", USASCII);
+    private static final ByteBuf ERROR = Unpooled.copiedBuffer("ERROR\r\n", USASCII);
+    private static final ByteBuf CLIENT_ERROR = Unpooled.copiedBuffer("CLIENT_ERROR\r\n", USASCII);
 
     /**
      * Handle exceptions in protocol processing. Exceptions are either client or internal errors.
      * Report accordingly.
      */
     @Override
-    public void exceptionCaught(ChannelHandlerContext ctx, ExceptionEvent e) throws Exception {
+    public void exceptionCaught(ChannelHandlerContext ctx, Throwable e) {
         try {
-            throw e.getCause();
+            throw e;
         } catch (ClientException ce) {
-            if (ctx.getChannel().isOpen())
-                ctx.getChannel().write(CLIENT_ERROR);
+            if (ctx.channel().isOpen())
+                ctx.channel().writeAndFlush(CLIENT_ERROR);
         } catch (Throwable tr) {
             logger.error("error", tr);
-            if (ctx.getChannel().isOpen())
-                ctx.getChannel().write(ERROR);
+            if (ctx.channel().isOpen())
+                ctx.channel().writeAndFlush(ERROR);
         }
     }
 
-
     @Override
-    public void messageReceived(ChannelHandlerContext channelHandlerContext, MessageEvent messageEvent) throws Exception {
-        ResponseMessage command = (ResponseMessage) messageEvent.getMessage();
+    public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
+        ResponseMessage command = (ResponseMessage) msg;
 
-        Channel channel = messageEvent.getChannel();
+        Channel channel = ctx.channel();
         final Op cmd = command.cmd.op;
         switch (cmd) {
             case GET:
@@ -95,7 +93,7 @@ public final class MemcachedResponseEncoder extends SimpleChannelUpstreamHandler
                         totalBytes += result.size() + 512;
                     }
                 }
-                ChannelBuffer writeBuffer = ChannelBuffers.dynamicBuffer(totalBytes);
+                ByteBuf writeBuffer = Unpooled.buffer(totalBytes);
 
                 for (LocalCacheElement result : results) {
                     if (result != null) {
@@ -118,7 +116,7 @@ public final class MemcachedResponseEncoder extends SimpleChannelUpstreamHandler
                 }
                 writeBuffer.writeBytes(END.duplicate());
 
-                Channels.write(channel, writeBuffer);
+                channel.writeAndFlush(writeBuffer);
                 break;
             case SET:
             case CAS:
@@ -127,17 +125,17 @@ public final class MemcachedResponseEncoder extends SimpleChannelUpstreamHandler
             case APPEND:
             case PREPEND:
                 if (!command.cmd.noreply)
-                    Channels.write(channel, storeResponse(command.response));
+                    channel.writeAndFlush(storeResponse(command.response));
                 break;
             case INCR:
             case DECR:
                 if (!command.cmd.noreply)
-                    Channels.write(channel, incrDecrResponseString(command.incrDecrResponse));
+                    channel.writeAndFlush(incrDecrResponseString(command.incrDecrResponse));
                 break;
 
             case DELETE:
                 if (!command.cmd.noreply)
-                    Channels.write(channel, deleteResponseString(command.deleteResponse));
+                    channel.writeAndFlush(deleteResponseString(command.deleteResponse));
                 break;
             case STATS:
                 for (Map.Entry<String, Set<String>> stat : command.stats.entrySet()) {
@@ -148,32 +146,32 @@ public final class MemcachedResponseEncoder extends SimpleChannelUpstreamHandler
                         builder.append(" ");
                         builder.append(String.valueOf(statVal));
                         builder.append("\r\n");
-                        Channels.write(channel, ChannelBuffers.copiedBuffer(builder.toString(), USASCII));
+                        channel.write(Unpooled.copiedBuffer(builder.toString(), USASCII));
                     }
                 }
-                Channels.write(channel, END.duplicate());
+                channel.writeAndFlush(END.duplicate());
                 break;
             case VERSION:
-                Channels.write(channel, ChannelBuffers.copiedBuffer("VERSION " + command.version + "\r\n", USASCII));
+                channel.writeAndFlush(Unpooled.copiedBuffer("VERSION " + command.version + "\r\n", USASCII));
                 break;
             case QUIT:
-                Channels.disconnect(channel);
+                channel.disconnect();
                 break;
             case FLUSH_ALL:
                 if (!command.cmd.noreply) {
-                    ChannelBuffer ret = command.flushSuccess ? OK.duplicate() : ERROR.duplicate();
+                    ByteBuf ret = command.flushSuccess ? OK.duplicate() : ERROR.duplicate();
 
-                    Channels.write(channel, ret);
+                    channel.writeAndFlush(ret);
                 }
                 break;
             default:
-                Channels.write(channel, ERROR.duplicate());
+                channel.writeAndFlush(ERROR.duplicate());
                 logger.error("error; unrecognized command: " + cmd);
         }
 
     }
 
-    private ChannelBuffer deleteResponseString(SpaceCache.DeleteResponse deleteResponse) {
+    private ByteBuf deleteResponseString(SpaceCache.DeleteResponse deleteResponse) {
         if (deleteResponse == SpaceCache.DeleteResponse.DELETED)
             return DELETED.duplicate();
 
@@ -181,11 +179,11 @@ public final class MemcachedResponseEncoder extends SimpleChannelUpstreamHandler
     }
 
 
-    private ChannelBuffer incrDecrResponseString(Integer ret) {
+    private ByteBuf incrDecrResponseString(Integer ret) {
         if (ret == null)
             return NOT_FOUND.duplicate();
 
-        return ChannelBuffers.copiedBuffer(valueOf(ret) + "\r\n", USASCII);
+        return Unpooled.copiedBuffer(valueOf(ret) + "\r\n", USASCII);
     }
 
     /**
@@ -195,7 +193,7 @@ public final class MemcachedResponseEncoder extends SimpleChannelUpstreamHandler
      * @param storeResponse the response code
      * @return the string to output on the network
      */
-    private ChannelBuffer storeResponse(SpaceCache.StoreResponse storeResponse) {
+    private ByteBuf storeResponse(SpaceCache.StoreResponse storeResponse) {
         switch (storeResponse) {
             case EXISTS:
                 return EXISTS.duplicate();
