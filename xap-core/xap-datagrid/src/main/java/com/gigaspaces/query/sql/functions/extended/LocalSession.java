@@ -3,6 +3,8 @@ package com.gigaspaces.query.sql.functions.extended;
 import java.io.Serializable;
 
 public class LocalSession implements Serializable {
+
+    private static final long serialVersionUID = -2470679645214359948L;
     private String username;
 
     public LocalSession() {
