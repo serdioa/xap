@@ -7,6 +7,7 @@ import com.github.mustachejava.Mustache;
 import com.github.mustachejava.MustacheFactory;
 
 import java.io.*;
+import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -65,11 +66,14 @@ public class TemplateUtils {
     }
 
     public static void pipelineJson(String templateJson, String dest, HashMap<String, Object> scopes) throws IOException {
-        Mustache m = mf.compile(templateJson);
+        File f = new File("/home/meshir/manualtests/16.1.0-m4/gigaspaces-xap-enterprise-16.1.0-m5-ci-7/bin/stream_myStream.json");
+        Mustache m = mf.compile(new InputStreamReader(new FileInputStream(f), Charset.forName("UTF-8")),f.getName());
+//        Mustache m = mf.compile("/home/meshir/xap-premium/xap-tools/xap-ops-ui/src/main/java/com/gigaspaces/data_integration_rest/stream_myStream.json");
         OutputStream outputStream = new FileOutputStream(dest);
         Writer writer = new OutputStreamWriter(outputStream);
         Writer execute = m.execute(writer, scopes);
         writer.flush();
+
 
     }
 }
