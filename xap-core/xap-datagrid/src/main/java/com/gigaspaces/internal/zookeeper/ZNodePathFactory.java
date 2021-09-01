@@ -12,6 +12,7 @@ public class ZNodePathFactory {
     private static final String PUS = "pus";
     private static final String LOCKS = "locks";
     private static final String SPACES = "spaces";
+    private static final String STREAMS = "streams";
 
     public static String path(String ... elements) {
         return XAP_PREFIX + String.join("/", elements);
@@ -25,6 +26,10 @@ public class ZNodePathFactory {
 
     public static String processingUnit(String puName) {
         return path(PUS, puName);
+    }
+
+    public static String stream(String stream) {
+        return path(STREAMS, stream);
     }
 
     public static String lockPuName(String puName) {
@@ -41,6 +46,12 @@ public class ZNodePathFactory {
 
     public static String processingUnit(String puName, String component) {
         return path(PUS, puName, component);
+    }
+    public static String stream(String stream, String component) {
+        return path(STREAMS, stream, component);
+    }
+    public static String streams() {
+        return path(STREAMS);
     }
 
     public static String processingUnit(String puName, String component, int partitionId, String ... elements) {
