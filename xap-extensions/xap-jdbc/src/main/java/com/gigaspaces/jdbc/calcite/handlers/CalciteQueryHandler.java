@@ -10,6 +10,7 @@ import com.gigaspaces.query.sql.functions.extended.LocalSession;
 import com.j_spaces.core.IJSpace;
 import com.j_spaces.jdbc.ResponsePacket;
 import com.j_spaces.kernel.SystemProperties;
+import org.apache.calcite.rel.RelRoot;
 import org.apache.calcite.rel.core.TableModify;
 import org.apache.calcite.rel.externalize.RelWriterImpl;
 import org.apache.calcite.rex.RexLiteral;
@@ -19,6 +20,7 @@ import org.apache.calcite.sql.SqlExplain;
 import org.apache.calcite.sql.SqlExplainLevel;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
+import org.apache.calcite.sql.dialect.CalciteSqlDialect;
 import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.calcite.sql.validate.SqlValidatorException;
 import org.slf4j.Logger;
@@ -35,7 +37,7 @@ import static com.gigaspaces.jdbc.calcite.utils.CalciteUtils.prepareQueryForCalc
 
 public class CalciteQueryHandler {
     private static final Logger logger = LoggerFactory.getLogger("com.gigaspaces.jdbc.v3");
-    private static final boolean printPlan = Boolean.getBoolean(SystemProperties.JDBC_V3_PRINT_PLAN);
+    private static final boolean printPlan = Boolean.getBoolean(SystemProperties.JDBC_V3_PRINT_PLAN) || logger.isDebugEnabled();
     private boolean explainPlan;
 
 
@@ -124,16 +126,12 @@ public class CalciteQueryHandler {
                 explainPlan = true;
             }
             GSOptimizerValidationResult validated = optimizer.validate(ast);
-            GSRelNode physicalPlan = optimizer.optimize(validated.getValidatedAst());
-            if (printPlan || logger.isDebugEnabled()) {
-                StringWriter sw = new StringWriter();
-                PrintWriter pw = new PrintWriter(sw);
-                RelWriterImpl writer = new RelWriterImpl(pw, SqlExplainLevel.EXPPLAN_ATTRIBUTES, false);
-                physicalPlan.explain(writer);
-                logger.info("Query physical plan: \n" + query + "\n-\n" + sw);
+            RelRoot logicalRel = optimizer.optimizeLogical(validated.getValidatedAst());
+            GSRelNode physicalRel = optimizer.optimizePhysical(logicalRel);
+            if (printPlan) {
+                printPlan(query, validated, logicalRel, physicalRel);
             }
-
-            return physicalPlan;
+            return physicalRel;
         } catch (CalciteException calciteException) {
             Throwable cause = calciteException.getCause();
             if (cause != null) {
@@ -147,4 +145,29 @@ public class CalciteQueryHandler {
         }
     }
 
+    private void printPlan(String query, GSOptimizerValidationResult validated,
+                           RelRoot logicalRel, GSRelNode physicalRel) {
+        StringWriter sw = new StringWriter();
+        PrintWriter pw = new PrintWriter(sw);
+        RelWriterImpl writer = new RelWriterImpl(pw, SqlExplainLevel.EXPPLAN_ATTRIBUTES, false);
+        if (logger.isDebugEnabled()) {
+            pw.println("Before logical opt:");
+            pw.println(validated.getValidatedAst().toSqlString(CalciteSqlDialect.DEFAULT));
+        } else {
+            pw.println("\nSQL:");
+            pw.println(query);
+        }
+
+        pw.println("\nLogical opt:");
+        logicalRel.rel.explain(writer);
+
+        pw.println("\nPhysical opt:");
+        physicalRel.explain(writer);
+
+        if (logger.isDebugEnabled()) {
+            logger.debug("Optimizer plan:{}", sw);
+        } else {
+            logger.info("Optimizer plan:{}", sw);
+        }
+    }
 }
