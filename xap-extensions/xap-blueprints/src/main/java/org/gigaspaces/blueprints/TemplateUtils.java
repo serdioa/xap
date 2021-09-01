@@ -7,11 +7,9 @@ import com.github.mustachejava.Mustache;
 import com.github.mustachejava.MustacheFactory;
 
 import java.io.*;
-import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.HashMap;
 import java.util.stream.Stream;
 
 /**
@@ -63,16 +61,5 @@ public class TemplateUtils {
     private static Path evaluatePath(Path path, Object scope) {
         String s = path.toString();
         return s.contains("{{") ? Paths.get(evaluate(s, scope)) : path;
-    }
-
-    public static void pipelineJson(String templateJson, String dest, HashMap<String, Object> scopes) throws IOException {
-        File f = new File(templateJson);
-        Mustache m = mf.compile(new InputStreamReader(new FileInputStream(f), Charset.forName("UTF-8")),f.getName());
-        OutputStream outputStream = new FileOutputStream(dest);
-        Writer writer = new OutputStreamWriter(outputStream);
-        Writer execute = m.execute(writer, scopes);
-        writer.flush();
-
-
     }
 }
