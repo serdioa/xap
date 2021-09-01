@@ -70,7 +70,7 @@ public class JsqlQueryHandler {
                     com.gigaspaces.jdbc.jsql.handlers.SelectHandler physicalPlanHandler = new com.gigaspaces.jdbc.jsql.handlers.SelectHandler(qE);
                     qE = physicalPlanHandler.prepareForExecution(select.getSelectBody());
                     res = qE.execute();
-                    packet.setResultEntry(res.convertEntriesToResultArrays());
+                    packet.setResultEntry(res.convertEntriesToResultArrays(null));
                 } catch (SQLException e) {
                     throw new SQLExceptionWrapper(e);
                 }

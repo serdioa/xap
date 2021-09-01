@@ -39,7 +39,7 @@ public class CalciteQueryHandler {
     private static final Logger logger = LoggerFactory.getLogger("com.gigaspaces.jdbc.v3");
     private static final boolean printPlan = Boolean.getBoolean(SystemProperties.JDBC_V3_PRINT_PLAN) || logger.isDebugEnabled();
     private boolean explainPlan;
-
+    private RelRoot logicalRel;
 
     public ResponsePacket handle(String query, IJSpace space, Object[] preparedValues) throws SQLException {
         Properties customProperties = space.getURL().getCustomProperties();
@@ -83,7 +83,7 @@ public class CalciteQueryHandler {
             if (explainPlan) {
                 packet.setResultEntry(((ExplainPlanQueryResult) queryResult).convertEntriesToResultArrays(queryExecutionConfig));
             } else {
-                packet.setResultEntry(queryResult.convertEntriesToResultArrays());
+                packet.setResultEntry(queryResult.convertEntriesToResultArrays(logicalRel));
             }
         }
 
@@ -131,6 +131,7 @@ public class CalciteQueryHandler {
             if (printPlan) {
                 printPlan(query, validated, logicalRel, physicalRel);
             }
+            this.logicalRel = logicalRel;
             return physicalRel;
         } catch (CalciteException calciteException) {
             Throwable cause = calciteException.getCause();
