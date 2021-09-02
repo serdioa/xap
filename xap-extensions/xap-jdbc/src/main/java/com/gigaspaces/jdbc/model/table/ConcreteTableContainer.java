@@ -393,7 +393,13 @@ public class ConcreteTableContainer extends TableContainer {
     public IQueryColumn addQueryColumnWithColumnOrdinal(String columnName, String columnAlias, boolean isVisible, int columnOrdinal) {
         final boolean isUidColumn = columnName.equalsIgnoreCase(IQueryColumn.UUID_COLUMN);
         if (!isUidColumn && typeDesc.getFixedPropertyPositionIgnoreCase(columnName) == -1) {
-            throw new ColumnNotFoundException("Could not find column with name [" + columnName + "]");
+            //supports for up to 10 identical column names (price0...price9)
+            String shortColName = columnName.substring(0, columnName.length() - 1);
+            if (typeDesc.getFixedPropertyPositionIgnoreCase(shortColName) > -1) {
+                columnName = shortColName;
+            } else {
+                throw new ColumnNotFoundException("Could not find column with name [" + columnName + "]");
+            }
         }
 
         try {
