@@ -24,16 +24,15 @@ import com.gigaspaces.logger.GSLogConfigLoader;
 import com.gigaspaces.security.service.SecurityResolver;
 import com.j_spaces.kernel.ClassLoaderHelper;
 import org.openspaces.pu.container.support.CommandLineParser;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import java.awt.Desktop;
+import java.awt.*;
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.util.*;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * @author Guy Korland
@@ -59,7 +58,7 @@ public class Launcher implements Closeable {
         new Launcher(config);
     }
 
-    public Launcher() {
+    public Launcher() throws IOException {
         this(new WebLauncherConfig(new Properties()));
     }
 
@@ -118,15 +117,17 @@ public class Launcher implements Closeable {
     }
 
     private static Properties parseCommandLineArgs(String[] args, Collection<String> helpArgs) {
-        Set<String> parametersWithoutValues = new HashSet<String>();
+        Set<String> parametersWithoutValues = new HashSet<>();
         for (String helpArg : helpArgs)
             parametersWithoutValues.add("-" + helpArg);
 
         CommandLineParser.Parameter[] params = CommandLineParser.parse(args, parametersWithoutValues);
 
         Properties result = new Properties();
-        for (CommandLineParser.Parameter param : params)
-            result.setProperty(param.getName(), param.getArguments()[0]);
+        for (CommandLineParser.Parameter param : params) {
+            //in the case of help arguments array is empty
+            result.setProperty(param.getName(), param.getArguments().length > 0 ? param.getArguments()[0] : "");
+        }
         return result;
     }
 
@@ -183,17 +184,12 @@ public class Launcher implements Closeable {
     private static boolean validateSslParameters(WebLauncherConfig config) {
 
         if( config.isSslEnabled() ) {
-            String sslKeyManagerPassword = config.getSslKeyManagerPassword();
             String sslKeyStorePassword = config.getSslKeyStorePassword();
             String sslKeyStorePath = config.getSslKeyStorePath();
             String sslTrustStorePath = config.getSslTrustStorePath();
             String sslTrustStorePassword = config.getSslTrustStorePassword();
 
             StringBuilder stringBuilder = new StringBuilder();
-            if (sslKeyManagerPassword == null || sslKeyManagerPassword.trim().isEmpty()) {
-                stringBuilder.append(SecurityConstants.KEY_SSL_KEY_MANAGER_PASSWORD);
-                stringBuilder.append('\n');
-            }
             if (sslKeyStorePassword == null || sslKeyStorePassword.trim().isEmpty()) {
                 stringBuilder.append(SecurityConstants.KEY_SSL_KEY_STORE_PASSWORD);
                 stringBuilder.append('\n');

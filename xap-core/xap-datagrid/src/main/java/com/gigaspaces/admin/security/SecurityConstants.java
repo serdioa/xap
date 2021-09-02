@@ -32,6 +32,7 @@ public interface SecurityConstants {
     String KEY_SSL_KEY_MANAGER_PASSWORD = "ssl.keyManagerPassword";
     String KEY_SSL_TRUST_STORE_PASSWORD = "ssl.trustStorePassword";
     String KEY_SSL_TRUST_STORE_PATH = "ssl.trustStorePath";
+    String SSL_CUSTOM_PROPERTIES = "ssl.custom.properties";
 
     String PARAM_PREFIX = "-";
 

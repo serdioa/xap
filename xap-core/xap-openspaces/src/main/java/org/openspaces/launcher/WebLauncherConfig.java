@@ -20,6 +20,7 @@ import com.gigaspaces.admin.security.SecurityConstants;
 import com.gigaspaces.internal.utils.GsEnv;
 import com.gigaspaces.start.SystemLocations;
 
+import java.io.*;
 import java.util.Properties;
 
 /**
@@ -54,7 +55,7 @@ public class WebLauncherConfig {
     /**
      * @since 12.1
      */
-    private final String sslKeyManagerPassword;
+    private String sslKeyManagerPassword;
     /**
      * @since 12.1
      */
@@ -66,7 +67,7 @@ public class WebLauncherConfig {
 
     private final boolean sslEnabled;
 
-    public WebLauncherConfig(Properties props) {
+    public WebLauncherConfig(Properties props) throws IOException {
         this.webuiHome = System.getProperty("com.gigaspaces.webui.path", SystemLocations.singleton().tools("gs-webui").toString());
         this.name = props.getProperty("name", System.getProperty("org.openspaces.launcher.name", "GS Web UI"));
         this.loggerName = props.getProperty("logger", System.getProperty("org.openspaces.launcher.logger", "org.openspaces.launcher"));
@@ -74,20 +75,34 @@ public class WebLauncherConfig {
         this.hostAddress = props.getProperty( BIND_ADDRESS, GsEnv.property("org.openspaces.launcher.bind-address", "BIND_ADDRESS").get("0.0.0.0") );
         this.warFilePath = props.getProperty("path", System.getProperty("org.openspaces.launcher.path", webuiHome));
         this.tempDirPath = props.getProperty("work", System.getProperty("org.openspaces.launcher.work", webuiHome + "/work"));
+
+        if (props.containsKey(SecurityConstants.KEY_USER_PROVIDER))
+            System.setProperty(SecurityConstants.KEY_USER_PROVIDER, props.getProperty(SecurityConstants.KEY_USER_PROVIDER));
+        if (props.containsKey(SecurityConstants.KEY_USER_PROPERTIES))
+            System.setProperty(SecurityConstants.KEY_USER_PROPERTIES, props.getProperty(SecurityConstants.KEY_USER_PROPERTIES));
+
+        String sslCustomPropertiesFile = props.getProperty(SecurityConstants.SSL_CUSTOM_PROPERTIES);
+        if( sslCustomPropertiesFile != null ){
+            Properties sslProperties = new Properties();
+            sslProperties.load( new FileInputStream( sslCustomPropertiesFile ) );
+            props.putAll(sslProperties);
+        }
+
         this.sslKeyManagerPassword = props.getProperty(SecurityConstants.KEY_SSL_KEY_MANAGER_PASSWORD);
         this.sslKeyStorePassword = props.getProperty(SecurityConstants.KEY_SSL_KEY_STORE_PASSWORD);
         this.sslKeyStorePath = props.getProperty(SecurityConstants.KEY_SSL_KEY_STORE_PATH);
         this.sslTrustStorePath = props.getProperty(SecurityConstants.KEY_SSL_TRUST_STORE_PATH);
         this.sslTrustStorePassword = props.getProperty(SecurityConstants.KEY_SSL_TRUST_STORE_PASSWORD);
-        this.sslEnabled = sslKeyManagerPassword != null ||
+
+        if( sslKeyManagerPassword == null && sslKeyStorePassword != null ){
+            sslKeyManagerPassword = sslKeyStorePassword;
+        }
+
+        this.sslEnabled =
                 sslKeyStorePassword != null ||
                 sslKeyStorePath != null ||
                 sslTrustStorePath != null ||
                 sslTrustStorePassword != null;
-        if (props.containsKey(SecurityConstants.KEY_USER_PROVIDER))
-            System.setProperty(SecurityConstants.KEY_USER_PROVIDER, props.getProperty(SecurityConstants.KEY_USER_PROVIDER));
-        if (props.containsKey(SecurityConstants.KEY_USER_PROPERTIES))
-            System.setProperty(SecurityConstants.KEY_USER_PROPERTIES, props.getProperty(SecurityConstants.KEY_USER_PROPERTIES));
     }
 
     public int getPort() {
