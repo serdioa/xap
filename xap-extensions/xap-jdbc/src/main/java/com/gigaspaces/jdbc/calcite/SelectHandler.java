@@ -198,6 +198,10 @@ public class SelectHandler extends RelShuttleImpl {
             if (queryExecutor.getTables().size() == 1) {
                 queryExecutor.getTables().get(0).setLimit((Integer) limitValue);
             }
+        } else if (input instanceof GSSort) {
+            if (queryExecutor.getTables().size() == 1) {
+                queryExecutor.getTables().get(0).setLimit((Integer) limitValue);
+            }
         }
     }
 
