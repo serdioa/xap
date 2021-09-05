@@ -43,7 +43,7 @@ public class CaseConditionHandler extends RexShuttle {
                 RexNode rexNode = getNode((RexLocalRef) operand, program);
                 switch (rexNode.getKind()) {
                     case IS_NULL:
-                    case IS_NOT_NULL:
+                    case IS_NOT_NULL: {
                         RexNode op = getNode(((RexLocalRef) ((RexCall) rexNode).getOperands().get(0)), program);
                         if (caseCondition == null) {
                             caseCondition = handleSingleOperandsCall(op, rexNode.getKind());
@@ -53,7 +53,8 @@ public class CaseConditionHandler extends RexShuttle {
                             throw new IllegalStateException("CaseCondition type [" + caseCondition.getClass() + "] not supported");
                         }
                         break;
-                    case INPUT_REF:
+                    }
+                    case INPUT_REF: {
                         String fieldName = inputFields.get(((RexInputRef) rexNode).getIndex());
                         TableContainer tableForColumn = getTableForColumn(fieldName);
                         IQueryColumn queryColumn = tableForColumn.addQueryColumnWithoutOrdinal(fieldName, null, false);
@@ -66,8 +67,9 @@ public class CaseConditionHandler extends RexShuttle {
                         caseColumn.addCaseCondition(caseCondition);
                         caseCondition = null;
                         break;
-                    case LITERAL:
-                        if(caseCondition != null) {
+                    }
+                    case LITERAL: {
+                        if (caseCondition != null) {
                             caseCondition.setResult(CalciteUtils.getValue((RexLiteral) rexNode));
                         } else {
                             caseCondition = new SingleCaseCondition(SingleCaseCondition.ConditionCode.DEFAULT_TRUE, CalciteUtils.getValue((RexLiteral) rexNode));
@@ -75,12 +77,28 @@ public class CaseConditionHandler extends RexShuttle {
                         caseColumn.addCaseCondition(caseCondition);
                         caseCondition = null;
                         break;
+                    }
+                    case CAST: {
+                        RexNode rexNodeInputRef = getNode(((RexLocalRef) ((RexCall) rexNode).getOperands().get(0)), program);
+                        String fieldName = inputFields.get(((RexInputRef) rexNodeInputRef).getIndex());
+                        TableContainer tableForColumn = getTableForColumn(fieldName);
+                        IQueryColumn queryColumn = tableForColumn.addQueryColumnWithoutOrdinal(fieldName, null, false);
+                        queryExecutor.addColumn(queryColumn, false);
+                        if (caseCondition != null) {
+                            caseCondition.setResult(queryColumn);
+                            caseColumn.addCaseCondition(caseCondition);
+                            caseCondition = null;
+                        } else {
+                            throw new IllegalStateException("Unsupported CAST operation within CASE condition for column " + fieldName);
+                        }
+                        break;
+                    }
                     case EQUALS:
                     case NOT_EQUALS:
                     case GREATER_THAN:
                     case GREATER_THAN_OR_EQUAL:
                     case LESS_THAN:
-                    case LESS_THAN_OR_EQUAL:
+                    case LESS_THAN_OR_EQUAL: {
                         List<RexNode> operands = ((RexCall) rexNode).getOperands();
                         RexNode leftOp = getNode((RexLocalRef) operands.get(0), program);
                         RexNode rightOp = getNode((RexLocalRef) operands.get(1), program);
@@ -92,8 +110,9 @@ public class CaseConditionHandler extends RexShuttle {
                             throw new IllegalStateException("CaseCondition type [" + caseCondition.getClass() + "] not supported");
                         }
                         break;
+                    }
                     case AND:
-                    case OR:
+                    case OR: {
                         if (!(caseCondition instanceof CompoundCaseCondition)) {
                             if (caseCondition != null) {
                                 caseColumn.addCaseCondition(caseCondition);
@@ -103,7 +122,8 @@ public class CaseConditionHandler extends RexShuttle {
                         ((CompoundCaseCondition) caseCondition).addCompoundConditionCode(new CompoundCaseCondition.CompoundConditionCode(rexNode.getKind(), ((RexCall) rexNode).getOperands().size()));
                         handleRexCall((RexCall) rexNode, caseCondition);
                         break;
-                    case CASE:
+                    }
+                    case CASE: {
                         CaseColumn nestedCaseColumn = new CaseColumn(caseColumn.getName(), caseColumn.getReturnType()
                                 , caseColumn.getColumnOrdinal());
                         CaseConditionHandler caseHandler = new CaseConditionHandler(program, queryExecutor, inputFields,
@@ -117,8 +137,10 @@ public class CaseConditionHandler extends RexShuttle {
                         caseColumn.addCaseCondition(caseCondition);
                         caseCondition = null;
                         break;
-                    default:
+                    }
+                    default: {
                         throw new UnsupportedOperationException("Wrong CASE condition kind [" + operand.getKind() + "]");
+                    }
                 }
             } else {
                 throw new IllegalStateException("CASE operand kind should be LOCAL_REF but was [" + operand.getKind() + "]");

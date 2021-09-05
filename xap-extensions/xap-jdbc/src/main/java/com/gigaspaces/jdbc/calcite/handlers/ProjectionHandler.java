@@ -36,7 +36,16 @@ public class ProjectionHandler extends RexShuttle {
                 String column = outputFields.get(i);
                 switch (node.getKind()) {
                     case INPUT_REF: {
-                        IQueryColumn qc = queryExecutor.isJoinQuery() ? queryExecutor.getColumnByColumnIndex(program.getSourceField(i)) : queryExecutor.getColumnByColumnName(column);
+                        IQueryColumn qc;
+                        if (queryExecutor.isJoinQuery()) {
+                            qc = queryExecutor.getColumnByColumnIndex(program.getSourceField(i));
+                            if (qc == null) {
+                                qc = queryExecutor.getColumnByColumnName(column);
+                            }
+                        } else {
+                            qc = queryExecutor.getColumnByColumnName(column);
+                        }
+
                         queryExecutor.addColumn(qc);
                         queryExecutor.addProjectedColumn(qc);
                         break;
@@ -98,6 +107,9 @@ public class ProjectionHandler extends RexShuttle {
                         RexInputRef rexInputRef = (RexInputRef) rexNode;
                         String column = inputFields.get(rexInputRef.getIndex());
                         TableContainer tableByColumnIndex = queryExecutor.isJoinQuery() ? queryExecutor.getTableByColumnIndex(rexInputRef.getIndex()) : queryExecutor.getTableByColumnName(column);
+                        if (queryExecutor.isJoinQuery() && !tableByColumnIndex.hasColumn(column)) {
+                            tableByColumnIndex = queryExecutor.getTableByColumnName(column);
+                        }
                         queryColumns.add(tableByColumnIndex.addQueryColumnWithoutOrdinal(column, null, false));
                         break;
                     }
