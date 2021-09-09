@@ -223,7 +223,11 @@ public class QueryExecutor {
 
     public IQueryColumn getColumnByColumnIndex(int globalColumnIndex){
         if(searchIndex >= 0){
-            return this.processLayers.get(searchIndex).getProjectedColumns().get(globalColumnIndex);
+            ProcessLayer processLayer = this.processLayers.get(searchIndex);
+            if (globalColumnIndex >= processLayer.getProjectedColumns().size()) {
+                return null;
+            }
+            return processLayer.getProjectedColumns().get(globalColumnIndex);
         }
         initFieldCount();
         for (int i = 0; i < fieldCountList.size(); i++) {
@@ -271,6 +275,13 @@ public class QueryExecutor {
                 }
             }
         }
+        //supports for up to 10 identical column names (price0...price9)
+        String shortColName = column.substring(0, column.length() - 1);
+        result = getTableByPhysicalColumnName(shortColName);
+        if (result != null) {
+            return result;
+        }
+
         throw new ColumnNotFoundException("Column " + column + " wasn't found in any table");
     }
 
@@ -327,8 +338,9 @@ public class QueryExecutor {
             if (tableContainer.hasColumn(name)) {
                 if (toReturn == null) {
                     toReturn = tableContainer;
-                } else {
-                    throw new IllegalArgumentException("Ambiguous column name [" + name + "]");
+                } else if (!toReturn.getTableNameOrAlias().equals(tableContainer.getTableNameOrAlias())) {
+                    throw new IllegalArgumentException("Ambiguous column name [" + name + "] found in table: "
+                    + toReturn.getTableNameOrAlias() + " and " + tableContainer.getTableNameOrAlias());
                 }
             }
         }
