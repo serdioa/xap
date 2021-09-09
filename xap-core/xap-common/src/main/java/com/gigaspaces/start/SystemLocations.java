@@ -265,6 +265,16 @@ public class SystemLocations {
         return tools().resolve("data-gateway").resolve("xap-data-gateway.jar");
     }
 
+    public Path dataIntegrationConsumerProject() {
+        return work().resolve("dataintegrator");
+    }
+
+    public Path dataIntegrationConsumerConfig() { return dataIntegrationConsumerProject().resolve("config");}
+
+    public Path dataIntegrationConsumer() { return dataIntegrationConsumerProject().resolve("consumer");}
+
+        public Path dataIntegrationModel() { return dataIntegrationConsumerProject().resolve("model");
+    }
 
 
 }
