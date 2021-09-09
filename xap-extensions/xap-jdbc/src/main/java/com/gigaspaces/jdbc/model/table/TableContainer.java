@@ -1,12 +1,10 @@
 package com.gigaspaces.jdbc.model.table;
 
-import com.gigaspaces.jdbc.calcite.CalciteDefaults;
 import com.gigaspaces.jdbc.model.QueryExecutionConfig;
 import com.gigaspaces.jdbc.model.join.JoinInfo;
 import com.gigaspaces.jdbc.model.result.QueryResult;
 import com.j_spaces.jdbc.builder.QueryTemplatePacket;
 import com.j_spaces.jdbc.builder.range.Range;
-import net.sf.jsqlparser.expression.Expression;
 
 import java.sql.SQLException;
 import java.util.*;
@@ -22,7 +20,6 @@ public abstract class TableContainer {
     private final List<IQueryColumn> groupByColumns = new ArrayList<>();
     protected JoinInfo joinInfo;
     private boolean distinct;
-    private Expression exprTree;
     private boolean allColumns = true;
 
     public void addProjectedColumn(IQueryColumn column) {
@@ -57,11 +54,6 @@ public abstract class TableContainer {
     }
 
     public List<IQueryColumn> getSelectedColumns() {
-        if (CalciteDefaults.isJSqlDriverPropertySet()) {
-            //v3 jsql path
-            return Stream.concat(getVisibleColumns().stream(), getAggregationColumns().stream()).sorted().collect(Collectors.toList());
-        }
-        //v3 calcite path
         return getProjectedColumns();
     }
 
@@ -106,14 +98,6 @@ public abstract class TableContainer {
         if (joinInfo == null)
             return true;
         return joinInfo.checkJoinCondition();
-    }
-
-    public void setExpTree(Expression value) {
-        this.exprTree = value;
-    }
-
-    public Expression getExprTree() {
-        return exprTree;
     }
 
     public void addOrderColumn(OrderColumn orderColumn) {

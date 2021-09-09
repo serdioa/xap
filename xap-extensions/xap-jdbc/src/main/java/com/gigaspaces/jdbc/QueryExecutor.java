@@ -1,6 +1,5 @@
 package com.gigaspaces.jdbc;
 
-import com.gigaspaces.jdbc.calcite.CalciteDefaults;
 import com.gigaspaces.jdbc.exceptions.ColumnNotFoundException;
 import com.gigaspaces.jdbc.explainplan.SubqueryExplainPlan;
 import com.gigaspaces.jdbc.model.QueryExecutionConfig;
@@ -10,8 +9,6 @@ import com.j_spaces.core.IJSpace;
 
 import java.sql.SQLException;
 import java.util.*;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 public class QueryExecutor {
     private final List<TableContainer> tables = new ArrayList<>();
@@ -79,7 +76,7 @@ public class QueryExecutor {
                     ExplainPlanQueryResult explainResult = ((ExplainPlanQueryResult) queryResult);
                     SubqueryExplainPlan subquery = new SubqueryExplainPlan(getSelectedColumns(),
                             config.getTempTableNameGenerator().generate(),
-                            explainResult.getExplainPlanInfo(), null, Collections.unmodifiableList(getOrderColumns()),
+                            explainResult.getExplainPlanInfo(), Collections.unmodifiableList(getOrderColumns()),
                             Collections.unmodifiableList(getGroupByColumns()), false, getAggregationColumns());
                     return new ExplainPlanQueryResult(getSelectedColumns(), subquery, singleTable);
                 } else {
@@ -296,11 +293,6 @@ public class QueryExecutor {
     }
 
     public List<IQueryColumn> getSelectedColumns(){
-        if (CalciteDefaults.isJSqlDriverPropertySet()) {
-            //v3 jsql path
-            return Stream.concat(getVisibleColumns().stream(), getAggregationColumns().stream()).sorted().collect(Collectors.toList());
-        }
-        //v3 calcite path
         return getProjectedColumns();
     }
 

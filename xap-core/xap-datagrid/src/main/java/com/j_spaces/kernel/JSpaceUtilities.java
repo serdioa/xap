@@ -1577,6 +1577,6 @@ public class JSpaceUtilities {
 
     public static boolean isJdbcDriverV3Enabled(){
         String jdbcDriver = GsEnv.property(SystemProperties.JDBC_DRIVER).get( SystemProperties.JDBC_V3_DRIVER );
-        return jdbcDriver.equals(SystemProperties.JDBC_V3_DRIVER) || jdbcDriver.equals(SystemProperties.JDBC_V3_DRIVER_JSQL);
+        return jdbcDriver.equals(SystemProperties.JDBC_V3_DRIVER);
     }
 }
