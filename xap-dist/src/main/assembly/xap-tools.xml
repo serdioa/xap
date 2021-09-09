@@ -24,14 +24,6 @@
                 <include>org.fusesource.jansi:jansi</include>
             </includes>
         </dependencySet>
-        <dependencySet>
-            <useProjectArtifact>false</useProjectArtifact>
-            <outputDirectory>product/tools/data-gateway</outputDirectory>
-            <includes>
-                <include>org.gigaspaces:xap-data-gateway</include>
-            </includes>
-            <outputFileNameMapping>${artifact.artifactId}.${artifact.extension}</outputFileNameMapping>
-        </dependencySet>
     </dependencySets>
 
     <fileSets>

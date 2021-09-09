@@ -227,14 +227,6 @@
                 <include>com.github.spullara.mustache.java:compiler</include>
             </includes>
         </dependencySet>
-        <dependencySet>
-            <useProjectArtifact>false</useProjectArtifact>
-            <outputDirectory>product/lib/platform/jdbc</outputDirectory>
-            <includes>
-                <include>org.gigaspaces:xap-jdbc</include>
-            </includes>
-            <outputFileNameMapping>${artifact.artifactId}.${artifact.extension}</outputFileNameMapping>
-        </dependencySet>
     </dependencySets>
 
     <fileSets>
