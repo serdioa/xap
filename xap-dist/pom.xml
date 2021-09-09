@@ -168,14 +168,6 @@
             <groupId>org.gigaspaces</groupId>
             <artifactId>xap-metrics-hsqldb</artifactId>
         </dependency>
-        <dependency>
-            <groupId>org.gigaspaces</groupId>
-            <artifactId>xap-jdbc</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.gigaspaces</groupId>
-            <artifactId>xap-data-gateway</artifactId>
-        </dependency>
         <!--end xap-datagrid runtime jars-->
         <dependency>
             <groupId>io.netty</groupId>
