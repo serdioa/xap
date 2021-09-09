@@ -3,7 +3,6 @@ package com.gigaspaces.jdbc.model.join;
 import com.gigaspaces.jdbc.model.table.IQueryColumn;
 import com.j_spaces.jdbc.Stack;
 import com.j_spaces.jdbc.builder.range.Range;
-import net.sf.jsqlparser.statement.select.Join;
 import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.sql.SqlKind;
 
@@ -157,19 +156,6 @@ public class JoinInfo {
 
     public enum JoinType {
         INNER, LEFT, RIGHT, FULL, SEMI;
-
-        public static JoinType getType(Join join) {
-            if (join.isLeft())
-                return LEFT;
-            if (join.isRight())
-                return RIGHT;
-            if (join.isOuter() || join.isFull())
-                return FULL;
-            if (join.isSemi()) {
-                return SEMI;
-            }
-            return INNER;
-        }
 
         public static JoinType getType(JoinRelType joinRelType) {
             switch (joinRelType) {

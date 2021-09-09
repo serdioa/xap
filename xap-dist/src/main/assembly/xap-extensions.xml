@@ -232,7 +232,6 @@
             <outputDirectory>product/lib/platform/jdbc</outputDirectory>
             <includes>
                 <include>org.gigaspaces:xap-jdbc</include>
-                <include>com.github.jsqlparser:jsqlparser</include>
             </includes>
             <outputFileNameMapping>${artifact.artifactId}.${artifact.extension}</outputFileNameMapping>
         </dependencySet>

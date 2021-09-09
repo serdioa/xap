@@ -12,17 +12,6 @@ public class CalciteDefaults {
     public static final String SUPPORT_EXPLAIN_PLAN = "com.gs.jdbc.v3.support.explain_plan";
     public static final String SUPPORT_PRIMARY_KEY_FIRST = "com.gs.jdbc.v3.support.primary_key_first";
 
-
-    //calcite path (should be default)
-    public static boolean isCalciteDriverPropertySet() {
-        return SystemProperties.JDBC_V3_DRIVER.equals(System.getProperty(SystemProperties.JDBC_DRIVER));
-    }
-
-    //jsql path
-    public static boolean isJSqlDriverPropertySet() {
-        return SystemProperties.JDBC_V3_DRIVER_JSQL.equals(System.getProperty(SystemProperties.JDBC_DRIVER));
-    }
-
     public static boolean isCalcitePropertySet(String key, Properties properties) {
         String value = System.getProperty(key);
         if (value == null && properties != null) {
@@ -33,7 +22,6 @@ public class CalciteDefaults {
     }
 
     public static void setCalciteDriverSystemProperties() {
-        System.setProperty(SystemProperties.JDBC_DRIVER, SystemProperties.JDBC_V3_DRIVER);
         System.setProperty(SystemProperties.JDBC_V3_PRINT_PLAN, "true");
     }
 }
