@@ -3,7 +3,6 @@ package com.gigaspaces.jdbc.model.result;
 import com.gigaspaces.internal.metadata.ITypeDesc;
 import com.gigaspaces.internal.transport.IEntryPacket;
 import com.gigaspaces.jdbc.ProcessLayer;
-import com.gigaspaces.jdbc.QueryExecutor;
 import com.gigaspaces.jdbc.model.table.*;
 import com.j_spaces.jdbc.builder.QueryEntryPacket;
 
@@ -165,7 +164,12 @@ public class TableRow implements Comparable<TableRow> {
         for (int i = 0; i < this.columns.length; i++) {
             Object value = null;
             if (this.columns[i].isCaseColumn()) {
-                value = ((CaseColumn) this.columns[i]).getValue(row);
+                final int index = caseColumnAlreadyProcessed(row.columns, this.columns[i]);
+                if (index != -1) {
+                    value = row.values[index];
+                } else {
+                    value = ((CaseColumn) this.columns[i]).getValue(row);
+                }
             } else if (this.columns[i].isLiteral()) {
                 value = this.columns[i].getCurrentValue();
             } else if (this.columns[i].isFunction()) {
@@ -196,6 +200,16 @@ public class TableRow implements Comparable<TableRow> {
         }
     }
 
+    private int caseColumnAlreadyProcessed(IQueryColumn[] columns, IQueryColumn column) {
+        for (int i=0; i<columns.length; i++) {
+            //check by reference
+            if (columns[i] == column) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
 
     public TableRow(TableRow row, IQueryColumn[] projections){
         this.orderColumns = null;
@@ -208,7 +222,12 @@ public class TableRow implements Comparable<TableRow> {
             IQueryColumn qc =  this.columns[i];
             Object value;
             if(qc.isCaseColumn()){
-                value =((CaseColumn) qc).getValue(row);
+                final int index = caseColumnAlreadyProcessed(row.columns, this.columns[i]);
+                if (index != -1) {
+                    value = row.values[index];
+                } else {
+                    value = ((CaseColumn) qc).getValue(row);
+                }
             } else if(qc.isLiteral()){
                 value = qc.getCurrentValue();
             } else if (this.columns[i].isFunction()) {

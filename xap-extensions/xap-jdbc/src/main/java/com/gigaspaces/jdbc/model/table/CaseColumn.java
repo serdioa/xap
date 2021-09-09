@@ -112,4 +112,9 @@ public class CaseColumn implements IQueryColumn{
     public boolean isCaseColumn() {
         return true;
     }
+
+    @Override
+    public IQueryColumn copy() {
+        return new CaseColumn(columnName, returnType, columnOrdinal);
+    }
 }
