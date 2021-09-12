@@ -42,6 +42,10 @@ public class TextReportFormatter {
         return sb.toString();
     }
 
+    public String[] toArray() {
+        return sb.toString().split("\n");
+    }
+
     public TextReportFormatter line(String s) {
         sb.append(currentIndentation);
         if (firstLinePrefix != null) {
@@ -56,6 +60,13 @@ public class TextReportFormatter {
 
     public TextReportFormatter indent() {
         currentIndentation = currentIndentation + INDENTATION;
+        return this;
+    }
+
+    public TextReportFormatter indent(int numberOfSpaces) {
+        for (int i = 0; i < numberOfSpaces; i++) {
+            currentIndentation += " ";
+        }
         return this;
     }
 

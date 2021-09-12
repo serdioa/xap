@@ -72,35 +72,6 @@ public class AggregationSet implements SmartExternalizable {
     }
 
     /**
-     * Sums scalar value, returns the same type as the path.
-     *
-     * @param path The column name or alias
-     * @param value Value to sum (must be a numeric type)
-     */
-    public AggregationSet typePreserveSum(String path, Number value) {
-        return add(new SumScalarValueAggregator().setValue(value).setPath(path));
-    }
-
-    /**
-     * Sums values of paths of matching entries, when no non null values are applied zero is returned instead of null
-     * returns the same type as the path.
-     * @param path Path to sum (must be a numeric type)
-     */
-    public AggregationSet typePreserveSumZero(Class<?> type, String path) {
-        return add(new SumZeroAggregator(type).setPath(path));
-    }
-
-    /**
-     * Sums scalar value, when no non null values are applied zero is returned instead of null
-     * returns the same type as the path.
-     * @param path The column name or alias
-     * @param value Value to sum (must be a numeric type)
-     */
-    public AggregationSet typePreserveSumZero(Class<?> type, String path, Number value) {
-        return add(new SumZeroScalarValueAggregator(type).setValue(value).setPath(path));
-    }
-
-    /**
      * Calculates average of path values of matching entries, infers the return type of the path.
      *
      * @param path Path to average (must be a numeric type)
@@ -163,10 +134,6 @@ public class AggregationSet implements SmartExternalizable {
 
     List<SpaceEntriesAggregator> getAggregators() {
         return aggregators;
-    }
-
-    public boolean isEmpty() {
-        return this.aggregators.isEmpty();
     }
 
     @Override
