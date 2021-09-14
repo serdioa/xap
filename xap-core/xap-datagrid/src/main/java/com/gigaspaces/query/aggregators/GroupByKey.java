@@ -47,12 +47,14 @@ public class GroupByKey extends CompoundResult {
     }
 
     protected boolean initialize(String[] groupByPaths, SpaceEntriesAggregatorContext context) {
+
         hashCode = 0;
         for (int i = 0; i < groupByPaths.length; i++) {
             String groupByPath = groupByPaths[i];
 
             //Loop over the aggregators in select clause and find the relevant one by path.
             Collection<SpaceEntriesAggregator> aggregators = context.getAggregators(); // in case of GroupBy there is one in this list.
+            boolean isValueSet = false;
             for (SpaceEntriesAggregator aggregator : aggregators) {
                 if (aggregator instanceof GroupByAggregator) {
                     Optional<SingleValueFunctionAggregator> agg = ((GroupByAggregator) aggregator).getAggregators()
@@ -61,13 +63,24 @@ public class GroupByKey extends CompoundResult {
                             .map(a -> (SingleValueFunctionAggregator)a)
                             .filter(a -> groupByPath.equals(a.getPath()))
                             .findFirst();
-                    if(agg.isPresent())
+                    if(agg.isPresent()) {
                         values[i] = agg.get().apply(context.getPathValue(groupByPath));
-                    else
+                        isValueSet = true;
+                    }
+                    else {
                         values[i] = context.getPathValue(groupByPath);
+                        isValueSet = true;
+                    }
                     break;
                 }
             }
+            //fix for GS-14615
+            if( !isValueSet ){
+                values[i] = context.getPathValue(groupByPath);
+            }
+
+            if (values[i] == null)
+                return false;
         }
 
         return true;
