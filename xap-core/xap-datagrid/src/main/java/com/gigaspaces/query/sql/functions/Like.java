@@ -131,7 +131,7 @@ public class Like {
      * Translates a SQL SIMILAR pattern to Java regex pattern, with optional
      * escape string.
      */
-    static String sqlToRegexSimilar(
+    public static String sqlToRegexSimilar(
             String sqlPattern,
             CharSequence escapeStr) {
         final char escapeChar;
