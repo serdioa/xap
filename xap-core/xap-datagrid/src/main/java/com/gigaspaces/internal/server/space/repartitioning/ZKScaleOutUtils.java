@@ -7,6 +7,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
 
 public class ZKScaleOutUtils {
     private static Logger logger = LoggerFactory.getLogger("com.gigaspaces.internal.server.space.repartitioning.ZookeeperScaleUtils");
@@ -29,6 +33,12 @@ public class ZKScaleOutUtils {
 
     public static String getScaleOutLastStep(AttributeStore attributeStore, String puName) throws IOException {
         return attributeStore.get(ZKScaleOutUtils.getScaleOutPath(puName) + "/last-step");
+    }
+
+    public static List<Integer> getSourcePartitions(AttributeStore attributeStore, String puName) throws IOException {
+        String sourcePartitions = getScaleOutDetails(attributeStore, puName, "participant-instances");
+        String[] sources = sourcePartitions.split(", ");
+        return Arrays.stream(sources).map(str-> Integer.parseInt(str)).collect(Collectors.toList());
     }
 
     //todo
