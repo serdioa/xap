@@ -36,13 +36,12 @@ public class ZKScaleOutUtils {
     }
 
     public static List<Integer> getSourcePartitions(AttributeStore attributeStore, String puName) throws IOException {
-        String sourcePartitions = getScaleOutDetails(attributeStore, puName, "participant-instances");
+        String sourcePartitions = getScaleOutDetails(attributeStore, puName, "participating instances");
         String[] sources = sourcePartitions.split(", ");
-        return Arrays.stream(sources).map(str-> Integer.parseInt(str)).collect(Collectors.toList());
+        return Arrays.stream(sources).map(Integer::parseInt).collect(Collectors.toList());
     }
 
-    //todo
-    public static void setStepIfPossible(AttributeStore attributeStore, String puName, String step, String key, String value)  {//maybe not throws exception
+    public static void setStepIfPossible(AttributeStore attributeStore, String puName, String step, String key, String value)  {
         try{
             attributeStore.set(ZKScaleOutUtils.getScaleStepsPath(puName, step) + "/" + key, value);
         } catch ( IOException e){
@@ -50,11 +49,21 @@ public class ZKScaleOutUtils {
         }
     }
 
+    public static boolean isScaleInProgress(AttributeStore attributeStore, String puName){//todo- change name
+       try {
+           String status = getScaleOutDetails(attributeStore, puName, "status");
+           logger.info(status);
+           return ScaleStatus.IN_PROGRESS.getStatus().equals(status);
+       } catch (IOException e) {
+           return false;
+       }
+    }
+
     public static String getStep(AttributeStore attributeStore, String puName, String step, String key) throws IOException {
         return attributeStore.get(ZKScaleOutUtils.getScaleStepsPath(puName, step) + "/" + key);
     }
 
-    public static String getScaleOutPath(String puName){ //todo- param of scale type?
+    public static String getScaleOutPath(String puName){
         return ZNodePathFactory.processingUnit(puName, "scale-out");
     }
 

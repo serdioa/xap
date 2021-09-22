@@ -38,8 +38,7 @@ public class CopyChunks {
                 HashMap<Integer, ISpaceProxy> proxyMap = createProxyMap(info.getSpaceName(), info.getInstanceIds(), info.getToken());
                 CopyBarrier barrier = new CopyBarrier(threadCount);
                 for (int i = 0; i < threadCount; i++) {
-                    executorService.submit(new CopyChunksConsumer(proxyMap,
-                            batchQueue, responseInfo, barrier));
+                    executorService.submit(new CopyChunksConsumer(proxyMap, batchQueue, responseInfo, barrier));
                 }
                 CopyChunksProducer aggregator = new CopyChunksProducer(info.getNewMap(), batchQueue, batchSize, info.getScaleType(), info.getInstanceIds().keySet());
                 EmptyQueryPacket queryPacket = new EmptyQueryPacket();

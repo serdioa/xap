@@ -4060,11 +4060,11 @@ public class SpaceImpl extends AbstractService implements IRemoteSpace, IInterna
         }
     }
 
-    public void copyChunks(CopyChunksRequestInfo requestInfo) { //todo- all methods -> function map, void
+    public void copyChunks(CopyChunksRequestInfo requestInfo) {
         String step = "copy-chunks";
         String key = "partition " + getPartitionIdOneBased();
-        ZKScaleOutUtils.setStepIfPossible(attributeStore, _puName, step, key, ScaleStatus.IN_PROGRESS.toString());
         try {
+            ZKScaleOutUtils.setStepIfPossible(attributeStore, _puName, step, key, ScaleStatus.IN_PROGRESS.toString());
             CopyChunks copyChunks = new CopyChunks();
             CopyChunksResponseInfo responseInfo = copyChunks.copy(this, requestInfo);
             ZKScaleOutUtils.setStepIfPossible(attributeStore, _puName, step, key, ScaleStatus.SUCCESS.toString());
@@ -4074,6 +4074,7 @@ public class SpaceImpl extends AbstractService implements IRemoteSpace, IInterna
                 _logger.info("Instance " + getPartitionIdOneBased() + " copied " + responseInfo.getMovedToPartition() + " chunks successfully");
             }
         } catch (Throwable e) {
+            _logger.warn("Instance " + getPartitionIdOneBased() + " failed to copy chunks");
             ZKScaleOutUtils.setStepIfPossible(attributeStore, _puName, step, key, ScaleStatus.FAIL.toString());
             throw e;
         }

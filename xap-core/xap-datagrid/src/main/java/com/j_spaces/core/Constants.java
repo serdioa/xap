@@ -1009,4 +1009,8 @@ public interface Constants {
         }
     }
 
+    public interface Scale{
+        String SCALE_HORIZONTAL_STEP_CHECKS_INTERVAL = "com.gs.manager.scale_horizontal.interval-step-checks";
+        String SCALE_HORIZONTAL_STEP_CHECKS_INTERVAL_DEFAULT = "2000";
+    }
 }
