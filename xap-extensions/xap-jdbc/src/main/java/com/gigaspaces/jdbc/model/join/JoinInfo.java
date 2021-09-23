@@ -57,38 +57,13 @@ public class JoinInfo {
             JoinCondition joinCondition = joinConditions.get(i);
             if (joinCondition.isOperator()) {
                 OperatorJoinCondition operatorJoinCondition = (OperatorJoinCondition) joinCondition;
-                boolean evaluate;
-                switch (operatorJoinCondition.getSqlKind()) {
-                    case NOT:
-                    case IS_NULL:
-                    case IS_NOT_NULL:
-                        evaluate = operatorJoinCondition.evaluate(stack.pop().getValue());
-                        stack.push(new BooleanValueJoinCondition(evaluate));
-                        break;
-                    case EQUALS:
-                    case NOT_EQUALS:
-                    case LESS_THAN:
-                    case LESS_THAN_OR_EQUAL:
-                    case GREATER_THAN:
-                    case GREATER_THAN_OR_EQUAL:
-                    case LIKE:
-                        evaluate = operatorJoinCondition.evaluate(stack.pop().getValue(), stack.pop().getValue());
-                        stack.push(new BooleanValueJoinCondition(evaluate));
-                        break;
-                    case AND:
-                    case OR:
-                        int numberOfOperands = operatorJoinCondition.getNumberOfOperands();
-                        Object[] values = new Object[numberOfOperands];
-                        for (int j = 0; j < numberOfOperands; j++) {
-                            values[j] = stack.pop().getValue();
-                        }
-                        evaluate = operatorJoinCondition.evaluate(values);
-                        stack.push(new BooleanValueJoinCondition(evaluate));
-                        break;
-                    default:
-                        throw new UnsupportedOperationException("Join with operator " + joinCondition + " is not supported");
-
+                int number = operatorJoinCondition.getNumberOfOperands();
+                Object[] values = new Object[number];
+                for (int j = 0; j < number; j++) {
+                    values[j] = stack.pop().getValue();
                 }
+                boolean evaluate = operatorJoinCondition.evaluate(values);
+                stack.push(new BooleanValueJoinCondition(evaluate));
             } else {
                 stack.push(joinCondition);
             }
