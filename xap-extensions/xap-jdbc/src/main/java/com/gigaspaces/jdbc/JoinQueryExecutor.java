@@ -57,10 +57,13 @@ public class JoinQueryExecutor {
                     return explain(joinTablesIterator, projectedColumns, processLayer.getOrderColumns(), processLayer.getGroupByColumns(), processLayer.getAggregationColumns(), isDistinct);
                 }
                 res = new JoinQueryResult(allColumns);
-                while (joinTablesIterator.hasNext()) {
-                    if (tables.stream().allMatch(TableContainer::checkJoinCondition))
-                        //TODO limit
-                        res.addRow(TableRowFactory.createTableRowFromSpecificColumns(allColumns, Collections.emptyList(), Collections.emptyList()));
+                outer: while (joinTablesIterator.hasNext()) {
+                    for (TableContainer table : tables) {
+                        if(!table.checkJoinCondition()){
+                            continue outer;
+                        }
+                    }
+                    res.addRow(TableRowFactory.createTableRowFromSpecificColumns(allColumns, Collections.emptyList(), Collections.emptyList()));
                 }
             }
             res = processLayer.process(res);
