@@ -3,7 +3,6 @@ package com.gigaspaces.jdbc.model.result;
 import com.gigaspaces.internal.metadata.ITypeDesc;
 import com.gigaspaces.internal.transport.IEntryPacket;
 import com.gigaspaces.jdbc.ProcessLayer;
-import com.gigaspaces.jdbc.QueryExecutor;
 import com.gigaspaces.jdbc.model.table.*;
 import com.j_spaces.jdbc.builder.QueryEntryPacket;
 
@@ -77,6 +76,7 @@ public class TableRow implements Comparable<TableRow> {
 
             for (int i = 0; i < columnsSize; i++) {
                 this.columns[i] = selectedColumns.get(i);
+                this.columns[i].setRefOrdinal(i);
                 this.values[i] = fieldNameValueMap.get(selectedColumns.get(i).getName());
             }
         } else {
@@ -85,6 +85,7 @@ public class TableRow implements Comparable<TableRow> {
             this.columns = allQueryColumns.toArray(new IQueryColumn[0]);
             this.values = new Object[this.columns.length];
             for (int i = 0; i < this.columns.length; i++) {
+                this.columns[i].setRefOrdinal(i);
                 values[i] = allQueryColumns.get(i).getValue(entryPacket);
             }
         }
@@ -110,6 +111,7 @@ public class TableRow implements Comparable<TableRow> {
         values = new Object[this.columns.length];
         for (int i = 0; i < this.columns.length; i++) {
             values[i] = this.columns[i].getCurrentValue();
+            this.columns[i].setRefOrdinal(i);
         }
 
         this.orderColumns = orderColumns.toArray(new OrderColumn[0]);
@@ -139,9 +141,11 @@ public class TableRow implements Comparable<TableRow> {
                                         aggregationColumn.getQueryColumn().getColumnOrdinal() );
 
                 this.columns[i] = column;
+                this.columns[i].setRefOrdinal(i);
                 this.values[i] = row.getPropertyValue(column.getAlias());
             }
             else{
+                this.columns[i].setRefOrdinal(i);
                 this.values[i] = row.getPropertyValue(this.columns[i]);
             }
         }
@@ -162,6 +166,30 @@ public class TableRow implements Comparable<TableRow> {
     public TableRow(TableRow row, ProcessLayer processLayer) {
         this.columns = processLayer.getProjectedColumns().toArray(new IQueryColumn[0]);
         this.values = new Object[this.columns.length];
+        initColumns(row, processLayer);
+
+        this.orderColumns = processLayer.getOrderColumns().toArray(new OrderColumn[0]);
+        this.orderValues = new Object[this.orderColumns.length];
+        initOrderValues(row);
+
+        this.groupByColumns = processLayer.getGroupByColumns().toArray(new IQueryColumn[0]);
+        this.groupByValues = new Object[this.groupByColumns.length];
+        initGroupByValues(row);
+    }
+
+    private void initGroupByValues(TableRow row) {
+        for (int i = 0; i < this.groupByColumns.length; i++) {
+            this.groupByValues[i] = row.getPropertyValue(this.groupByColumns[i].getAlias());
+        }
+    }
+
+    private void initOrderValues(TableRow row) {
+        for (int i = 0; i < this.orderColumns.length; i++) {
+            this.orderValues[i] = row.getPropertyValue(this.orderColumns[i].getAlias());
+        }
+    }
+
+    private void initColumns(TableRow row, ProcessLayer processLayer) {
         for (int i = 0; i < this.columns.length; i++) {
             Object value = null;
             if (this.columns[i].isCaseColumn()) {
@@ -180,19 +208,8 @@ public class TableRow implements Comparable<TableRow> {
             } else { //this.columns[i] instanceof ConcreteColumn
                 value = row.getPropertyValue(this.columns[i].getAlias());
             }
+            this.columns[i].setRefOrdinal(i);
             this.values[i] = value;
-        }
-
-        this.orderColumns = processLayer.getOrderColumns().toArray(new OrderColumn[0]);
-        this.orderValues = new Object[this.orderColumns.length];
-        for (int i = 0; i < this.orderColumns.length; i++) {
-            this.orderValues[i] = row.getPropertyValue(this.orderColumns[i].getAlias());
-        }
-
-        this.groupByColumns = processLayer.getGroupByColumns().toArray(new IQueryColumn[0]);
-        this.groupByValues = new Object[this.groupByColumns.length];
-        for (int i = 0; i < this.groupByColumns.length; i++) {
-            this.groupByValues[i] = row.getPropertyValue(this.groupByColumns[i].getAlias());
         }
     }
 
@@ -221,7 +238,8 @@ public class TableRow implements Comparable<TableRow> {
             } else {
                 value =  row.getPropertyValue(qc);
             }
-            values[i] = value;
+            this.columns[i].setRefOrdinal(i);
+            this.values[i] = value;
         }
     }
 
@@ -231,13 +249,17 @@ public class TableRow implements Comparable<TableRow> {
     }
 
     public Object getPropertyValue(IQueryColumn column) {
+        int refOrdinal = column.getRefOrdinal();
+        if (refOrdinal != -1) {
+            return values[refOrdinal];
+        }
         for (int i = 0; i < columns.length; i++) {
-            if (columns[i].equals(column)) {
+            if (columns[i] == column) {
                 return values[i];
             }
         }
         for (int i = 0; i < groupByColumns.length; i++) {
-            if (groupByColumns[i].equals(column)) {
+            if (groupByColumns[i] == column) {
                 return groupByValues[i];
             }
         }
@@ -246,7 +268,7 @@ public class TableRow implements Comparable<TableRow> {
 
     public Object getPropertyValue(OrderColumn column) {
         for (int i = 0; i < orderColumns.length; i++) {
-            if (orderColumns[i].equals(column)) {
+            if (orderColumns[i] == column) {
                 return orderValues[i];
             }
         }

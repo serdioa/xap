@@ -7,6 +7,9 @@ public interface IQueryColumn extends Comparable<IQueryColumn> {
 
     String UUID_COLUMN = "UID";
 
+    default int getRefOrdinal() { return -1;}
+    default void setRefOrdinal(int refOrdinal) {};
+
     int getColumnOrdinal();
 
     String getName();

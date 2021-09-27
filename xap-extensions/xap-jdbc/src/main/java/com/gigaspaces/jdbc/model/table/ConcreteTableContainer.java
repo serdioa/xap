@@ -98,6 +98,8 @@ public class ConcreteTableContainer extends TableContainer {
 
             boolean limitInServer = !(hasOrderColumns() || (queryTemplatePacket.getAggregationSet() != null && queryTemplatePacket.getAggregationSet().containsOrderByAggregator()));
             IQueryResultSet<IEntryPacket> res = queryTemplatePacket.readMultiple(space.getDirectProxy(), null, limitInServer ? limit : Integer.MAX_VALUE, modifiers);
+
+            System.out.println("--> res.size " + res.size() + " on " + queryTemplatePacket.getTypeDescriptor().getTypeSimpleName() + " with " + queryTemplatePacket.getRanges());
             if (explainPlanImpl != null) {
                 queryResult = new ExplainPlanQueryResult(visibleColumns, explainPlanImpl.getExplainPlanInfo(), this);
             } else {

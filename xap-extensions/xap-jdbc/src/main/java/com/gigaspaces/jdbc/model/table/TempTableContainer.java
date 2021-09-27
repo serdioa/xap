@@ -37,6 +37,10 @@ public class TempTableContainer extends TableContainer {
 
         allColumnNamesSorted.addAll(tableColumns.stream().map(IQueryColumn::getAlias).collect(Collectors.toList()));
 
+        int ordinal = 0;
+        for (IQueryColumn tableColumn : tableColumns) {
+            tableColumn.setRefOrdinal(ordinal++);
+        }
         return this;
     }
 

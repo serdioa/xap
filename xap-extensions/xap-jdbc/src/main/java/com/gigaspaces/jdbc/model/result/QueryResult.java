@@ -114,10 +114,14 @@ public abstract class QueryResult {
 
     public Cursor<TableRow> getCursor() {
         if (cursor == null) {
-            cursor = getCursorType().equals(Cursor.Type.SCAN) ? new RowScanCursor(getRows()) :
-                    new HashedRowCursor(getTableContainer().getJoinInfo(), getRows());
+            cursor = newCursor();
         }
         return cursor;
+    }
+
+    private Cursor<TableRow> newCursor() {
+        return getCursorType().equals(Cursor.Type.SCAN) ? new RowScanCursor(getRows()) :
+                new HashedRowCursor(getTableContainer().getJoinInfo(), getRows());
     }
 
     public Cursor.Type getCursorType() {

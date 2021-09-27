@@ -21,6 +21,7 @@ public class FunctionColumn implements IQueryColumn {
     protected int columnOrdinal;
     private final LocalSession session;
     protected final String type;
+    private final String path;
 
     public FunctionColumn(LocalSession session, List<IQueryColumn> params, String functionName, String columnName, String columnAlias, boolean isVisible, int columnOrdinal, String type) {
         this.params = params;
@@ -31,6 +32,7 @@ public class FunctionColumn implements IQueryColumn {
         this.columnOrdinal = columnOrdinal;
         this.type = type; //is a SqlTypeName
         this.session = session;
+        this.path = initPath();
     }
 
     private static final Map<String, SqlFunction> calciteDependentFunctions = new HashMap<>();
@@ -151,7 +153,11 @@ public class FunctionColumn implements IQueryColumn {
         return new FunctionCallColumn(functionName, getPath(), getAlias(), params.stream().map(IQueryColumn::getName).collect(Collectors.toList()), type, session);
     }
 
-    public String getPath(){
+    public String getPath() {
+        return path;
+    }
+
+    public String initPath(){
         for (IQueryColumn param : params) {
             if(param.isLiteral()){
                 continue;

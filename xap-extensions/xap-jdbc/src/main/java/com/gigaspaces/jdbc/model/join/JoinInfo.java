@@ -8,6 +8,7 @@ import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.sql.SqlKind;
 
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 
 public class JoinInfo {
@@ -17,6 +18,7 @@ public class JoinInfo {
     private final boolean isEqui;
     private Range range;
     private boolean hasMatch;
+    private OperatorNodeJoinCondition rootOperator;
 
     public JoinInfo(JoinType joinType, boolean isEqui) {
         this.joinType = joinType;
@@ -52,23 +54,30 @@ public class JoinInfo {
     }
 
     private boolean calculateConditions() {
-        Stack<JoinCondition> stack = new Stack<>();
+        if(rootOperator == null){
+            rootOperator = initRootOperator();
+        }
+        return rootOperator.evaluate();
+    }
+
+    private OperatorNodeJoinCondition initRootOperator(){
+        Stack<JoinCondition> conditionStack = new Stack<>();
+        LinkedList<JoinCondition> temp = new LinkedList<>();
         for (int i = joinConditions.size() - 1; i >= 0; i--) {
             JoinCondition joinCondition = joinConditions.get(i);
-            if (joinCondition.isOperator()) {
+            System.out.println("--> Join condition: " + joinCondition);
+            if(!joinCondition.isOperator()){
+                conditionStack.push(joinCondition);
+            }else{
                 OperatorJoinCondition operatorJoinCondition = (OperatorJoinCondition) joinCondition;
-                int number = operatorJoinCondition.getNumberOfOperands();
-                Object[] values = new Object[number];
-                for (int j = 0; j < number; j++) {
-                    values[j] = stack.pop().getValue();
+                for (int j = 0; j < operatorJoinCondition.getNumberOfOperands(); j++) {
+                    temp.addFirst(conditionStack.pop());
                 }
-                boolean evaluate = operatorJoinCondition.evaluate(values);
-                stack.push(new BooleanValueJoinCondition(evaluate));
-            } else {
-                stack.push(joinCondition);
+                conditionStack.push(new OperatorNodeJoinCondition(operatorJoinCondition.getSqlKind(), temp.toArray(new JoinCondition[0])));
+                temp.clear();
             }
         }
-        return (boolean) stack.pop().getValue();
+        return (OperatorNodeJoinCondition) conditionStack.pop();
     }
 
     public void addJoinCondition(JoinCondition joinCondition) {

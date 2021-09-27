@@ -3,16 +3,10 @@ package com.gigaspaces.jdbc;
 import com.gigaspaces.jdbc.explainplan.JoinExplainPlan;
 import com.gigaspaces.jdbc.model.QueryExecutionConfig;
 import com.gigaspaces.jdbc.model.result.*;
-import com.gigaspaces.jdbc.model.table.AggregationColumn;
-import com.gigaspaces.jdbc.model.table.IQueryColumn;
-import com.gigaspaces.jdbc.model.table.OrderColumn;
-import com.gigaspaces.jdbc.model.table.TableContainer;
+import com.gigaspaces.jdbc.model.table.*;
 
 import java.sql.SQLException;
-import java.util.Collections;
-import java.util.List;
-import java.util.Set;
-import java.util.Stack;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -51,20 +45,48 @@ public class JoinQueryExecutor {
                     visibleColumns.addAll(processLayer.getGroupByColumns());
                 }
                 List<IQueryColumn> allColumns = Stream.concat(visibleColumns.stream(), invisibleColumns.stream()).collect(Collectors.toList());
-                JoinTablesIterator joinTablesIterator = new JoinTablesIterator(tables);
-                if (config.isExplainPlan()) {
-                    List<IQueryColumn> projectedColumns = processLayers.get(processLayers.size()-1).getProjectedColumns();
-                    return explain(joinTablesIterator, projectedColumns, processLayer.getOrderColumns(), processLayer.getGroupByColumns(), processLayer.getAggregationColumns(), isDistinct);
-                }
-                res = new JoinQueryResult(allColumns);
-                outer: while (joinTablesIterator.hasNext()) {
-                    for (TableContainer table : tables) {
-                        if(!table.checkJoinCondition()){
-                            continue outer;
+                List<TableContainer> twoTables = new ArrayList<>();
+                twoTables.add(tables.remove(0));
+//                QueryResult tempRes = res;
+                for (TableContainer t : tables) {
+                    twoTables.add(t);
+                    JoinTablesIterator joinTablesIterator = new JoinTablesIterator(twoTables);
+                    res = new JoinQueryResult(allColumns);
+                    outer: while (joinTablesIterator.hasNext()) {
+                        for (TableContainer table : twoTables) {
+                            if(!table.checkJoinCondition()){
+                                continue outer;
+                            }
                         }
+                        res.addRow(TableRowFactory.createTableRowFromSpecificColumns(allColumns, Collections.emptyList(), Collections.emptyList()));
                     }
-                    res.addRow(TableRowFactory.createTableRowFromSpecificColumns(allColumns, Collections.emptyList(), Collections.emptyList()));
+                    res = processLayer.process(res);
+                    if (res.size() > 0) {
+                        TempTableContainer tc = new TempTableContainer(t.getTableNameOrAlias());
+                        tc.init(res);
+                        tc.setJoined(t.isJoined());
+                        tc.setJoinInfo(t.getJoinInfo());
+                        tc.setJoinedTable(t.getJoinedTable());
+                        twoTables.clear();
+                        twoTables.add(tc);
+                    } else {
+                        twoTables.remove(1);
+                    }
                 }
+                //JoinTablesIterator joinTablesIterator = new JoinTablesIterator(tables);
+//                if (config.isExplainPlan()) {
+//                    List<IQueryColumn> projectedColumns = processLayers.get(processLayers.size()-1).getProjectedColumns();
+//                    return explain(joinTablesIterator, projectedColumns, processLayer.getOrderColumns(), processLayer.getGroupByColumns(), processLayer.getAggregationColumns(), isDistinct);
+//                }
+//                res = new JoinQueryResult(allColumns);
+//                outer: while (joinTablesIterator.hasNext()) {
+//                    for (TableContainer table : tables) {
+//                        if(!table.checkJoinCondition()){
+//                            continue outer;
+//                        }
+//                    }
+//                    res.addRow(TableRowFactory.createTableRowFromSpecificColumns(allColumns, Collections.emptyList(), Collections.emptyList()));
+//                }
             }
             res = processLayer.process(res);
         }

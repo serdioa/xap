@@ -1,6 +1,7 @@
 package com.gigaspaces.jdbc.model.table;
 
 import com.gigaspaces.internal.transport.IEntryPacket;
+import com.gigaspaces.jdbc.model.result.TableRow;
 
 import java.util.Objects;
 
@@ -12,6 +13,7 @@ public class ConcreteColumn implements IQueryColumn {
     private final boolean isUUID;
     private final Class<?> returnType;
     private int columnOrdinal;
+    private int refOrdinal;
 
     public ConcreteColumn(String columnName, Class<?> returnType, String columnAlias, boolean isVisible, TableContainer tableContainer, int columnOrdinal) {
         this.columnName = columnName;
@@ -26,6 +28,16 @@ public class ConcreteColumn implements IQueryColumn {
     @Override
     public int getColumnOrdinal() {
         return columnOrdinal;
+    }
+
+    @Override
+    public int getRefOrdinal() {
+        return refOrdinal;
+    }
+
+    @Override
+    public void setRefOrdinal(int refOrdinal) {
+        this.refOrdinal = refOrdinal;
     }
 
     @Override
@@ -55,9 +67,18 @@ public class ConcreteColumn implements IQueryColumn {
 
     @Override
     public Object getCurrentValue() {
-        if (tableContainer.getQueryResult().getCurrent() == null)
+        TableRow current = getCurrentQueryResult();
+        if (current == null)
             return null;
-        return tableContainer.getQueryResult().getCurrent().getPropertyValue(this);
+        return getCurrentPropertyValue(current);
+    }
+
+    private TableRow getCurrentQueryResult() {
+        return tableContainer.getQueryResult().getCurrent();
+    }
+
+    private Object getCurrentPropertyValue(TableRow current) {
+        return current.getPropertyValue(this);
     }
 
     @Override
