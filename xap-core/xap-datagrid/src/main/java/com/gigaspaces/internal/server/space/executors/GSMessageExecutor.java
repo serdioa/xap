@@ -18,7 +18,7 @@ import java.rmi.RemoteException;
 
 public class GSMessageExecutor extends SpaceActionExecutor {
 
-    private final static Logger log = LoggerFactory.getLogger(GSMessageTask.class);
+    private final static Logger logger = LoggerFactory.getLogger(GSMessageTask.class);
 
     @Override
     public SpaceResponseInfo execute(SpaceImpl space, SpaceRequestInfo spaceRequestInfo) {
@@ -44,9 +44,15 @@ public class GSMessageExecutor extends SpaceActionExecutor {
             entry = requestInfo.getDocument();
             CDCInfo lastMsg = ((CDCInfo) space.getSingleProxy().read(new CDCInfo().setStreamName(cdcInfo.getStreamName()), transaction, 0));
             Long lastMsgID = lastMsg != null ? lastMsg.getMessageID() : 0;
+
             if (cdcInfo.getMessageID() <= lastMsgID) {
-                log.warn(String.format("Operation already occurred, ignoring message id: %s, last message id: %s", cdcInfo.getMessageID(), lastMsgID));
-                return;
+                if (cdcInfo.getMessageID() == 0){
+                    logger.warn("processing message with id 0 (full sync)");
+                }//todo check with dbsh
+                else{
+                    logger.warn(String.format("Operation already occurred, ignoring message id: %s, last message id: %s", cdcInfo.getMessageID(), lastMsgID));
+                    return;
+                }
             }
 
             space.getSingleProxy().write(cdcInfo, transaction, Lease.FOREVER, 0, WriteModifiers.UPDATE_OR_WRITE.getCode());
@@ -59,35 +65,35 @@ public class GSMessageExecutor extends SpaceActionExecutor {
                     break;
                 case DELETE:
                     if (space.getSingleProxy().take(entry, transaction, 0) == null) {
-                        log.error("couldn't delete document: " + entry.getTypeName() + ", message id: " + cdcInfo.getMessageID());
+                        logger.error("couldn't delete document: " + entry.getTypeName() + ", message id: " + cdcInfo.getMessageID());
                         throw new RuntimeException("couldn't delete document: " + entry.getTypeName() + ", message id: " + cdcInfo.getMessageID());
                     }
                     break;
             }
         } catch (Exception e) {
-            log.warn(String.format("Couldn't complete task execution for Object: %s, message id: %s", entry != null ? entry.getTypeName() : null, cdcInfo != null ? cdcInfo.getMessageID() : null));
-            log.warn("rolling back operation", e);
+            logger.warn(String.format("Couldn't complete task execution for Object: %s, message id: %s", entry != null ? entry.getTypeName() : null, cdcInfo != null ? cdcInfo.getMessageID() : null));
+            logger.warn("rolling back operation", e);
             if (transaction == null) {
-                log.error("Couldn't rollback, no transaction available");
+                logger.error("Couldn't rollback, no transaction available");
             } else {
                 try {
                     transaction.abort();
                     aborted = true;
                 } catch (UnknownTransactionException | CannotAbortException | RemoteException ex) {
-                    log.error("Couldn't complete rollback operation", ex);
+                    logger.error("Couldn't complete rollback operation", ex);
                 }
             }
             throw new RuntimeException(e);
         } finally {
             if (transaction == null) {
-                log.error("Couldn't commit operation, no transaction available");
+                logger.error("Couldn't commit operation, no transaction available");
             } else {
                 try {
                     if (!aborted) {
                         transaction.commit();
                     }
                 } catch (UnknownTransactionException | CannotCommitException | RemoteException e) {
-                    log.error("Couldn't commit transaction", e);
+                    logger.error("Couldn't commit transaction", e);
                 }
             }
         }
@@ -103,7 +109,7 @@ public class GSMessageExecutor extends SpaceActionExecutor {
             Long lastMsgID = lastMsg != null ? lastMsg.getMessageID() : 0;
             if (lastMsg != null) {
                 if (cdcInfo.getMessageID() < lastMsgID) {
-                    log.warn(String.format("Operation already occurred, ignoring message id: %s, last message id: %s", cdcInfo.getMessageID(), lastMsgID));
+                    logger.warn(String.format("Operation already occurred, ignoring message id: %s, last message id: %s", cdcInfo.getMessageID(), lastMsgID));
                     return;
                 }
             }
@@ -114,10 +120,10 @@ public class GSMessageExecutor extends SpaceActionExecutor {
                         space.getSingleProxy().write(entry, null, Lease.FOREVER, 0, WriteModifiers.WRITE_ONLY.getCode());
                     } catch (EntryAlreadyInSpaceException e) {
                         if (!cdcInfo.getMessageID().equals(lastMsgID)) {
-                            log.error("Couldn't write entry of type: " + entry.getTypeName() + ", for message id: " + cdcInfo.getMessageID());
+                            logger.error("Couldn't write entry of type: " + entry.getTypeName() + ", for message id: " + cdcInfo.getMessageID());
                             throw e; //might be the first time writing this to space
                         }
-                        log.info("Couldn't write entry of type: " + entry.getTypeName() + ", for message id: " + cdcInfo.getMessageID());
+                        logger.info("Couldn't write entry of type: " + entry.getTypeName() + ", for message id: " + cdcInfo.getMessageID());
                     }
                     break;
                 case UPDATE:
@@ -126,15 +132,15 @@ public class GSMessageExecutor extends SpaceActionExecutor {
                 case DELETE:
                     if (space.getSingleProxy().take(entry, null, 0) == null) {
                         if (!cdcInfo.getMessageID().equals(lastMsgID)) {
-                            log.error("couldn't delete document: " + entry.getTypeName() + ", message id: " + cdcInfo.getMessageID());
+                            logger.error("couldn't delete document: " + entry.getTypeName() + ", message id: " + cdcInfo.getMessageID());
                             throw new RuntimeException("couldn't delete document: " + entry.getTypeName() + ", message id: " + cdcInfo.getMessageID());
                         }
-                        log.info("couldn't delete document: " + entry.getTypeName() + ", message id: " + cdcInfo.getMessageID());
+                        logger.info("couldn't delete document: " + entry.getTypeName() + ", message id: " + cdcInfo.getMessageID());
                     }
                     break;
             }
         } catch (Exception e) {
-            log.error(String.format("Couldn't complete task execution for Object: %s", entry != null ? entry.getTypeName() : null));
+            logger.error(String.format("Couldn't complete task execution for Object: %s", entry != null ? entry.getTypeName() : null));
             throw new RuntimeException(e);
         }
     }
