@@ -2,12 +2,9 @@ package com.gigaspaces.internal.server.space.executors;
 
 import com.gigaspaces.internal.client.spaceproxy.executors.SystemTask;
 import com.gigaspaces.internal.io.IOUtils;
-import com.gigaspaces.internal.server.space.SpaceImpl;
 import com.gigaspaces.internal.space.requests.GSMessageRequestInfo;
 import com.gigaspaces.internal.space.requests.SpaceRequestInfo;
 import com.gigaspaces.internal.space.responses.SpaceResponseInfo;
-import com.j_spaces.core.IJSpace;
-import net.jini.core.transaction.Transaction;
 
 import java.io.IOException;
 import java.io.ObjectInput;
@@ -36,13 +33,6 @@ public class GSMessageTask extends SystemTask<SpaceResponseInfo> {
     @Override
     public SpaceRequestInfo getSpaceRequestInfo() {
         return requestInfo;
-    }
-
-    @Override
-    public SpaceResponseInfo execute(IJSpace spaceProxy, Transaction tx) throws Exception {
-        this.requestInfo.setTx(tx);
-        SpaceImpl space = spaceProxy.getDirectProxy().getSpaceImplIfEmbedded();
-        return space.executeAction(this);
     }
 
     @Override

@@ -5,7 +5,6 @@ import com.gigaspaces.document.SpaceDocument;
 import com.gigaspaces.internal.io.IOUtils;
 import com.gigaspaces.internal.server.space.executors.GSMessageTask;
 import com.j_spaces.core.SpaceContext;
-import net.jini.core.transaction.Transaction;
 
 import java.io.IOException;
 import java.io.ObjectInput;
@@ -17,7 +16,6 @@ public class GSMessageRequestInfo implements SpaceRequestInfo {
     private CDCInfo cdcInfo;
     private SpaceDocument document;
     private GSMessageTask.Mode mode;
-    private Transaction tx;
 
 
     public GSMessageRequestInfo() {
@@ -29,14 +27,6 @@ public class GSMessageRequestInfo implements SpaceRequestInfo {
         this.mode = mode;
     }
 
-
-    public void setTx(Transaction tx) {
-        this.tx = tx;
-    }
-
-    public Transaction getTx() {
-        return tx;
-    }
 
     public CDCInfo getCdcInfo() {
         return cdcInfo;
@@ -65,7 +55,6 @@ public class GSMessageRequestInfo implements SpaceRequestInfo {
         IOUtils.writeObject(out, cdcInfo);
         IOUtils.writeObject(out, document);
         IOUtils.writeObject(out, mode);
-        IOUtils.writeObject(out, tx);
     }
 
     @Override
@@ -73,7 +62,6 @@ public class GSMessageRequestInfo implements SpaceRequestInfo {
         this.cdcInfo = IOUtils.readObject(in);
         this.document = IOUtils.readObject(in);
         this.mode = IOUtils.readObject(in);
-        this.tx = IOUtils.readObject(in);
     }
 
     @Override

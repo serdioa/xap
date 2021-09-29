@@ -27,4 +27,8 @@ public class LazySingleton<T> {
             return ref;
         }
     }
+
+    public T getRef() {
+        return ref;
+    }
 }
