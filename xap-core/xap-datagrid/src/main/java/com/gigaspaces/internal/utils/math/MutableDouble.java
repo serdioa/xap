@@ -68,6 +68,13 @@ public class MutableDouble extends MutableNumber {
     }
 
     @Override
+    public void remainder(Number x) {
+        if (x == null)
+            return;
+        value %= x.doubleValue();
+    }
+
+    @Override
     public Number calcDivisionPreserveType(long count) {
         return calcDivision(count);
     }

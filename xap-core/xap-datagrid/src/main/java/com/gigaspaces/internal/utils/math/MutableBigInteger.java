@@ -81,6 +81,13 @@ public class MutableBigInteger extends MutableNumber {
     }
 
     @Override
+    public void remainder(Number x) {
+        if (x == null)
+            return;
+        value = value.remainder(convert(x));
+    }
+
+    @Override
     public Number calcDivisionPreserveType(long count) {
         return calcDivision(count);
     }

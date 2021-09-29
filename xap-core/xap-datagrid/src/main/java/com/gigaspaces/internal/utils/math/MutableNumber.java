@@ -41,6 +41,8 @@ public abstract class MutableNumber implements SmartExternalizable {
 
     public abstract Number calcDivision(long count);
 
+    public abstract void remainder(Number x);
+
     /**
      *  Returns the same type as the value
      */

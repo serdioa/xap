@@ -68,6 +68,13 @@ public class MutableByte extends MutableNumber {
     }
 
     @Override
+    public void remainder(Number x) {
+        if (x == null)
+            return;
+        value %= x.byteValue();
+    }
+
+    @Override
     public Number calcDivisionPreserveType(long count) {
         return ((byte) (value / count));
     }

@@ -84,6 +84,11 @@ public class MutableBigDecimal extends MutableNumber {
     }
 
     @Override
+    public void remainder(Number x) {
+        value = value.remainder(convert(x));
+    }
+
+    @Override
     public Number calcDivisionPreserveType(long count) {
         return calcDivision(count);
     }
