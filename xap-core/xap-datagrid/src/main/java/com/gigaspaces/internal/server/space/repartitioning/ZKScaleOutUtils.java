@@ -13,7 +13,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public class ZKScaleOutUtils {
-    private static Logger logger = LoggerFactory.getLogger("com.gigaspaces.internal.server.space.repartitioning.ZookeeperScaleUtils");
+    private static Logger logger = LoggerFactory.getLogger("com.gigaspaces.internal.server.space.repartitioning.ZookeeperScaleOutUtils");
 
     public static void setScaleOutDetails(AttributeStore attributeStore, String puName, String key, String value) throws IOException {
         attributeStore.set(ZKScaleOutUtils.getScaleOutPath(puName) + "/" + key, value);
@@ -52,11 +52,25 @@ public class ZKScaleOutUtils {
     public static boolean isScaleInProgress(AttributeStore attributeStore, String puName){//todo- change name
        try {
            String status = getScaleOutDetails(attributeStore, puName, "status");
-           logger.info(status);
-           return ScaleStatus.IN_PROGRESS.getStatus().equals(status);
+           if (status != null){
+               logger.info("Scale status for pu ["  + puName + "] is [" + status + "]");
+               return ScaleStatus.IN_PROGRESS.getStatus().equals(status);
+           }
        } catch (IOException e) {
-           return false;
        }
+        return false;
+    }
+
+    public static boolean isScaleIsSucceeded(AttributeStore attributeStore, String puName){//todo- change name
+        try {
+            String status = getScaleOutDetails(attributeStore, puName, "status");
+            if (status != null){
+                logger.info("Scale status for pu ["  + puName + "] is [" + status + "]");
+                return ScaleStatus.SUCCESS.getStatus().equals(status);
+            }
+        } catch (IOException e) {
+        }
+        return false;
     }
 
     public static String getStep(AttributeStore attributeStore, String puName, String step, String key) throws IOException {
