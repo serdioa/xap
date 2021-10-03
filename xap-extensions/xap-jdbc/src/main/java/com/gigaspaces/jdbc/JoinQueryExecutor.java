@@ -45,11 +45,13 @@ public class JoinQueryExecutor {
                     visibleColumns.addAll(processLayer.getGroupByColumns());
                 }
                 List<IQueryColumn> allColumns = Stream.concat(visibleColumns.stream(), invisibleColumns.stream()).collect(Collectors.toList());
+                JoinTablesIterator.findStartingPoint(tables);
                 List<TableContainer> twoTables = new ArrayList<>();
                 twoTables.add(tables.remove(0));
-//                QueryResult tempRes = res;
                 for (TableContainer t : tables) {
                     twoTables.add(t);
+                    TableContainer nextJoinedTable = t.getJoinedTable();
+                    t.setJoinedTable(null);
                     JoinTablesIterator joinTablesIterator = new JoinTablesIterator(twoTables);
                     res = new JoinQueryResult(allColumns);
                     outer: while (joinTablesIterator.hasNext()) {
@@ -60,33 +62,19 @@ public class JoinQueryExecutor {
                         }
                         res.addRow(TableRowFactory.createTableRowFromSpecificColumns(allColumns, Collections.emptyList(), Collections.emptyList()));
                     }
-                    res = processLayer.process(res);
                     if (res.size() > 0) {
                         TempTableContainer tc = new TempTableContainer(t.getTableNameOrAlias());
+                        res.setTableContainer(tc);
                         tc.init(res);
-                        tc.setJoined(t.isJoined());
-                        tc.setJoinInfo(t.getJoinInfo());
-                        tc.setJoinedTable(t.getJoinedTable());
+                        tc.setJoined(false);
+                        tc.setJoinInfo(null);
+                        tc.setJoinedTable(nextJoinedTable);
                         twoTables.clear();
                         twoTables.add(tc);
                     } else {
-                        twoTables.remove(1);
+                        break; //empty result
                     }
                 }
-                //JoinTablesIterator joinTablesIterator = new JoinTablesIterator(tables);
-//                if (config.isExplainPlan()) {
-//                    List<IQueryColumn> projectedColumns = processLayers.get(processLayers.size()-1).getProjectedColumns();
-//                    return explain(joinTablesIterator, projectedColumns, processLayer.getOrderColumns(), processLayer.getGroupByColumns(), processLayer.getAggregationColumns(), isDistinct);
-//                }
-//                res = new JoinQueryResult(allColumns);
-//                outer: while (joinTablesIterator.hasNext()) {
-//                    for (TableContainer table : tables) {
-//                        if(!table.checkJoinCondition()){
-//                            continue outer;
-//                        }
-//                    }
-//                    res.addRow(TableRowFactory.createTableRowFromSpecificColumns(allColumns, Collections.emptyList(), Collections.emptyList()));
-//                }
             }
             res = processLayer.process(res);
         }

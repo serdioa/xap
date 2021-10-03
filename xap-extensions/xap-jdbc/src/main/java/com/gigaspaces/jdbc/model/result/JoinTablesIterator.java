@@ -12,7 +12,7 @@ public class JoinTablesIterator {
         startingPoint = findStartingPoint(tableContainers);
     }
 
-    private TableContainer findStartingPoint(List<TableContainer> tableContainers){
+    public static TableContainer findStartingPoint(List<TableContainer> tableContainers){
         LinkedList<LinkedList<TableContainer>> sequences = new LinkedList<>();
         for(TableContainer tableContainer : tableContainers){
             if(!tableContainer.isJoined()) {

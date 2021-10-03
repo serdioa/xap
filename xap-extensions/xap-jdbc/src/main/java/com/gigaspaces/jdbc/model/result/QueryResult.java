@@ -25,6 +25,10 @@ public abstract class QueryResult {
         return selectedColumns;
     }
 
+    public void setTableContainer(TableContainer tableContainer){
+
+    }
+
     public TableContainer getTableContainer() {
         return null;
     }

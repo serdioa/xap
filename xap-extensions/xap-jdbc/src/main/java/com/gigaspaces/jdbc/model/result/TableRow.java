@@ -249,17 +249,17 @@ public class TableRow implements Comparable<TableRow> {
     }
 
     public Object getPropertyValue(IQueryColumn column) {
-        int refOrdinal = column.getRefOrdinal();
-        if (refOrdinal != -1) {
-            return values[refOrdinal];
-        }
+//        int refOrdinal = column.getRefOrdinal();
+//        if (refOrdinal != -1) {
+//            return values[refOrdinal];
+//        }
         for (int i = 0; i < columns.length; i++) {
-            if (columns[i] == column) {
+            if (columns[i].equals(column)) {
                 return values[i];
             }
         }
         for (int i = 0; i < groupByColumns.length; i++) {
-            if (groupByColumns[i] == column) {
+            if (groupByColumns[i].equals(column)) {
                 return groupByValues[i];
             }
         }
@@ -268,7 +268,7 @@ public class TableRow implements Comparable<TableRow> {
 
     public Object getPropertyValue(OrderColumn column) {
         for (int i = 0; i < orderColumns.length; i++) {
-            if (orderColumns[i] == column) {
+            if (orderColumns[i].equals(column)) {
                 return orderValues[i];
             }
         }
