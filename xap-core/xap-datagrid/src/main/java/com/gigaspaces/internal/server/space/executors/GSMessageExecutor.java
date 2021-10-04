@@ -2,6 +2,7 @@ package com.gigaspaces.internal.server.space.executors;
 
 import com.gigaspaces.client.WriteModifiers;
 import com.gigaspaces.data_integration.consumer.CDCInfo;
+import com.gigaspaces.data_integration.consumer.MessageExecutionException;
 import com.gigaspaces.document.SpaceDocument;
 import com.gigaspaces.internal.server.space.SpaceImpl;
 import com.gigaspaces.internal.space.requests.GSMessageRequestInfo;
@@ -66,7 +67,7 @@ public class GSMessageExecutor extends SpaceActionExecutor {
                 case DELETE:
                     if (space.getSingleProxy().take(entry, transaction, 0) == null) {
                         logger.error("couldn't delete document: " + entry.getTypeName() + ", message id: " + cdcInfo.getMessageID());
-                        throw new RuntimeException("couldn't delete document: " + entry.getTypeName() + ", message id: " + cdcInfo.getMessageID());
+                        throw new MessageExecutionException("couldn't delete document: " + entry.getTypeName() + ", message id: " + cdcInfo.getMessageID());
                     }
                     break;
             }
@@ -83,7 +84,7 @@ public class GSMessageExecutor extends SpaceActionExecutor {
                     logger.error("Couldn't complete rollback operation", ex);
                 }
             }
-            throw new RuntimeException(e);
+            throw new MessageExecutionException(e);
         } finally {
             if (transaction == null) {
                 logger.error("Couldn't commit operation, no transaction available");
@@ -133,7 +134,7 @@ public class GSMessageExecutor extends SpaceActionExecutor {
                     if (space.getSingleProxy().take(entry, null, 0) == null) {
                         if (!cdcInfo.getMessageID().equals(lastMsgID)) {
                             logger.error("couldn't delete document: " + entry.getTypeName() + ", message id: " + cdcInfo.getMessageID());
-                            throw new RuntimeException("couldn't delete document: " + entry.getTypeName() + ", message id: " + cdcInfo.getMessageID());
+                            throw new MessageExecutionException("couldn't delete document: " + entry.getTypeName() + ", message id: " + cdcInfo.getMessageID());
                         }
                         logger.info("couldn't delete document: " + entry.getTypeName() + ", message id: " + cdcInfo.getMessageID());
                     }
@@ -141,7 +142,7 @@ public class GSMessageExecutor extends SpaceActionExecutor {
             }
         } catch (Exception e) {
             logger.error(String.format("Couldn't complete task execution for Object: %s", entry != null ? entry.getTypeName() : null));
-            throw new RuntimeException(e);
+            throw new MessageExecutionException(e);
         }
     }
 

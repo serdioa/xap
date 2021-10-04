@@ -75,4 +75,11 @@ public class CDCInfo extends SpaceDocument {
         return getProperty(ID);
     }
 
+    @Override
+    public String toString() {
+        return "streamName = " + getStreamName() + " " +
+                "messageID = " + getMessageID() + " " +
+                "partitionID =" + getPartitionID() + " " +
+                "ID = " + getID();
+    }
 }
