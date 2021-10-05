@@ -44,7 +44,7 @@ public class ZKScaleOutUtils {
     public static void setStepIfPossible(AttributeStore attributeStore, String puName, String step, String key, String value)  {
         try{
             attributeStore.set(ZKScaleOutUtils.getScaleStepsPath(puName, step) + "/" + key, value);
-        } catch ( IOException e){
+        } catch (IOException e){
            logger.warn("Failed to set on Zookeeper: " + key + " " + value , e);
         }
     }
@@ -73,7 +73,7 @@ public class ZKScaleOutUtils {
         return false;
     }
 
-    public static String getStep(AttributeStore attributeStore, String puName, String step, String key) throws IOException {
+    public static String getStepDetails(AttributeStore attributeStore, String puName, String step, String key) throws IOException {
         return attributeStore.get(ZKScaleOutUtils.getScaleStepsPath(puName, step) + "/" + key);
     }
 
