@@ -143,10 +143,6 @@ public class ExplainPlanInfo extends JdbcExplainPlan {
 
     @Override
     public void format(TextReportFormatter formatter) {
-        formatter.line("table= " + getTableAlias());
-        formatter.line("access= " + (isIndexUsed() ? "INDEX SCAN" : "FULL SCAN"));
-        formatter.line("distinct= " + distinct);
-        formatter.line("columns= " + Arrays.toString(columns));
         formatter.indent();
 
 

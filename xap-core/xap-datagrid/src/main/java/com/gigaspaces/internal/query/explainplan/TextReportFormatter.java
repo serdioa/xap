@@ -18,6 +18,7 @@ package com.gigaspaces.internal.query.explainplan;
 import com.gigaspaces.internal.utils.StringUtils;
 
 import java.util.Collections;
+import java.util.stream.Stream;
 
 /**
  * @author Niv Ingberg
@@ -96,4 +97,11 @@ public class TextReportFormatter {
 
     }
 
+    /**
+     * Traverse over stream and add each element as a line
+     * @param lines to consume into this formatter
+     */
+    public void consume(Stream<String> lines) {
+        lines.forEach(this::line);
+    }
 }
