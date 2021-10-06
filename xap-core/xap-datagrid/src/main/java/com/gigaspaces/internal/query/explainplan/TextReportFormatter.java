@@ -17,6 +17,7 @@ package com.gigaspaces.internal.query.explainplan;
 
 import com.gigaspaces.internal.utils.StringUtils;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.stream.Stream;
 
@@ -45,6 +46,10 @@ public class TextReportFormatter {
 
     public String[] toArray() {
         return sb.toString().split("\n");
+    }
+
+    public Stream<String> toStream() {
+        return Arrays.stream(toArray());
     }
 
     public TextReportFormatter line(String s) {
