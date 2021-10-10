@@ -53,7 +53,6 @@ public class ZKScaleOutUtils {
        try {
            String status = getScaleOutDetails(attributeStore, puName, "status");
            if (status != null){
-              // logger.info("Scale status for pu ["  + puName + "] is [" + status + "]");
                return ScaleStatus.IN_PROGRESS.getStatus().equals(status);
            }
        } catch (IOException e) {
@@ -65,7 +64,7 @@ public class ZKScaleOutUtils {
         try {
             String status = getScaleOutDetails(attributeStore, puName, "status");
             if (status != null){
-                logger.info("Scale status for pu ["  + puName + "] is [" + status + "]");
+               // logger.info("Scale status for pu ["  + puName + "] is [" + status + "]");
                 return ScaleStatus.SUCCESS.getStatus().equals(status);
             }
         } catch (IOException e) {
