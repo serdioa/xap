@@ -61,7 +61,7 @@ public class ZKScaleOutUtils {
         return false;
     }
 
-    public static boolean isScaleIsSucceeded(AttributeStore attributeStore, String puName){//todo- change name
+    public static boolean isScaleIsSucceeded(AttributeStore attributeStore, String puName){//todo- change name or doesn't exist anymore
         try {
             String status = getScaleOutDetails(attributeStore, puName, "status");
             if (status != null){
