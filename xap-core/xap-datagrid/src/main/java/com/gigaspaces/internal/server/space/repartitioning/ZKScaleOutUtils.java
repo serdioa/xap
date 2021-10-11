@@ -15,6 +15,14 @@ import java.util.stream.Collectors;
 public class ZKScaleOutUtils {
     private static Logger logger = LoggerFactory.getLogger("com.gigaspaces.internal.server.space.repartitioning.ZookeeperScaleOutUtils");
 
+    public static String getScaleOutPath(String puName){
+        return ZNodePathFactory.processingUnit(puName, "scale-out");
+    }
+
+    public static String getScaleStepsPath(String puName, String step){
+        return getScaleOutPath(puName) + "/steps/" + step;
+    }
+
     public static void setScaleOutDetails(AttributeStore attributeStore, String puName, String key, String value) throws IOException {
         attributeStore.set(ZKScaleOutUtils.getScaleOutPath(puName) + "/" + key, value);
     }
@@ -35,7 +43,7 @@ public class ZKScaleOutUtils {
         return attributeStore.get(ZKScaleOutUtils.getScaleOutPath(puName) + "/last-step");
     }
 
-    public static List<Integer> getSourcePartitions(AttributeStore attributeStore, String puName) throws IOException {
+    public static List<Integer> getParticipantPartitions(AttributeStore attributeStore, String puName) throws IOException {
         String sourcePartitions = getScaleOutDetails(attributeStore, puName, "participating instances");
         String[] sources = sourcePartitions.split(", ");
         return Arrays.stream(sources).map(Integer::parseInt).collect(Collectors.toList());
@@ -49,7 +57,7 @@ public class ZKScaleOutUtils {
         }
     }
 
-    public static boolean isScaleInProgress(AttributeStore attributeStore, String puName){//todo- change name
+    public static boolean isScaleStatusInProgress(AttributeStore attributeStore, String puName){
        try {
            String status = getScaleOutDetails(attributeStore, puName, "status");
            if (status != null){
@@ -60,11 +68,10 @@ public class ZKScaleOutUtils {
         return false;
     }
 
-    public static boolean isScaleIsSucceeded(AttributeStore attributeStore, String puName){//todo- change name or doesn't exist anymore
+    public static boolean didScaleSucceed(AttributeStore attributeStore, String puName){
         try {
             String status = getScaleOutDetails(attributeStore, puName, "status");
             if (status != null){
-               // logger.info("Scale status for pu ["  + puName + "] is [" + status + "]");
                 return ScaleStatus.SUCCESS.getStatus().equals(status);
             }
         } catch (IOException e) {
@@ -74,13 +81,5 @@ public class ZKScaleOutUtils {
 
     public static String getStepDetails(AttributeStore attributeStore, String puName, String step, String key) throws IOException {
         return attributeStore.get(ZKScaleOutUtils.getScaleStepsPath(puName, step) + "/" + key);
-    }
-
-    public static String getScaleOutPath(String puName){
-        return ZNodePathFactory.processingUnit(puName, "scale-out");
-    }
-
-    public static String getScaleStepsPath(String puName, String step){
-        return getScaleOutPath(puName) + "/steps/" + step;
     }
 }

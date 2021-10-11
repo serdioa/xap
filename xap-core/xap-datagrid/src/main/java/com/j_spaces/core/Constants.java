@@ -1010,7 +1010,7 @@ public interface Constants {
     }
 
     public interface Scale{
-        String SCALE_HORIZONTAL_STEP_CHECKS_INTERVAL = "com.gs.manager.scale_horizontal.interval-step-checks";
-        String SCALE_HORIZONTAL_STEP_CHECKS_INTERVAL_DEFAULT = "2000";
+        String SCALE_OUT_STEPS_INTERVAL = "com.gs.manager.scale_out.step-interval";
+        String SCALE_OUT_STEPS_INTERVAL_DEFAULT = "2000";
     }
 }
