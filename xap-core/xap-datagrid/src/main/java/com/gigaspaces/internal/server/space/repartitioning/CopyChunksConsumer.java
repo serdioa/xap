@@ -41,7 +41,7 @@ public class CopyChunksConsumer implements Runnable {
                     if (batch != null) {
                         writeBatch = ((WriteBatch) batch);
                         ISpaceProxy spaceProxy = proxyMap.get(writeBatch.getPartitionId());
-                        spaceProxy.writeMultiple(writeBatch.getEntries().toArray(), null, Lease.FOREVER, Modifiers.BACKUP_ONLY);
+                        spaceProxy.writeMultiple(writeBatch.getEntries().toArray(), null, Lease.FOREVER, Modifiers.BACKUP_ONLY);//todo- not to mirror, write only and catch update
                         responseInfo.getMovedToPartition().get((short) writeBatch.getPartitionId()).addAndGet(writeBatch.getEntries().size());
                     }
                 } catch (InterruptedException e) {

@@ -1,7 +1,5 @@
 package com.gigaspaces.internal.server.space.repartitioning;
 
-import com.gigaspaces.admin.quiesce.QuiesceToken;
-import com.gigaspaces.internal.io.IOUtils;
 import com.gigaspaces.internal.space.requests.SpaceRequestInfo;
 import com.j_spaces.core.SpaceContext;
 

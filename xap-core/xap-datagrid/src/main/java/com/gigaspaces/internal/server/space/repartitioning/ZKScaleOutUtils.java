@@ -49,7 +49,7 @@ public class ZKScaleOutUtils {
         return Arrays.stream(sources).map(Integer::parseInt).collect(Collectors.toList());
     }
 
-    public static void setStepIfPossible(AttributeStore attributeStore, String puName, String step, String key, String value)  {
+    public static void setStepIfPossible(AttributeStore attributeStore, String puName, String step, String key, String value)  { //todo-boolean?
         try{
             attributeStore.set(ZKScaleOutUtils.getScaleStepsPath(puName, step) + "/" + key, value);
         } catch (IOException e){

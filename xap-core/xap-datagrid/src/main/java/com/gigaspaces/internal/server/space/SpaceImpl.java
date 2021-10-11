@@ -4067,23 +4067,21 @@ public class SpaceImpl extends AbstractService implements IRemoteSpace, IInterna
             ZKScaleOutUtils.setStepIfPossible(attributeStore, _puName, step, key, ScaleStatus.IN_PROGRESS.toString());
             CopyChunks copyChunks = new CopyChunks();
             CopyChunksResponseInfo responseInfo = copyChunks.copy(this, requestInfo);
-            ZKScaleOutUtils.setStepIfPossible(attributeStore, _puName, step, key, ScaleStatus.SUCCESS.toString());
             if (responseInfo.getException() != null){
                 ZKScaleOutUtils.setStepIfPossible(attributeStore, _puName, step, key, ScaleStatus.FAIL.toString());
             } else {
+                ZKScaleOutUtils.setStepIfPossible(attributeStore, _puName, step, key, ScaleStatus.SUCCESS.toString());
                 _logger.info("Instance " + getPartitionIdOneBased() + " copied " + responseInfo.getMovedToPartition() + " chunks successfully");
             }
         } catch (Throwable e) {
             _logger.warn("Instance " + getPartitionIdOneBased() + " failed to copy chunks");
             ZKScaleOutUtils.setStepIfPossible(attributeStore, _puName, step, key, ScaleStatus.FAIL.toString());
-            throw e;
         }
     }
 
     public void drainOnScale(DrainRequestInfo requestInfo)  {
         String step = "drain";
         String key = "partition " + getPartitionIdOneBased();
-        DrainResponseInfo responseInfo = new DrainResponseInfo();
         try {
             ZKScaleOutUtils.setStepIfPossible(attributeStore, _puName, step, key, ScaleStatus.IN_PROGRESS.toString());
             WaitForDrainUtils.waitForDrain(this, requestInfo.getTimeout(), requestInfo.getMinTimeToWait(), requestInfo.isComprehensive(), null);
@@ -4091,7 +4089,8 @@ public class SpaceImpl extends AbstractService implements IRemoteSpace, IInterna
             _logger.info("Instance " + getPartitionIdOneBased() + " drained successfully");
         } catch (TimeoutException e) {
             ZKScaleOutUtils.setStepIfPossible(attributeStore, _puName, step, key, ScaleStatus.FAIL.toString());
-            responseInfo.setException(e);
+        }catch (Throwable e) {
+            ZKScaleOutUtils.setStepIfPossible(attributeStore, _puName, step, key, ScaleStatus.FAIL.toString());
         }
     }
 
@@ -4107,7 +4106,6 @@ public class SpaceImpl extends AbstractService implements IRemoteSpace, IInterna
             _logger.info("Instance " + getPartitionIdOneBased() + " deleted chunks successfully");
         } catch (Throwable e) {
             ZKScaleOutUtils.setStepIfPossible(attributeStore, _puName, step, key, ScaleStatus.FAIL.toString());
-            throw e;
         }
     }
 

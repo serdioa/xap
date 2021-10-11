@@ -70,7 +70,7 @@ public class CopyChunks {
     private HashMap<Integer, ISpaceProxy> createProxyMap(String spaceName, Map<Integer, String> instanceIds, QuiesceToken token) throws MalformedURLException, FinderException {
         HashMap<Integer, ISpaceProxy> proxyMap = new HashMap<>(instanceIds.size());
         SpaceProxyFactory proxyFactory = new SpaceProxyFactory();
-        for (Map.Entry<Integer, String> entry : instanceIds.entrySet()) {
+        for (Map.Entry<Integer, String> entry : instanceIds.entrySet()) { //todo- create clustered proxy instead with routing
             proxyFactory.setInstanceId(entry.getValue());
             ISpaceProxy space = proxyFactory.createSpaceProxy(spaceName, true);
             IJSpace nonClusteredProxy = space.getDirectProxy().getNonClusteredProxy();
