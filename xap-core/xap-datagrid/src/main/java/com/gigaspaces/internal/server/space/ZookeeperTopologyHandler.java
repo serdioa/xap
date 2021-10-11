@@ -28,9 +28,6 @@ public class ZookeeperTopologyHandler implements Closeable {
     private static String getZkTopologyPath(String puName) {
         return ZNodePathFactory.processingUnit(puName, "topology");
     }
-    public static String getPipeline(String puName) {
-        return ZNodePathFactory.pipeline(puName);
-    }
 
     public static String getZkTopologyStatePath(String puName) {
         return getZkTopologyPath(puName)+"/state";
@@ -43,11 +40,12 @@ public class ZookeeperTopologyHandler implements Closeable {
         return getHeapReportStatePath2(puName)+"/heapreport";
     }
 
-    public static String getPipelineConfig(String pipelineName) {
-        return ZNodePathFactory.pipeline(pipelineName, "config");
-    }
     public static String getPipelineStatus(String pipelineName) {
         return ZNodePathFactory.pipeline(pipelineName, "status");
+    }
+
+    public static String getPipeline(String pipelineName) {
+        return ZNodePathFactory.pipeline(pipelineName, "pipeline");
     }
 
 
