@@ -19,7 +19,6 @@ package com.gigaspaces.internal.utils.parsers;
 import com.j_spaces.jdbc.QueryProcessor;
 
 import java.sql.SQLException;
-import java.sql.Timestamp;
 import java.time.LocalDateTime;
 
 /**
@@ -37,11 +36,13 @@ public class SqlTimestampParser extends AbstractDateTimeParser {
         // if the string to parse is shorter than the pattern it will fail, we will try parsing using the default
         // LocalDateTimeParser instead (ISO_LOCAL_DATE_TIME)
         if (s.length() < _pattern.length()){
-            try{
-                return Timestamp.valueOf(LocalDateTime.parse(s));
+            try {
+                return java.sql.Timestamp.valueOf(LocalDateTime.parse(s.replace(' ', 'T')));
             }
-            catch (Exception e){}
+            catch (Exception ignored){
+                //ignored, let it fail using parseDateTime()
+            }
         }
-        return new java.sql.Timestamp(parseDateTime(s.replaceAll("T"," ")).getTime());
+        return new java.sql.Timestamp(parseDateTime(s.replace('T',' ')).getTime());
     }
 }
