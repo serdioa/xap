@@ -4063,6 +4063,7 @@ public class SpaceImpl extends AbstractService implements IRemoteSpace, IInterna
     public void copyChunks(CopyChunksRequestInfo requestInfo) {
         String step = "copy-chunks";
         String key = "partition " + getPartitionIdOneBased();
+
         try {
             ZKScaleOutUtils.setStepIfPossible(attributeStore, _puName, step, key, Status.IN_PROGRESS.toString());
             CopyChunks copyChunks = new CopyChunks();
@@ -4071,10 +4072,10 @@ public class SpaceImpl extends AbstractService implements IRemoteSpace, IInterna
                 ZKScaleOutUtils.setStepIfPossible(attributeStore, _puName, step, key, Status.FAIL.toString());
             } else {
                 ZKScaleOutUtils.setStepIfPossible(attributeStore, _puName, step, key, Status.SUCCESS.toString());
-                _logger.info("Instance " + _spaceName + " copied " + responseInfo.getMovedToPartition() + " chunks successfully");
+                _logger.info("Instance " + _spaceMemberName + " copied " + responseInfo.getMovedToPartition() + " chunks successfully");
             }
         } catch (Throwable e) {
-            _logger.warn("Instance " + _spaceName + " failed to copy chunks", e);
+            _logger.warn("Instance " + _spaceMemberName + " failed to copy chunks", e);
             ZKScaleOutUtils.setStepIfPossible(attributeStore, _puName, step, key, Status.FAIL.toString());
         }
     }
@@ -4086,11 +4087,11 @@ public class SpaceImpl extends AbstractService implements IRemoteSpace, IInterna
             ZKScaleOutUtils.setStepIfPossible(attributeStore, _puName, step, key, Status.IN_PROGRESS.toString());
             WaitForDrainUtils.waitForDrain(this, requestInfo.getTimeout(), requestInfo.getMinTimeToWait(), requestInfo.isComprehensive(), null);
             ZKScaleOutUtils.setStepIfPossible(attributeStore, _puName, step, key, Status.SUCCESS.toString());
-            _logger.info("Instance " + _spaceName + " drained successfully");
+            _logger.info("Instance " + _spaceMemberName + " drained successfully");
         } catch (TimeoutException e) {
             ZKScaleOutUtils.setStepIfPossible(attributeStore, _puName, step, key, Status.FAIL.toString());
         } catch (Throwable e) {
-            _logger.warn("Instance " + _spaceName + " failed to drain", e);
+            _logger.warn("Instance " + _spaceMemberName + " failed to drain", e);
             ZKScaleOutUtils.setStepIfPossible(attributeStore, _puName, step, key, Status.FAIL.toString());
         }
     }
@@ -4103,11 +4104,11 @@ public class SpaceImpl extends AbstractService implements IRemoteSpace, IInterna
             DeleteChunks deleteChunks = new DeleteChunks();
             DeleteChunksResponseInfo responseInfo = (DeleteChunksResponseInfo) deleteChunks.execute(this, requestInfo);
             if (responseInfo.getException() != null){
-                _logger.warn("Instance " + _spaceName + " failed to delete chunks", responseInfo.getException());
+                _logger.warn("Instance " + _spaceMemberName + " failed to delete chunks", responseInfo.getException());
                 ZKScaleOutUtils.setStepIfPossible(attributeStore, _puName, step, key, Status.FAIL.toString());
             } else{
                 ZKScaleOutUtils.setStepIfPossible(attributeStore, _puName, step, key, Status.SUCCESS.toString());
-                _logger.info("Instance " + _spaceName + " deleted chunks successfully");
+                _logger.info("Instance " + _spaceMemberName + " deleted chunks successfully");
             }
         } catch (Throwable e) {
             ZKScaleOutUtils.setStepIfPossible(attributeStore, _puName, step, key, Status.FAIL.toString());
