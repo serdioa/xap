@@ -18,7 +18,7 @@ import java.util.concurrent.*;
 public class DeleteChunks {
     public static Logger logger = LoggerFactory.getLogger("org.openspaces.admin.internal.pu.scale_horizontal.ScaleManager");
 
-    public SpaceResponseInfo delete(SpaceImpl space, SpaceRequestInfo requestInfo) {
+    public SpaceResponseInfo execute(SpaceImpl space, SpaceRequestInfo requestInfo) {
         int queueSize = 10000;
         int batchSize = 1000;
         int threadCount = 10;
@@ -48,7 +48,7 @@ public class DeleteChunks {
             executorService.shutdown();
             executorService.awaitTermination(5, TimeUnit.MINUTES);
         } catch (Exception e) {
-            throw new RuntimeException("Copy chunks executor failed", e);
+            throw new RuntimeException("Delete chunks executor failed", e);
         }
         return responseInfo;
     }

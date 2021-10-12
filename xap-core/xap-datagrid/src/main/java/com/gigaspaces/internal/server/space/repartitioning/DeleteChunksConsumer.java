@@ -44,7 +44,7 @@ public class DeleteChunksConsumer implements Runnable {
                 return;
             } catch (Exception e) {
                 if (logger.isDebugEnabled()) {
-                    logger.debug("Consumer thread caught exception");
+                    logger.debug("Consumer thread caught exception", e);
                     e.printStackTrace();
                 }
                 responseInfo.setException(new IOException("Caught exception while trying to Delete from partition " +

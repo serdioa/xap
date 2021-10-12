@@ -4064,18 +4064,18 @@ public class SpaceImpl extends AbstractService implements IRemoteSpace, IInterna
         String step = "copy-chunks";
         String key = "partition " + getPartitionIdOneBased();
         try {
-            ZKScaleOutUtils.setStepIfPossible(attributeStore, _puName, step, key, ScaleStatus.IN_PROGRESS.toString());
+            ZKScaleOutUtils.setStepIfPossible(attributeStore, _puName, step, key, Status.IN_PROGRESS.toString());
             CopyChunks copyChunks = new CopyChunks();
-            CopyChunksResponseInfo responseInfo = copyChunks.copy(this, requestInfo);
+            CopyChunksResponseInfo responseInfo = copyChunks.execute(this, requestInfo);
             if (responseInfo.getException() != null){
-                ZKScaleOutUtils.setStepIfPossible(attributeStore, _puName, step, key, ScaleStatus.FAIL.toString());
+                ZKScaleOutUtils.setStepIfPossible(attributeStore, _puName, step, key, Status.FAIL.toString());
             } else {
-                ZKScaleOutUtils.setStepIfPossible(attributeStore, _puName, step, key, ScaleStatus.SUCCESS.toString());
-                _logger.info("Instance " + getPartitionIdOneBased() + " copied " + responseInfo.getMovedToPartition() + " chunks successfully");
+                ZKScaleOutUtils.setStepIfPossible(attributeStore, _puName, step, key, Status.SUCCESS.toString());
+                _logger.info("Instance " + _spaceName + " copied " + responseInfo.getMovedToPartition() + " chunks successfully");
             }
         } catch (Throwable e) {
-            _logger.warn("Instance " + getPartitionIdOneBased() + " failed to copy chunks");
-            ZKScaleOutUtils.setStepIfPossible(attributeStore, _puName, step, key, ScaleStatus.FAIL.toString());
+            _logger.warn("Instance " + _spaceName + " failed to copy chunks", e);
+            ZKScaleOutUtils.setStepIfPossible(attributeStore, _puName, step, key, Status.FAIL.toString());
         }
     }
 
@@ -4083,29 +4083,34 @@ public class SpaceImpl extends AbstractService implements IRemoteSpace, IInterna
         String step = "drain";
         String key = "partition " + getPartitionIdOneBased();
         try {
-            ZKScaleOutUtils.setStepIfPossible(attributeStore, _puName, step, key, ScaleStatus.IN_PROGRESS.toString());
+            ZKScaleOutUtils.setStepIfPossible(attributeStore, _puName, step, key, Status.IN_PROGRESS.toString());
             WaitForDrainUtils.waitForDrain(this, requestInfo.getTimeout(), requestInfo.getMinTimeToWait(), requestInfo.isComprehensive(), null);
-            ZKScaleOutUtils.setStepIfPossible(attributeStore, _puName, step, key, ScaleStatus.SUCCESS.toString());
-            _logger.info("Instance " + getPartitionIdOneBased() + " drained successfully");
+            ZKScaleOutUtils.setStepIfPossible(attributeStore, _puName, step, key, Status.SUCCESS.toString());
+            _logger.info("Instance " + _spaceName + " drained successfully");
         } catch (TimeoutException e) {
-            ZKScaleOutUtils.setStepIfPossible(attributeStore, _puName, step, key, ScaleStatus.FAIL.toString());
-        }catch (Throwable e) {
-            ZKScaleOutUtils.setStepIfPossible(attributeStore, _puName, step, key, ScaleStatus.FAIL.toString());
+            ZKScaleOutUtils.setStepIfPossible(attributeStore, _puName, step, key, Status.FAIL.toString());
+        } catch (Throwable e) {
+            _logger.warn("Instance " + _spaceName + " failed to drain", e);
+            ZKScaleOutUtils.setStepIfPossible(attributeStore, _puName, step, key, Status.FAIL.toString());
         }
     }
-
 
     public void deleteChunks(DeleteChunksRequestInfo requestInfo)  {
         String step = "delete-chunks";
         String key = "partition " + getPartitionIdOneBased();
         try {
-            ZKScaleOutUtils.setStepIfPossible(attributeStore, _puName, step, key, ScaleStatus.IN_PROGRESS.toString());
+            ZKScaleOutUtils.setStepIfPossible(attributeStore, _puName, step, key, Status.IN_PROGRESS.toString());
             DeleteChunks deleteChunks = new DeleteChunks();
-            DeleteChunksResponseInfo responseInfo = (DeleteChunksResponseInfo) deleteChunks.delete(this, requestInfo);
-            ZKScaleOutUtils.setStepIfPossible(attributeStore, _puName, step, key, ScaleStatus.SUCCESS.toString());
-            _logger.info("Instance " + getPartitionIdOneBased() + " deleted chunks successfully");
+            DeleteChunksResponseInfo responseInfo = (DeleteChunksResponseInfo) deleteChunks.execute(this, requestInfo);
+            if (responseInfo.getException() != null){
+                _logger.warn("Instance " + _spaceName + " failed to delete chunks", responseInfo.getException());
+                ZKScaleOutUtils.setStepIfPossible(attributeStore, _puName, step, key, Status.FAIL.toString());
+            } else{
+                ZKScaleOutUtils.setStepIfPossible(attributeStore, _puName, step, key, Status.SUCCESS.toString());
+                _logger.info("Instance " + _spaceName + " deleted chunks successfully");
+            }
         } catch (Throwable e) {
-            ZKScaleOutUtils.setStepIfPossible(attributeStore, _puName, step, key, ScaleStatus.FAIL.toString());
+            ZKScaleOutUtils.setStepIfPossible(attributeStore, _puName, step, key, Status.FAIL.toString());
         }
     }
 

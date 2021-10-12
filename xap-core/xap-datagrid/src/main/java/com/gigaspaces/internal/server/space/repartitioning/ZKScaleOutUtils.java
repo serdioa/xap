@@ -7,7 +7,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -23,7 +22,7 @@ public class ZKScaleOutUtils {
         return getScaleOutPath(puName) + "/steps/" + step;
     }
 
-    public static void setScaleOutDetails(AttributeStore attributeStore, String puName, String key, String value) throws IOException {
+    public static void setScaleOutMetaData(AttributeStore attributeStore, String puName, String key, String value) throws IOException {
         attributeStore.set(ZKScaleOutUtils.getScaleOutPath(puName) + "/" + key, value);
     }
 
@@ -35,7 +34,7 @@ public class ZKScaleOutUtils {
         return attributeStore.getObject(ZKScaleOutUtils.getScaleOutPath(puName) + "/quiesce-token");
     }
 
-    public static String getScaleOutDetails(AttributeStore attributeStore, String puName, String key) throws IOException {
+    public static String getScaleOutMetaData(AttributeStore attributeStore, String puName, String key) throws IOException {
         return attributeStore.get(ZKScaleOutUtils.getScaleOutPath(puName) + "/" + key);
     }
 
@@ -44,7 +43,7 @@ public class ZKScaleOutUtils {
     }
 
     public static List<Integer> getParticipantPartitions(AttributeStore attributeStore, String puName) throws IOException {
-        String sourcePartitions = getScaleOutDetails(attributeStore, puName, "participating instances");
+        String sourcePartitions = getScaleOutMetaData(attributeStore, puName, "participating instances");
         String[] sources = sourcePartitions.split(", ");
         return Arrays.stream(sources).map(Integer::parseInt).collect(Collectors.toList());
     }
@@ -59,9 +58,9 @@ public class ZKScaleOutUtils {
 
     public static boolean isScaleStatusInProgress(AttributeStore attributeStore, String puName){
        try {
-           String status = getScaleOutDetails(attributeStore, puName, "status");
+           String status = getScaleOutMetaData(attributeStore, puName, "scale-status");
            if (status != null){
-               return ScaleStatus.IN_PROGRESS.getStatus().equals(status);
+               return Status.IN_PROGRESS.getStatus().equals(status);
            }
        } catch (IOException e) {
        }
@@ -70,9 +69,9 @@ public class ZKScaleOutUtils {
 
     public static boolean didScaleSucceed(AttributeStore attributeStore, String puName){
         try {
-            String status = getScaleOutDetails(attributeStore, puName, "status");
+            String status = getScaleOutMetaData(attributeStore, puName, "scale-status");
             if (status != null){
-                return ScaleStatus.SUCCESS.getStatus().equals(status);
+                return Status.SUCCESS.getStatus().equals(status);
             }
         } catch (IOException e) {
         }

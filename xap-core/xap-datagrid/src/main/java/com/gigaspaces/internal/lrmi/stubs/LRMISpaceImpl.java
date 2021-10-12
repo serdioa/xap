@@ -41,8 +41,6 @@ import com.gigaspaces.internal.remoting.RemoteOperationRequest;
 import com.gigaspaces.internal.remoting.RemoteOperationResult;
 import com.gigaspaces.internal.server.space.IRemoteSpace;
 import com.gigaspaces.admin.demote.DemoteFailedException;
-import com.gigaspaces.internal.server.space.repartitioning.CopyChunksRequestInfo;
-import com.gigaspaces.internal.server.space.repartitioning.DeleteChunksRequestInfo;
 import com.gigaspaces.internal.server.space.suspend.SuspendTypeChangedInternalListener;
 import com.gigaspaces.internal.space.transport.xnio.XNioChannel;
 import com.gigaspaces.internal.space.transport.xnio.XNioSettings;

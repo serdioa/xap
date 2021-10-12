@@ -1,13 +1,13 @@
 package com.gigaspaces.internal.server.space.repartitioning;
 
-public enum ScaleStatus {
+public enum Status {
     IN_PROGRESS("in progress"),
     SUCCESS("success"),
     FAIL("fail");
 
     private String status;
 
-    ScaleStatus(String status){
+    Status(String status){
         this.status = status;
     }
 
@@ -20,14 +20,14 @@ public enum ScaleStatus {
        return status;
     }
 
-    public static ScaleStatus convertToStatus(String status){
+    public static Status convertToStatus(String status){
         switch (status){
             case "success":
-                return ScaleStatus.SUCCESS;
+                return Status.SUCCESS;
             case "in progress":
-                return ScaleStatus.IN_PROGRESS;
+                return Status.IN_PROGRESS;
             case "fail":
-                return ScaleStatus.FAIL;
+                return Status.FAIL;
             default:
                 throw new IllegalArgumentException("Status " + status + " doesn't exist");
         }
