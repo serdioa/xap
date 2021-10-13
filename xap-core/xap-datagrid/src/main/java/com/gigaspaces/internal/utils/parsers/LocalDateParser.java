@@ -20,7 +20,9 @@ import com.j_spaces.jdbc.QueryProcessor;
 
 import java.sql.SQLException;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 
 /**
  * @author Kobi
@@ -37,21 +39,24 @@ public class LocalDateParser extends AbstractDateTimeParser {
 
     @Override
     public Object parse(String s) throws SQLException {
-        LocalDate date = null;
         // if the string to parse is not same length as the pattern it will fail, we will try parsing using the default
         // LocalDateParser instead (ISO_LOCAL_DATE)
-        if (s.length() != _pattern.length()){
-            try{
-                date = LocalDate.parse(s);
+        try {
+            if (s.length() > _pattern.length()) {
+                //might be including time
+                return LocalDateTime.parse(s.replace(' ', 'T')).toLocalDate();
+            } else if (s.length() < _pattern.length()) {
+                return LocalDate.parse(s);
             }
-            catch (Exception e){}
+        } catch (Exception ignore) {
+            //ignore and passthrough to parsing
         }
-        if (date == null) {
-            date = LocalDate.parse(s, formatter);
-            if (date == null) {
-                throw new SQLException("Wrong " + _desc + " format, expected format=[" + _pattern + "], provided=[" + s + "]", "GSP", -378);
-            }
+
+        try {
+            return LocalDate.parse(s, formatter);
+        } catch (DateTimeParseException e) {
+            throw new SQLException("Wrong " + _desc + " format, expected format=[" + _pattern
+                    + "], provided=[" + s + "]", "GSP", -378, e);
         }
-        return date;
     }
 }

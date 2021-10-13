@@ -17,12 +17,11 @@
 package com.gigaspaces.internal.utils;
 
 import com.gigaspaces.internal.utils.parsers.*;
+import org.slf4j.LoggerFactory;
 
 import java.sql.SQLException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * @author Niv Ingberg
@@ -51,9 +50,8 @@ public abstract class ObjectConverter {
             obj = parser.parse(obj.toString());
             return obj;
         } catch (RuntimeException e) {
-            SQLException ex = new SQLException("Failed converting [" + obj + "] from '" + obj.getClass().getName() + "' to '" + type.getName() + "'.");
-            ex.initCause(e);
-            throw ex;
+            throw new SQLException("Failed converting [" + obj + "] from '"
+                    + obj.getClass().getName() + "' to '" + type.getName() + "'.", e);
         }
     }
 
