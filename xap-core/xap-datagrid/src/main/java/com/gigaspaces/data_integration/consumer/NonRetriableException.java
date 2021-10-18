@@ -20,4 +20,8 @@ public class NonRetriableException extends RuntimeException {
     public NonRetriableException(String str) {
         super(str);
     }
+
+    public NonRetriableException(String message, Throwable cause) {
+        super(message, cause);
+    }
 }
