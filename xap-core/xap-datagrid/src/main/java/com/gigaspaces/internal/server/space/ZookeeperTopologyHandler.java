@@ -33,9 +33,14 @@ public class ZookeeperTopologyHandler implements Closeable {
         return getZkTopologyPath(puName)+"/state";
     }
 
+    public static String getSpaceNamesPath(String puName) {
+        return ZNodePathFactory.processingUnit(puName, "spacenames");
+    }
+
     public static String getHeapReportStatePath2(String puName) {
         return ZNodePathFactory.processingUnit(puName, "reports");
     }
+
     public static String getHeapReportStatePath(String puName) {
         return getHeapReportStatePath2(puName)+"/heapreport";
     }
