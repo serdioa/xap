@@ -1,4 +1,4 @@
-package com.gigaspaces.data_integration.consumer;
+package com.gigaspaces.dih.consumer;
 
 import com.gigaspaces.document.SpaceDocument;
 import com.gigaspaces.metadata.SpaceTypeDescriptor;
