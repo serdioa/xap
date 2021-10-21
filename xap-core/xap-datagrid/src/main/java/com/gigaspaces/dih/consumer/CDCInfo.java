@@ -8,7 +8,7 @@ public class CDCInfo extends SpaceDocument {
 
     private static final long serialVersionUID = 1L;
     public static final String CDC_INFO = "CDCInfo";
-    private static final String streamName = "streamName";
+    private static final String pipelineName = "pipelineName";
     private static final String messageID = "messageID";
     private static final String partitionID = "partitionID";
     private static final String ID = "ID";
@@ -18,7 +18,7 @@ public class CDCInfo extends SpaceDocument {
                 .idProperty(ID, false)
                 .routingProperty(partitionID)
                 .addFixedProperty(ID, String.class)
-                .addFixedProperty(streamName, String.class)
+                .addFixedProperty(pipelineName, String.class)
                 .addFixedProperty(messageID, Long.class)
                 .addFixedProperty(partitionID, Integer.class)
                 .documentWrapperClass(CDCInfo.class)
@@ -30,22 +30,22 @@ public class CDCInfo extends SpaceDocument {
         super(CDC_INFO);
     }
 
-    public CDCInfo(String streamName, Long messageID, Integer partitionID) {
+    public CDCInfo(String pipelineName, Long messageID, Integer partitionID) {
         this();
-        setStreamName(streamName);
+        setPipelineName(pipelineName);
         setMessageID(messageID);
         setPartitionID(partitionID);
-        setID(streamName, partitionID);
+        setID(pipelineName, partitionID);
     }
 
 
-    public CDCInfo setStreamName(String name) {
-        setProperty(streamName, name);
+    public CDCInfo setPipelineName(String name) {
+        setProperty(pipelineName, name);
         return this;
     }
 
-    public String getStreamName() {
-        return getProperty(streamName);
+    public String getPipelineName() {
+        return getProperty(pipelineName);
     }
 
     public CDCInfo setMessageID(Long msgId) {
@@ -77,7 +77,7 @@ public class CDCInfo extends SpaceDocument {
 
     @Override
     public String toString() {
-        return "streamName = " + getStreamName() + " " +
+        return "streamName = " + getPipelineName() + " " +
                 "messageID = " + getMessageID() + " " +
                 "partitionID =" + getPartitionID() + " " +
                 "ID = " + getID();

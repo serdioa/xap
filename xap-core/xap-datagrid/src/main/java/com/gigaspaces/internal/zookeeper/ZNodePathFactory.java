@@ -55,7 +55,8 @@ public class ZNodePathFactory {
         return path(PIPELINES);
     }
 
-    public static String consumer(String pipeline){ return path(PIPELINES, pipeline + "/consumer/url");}
+    public static String consumerUrl(String pipeline){ return path(PIPELINES, pipeline + "/consumer/url");}
+    public static String consumerPu(String pipeline){ return path(PIPELINES, pipeline + "/consumer/pu");}
 
     public static String processingUnit(String puName, String component, int partitionId, String ... elements) {
         return path(PUS, puName, component, String.valueOf(partitionId), elements);

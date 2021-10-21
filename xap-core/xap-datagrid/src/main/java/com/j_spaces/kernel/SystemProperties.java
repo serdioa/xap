@@ -836,6 +836,11 @@ public class SystemProperties extends CommonSystemProperties {
     public static final String PROXY_POOL_EXPIRATION_TIME = "com.gs.proxypool.expiration-time";
 
 
+    public static final String OPS_UI_DEV_MODE = "com.gs.ops-ui.dev-mode";
+    public static final String KAFKA_URL = "com.gs.dih.kafka.url";
+
+
+
     private static final Map<String, String> defaultValues = initDefaultValues();
 
     private static Map<String, String> initDefaultValues() {

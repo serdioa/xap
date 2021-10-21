@@ -59,7 +59,7 @@ public class GSMessageTaskExecutor extends SpaceActionExecutor {
             OperationType operationType = requestInfo.getOperationType();
             entry = requestInfo.getDocument();
             IDirectSpaceProxy singleProxy = space.getSingleProxy();
-            CDCInfo lastMsg = ((CDCInfo) singleProxy.read(new CDCInfo().setStreamName(cdcInfo.getStreamName()), null, 0));
+            CDCInfo lastMsg = ((CDCInfo) singleProxy.read(new CDCInfo().setPipelineName(cdcInfo.getPipelineName()), null, 0));
             long lastMsgID = lastMsg != null ? lastMsg.getMessageID() : 0;
             if (cdcInfo.getMessageID() <= lastMsgID) {
                 if (lastMsgID == 0 && cdcInfo.getMessageID() == 0) {
@@ -117,7 +117,7 @@ public class GSMessageTaskExecutor extends SpaceActionExecutor {
             OperationType operationType = requestInfo.getOperationType();
             entry = requestInfo.getDocument();
             IDirectSpaceProxy singleProxy = space.getSingleProxy();
-            CDCInfo lastMsg = ((CDCInfo) singleProxy.read(new CDCInfo().setStreamName(cdcInfo.getStreamName()), null, 0));
+            CDCInfo lastMsg = ((CDCInfo) singleProxy.read(new CDCInfo().setPipelineName(cdcInfo.getPipelineName()), null, 0));
             Long lastMsgID = lastMsg != null ? lastMsg.getMessageID() : 0;
             if (lastMsgID == 0 && cdcInfo.getMessageID() == 0) {
                 logger.debug("processing message with id 0 (full sync)");
