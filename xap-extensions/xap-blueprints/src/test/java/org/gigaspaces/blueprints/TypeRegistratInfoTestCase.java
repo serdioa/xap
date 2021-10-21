@@ -35,10 +35,10 @@ public class TypeRegistratInfoTestCase {
     public void basicTestWithInitialLoad() throws IOException {
         String expected = BootIOUtils.readAsString(BootIOUtils.getResourcePath("samples/TypeRegistrar.java"));
         TypeRegistrarInfo typeRegistrarInfo = new TypeRegistrarInfo("org.gigaspaces.blueprints");
-        typeRegistrarInfo.addClass("com.gigaspaces.data_integration.consumer", "CDCInfo");
-        typeRegistrarInfo.addClass("com.gigaspaces.data_integration.model.types", "COMPANYDocument");
-        typeRegistrarInfo.addClass("com.gigaspaces.data_integration.model.types", "EmployeeDocument");
-        typeRegistrarInfo.addClass("com.gigaspaces.data_integration.model.types", "EmployeeOverrideDocument");
+        typeRegistrarInfo.addClass("com.gigaspaces.dih.consumer", "CDCInfo");
+        typeRegistrarInfo.addClass("com.gigaspaces.dih.model.types", "COMPANYDocument");
+        typeRegistrarInfo.addClass("com.gigaspaces.dih.model.types", "EmployeeDocument");
+        typeRegistrarInfo.addClass("com.gigaspaces.dih.model.types", "EmployeeOverrideDocument");
 
         String actual = typeRegistrarInfo.generate();
         System.out.println("Actual=\n\n" + actual);

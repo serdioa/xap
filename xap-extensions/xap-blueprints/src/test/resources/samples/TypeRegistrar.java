@@ -1,9 +1,9 @@
 package org.gigaspaces.blueprints;
 
-import com.gigaspaces.data_integration.consumer.CDCInfo;
-import com.gigaspaces.data_integration.model.types.COMPANYDocument;
-import com.gigaspaces.data_integration.model.types.EmployeeDocument;
-import com.gigaspaces.data_integration.model.types.EmployeeOverrideDocument;
+import com.gigaspaces.dih.consumer.CDCInfo;
+import com.gigaspaces.dih.model.types.COMPANYDocument;
+import com.gigaspaces.dih.model.types.EmployeeDocument;
+import com.gigaspaces.dih.model.types.EmployeeOverrideDocument;
 import org.openspaces.core.GigaSpace;
 import org.openspaces.core.GigaSpaceTypeManager;
 
