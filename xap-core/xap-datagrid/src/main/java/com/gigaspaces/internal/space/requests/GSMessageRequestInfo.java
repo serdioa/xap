@@ -1,6 +1,6 @@
 package com.gigaspaces.internal.space.requests;
 
-import com.gigaspaces.data_integration.consumer.CDCInfo;
+import com.gigaspaces.dih.consumer.CDCInfo;
 import com.gigaspaces.document.SpaceDocument;
 import com.gigaspaces.internal.io.IOUtils;
 import com.gigaspaces.internal.server.space.executors.GSMessageTask;

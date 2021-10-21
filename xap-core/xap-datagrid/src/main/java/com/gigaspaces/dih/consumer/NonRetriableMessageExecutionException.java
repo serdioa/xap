@@ -1,4 +1,4 @@
-package com.gigaspaces.data_integration.consumer;
+package com.gigaspaces.dih.consumer;
 
 public class NonRetriableMessageExecutionException extends NonRetriableException {
 

@@ -1,10 +1,10 @@
 package com.gigaspaces.internal.server.space.executors;
 
 import com.gigaspaces.client.WriteModifiers;
-import com.gigaspaces.data_integration.consumer.CDCInfo;
-import com.gigaspaces.data_integration.consumer.FailedToCommitException;
-import com.gigaspaces.data_integration.consumer.NonRetriableMessageExecutionException;
-import com.gigaspaces.data_integration.consumer.RetriableMessageExecutionException;
+import com.gigaspaces.dih.consumer.CDCInfo;
+import com.gigaspaces.dih.consumer.FailedToCommitException;
+import com.gigaspaces.dih.consumer.NonRetriableMessageExecutionException;
+import com.gigaspaces.dih.consumer.RetriableMessageExecutionException;
 import com.gigaspaces.document.SpaceDocument;
 import com.gigaspaces.internal.client.spaceproxy.IDirectSpaceProxy;
 import com.gigaspaces.internal.server.space.SpaceImpl;
