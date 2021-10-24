@@ -5,6 +5,8 @@ package com.gigaspaces.internal.exceptions;
  */
 public class SuppressedStacktraceException extends RuntimeException {
 
+    private static final long serialVersionUID = 3316617408243974764L;
+
     public SuppressedStacktraceException(String message, Throwable cause) {
         super(message, cause, true, false);
     }
