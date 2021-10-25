@@ -498,8 +498,6 @@ public class SystemProperties extends CommonSystemProperties {
     public final static String JDBC_V1_DRIVER = "v1";
     public final static String JDBC_V2_DRIVER = "v2";
     public final static String JDBC_V3_DRIVER = "v3";
-    public final static String JDBC_V3_PRINT_PLAN = "com.gs.jdbc.v3.print_plan";
-    public final static String JDBC_V3_SUPPORT_PUSH_DOWN = "com.gs.jdbc.v3.support.push_down";
 
 
     public final static String EXPOSE_INTERNAL_API = "com.gs.expose.internal.api";
