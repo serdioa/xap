@@ -41,8 +41,8 @@ public class DIHProjectTestCase {
         DocumentInfo employeeDocumentInfo = new DocumentInfo("Employee", "com.gigaspaces.dih.model.types",
                 "companyDb_companySchema_Employee", false, true);
         employeeDocumentInfo.addIdProperty("employeeId", Long.class, SpaceIndexType.EQUAL, false);
-        employeeDocumentInfo.addIndexProperty("name", String.class, SpaceIndexType.EQUAL, false);
-        employeeDocumentInfo.addRoutingProperty("age", Integer.class, SpaceIndexType.EQUAL_AND_ORDERED);
+        employeeDocumentInfo.addIndexProperty("naME", String.class, SpaceIndexType.EQUAL, false);
+        employeeDocumentInfo.addRoutingProperty("My_Age", Integer.class, SpaceIndexType.EQUAL_AND_ORDERED);
 
         DocumentInfo studentDocumentInfo = new DocumentInfo("Student", "com.gigaspaces.dih.model.types",
                 "Student", false, true);
@@ -76,8 +76,7 @@ public class DIHProjectTestCase {
                 "    \"fields\": [\n" +
                 "      {\n" +
                 "        \"fieldName\": \"employeeId\",\n" +
-                "        \"originalType\": \"INTEGER\",\n" +
-                "        \"converterName\":\"com.gigaspaces.dih.INTToShort\"\n" +
+                "        \"originalType\": \"INTEGER\"\n" +
                 "      },\n" +
                 "      {\n" +
                 "        \"fieldName\": \"name\",\n" +
@@ -85,8 +84,7 @@ public class DIHProjectTestCase {
                 "      },\n" +
                 "      {\n" +
                 "        \"fieldName\": \"age\",\n" +
-                "        \"originalType\": \"SMALLINT\",\n" +
-                "        \"converterName\":\"com.gigaspaces.dih.SMALLINTToInt\"\n" +
+                "        \"originalType\": \"SMALLINT\"\n" +
                 "      }\n" +
                 "    ]\n" +
                 "  },\n" +
