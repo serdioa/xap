@@ -16,45 +16,42 @@ public class DIHProjectTestCase {
 
     @Test
     void generateProject() {
-        String projectGroupId = "com.gigaspaces.data_integration";
-        String projectPackage = "com.gigaspaces.data_integration222";
-        String projectName = "Bar";
+        String projectPipelineName = "Foo";
         String projectVersion = "1.0";
         String gsVersion = "16.1.0-SNAPSHOT";
-        String kafkaPipelineName = "myPipeline";
         String kafkaSpaceName = "mySpace";
         String kafkaTopic = "myTopic";
         String resourcesTypeMetadataJson = getTypeMetadataJson();
         String resourcesDefaultTypeConversionMap = getDefaultTypeConversionMap();
         String configStreamJson = getStreamJson();
         Path target = SystemLocations.singleton().work("data-integration");
-        List<DocumentInfo> documents = getDocumentInfos(projectPackage);
+        List<DocumentInfo> documents = getDocumentsInfo();
 
         DIHProjectPropertiesOverrides dihProjectProperties = new DIHProjectPropertiesOverrides(
-                projectGroupId, projectPackage, projectName, projectVersion,
-                gsVersion, null, null, null,
-                kafkaPipelineName, kafkaSpaceName, null, kafkaTopic,
+                projectPipelineName, projectVersion, gsVersion,
+                null, null, null,
+                kafkaSpaceName, null, kafkaTopic,
                 null, null, resourcesTypeMetadataJson,
                 resourcesDefaultTypeConversionMap, configStreamJson, target, documents);
+
         DIHProjectGenerator.generate(dihProjectProperties);
     }
 
     @NotNull
-    private List<DocumentInfo> getDocumentInfos(String basePackageName) {
-        DocumentInfo employeeDocumentInfo = new DocumentInfo("Employee", basePackageName + ".model.types",
+    private List<DocumentInfo> getDocumentsInfo() {
+        DocumentInfo employeeDocumentInfo = new DocumentInfo("Employee", "com.gigaspaces.dih.model.types",
                 "companyDb_companySchema_Employee", false, true);
         employeeDocumentInfo.addIdProperty("employeeId", Long.class, SpaceIndexType.EQUAL, false);
         employeeDocumentInfo.addIndexProperty("name", String.class, SpaceIndexType.EQUAL, false);
         employeeDocumentInfo.addRoutingProperty("age", Integer.class, SpaceIndexType.EQUAL_AND_ORDERED);
 
-        DocumentInfo studentDocumentInfo = new DocumentInfo("Student", basePackageName + ".model.types",
+        DocumentInfo studentDocumentInfo = new DocumentInfo("Student", "com.gigaspaces.dih.model.types",
                 "Student", false, true);
         studentDocumentInfo.addIdProperty("studentId", Long.class, SpaceIndexType.EQUAL, false);
         studentDocumentInfo.addIndexProperty("name", String.class, SpaceIndexType.EQUAL, false);
         studentDocumentInfo.addRoutingProperty("age", Integer.class, SpaceIndexType.EQUAL_AND_ORDERED);
 
-        List<DocumentInfo> documents = Arrays.asList(employeeDocumentInfo, studentDocumentInfo);
-        return documents;
+        return Arrays.asList(employeeDocumentInfo, studentDocumentInfo);
     }
 
     private static String getTypeMetadataJson() {
@@ -81,7 +78,7 @@ public class DIHProjectTestCase {
                 "      {\n" +
                 "        \"fieldName\": \"employeeId\",\n" +
                 "        \"originalType\": \"INTEGER\",\n" +
-                "        \"converterName\":\"com.gigaspaces.data_integration.INTToShort\"\n" +
+                "        \"converterName\":\"com.gigaspaces.dih.INTToShort\"\n" +
                 "      },\n" +
                 "      {\n" +
                 "        \"fieldName\": \"name\",\n" +
@@ -90,7 +87,7 @@ public class DIHProjectTestCase {
                 "      {\n" +
                 "        \"fieldName\": \"age\",\n" +
                 "        \"originalType\": \"SMALLINT\",\n" +
-                "        \"converterName\":\"com.gigaspaces.data_integration.SMALLINTToInt\"\n" +
+                "        \"converterName\":\"com.gigaspaces.dih.SMALLINTToInt\"\n" +
                 "      }\n" +
                 "    ]\n" +
                 "  },\n" +
@@ -115,51 +112,51 @@ public class DIHProjectTestCase {
     }
 
     private static String getDefaultTypeConversionMap() {
-        return "VARCHAR2:com.gigaspaces.data_integration.type_converter.VARCHAR2ToString\n" +
-                "NVARCHAR2:com.gigaspaces.data_integration.type_converter.NVARCHAR2ToString\n" +
-                "NCHAR_VARYING:com.gigaspaces.data_integration.type_converter.NCHAR_VARYINGToString\n" +
-                "VARCHAR:com.gigaspaces.data_integration.type_converter.VarcharToString\n" +
-                "CHAR:com.gigaspaces.data_integration.type_converter.CharToString\n" +
-                "NCHAR:com.gigaspaces.data_integration.type_converter.NCHARToString\n" +
-                "NVARCHAR:com.gigaspaces.data_integration.type_converter.NVARCHARToString\n" +
-                "SYSNAME:com.gigaspaces.data_integration.type_converter.SYSNAMEToString\n" +
-                "CLOB:com.gigaspaces.data_integration.type_converter.CLOBToString\n" +
-                "RAW:com.gigaspaces.data_integration.type_converter.RAWToString\n" +
-                "MONEY:com.gigaspaces.data_integration.type_converter.MONEYToString\n" +
-                "SMALLMONEY:com.gigaspaces.data_integration.type_converter.SMALLMONEYToString\n" +
-                "TEXT:com.gigaspaces.data_integration.type_converter.TEXTToString\n" +
-                "NTEXT:com.gigaspaces.data_integration.type_converter.NTEXTToString\n" +
-                "GRAPHIC:com.gigaspaces.data_integration.type_converter.GRAPHICToString\n" +
-                "VARGRAPHIC:com.gigaspaces.data_integration.type_converter.VARGRAPHICToString\n" +
-                "VARG:com.gigaspaces.data_integration.type_converter.VARGToString\n" +
-                "VARBINARY:com.gigaspaces.data_integration.type_converter.VARBINARYToString\n" +
-                "VARBIN:com.gigaspaces.data_integration.type_converter.VARBINToString\n" +
-                "CHARACTER:com.gigaspaces.data_integration.type_converter.CHARACTERToString\n" +
-                "UNIQUEIDENTIFIER:com.gigaspaces.data_integration.type_converter.UNIQUEIDENTIFIERToString\n" +
-                "DECFLOAT:com.gigaspaces.data_integration.type_converter.DECFLOATToString\n" +
-                "LONG:com.gigaspaces.data_integration.type_converter.LONGToString\n" +
-                "TINYINT:com.gigaspaces.data_integration.type_converter.TINYINTtoShort\n" +
-                "SMALLINT:com.gigaspaces.data_integration.type_converter.SMALLINTToShort\n" +
-                "INT:com.gigaspaces.data_integration.type_converter.INTToInt\n" +
-                "INTEGER:com.gigaspaces.data_integration.type_converter.INTEGERToInt\n" +
-                "BIGINT:com.gigaspaces.data_integration.type_converter.BIGINTToBigInteger\n" +
-                "NUMBER:com.gigaspaces.data_integration.type_converter.NUMBERToDouble\n" +
-                "DOUBLE:com.gigaspaces.data_integration.type_converter.DOUBLEToDouble\n" +
-                "DOUBLE_PRECISION:com.gigaspaces.data_integration.type_converter.DOUBLE_PRECISIONToDouble\n" +
-                "NUMERIC:com.gigaspaces.data_integration.type_converter.NUMERICToBigDecimal\n" +
-                "DECIMAL:com.gigaspaces.data_integration.type_converter.DECIMALToBigDecimal\n" +
-                "BOOLEAN:com.gigaspaces.data_integration.type_converter.BOOLEANToBoolean\n" +
-                "REAL:com.gigaspaces.data_integration.type_converter.REALToFloat\n" +
-                "FLOAT:com.gigaspaces.data_integration.type_converter.FLOATToFloat\n" +
-                "TIMESTAMP:com.gigaspaces.data_integration.type_converter.TIMESTAMPToTimestamp\n" +
-                "TIMESTAMP_WITH_TIME_ZONE:com.gigaspaces.data_integration.type_converter.TIMESTAMP_WITH_TIME_ZONEToTimestamp\n" +
-                "TIMESTAMP_WITH_LOCAL_TIME_ZONE:com.gigaspaces.data_integration.type_converter.TIMESTAMP_WITH_LOCAL_TIME_ZONEToTimestamp\n" +
-                "TIMESTMP:com.gigaspaces.data_integration.type_converter.TIMESTMPToTimestamp\n" +
-                "TIMESTZ:com.gigaspaces.data_integration.type_converter.TIMESTZToTimestamp\n" +
-                "TIME:com.gigaspaces.data_integration.type_converter.TIMEToTime\n" +
-                "TIME_WITH_TIME_ZONE:com.gigaspaces.data_integration.type_converter.TIME_WITH_TIME_ZONEToTime\n" +
-                "DATE:com.gigaspaces.data_integration.type_converter.DATEToDate\n" +
-                "DATETIME:com.gigaspaces.data_integration.type_converter.DATETIMEToDate";
+        return "VARCHAR2:com.gigaspaces.dih.type_converter.VARCHAR2ToString\n" +
+                "NVARCHAR2:com.gigaspaces.dih.type_converter.NVARCHAR2ToString\n" +
+                "NCHAR_VARYING:com.gigaspaces.dih.type_converter.NCHAR_VARYINGToString\n" +
+                "VARCHAR:com.gigaspaces.dih.type_converter.VarcharToString\n" +
+                "CHAR:com.gigaspaces.dih.type_converter.CharToString\n" +
+                "NCHAR:com.gigaspaces.dih.type_converter.NCHARToString\n" +
+                "NVARCHAR:com.gigaspaces.dih.type_converter.NVARCHARToString\n" +
+                "SYSNAME:com.gigaspaces.dih.type_converter.SYSNAMEToString\n" +
+                "CLOB:com.gigaspaces.dih.type_converter.CLOBToString\n" +
+                "RAW:com.gigaspaces.dih.type_converter.RAWToString\n" +
+                "MONEY:com.gigaspaces.dih.type_converter.MONEYToString\n" +
+                "SMALLMONEY:com.gigaspaces.dih.type_converter.SMALLMONEYToString\n" +
+                "TEXT:com.gigaspaces.dih.type_converter.TEXTToString\n" +
+                "NTEXT:com.gigaspaces.dih.type_converter.NTEXTToString\n" +
+                "GRAPHIC:com.gigaspaces.dih.type_converter.GRAPHICToString\n" +
+                "VARGRAPHIC:com.gigaspaces.dih.type_converter.VARGRAPHICToString\n" +
+                "VARG:com.gigaspaces.dih.type_converter.VARGToString\n" +
+                "VARBINARY:com.gigaspaces.dih.type_converter.VARBINARYToString\n" +
+                "VARBIN:com.gigaspaces.dih.type_converter.VARBINToString\n" +
+                "CHARACTER:com.gigaspaces.dih.type_converter.CHARACTERToString\n" +
+                "UNIQUEIDENTIFIER:com.gigaspaces.dih.type_converter.UNIQUEIDENTIFIERToString\n" +
+                "DECFLOAT:com.gigaspaces.dih.type_converter.DECFLOATToString\n" +
+                "LONG:com.gigaspaces.dih.type_converter.LONGToString\n" +
+                "TINYINT:com.gigaspaces.dih.type_converter.TINYINTtoShort\n" +
+                "SMALLINT:com.gigaspaces.dih.type_converter.SMALLINTToShort\n" +
+                "INT:com.gigaspaces.dih.type_converter.INTToInt\n" +
+                "INTEGER:com.gigaspaces.dih.type_converter.INTEGERToInt\n" +
+                "BIGINT:com.gigaspaces.dih.type_converter.BIGINTToBigInteger\n" +
+                "NUMBER:com.gigaspaces.dih.type_converter.NUMBERToDouble\n" +
+                "DOUBLE:com.gigaspaces.dih.type_converter.DOUBLEToDouble\n" +
+                "DOUBLE_PRECISION:com.gigaspaces.dih.type_converter.DOUBLE_PRECISIONToDouble\n" +
+                "NUMERIC:com.gigaspaces.dih.type_converter.NUMERICToBigDecimal\n" +
+                "DECIMAL:com.gigaspaces.dih.type_converter.DECIMALToBigDecimal\n" +
+                "BOOLEAN:com.gigaspaces.dih.type_converter.BOOLEANToBoolean\n" +
+                "REAL:com.gigaspaces.dih.type_converter.REALToFloat\n" +
+                "FLOAT:com.gigaspaces.dih.type_converter.FLOATToFloat\n" +
+                "TIMESTAMP:com.gigaspaces.dih.type_converter.TIMESTAMPToTimestamp\n" +
+                "TIMESTAMP_WITH_TIME_ZONE:com.gigaspaces.dih.type_converter.TIMESTAMP_WITH_TIME_ZONEToTimestamp\n" +
+                "TIMESTAMP_WITH_LOCAL_TIME_ZONE:com.gigaspaces.dih.type_converter.TIMESTAMP_WITH_LOCAL_TIME_ZONEToTimestamp\n" +
+                "TIMESTMP:com.gigaspaces.dih.type_converter.TIMESTMPToTimestamp\n" +
+                "TIMESTZ:com.gigaspaces.dih.type_converter.TIMESTZToTimestamp\n" +
+                "TIME:com.gigaspaces.dih.type_converter.TIMEToTime\n" +
+                "TIME_WITH_TIME_ZONE:com.gigaspaces.dih.type_converter.TIME_WITH_TIME_ZONEToTime\n" +
+                "DATE:com.gigaspaces.dih.type_converter.DATEToDate\n" +
+                "DATETIME:com.gigaspaces.dih.type_converter.DATETIMEToDate";
     }
 
     private static String getStreamJson() {
@@ -169,7 +166,7 @@ public class DIHProjectTestCase {
                 "  \"lastModified\": \"\",\n" +
                 "  \"allowNoSync\": \"false\",\n" +
                 "  \"environment\": \"\",\n" +
-                "  \"automaticStart\": \"false\",\n" +
+                "  \"automaticStart\": \"true\",\n" +
                 "  \"streamType\": \"normal\",\n" +
                 "  \"startFromLastApplied\": \"true\",\n" +
                 "  \"basicProperties\": {\n" +

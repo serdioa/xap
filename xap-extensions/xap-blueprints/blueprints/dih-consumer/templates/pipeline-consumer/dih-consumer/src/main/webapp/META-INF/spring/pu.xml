@@ -8,12 +8,12 @@
        http://www.openspaces.org/schema/core http://www.openspaces.org/schema/core/openspaces-core.xsd">
 
     <os-core:annotation-support/>
-    <context:component-scan base-package="{{project.package}}" />
+    <context:component-scan base-package="com.gigaspaces.dih" />
 
     <os-core:space-proxy id="space" name="${space.name}" lookup-timeout="20000"/>
     <os-core:giga-space id="gigaSpace" space="space" />
 
-    <bean class="{{project.package}}.ServiceConfig" id="MyConfig">
+    <bean class="com.gigaspaces.dih.ServiceConfig" id="MyConfig">
         <constructor-arg value="${pipeline.name}" />
         <constructor-arg value="${space.name}" />
         <constructor-arg value="${web.port}" />

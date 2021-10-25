@@ -1,6 +1,6 @@
-package {{project.package}}.model;
+package com.gigaspaces.dih.model;
 
-import {{project.package}}.model.types.*;
+import com.gigaspaces.dih.model.types.*;
 import com.gigaspaces.dih.consumer.CDCInfo;
 import org.openspaces.core.GigaSpace;
 import org.openspaces.core.GigaSpaceTypeManager;

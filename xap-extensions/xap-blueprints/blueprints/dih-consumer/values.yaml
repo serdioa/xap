@@ -1,15 +1,12 @@
 project:
-  groupId: com.gigaspaces.data_integration
-  package: com.gigaspaces.dih
-  package-path: com/gigaspaces/dih # Resolved from project.package
-  name: MyDIHProject
+  pipeline-name: MyPipeline
+  pipeline-name-lower-case: mypipeline
   version: 0.1
 gs.version: 16.1.0-m8
 java.version: 1.8
 slf4j.version: 1.7.26
 kafka:
   web-port: 8180
-  pipeline-name: myPipeline
   space-name: mySpace
   bootstrap-servers: kafka:29092
   topic: myTopic

@@ -6,7 +6,7 @@
 
     <packaging>pom</packaging>
     <groupId>com.gigaspaces.dih</groupId>
-    <artifactId>pipeline-consumer-{{project.name}}</artifactId>
+    <artifactId>pipeline-consumer-{{project.pipeline-name-lower-case}}</artifactId>
     <version>{{project.version}}</version>
 
     <repositories>

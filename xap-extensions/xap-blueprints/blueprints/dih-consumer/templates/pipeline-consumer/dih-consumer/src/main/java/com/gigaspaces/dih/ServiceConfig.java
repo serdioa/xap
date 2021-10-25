@@ -1,4 +1,4 @@
-package {{project.package}};
+package com.gigaspaces.dih;
 
 import com.gigaspaces.dih.consumer.*;
 import com.gigaspaces.dih.consumer.cr8.CR8MessageConverter;

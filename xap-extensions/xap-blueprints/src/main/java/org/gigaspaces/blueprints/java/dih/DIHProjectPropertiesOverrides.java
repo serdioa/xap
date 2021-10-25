@@ -6,41 +6,33 @@ import java.nio.file.Path;
 import java.util.List;
 
 public class DIHProjectPropertiesOverrides {
-    private final String projectGroupId;
-    private final String projectPackage;
-    private final String projectName;
+    private final String projectPipelineName;
     private final String projectVersion;
     private final String gsVersion;
     private final String slf4jVersion;
     private final String javaVersion;
     private final String kafkaWebPort;
-    private final String kafkaPipelineName;
     private final String kafkaSpaceName;
     private final String kafkaBootstrapServers;
     private final String kafkaTopic;
     private final String kafkaMessageCommandClass;
     private final String kafkaMessageValidateClass;
-
     private final String resourcesTypeMetadataJson;
     private final String resourcesDefaultTypeConversionMap;
     private final String configStreamJson;
-
     private final Path target;
     private final List<DocumentInfo> documents;
 
-    public DIHProjectPropertiesOverrides(String projectGroupId, String projectPackage, String projectName, String projectVersion,
-                                         String gsVersion, String slf4jVersion, String javaVersion, String kafkaWebPort, String kafkaPipelineName, String kafkaSpaceName, String kafkaBootstrapServers,
+    public DIHProjectPropertiesOverrides(String projectPipelineName, String projectVersion,
+                                         String gsVersion, String slf4jVersion, String javaVersion, String kafkaWebPort, String kafkaSpaceName, String kafkaBootstrapServers,
                                          String kafkaTopic, String kafkaMessageCommandClass, String kafkaMessageValidateClass,
                                          String resourcesTypeMetadataJson, String resourcesDefaultTypeConversionMap, String configStreamJson, Path target, List<DocumentInfo> documents) {
-        this.projectGroupId = projectGroupId;
-        this.projectPackage = projectPackage;
-        this.projectName = projectName;
+        this.projectPipelineName = projectPipelineName;
         this.projectVersion = projectVersion;
         this.gsVersion = gsVersion;
         this.slf4jVersion = slf4jVersion;
         this.javaVersion = javaVersion;
         this.kafkaWebPort = kafkaWebPort;
-        this.kafkaPipelineName = kafkaPipelineName;
         this.kafkaSpaceName = kafkaSpaceName;
         this.kafkaBootstrapServers = kafkaBootstrapServers;
         this.kafkaTopic = kafkaTopic;
@@ -53,12 +45,8 @@ public class DIHProjectPropertiesOverrides {
         this.documents = documents;
     }
 
-    public String getProjectPackage() {
-        return projectPackage;
-    }
-
-    public String getProjectName() {
-        return projectName;
+    public String getProjectPipelineName() {
+        return projectPipelineName;
     }
 
     public String getProjectVersion() {
@@ -67,10 +55,6 @@ public class DIHProjectPropertiesOverrides {
 
     public String getKafkaWebPort() {
         return kafkaWebPort;
-    }
-
-    public String getKafkaPipelineName() {
-        return kafkaPipelineName;
     }
 
     public String getKafkaSpaceName() {
@@ -99,10 +83,6 @@ public class DIHProjectPropertiesOverrides {
 
     public List<DocumentInfo> getDocuments() {
         return documents;
-    }
-
-    public String getProjectGroupId() {
-        return projectGroupId;
     }
 
     public String getGsVersion() {

@@ -25,29 +25,15 @@ public class DIHProjectGenerator {
 
 
     public static void generate(DIHProjectPropertiesOverrides overrideProperties) {
-        String expectedPackage = overrideProperties.getProjectPackage() + ".model.types";
-        boolean wrongDocumentPackage = overrideProperties.getDocuments().stream().anyMatch(doc -> !doc.getPackageName().equals(expectedPackage));
-        if (wrongDocumentPackage) {
-            throw new RuntimeException("Wrong document package name, expected: " + expectedPackage);
-        }
-
         List<String> classNames = overrideProperties.getDocuments().stream().map(doc -> doc.getClassName() + "Document").collect(Collectors.toList());
-        String packagePath = null;
         HashMap<String, Object> properties = new HashMap<>();
-        if (overrideProperties.getProjectPackage() != null) {
-            properties.put("project.package", overrideProperties.getProjectPackage());
-            packagePath = overrideProperties.getProjectPackage().replace(".", File.separator);
-            properties.put("project.package-path", packagePath);
-        }
-
-        setProperty("project.groupId", overrideProperties.getProjectGroupId(), properties);
-        setProperty("project.name", overrideProperties.getProjectName(), properties);
+        setProperty("project.pipeline-name", overrideProperties.getProjectPipelineName(), properties);
+        setProperty("project.pipeline-name-lower-case", overrideProperties.getProjectPipelineName().toLowerCase(), properties);
         setProperty("project.version", overrideProperties.getProjectVersion(), properties);
         setProperty("gs.version", overrideProperties.getGsVersion(), properties);
         setProperty("java.version", overrideProperties.getJavaVersion(), properties);
         setProperty("slf4j.version", overrideProperties.getSlf4jVersion(), properties);
         setProperty("kafka.web-port", overrideProperties.getKafkaWebPort(), properties);
-        setProperty("kafka.pipeline-name", overrideProperties.getKafkaPipelineName(), properties);
         setProperty("kafka.space-name", overrideProperties.getKafkaSpaceName(), properties);
         setProperty("kafka.bootstrap-servers", overrideProperties.getKafkaBootstrapServers(), properties);
         setProperty("kafka.topic", overrideProperties.getKafkaTopic(), properties);
@@ -62,19 +48,16 @@ public class DIHProjectGenerator {
             Path consumerProjectTargetPath = overrideProperties.getTarget();
             Path consumerBlueprint = Paths.get("").toAbsolutePath().resolve("blueprints").resolve("dih-consumer");
             Blueprint blueprint = new Blueprint(consumerBlueprint);
-            if (packagePath == null) {
-                packagePath = blueprint.getValues().get("project.package-path");
-            }
 
             blueprint.generate(consumerProjectTargetPath, properties);
-            generateDocuments(overrideProperties, packagePath, consumerProjectTargetPath);
+            generateDocuments(overrideProperties, consumerProjectTargetPath);
         } catch (IOException e) {
             throw new RuntimeException("Failed to generate DIH project", e);
         }
     }
 
-    private static void generateDocuments(DIHProjectPropertiesOverrides projectProperties, String packagePath, Path consumerProjectTargetPath) throws IOException {
-        Path consumerModelTypesPath = consumerProjectTargetPath.resolve("pipeline-consumer/dih-model/src/main/java/" + packagePath + "/model/types");
+    private static void generateDocuments(DIHProjectPropertiesOverrides projectProperties, Path consumerProjectTargetPath) throws IOException {
+        Path consumerModelTypesPath = consumerProjectTargetPath.resolve("pipeline-consumer/dih-model/src/main/java/com/gigaspaces/dih/model/types");
         for (DocumentInfo doc : projectProperties.getDocuments()) {
             File docFile = consumerModelTypesPath.resolve(doc.getClassName() + "Document.java").toFile();
             writeDocToFile(doc, docFile);
