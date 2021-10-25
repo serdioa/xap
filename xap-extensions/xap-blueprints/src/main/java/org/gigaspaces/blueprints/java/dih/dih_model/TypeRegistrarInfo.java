@@ -1,4 +1,4 @@
-package org.gigaspaces.blueprints.java;
+package org.gigaspaces.blueprints.java.dih.dih_model;
 
 import org.gigaspaces.blueprints.TemplateUtils;
 
@@ -20,7 +20,7 @@ public class TypeRegistrarInfo {
         imports.addAll(Arrays.asList(
                 "org.openspaces.core.GigaSpace",
                 "org.openspaces.core.GigaSpaceTypeManager"));
-        return TemplateUtils.evaluateResource("templates/document-register.mustache", this);
+        return TemplateUtils.evaluateResource("templates/dih/dih_model/document-register.mustache", this);
     }
 
     public String getPackageName() {

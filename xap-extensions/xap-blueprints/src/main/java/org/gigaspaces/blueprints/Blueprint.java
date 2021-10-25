@@ -84,34 +84,34 @@ public class Blueprint {
         generate(target, Collections.emptyMap());
     }
 
-    public void generate(Path target, Map<String, String> valuesOverrides) throws IOException {
+    public void generate(Path target, Map<String, Object> valuesOverrides) throws IOException {
         if (Files.exists(target))
             throw new IllegalArgumentException("Target already exists: " + target);
 
         TemplateUtils.evaluateTree(content, target, tryParse( merge(valuesOverrides)));
     }
 
-    private Map<String, String> merge(Map<String, String> overrides) throws IOException {
-        Map<String, String> merged = new LinkedHashMap<>(getValues());
+    private Map<String, Object> merge(Map<String, Object> overrides) throws IOException {
+        Map<String, Object> merged = new LinkedHashMap<>(getValues());
         if (overrides != null)
             merged.putAll(overrides);
         merged.putIfAbsent("gs.version", PlatformVersion.getInstance().getId());
         merged.putIfAbsent("gs.home", SystemLocations.singleton().home().toString());
         if (!merged.containsKey("project.package-path")) {
-            String groupId = merged.get("project.groupId");
+            String groupId = (String) merged.get("project.groupId");
             if (groupId != null)
                 merged.put("project.package-path", groupId.replace(".", File.separator));
         }
         return merged;
     }
 
-    private static Map<String, Object> tryParse(Map<String, String> map) {
+    private static Map<String, Object> tryParse(Map<String, Object> map) {
         Map<String, Object> result = new LinkedHashMap<>();
         map.forEach((k, v) -> result.put(k, tryParse(v)));
         return result;
     }
 
-    private static Object tryParse(String s) {
+    private static Object tryParse(Object s) {
         if (Boolean.FALSE.toString().equals(s))
             return Boolean.FALSE;
         if (Boolean.TRUE.toString().equals(s))
