@@ -52,6 +52,9 @@ public class ZNodePathFactory {
     }
     
     public static String pipeline(String pipeline) {
+        return path(PIPELINES, pipeline);
+    }
+    public static String pipelineConfig(String pipeline) {
         return path(PIPELINES, pipeline + "/configuration");
     }
     public static String pipeline(String pipeline, String component) {

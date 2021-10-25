@@ -1,10 +1,18 @@
 package org.gigaspaces.blueprints.java.dih;
 
+import com.gigaspaces.api.InternalApi;
 import org.gigaspaces.blueprints.java.DocumentInfo;
 
 import java.nio.file.Path;
 import java.util.List;
 
+/**
+ * Holds template properties for the DIHProjectGenerator
+ *
+ * @author Mishel Liberman
+ * @since 16.1
+ */
+@InternalApi
 public class DIHProjectPropertiesOverrides {
     private final String projectPipelineName;
     private final String projectVersion;
