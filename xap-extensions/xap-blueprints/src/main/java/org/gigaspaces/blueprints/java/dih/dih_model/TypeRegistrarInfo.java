@@ -1,10 +1,19 @@
 package org.gigaspaces.blueprints.java.dih.dih_model;
 
+import com.gigaspaces.api.InternalApi;
 import org.gigaspaces.blueprints.TemplateUtils;
 
 import java.io.IOException;
 import java.util.*;
 
+/**
+ * Template for creating TypeRegistrar for the DIH consumer
+ * The consumer uses TypeRegistrar to register generated space documents
+ *
+ * @author Mishel Liberman
+ * @since 16.1
+ */
+@InternalApi
 public class TypeRegistrarInfo {
     private final String packageName;
     private final Set<String> imports = new LinkedHashSet<>();
@@ -51,6 +60,6 @@ public class TypeRegistrarInfo {
 
     public void addClass(String packageName, String className) {
         classNames.add(className);
-        imports.add(packageName+"."+className);
+        imports.add(packageName + "." + className);
     }
 }

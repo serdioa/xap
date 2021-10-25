@@ -15,23 +15,23 @@ import {{.}};
 {{#annotations}}
     {{&.}}
 {{/annotations}}
-public class {{className}}Document extends SpaceDocument {
+public class {{fileName}}Document extends SpaceDocument {
 
     private static final long serialVersionUID = 1L;
-    private static final String {{classNameUpperCase}} = "{{fullName}}";
+    private static final String {{classNameUpperCase}} = "{{className}}";
 {{#properties}}
-    private static final String {{upperCaseName}} = "{{camelCaseName}}";
+    private static final String {{upperCaseName}} = "{{name}}";
 {{/properties}}
 
 
-    public {{className}}Document() {
+    public {{fileName}}Document() {
         super({{classNameUpperCase}});
     }
 
     public static SpaceTypeDescriptor getTypeDescriptor() {
         return new SpaceTypeDescriptorBuilder({{classNameUpperCase}})
                 .broadcast({{broadcastObject}})
-                .documentWrapperClass({{className}}Document.class)
+                .documentWrapperClass({{fileName}}Document.class)
 {{#storageOptimized}}
                 .binaryStorage()
 {{/storageOptimized}}
@@ -45,7 +45,9 @@ public class {{className}}Document extends SpaceDocument {
                 .routingProperty({{upperCaseName}}, SpaceIndexType.{{indexType}})
         {{/routingProperty}}
         {{^routingProperty}}
+            {{#indexType}}
                 .addPropertyIndex({{upperCaseName}}, SpaceIndexType.{{indexType}})
+            {{/indexType}}
         {{/routingProperty}}
     {{/id}}
 {{/properties}}
@@ -69,10 +71,10 @@ public class {{className}}Document extends SpaceDocument {
             return true;
         if (obj == null)
             return false;
-        if (!(obj instanceof {{className}}Document))
+        if (!(obj instanceof {{fileName}}Document))
             return false;
 
-        {{className}}Document other = ({{className}}Document) obj;
+        {{fileName}}Document other = ({{fileName}}Document) obj;
 {{#properties}}
         if (!this.get{{PascalCaseName}}().equals(other.get{{PascalCaseName}}())) {
             return false;

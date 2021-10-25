@@ -1,5 +1,6 @@
 package org.gigaspaces.blueprints.java.dih;
 
+import com.gigaspaces.api.InternalApi;
 import com.gigaspaces.start.SystemLocations;
 import org.gigaspaces.blueprints.Blueprint;
 import org.gigaspaces.blueprints.java.DocumentInfo;
@@ -12,6 +13,14 @@ import java.nio.file.Path;
 import java.util.*;
 import java.util.stream.Collectors;
 
+/**
+ * Generates a whole DIH consumer project
+ * This api is hidden from the user, thus hidden from the cli
+ *
+ * @author Mishel Liberman
+ * @since 16.1
+ */
+@InternalApi
 public class DIHProjectGenerator {
 
     private final TypeRegistrarInfo typeRegistrarInfo;
@@ -21,7 +30,7 @@ public class DIHProjectGenerator {
     }
 
 
-    public static void generate(DIHProjectPropertiesOverrides overrideProperties) {
+    public static String generate(DIHProjectPropertiesOverrides overrideProperties) {
         List<String> classNames = overrideProperties.getDocuments() == null ? Collections.emptyList() :
                 overrideProperties.getDocuments().stream().map(doc -> doc.getClassName() + "Document").collect(Collectors.toList());
         HashMap<String, Object> properties = new HashMap<>();
@@ -48,14 +57,22 @@ public class DIHProjectGenerator {
             Blueprint blueprint = new Blueprint(consumerBlueprint);
 
             blueprint.generate(consumerProjectTargetPath, properties);
-            generateDocuments(overrideProperties, consumerProjectTargetPath);
+
+            String pipelineRootFolderName = "pipeline-consumer-" + blueprint.getValues().get("project.pipeline-name-lower-case");
+            String overrideProperty = (String) properties.get("project.pipeline-name-lower-case");
+            if (overrideProperty != null) {
+                pipelineRootFolderName = "pipeline-consumer-" + overrideProperty;
+            }
+
+            generateDocuments(overrideProperties, consumerProjectTargetPath, pipelineRootFolderName);
+            return pipelineRootFolderName;
         } catch (IOException e) {
             throw new RuntimeException("Failed to generate DIH project", e);
         }
     }
 
-    private static void generateDocuments(DIHProjectPropertiesOverrides projectProperties, Path consumerProjectTargetPath) throws IOException {
-        Path consumerModelTypesPath = consumerProjectTargetPath.resolve("pipeline-consumer/dih-model/src/main/java/com/gigaspaces/dih/model/types");
+    private static void generateDocuments(DIHProjectPropertiesOverrides projectProperties, Path consumerProjectTargetPath, String pipelineRootFolderName) throws IOException {
+        Path consumerModelTypesPath = consumerProjectTargetPath.resolve(pipelineRootFolderName + "/dih-model/src/main/java/com/gigaspaces/dih/model/types");
         for (DocumentInfo doc : projectProperties.getDocuments()) {
             File docFile = consumerModelTypesPath.resolve(doc.getClassName() + "Document.java").toFile();
             writeDocToFile(doc, docFile);
@@ -70,6 +87,7 @@ public class DIHProjectGenerator {
             properties.put(property, propertyValue);
         }
     }
+
     /**
      * Set the property only if he was initialized
      */

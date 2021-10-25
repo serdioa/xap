@@ -46,14 +46,9 @@ public class ZookeeperTopologyHandler implements Closeable {
         return getHeapReportStatePath2(puName)+"/heapreport";
     }
 
-    public static String getPipelineStatus(String pipelineName) {
-        return ZNodePathFactory.pipeline(pipelineName, "status");
-    }
-
     public static String getPipelineConfiguration(String pipelineName) {
-        return ZNodePathFactory.pipeline(pipelineName);
+        return ZNodePathFactory.pipelineConfig(pipelineName);
     }
-
 
     public static String pipelines() {
         return ZNodePathFactory.pipelines();
