@@ -110,7 +110,8 @@ public class QueryTemplatePacket extends ExternalTemplatePacket {
         this._queryResultType = template.getQueryResultType();
         this._isAlwaysEmpty = template.isAlwaysEmpty();
         this._ranges = new HashMap<String, Range>(template.getRanges());
-
+        this._aggregationSet = template._aggregationSet;
+        this._projectionTemplate = template._projectionTemplate;
         if (template.getMultipleUids() != null)
             this._multipleUids = new HashSet<String>(template.getMultipleUids());
 
