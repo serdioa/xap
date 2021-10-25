@@ -89,7 +89,7 @@ public class ConventionObjectParser {
             try {
                 return method.invoke(null, s);
             } catch (Exception e) {
-                throw new SQLException("Failed to parse " + s + " to " + method.getDeclaringClass().getName(), e);
+                throw new SQLException("Failed to parse " + s + " to " + method.getDeclaringClass().getName(), "", -378, e);
             }
         }
     }

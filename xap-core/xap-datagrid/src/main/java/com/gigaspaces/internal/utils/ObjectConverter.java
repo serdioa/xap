@@ -51,7 +51,7 @@ public abstract class ObjectConverter {
             return obj;
         } catch (RuntimeException e) {
             throw new SQLException("Failed converting [" + obj + "] from '"
-                    + obj.getClass().getName() + "' to '" + type.getName() + "'.", e);
+                    + obj.getClass().getName() + "' to '" + type.getName() + "'.", "", -378, e);
         }
     }
 
