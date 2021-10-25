@@ -1,19 +1,14 @@
 package org.gigaspaces.blueprints;
 
 import com.gigaspaces.internal.io.BootIOUtils;
-import com.gigaspaces.metadata.index.SpaceIndexType;
-import org.gigaspaces.blueprints.java.DocumentInfo;
-import org.gigaspaces.blueprints.java.TypeRegistrarInfo;
+import org.gigaspaces.blueprints.java.dih.dih_model.TypeRegistrarInfo;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.openspaces.core.GigaSpace;
-import org.openspaces.core.GigaSpaceConfigurer;
-import org.openspaces.core.space.EmbeddedSpaceConfigurer;
 
 import java.io.IOException;
-import java.nio.file.Paths;
 
 public class TypeRegistratInfoTestCase {
 

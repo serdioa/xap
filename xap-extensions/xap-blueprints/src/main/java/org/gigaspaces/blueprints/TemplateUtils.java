@@ -65,13 +65,11 @@ public class TemplateUtils {
         return s.contains("{{") ? Paths.get(evaluate(s, scope)) : path;
     }
 
-    public static void pipelineJson(String templateJson, String dest, HashMap<String, Object> scopes) throws IOException {
-        File f = new File(templateJson);
-        Mustache m = mf.compile(new InputStreamReader(new FileInputStream(f), Charset.forName("UTF-8")),f.getName());
-        OutputStream outputStream = new FileOutputStream(dest);
-        Writer writer = new OutputStreamWriter(outputStream);
+    public static String pipelineJson(String templateJson, HashMap<String, Object> scopes) throws IOException {
+        Mustache m = mf.compile(new StringReader(templateJson), "stream_myStream.json");
+        Writer writer = new StringWriter();
         Writer execute = m.execute(writer, scopes);
-        writer.flush();
+        return execute.toString();
 
 
     }
