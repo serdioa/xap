@@ -20,6 +20,7 @@ import com.gigaspaces.internal.utils.parsers.*;
 import org.slf4j.LoggerFactory;
 
 import java.sql.SQLException;
+import java.time.OffsetDateTime;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -29,7 +30,7 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public abstract class ObjectConverter {
     private static final Map<String, AbstractParser> _typeParserMap = createTypeConverterMap();
-    private static final Map<String, AbstractParser> _runtimeGeneratedParserMap = new ConcurrentHashMap<String, AbstractParser>();
+    private static final Map<String, AbstractParser> _runtimeGeneratedParserMap = new ConcurrentHashMap<>();
 
     public static Object convert(Object obj, Class<?> type)
             throws SQLException {
@@ -42,6 +43,9 @@ public abstract class ObjectConverter {
         if (type.equals(Object.class))
             return obj;
 
+        if(obj.getClass().equals(java.util.Date.class) && type.equals(OffsetDateTime.class)){
+            return OffsetDateTime.parse(((java.util.Date) obj).toInstant().toString());
+        }
 
         AbstractParser parser = getParserFromType(type);
         if (parser == null)
@@ -100,7 +104,7 @@ public abstract class ObjectConverter {
     }
 
     private static Map<String, AbstractParser> createTypeConverterMap() {
-        final Map<String, AbstractParser> map = new ConcurrentHashMap<String, AbstractParser>();
+        final Map<String, AbstractParser> map = new ConcurrentHashMap<>();
 
         // Primitive types:
         map.put(Byte.class.getName(), new ByteParser());
