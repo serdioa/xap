@@ -1,6 +1,8 @@
 package com.gigaspaces.dih.model;
 
-import com.gigaspaces.dih.model.types.*;
+{{#type-registrar.class-names}}
+import com.gigaspaces.dih.model.types.{{.}};
+{{/type-registrar.class-names}}
 import com.gigaspaces.dih.consumer.CDCInfo;
 import org.openspaces.core.GigaSpace;
 import org.openspaces.core.GigaSpaceTypeManager;
