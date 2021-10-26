@@ -1,5 +1,6 @@
 package org.gigaspaces.blueprints.java.dih;
 
+import com.gigaspaces.start.SystemLocations;
 import org.gigaspaces.blueprints.Blueprint;
 import org.gigaspaces.blueprints.java.DocumentInfo;
 import org.gigaspaces.blueprints.java.dih.dih_model.TypeRegistrarInfo;
@@ -8,11 +9,7 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class DIHProjectGenerator {
@@ -25,7 +22,8 @@ public class DIHProjectGenerator {
 
 
     public static void generate(DIHProjectPropertiesOverrides overrideProperties) {
-        List<String> classNames = overrideProperties.getDocuments().stream().map(doc -> doc.getClassName() + "Document").collect(Collectors.toList());
+        List<String> classNames = overrideProperties.getDocuments() == null ? Collections.emptyList() :
+                overrideProperties.getDocuments().stream().map(doc -> doc.getClassName() + "Document").collect(Collectors.toList());
         HashMap<String, Object> properties = new HashMap<>();
         setProperty("project.pipeline-name", overrideProperties.getProjectPipelineName(), properties);
         setProperty("project.pipeline-name-lower-case", overrideProperties.getProjectPipelineName().toLowerCase(), properties);
@@ -46,7 +44,7 @@ public class DIHProjectGenerator {
 
         try {
             Path consumerProjectTargetPath = overrideProperties.getTarget();
-            Path consumerBlueprint = Paths.get("").toAbsolutePath().resolve("blueprints").resolve("dih-consumer");
+            Path consumerBlueprint = SystemLocations.singleton().home("blueprints").resolve("dih-consumer");
             Blueprint blueprint = new Blueprint(consumerBlueprint);
 
             blueprint.generate(consumerProjectTargetPath, properties);
