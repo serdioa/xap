@@ -50,8 +50,8 @@ public class ZookeeperTopologyHandler implements Closeable {
         return ZNodePathFactory.pipeline(pipelineName, "status");
     }
 
-    public static String getPipeline(String pipelineName) {
-        return ZNodePathFactory.pipeline(pipelineName, "pipeline");
+    public static String getPipelineConfiguration(String pipelineName) {
+        return ZNodePathFactory.pipeline(pipelineName);
     }
 
 

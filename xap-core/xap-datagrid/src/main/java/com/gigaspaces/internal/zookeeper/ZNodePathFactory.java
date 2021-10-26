@@ -28,10 +28,6 @@ public class ZNodePathFactory {
         return path(PUS, puName);
     }
 
-    public static String pipeline(String pipeline) {
-        return path(PIPELINES, pipeline);
-    }
-
     public static String lockPuName(String puName) {
         return path(LOCKS,PUS, puName);
     }
@@ -48,9 +44,13 @@ public class ZNodePathFactory {
         return path(PUS, puName, component);
     }
     
+    public static String pipeline(String pipeline) {
+        return path(PIPELINES, pipeline + "/configuration");
+    }
     public static String pipeline(String pipeline, String component) {
         return path(PIPELINES, pipeline, component);
     }
+
     public static String pipelines() {
         return path(PIPELINES);
     }
