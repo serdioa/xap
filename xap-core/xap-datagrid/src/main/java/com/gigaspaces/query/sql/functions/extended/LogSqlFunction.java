@@ -43,7 +43,7 @@ public class LogSqlFunction extends SqlFunction {
             if (!(logNumber instanceof Number)) {
                 throw new RuntimeException("Log function - wrong arguments types, arguments should be Number. First argument:[" + logNumber + "]");
             }
-            return Math.log10(((Number) logNumber).doubleValue());
+            return Math.log(((Number) logNumber).doubleValue());
         } else {
             //context.getNumberOfArguments() == 2
             Object base = context.getArgument(0);
