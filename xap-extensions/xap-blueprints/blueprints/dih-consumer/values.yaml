@@ -2,7 +2,7 @@ project:
   pipeline-name: MyPipeline
   pipeline-name-lower-case: mypipeline
   version: 0.1
-gs.version: 16.1.0-m8
+gs.version: 16.1.0-SNAPSHOT
 java.version: 1.8
 slf4j.version: 1.7.26
 kafka:

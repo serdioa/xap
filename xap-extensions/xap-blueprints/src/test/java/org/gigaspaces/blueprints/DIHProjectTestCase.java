@@ -18,7 +18,6 @@ public class DIHProjectTestCase {
     void generateProject() {
         String projectPipelineName = "Foo";
         String projectVersion = "1.0";
-        String gsVersion = "16.1.0-SNAPSHOT";
         String kafkaSpaceName = "mySpace";
         String kafkaTopic = "myTopic";
         String resourcesTypeMetadataJson = getTypeMetadataJson();
@@ -28,7 +27,7 @@ public class DIHProjectTestCase {
         List<DocumentInfo> documents = getDocumentsInfo();
 
         DIHProjectPropertiesOverrides dihProjectProperties = new DIHProjectPropertiesOverrides(
-                projectPipelineName, projectVersion, gsVersion,
+                projectPipelineName, projectVersion, null,
                 null, null, null,
                 kafkaSpaceName, null, kafkaTopic,
                 null, null, resourcesTypeMetadataJson,
