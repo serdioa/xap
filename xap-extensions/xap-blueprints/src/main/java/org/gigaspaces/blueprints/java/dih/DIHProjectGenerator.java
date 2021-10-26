@@ -44,7 +44,7 @@ public class DIHProjectGenerator {
 
         try {
             Path consumerProjectTargetPath = overrideProperties.getTarget();
-            Path consumerBlueprint = SystemLocations.singleton().home("blueprints").resolve("dih-consumer");
+            Path consumerBlueprint = SystemLocations.singleton().config("blueprints").resolve("dih-consumer");
             Blueprint blueprint = new Blueprint(consumerBlueprint);
 
             blueprint.generate(consumerProjectTargetPath, properties);
