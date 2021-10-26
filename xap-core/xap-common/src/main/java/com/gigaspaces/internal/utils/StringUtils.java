@@ -658,27 +658,30 @@ public abstract class StringUtils {
     }
 
     public static String leftPad(String str, int n, char padding) {
-        if (str.length() >= n) {
+        final int strLength = str.length();
+        if (strLength >= n) {
             return str;
         }
-        StringBuilder sb = new StringBuilder();
-        while (sb.length() < n - str.length()) {
-            sb.append(padding);
+        char[] strChars = new char[n];
+        int count = 0;
+        for (int i = strLength; i < n ; i++) {
+            strChars[count++] = padding;
         }
-        sb.append(str);
-
-        return sb.toString();
+        str.getChars(0, strLength, strChars, count);
+        return new String(strChars);
     }
 
     public static String rightPad(String str, int n, char padding) {
-        if (str.length() >= n) {
+        final int strLength = str.length();
+        if (strLength >= n) {
             return str;
         }
-        StringBuilder sb = new StringBuilder();
-        sb.append(str);
-        while (sb.length() < n - str.length()) {
-            sb.append(padding);
+        char[] strChars = new char[n];
+        str.getChars(0, strLength, strChars, 0);
+        int i = strLength;
+        while (i < n) {
+            strChars[i++] = padding;
         }
-        return sb.toString();
+        return new String(strChars);
     }
 }
