@@ -67,9 +67,8 @@ public class AggregateEntriesSpaceOperation extends AbstractSpaceOperation<Aggre
                     }
                     else if (aggregator instanceof GroupByAggregator){
                         GroupByAggregator groupByAggregator = (GroupByAggregator)aggregator;
-                        String[] groupByPaths = groupByAggregator.getGroupByPaths();
-                        for(int i=0; i < groupByPaths.length ; i++) {
-                            answerHolder.getExplainPlan().addAggregatorsInfo("GroupBy", groupByPaths[i]);
+                        for (SpaceEntriesAggregator groupByAgg : groupByAggregator.getAggregators()) {
+                            answerHolder.getExplainPlan().addAggregatorsInfo("GroupBy", groupByAgg.getDefaultAlias());
                         }
                     }
                     else if (aggregator instanceof AbstractPathAggregator){
