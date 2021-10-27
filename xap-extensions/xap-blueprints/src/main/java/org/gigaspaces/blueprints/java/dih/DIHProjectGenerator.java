@@ -48,14 +48,21 @@ public class DIHProjectGenerator {
             Blueprint blueprint = new Blueprint(consumerBlueprint);
 
             blueprint.generate(consumerProjectTargetPath, properties);
-            generateDocuments(overrideProperties, consumerProjectTargetPath);
+
+            String pipelineRootFolderName = "pipeline-consumer-" + blueprint.getValues().get("project.pipeline-name-lower-case");
+            String overrideProperty = (String) properties.get("project.pipeline-name-lower-case");
+            if (overrideProperty != null) {
+                pipelineRootFolderName = "pipeline-consumer-" + overrideProperty;
+            }
+
+            generateDocuments(overrideProperties, consumerProjectTargetPath, pipelineRootFolderName);
         } catch (IOException e) {
             throw new RuntimeException("Failed to generate DIH project", e);
         }
     }
 
-    private static void generateDocuments(DIHProjectPropertiesOverrides projectProperties, Path consumerProjectTargetPath) throws IOException {
-        Path consumerModelTypesPath = consumerProjectTargetPath.resolve("pipeline-consumer/dih-model/src/main/java/com/gigaspaces/dih/model/types");
+    private static void generateDocuments(DIHProjectPropertiesOverrides projectProperties, Path consumerProjectTargetPath, String pipelineRootFolderName) throws IOException {
+        Path consumerModelTypesPath = consumerProjectTargetPath.resolve(pipelineRootFolderName+"/dih-model/src/main/java/com/gigaspaces/dih/model/types");
         for (DocumentInfo doc : projectProperties.getDocuments()) {
             File docFile = consumerModelTypesPath.resolve(doc.getClassName() + "Document.java").toFile();
             writeDocToFile(doc, docFile);
