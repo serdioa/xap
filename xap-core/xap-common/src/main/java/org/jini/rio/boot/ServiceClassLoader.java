@@ -17,6 +17,7 @@
 package org.jini.rio.boot;
 
 import com.gigaspaces.classloader.CustomURLClassLoader;
+import com.gigaspaces.internal.jvm.JavaUtils;
 import com.gigaspaces.internal.utils.GsEnv;
 import com.gigaspaces.start.ClasspathBuilder;
 import net.jini.loader.ClassAnnotation;
@@ -25,6 +26,8 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.*;
@@ -102,7 +105,7 @@ public class ServiceClassLoader extends CustomURLClassLoader implements ClassAnn
     }
 
     public void setParentClassLoader(ClassLoader classLoader) throws Exception {
-        Field field = ClassLoader.class.getDeclaredField("parent");
+        Field field = getFieldFromClass(ClassLoader.class, "parent");
         field.setAccessible(true);
         field.set(this, classLoader);
     }
@@ -359,5 +362,24 @@ public class ServiceClassLoader extends CustomURLClassLoader implements ClassAnn
         } else {
             return false;
         }
+    }
+
+
+    public static Field getFieldFromClass(Class<?> clazz, String fieldName) throws NoSuchFieldException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
+        Field field = null;
+        if(JavaUtils.greaterOrEquals(17)){
+            Method getDeclaredFields0 = Class.class.getDeclaredMethod("getDeclaredFields0", boolean.class);
+            getDeclaredFields0.setAccessible(true);
+            Field[] unfilteredFields = (Field[]) getDeclaredFields0.invoke(clazz, false);
+            for (Field unfilteredField : unfilteredFields) {
+                if(unfilteredField.getName().equals(fieldName)){
+                    return unfilteredField;
+                }
+            }
+        }
+        else {
+            return ClassLoader.class.getDeclaredField(fieldName);
+        }
+        throw new NoSuchFieldException(fieldName);
     }
 }

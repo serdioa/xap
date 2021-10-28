@@ -44,7 +44,7 @@ import com.sun.jini.thread.ReadyState;
 import com.sun.jini.thread.TaskManager;
 import com.sun.jini.thread.WakeupManager;
 
-import net.jini.activation.ActivationExporter;
+
 import net.jini.config.Configuration;
 import net.jini.config.ConfigurationProvider;
 import net.jini.core.constraint.RemoteMethodControl;
@@ -79,11 +79,11 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.rmi.MarshalledObject;
 import java.rmi.RemoteException;
-import java.rmi.activation.Activatable;
-import java.rmi.activation.ActivationException;
-import java.rmi.activation.ActivationGroup;
-import java.rmi.activation.ActivationID;
-import java.rmi.activation.ActivationSystem;
+
+
+
+
+
 import java.security.PrivilegedActionException;
 import java.security.PrivilegedExceptionAction;
 import java.security.SecureRandom;
@@ -205,21 +205,6 @@ public class TxnManagerImpl /*extends RemoteServer*/
      * @serial
      */
     private String persistenceDirectory = null;
-
-    /**
-     * @serial
-     */
-    private ActivationID activationID;
-
-    /**
-     * Whether the activation ID has been prepared
-     */
-    private boolean activationPrepared;
-
-    /**
-     * The activation system, prepared
-     */
-    private ActivationSystem activationSystem;
 
     /**
      * Proxy preparer for listeners
@@ -405,38 +390,6 @@ public class TxnManagerImpl /*extends RemoteServer*/
     }
 
     /**
-     * Constructs an activatable transaction manager.
-     *
-     * @param activationID activation ID passed in by the activation daemon.
-     * @param data         state data needed to re-activate a transaction manager.
-     */
-    TxnManagerImpl(ActivationID activationID, MarshalledObject data)
-            throws Exception {
-        if (operationsLogger.isDebugEnabled()) {
-            LogUtils.entering(operationsLogger, TxnManagerImpl.class, "TxnManagerImpl",
-                    new Object[]{activationID, data});
-        }
-        this.activationID = activationID;
-        try {
-            // Initialize state
-            init((String[]) data.get());
-        } catch (Throwable e) {
-            cleanup();
-            initFailed(e);
-        }
-        if (operationsLogger.isDebugEnabled()) {
-            LogUtils.exiting(operationsLogger,
-                    TxnManagerImpl.class, "TxnManagerImpl");
-        }
-        finer_par_logger = participantLogger.isDebugEnabled();
-        finest_par_logger = participantLogger.isTraceEnabled();
-        finer_op_logger = operationsLogger.isDebugEnabled();
-        finest_op_logger = operationsLogger.isTraceEnabled();
-        finer_tr_logger = transactionsLogger.isDebugEnabled();
-        finest_tr_logger = transactionsLogger.isTraceEnabled();
-    }
-
-    /**
      * Initialization common to both activatable and transient instances.
      */
     private void init(String[] configArgs)
@@ -499,48 +452,14 @@ public class TxnManagerImpl /*extends RemoteServer*/
             LogUtils.entering(operationsLogger, TxnManagerImpl.class, "doInit", config);
         }
         // Get activatable settings, if activated
-        if (activationID != null) {
-            ProxyPreparer activationSystemPreparer =
-                    (ProxyPreparer) Config.getNonNullEntry(config,
-                            TxnManager.MAHALO, "activationSystemPreparer",
-                            ProxyPreparer.class, new BasicProxyPreparer());
-            if (initLogger.isDebugEnabled()) {
-                initLogger.debug("activationSystemPreparer: {}", activationSystemPreparer);
-            }
-            activationSystem =
-                    (ActivationSystem) activationSystemPreparer.prepareProxy(
-                            ActivationGroup.getSystem());
-            if (initLogger.isDebugEnabled()) {
-                initLogger.debug("Prepared activation system is: {}", activationSystem);
-            }
-            ProxyPreparer activationIdPreparer =
-                    (ProxyPreparer) Config.getNonNullEntry(config,
-                            TxnManager.MAHALO, "activationIdPreparer",
-                            ProxyPreparer.class, new BasicProxyPreparer());
-            if (initLogger.isDebugEnabled()) {
-                initLogger.debug("activationIdPreparer: {}", activationIdPreparer);
-            }
-            activationID = (ActivationID) activationIdPreparer.prepareProxy(
-                    activationID);
-            if (initLogger.isDebugEnabled()) {
-                initLogger.debug("Prepared activationID is: {}", activationID);
-            }
-            activationPrepared = true;
-            exporter = (Exporter) Config.getNonNullEntry(config,
-                    TxnManager.MAHALO, "serverExporter", Exporter.class);
-            exporter = new ActivationExporter(activationID, exporter);
-            if (initLogger.isDebugEnabled()) {
-                initLogger.debug(
-                        "Activatable service exporter is: {}", exporter);
-            }
-        } else {
+
             exporter = (Exporter) Config.getNonNullEntry(config,
                     TxnManager.MAHALO, "serverExporter", Exporter.class);
             if (initLogger.isDebugEnabled()) {
                 initLogger.debug(
                         "Non-activatable service exporter is: {}", exporter);
             }
-        }
+
 
         ProxyPreparer recoveredParticipantPreparer =
                 (ProxyPreparer) Config.getNonNullEntry(config,
@@ -1717,33 +1636,33 @@ public class TxnManagerImpl /*extends RemoteServer*/
  * - move this block into the destroy() method and let the
  *   remote ex pass through
  */
-            if (activationPrepared) {
-                try {
-                    if (destroyLogger.isTraceEnabled()) {
-                        destroyLogger.trace(
-                                "Unregistering object.");
-                    }
-                    if (activationID != null)
-                        activationSystem.unregisterObject(activationID);
-                } catch (RemoteException e) {
-   		    /* give up until we can at least unregister */
-                    if (destroyLogger.isWarnEnabled()) {
-                        destroyLogger.warn(
-                                "Trouble unregistering object -- aborting.", e);
-                    }
-                    return;
-                } catch (ActivationException e) {
-                    /*
-                     * Activation system is shutting down or this
-                     * object has already been unregistered --
-                     * ignore in either case.
-                     */
-                    if (destroyLogger.isDebugEnabled()) {
-                        destroyLogger.debug(
-                                "Trouble unregistering object -- ignoring.", e);
-                    }
-                }
-            }
+//            if (activationPrepared) {
+//                try {
+//                    if (destroyLogger.isTraceEnabled()) {
+//                        destroyLogger.trace(
+//                                "Unregistering object.");
+//                    }
+//                    if (activationID != null)
+//                        activationSystem.unregisterObject(activationID);
+//                } catch (RemoteException e) {
+//   		    /* give up until we can at least unregister */
+//                    if (destroyLogger.isWarnEnabled()) {
+//                        destroyLogger.warn(
+//                                "Trouble unregistering object -- aborting.", e);
+//                    }
+//                    return;
+//                } catch (ActivationException e) {
+//                    /*
+//                     * Activation system is shutting down or this
+//                     * object has already been unregistered --
+//                     * ignore in either case.
+//                     */
+//                    if (destroyLogger.isDebugEnabled()) {
+//                        destroyLogger.debug(
+//                                "Trouble unregistering object -- ignoring.", e);
+//                    }
+//                }
+//            }
 
             // Attempt to unexport this object -- nicely first
             if (destroyLogger.isTraceEnabled()) {
@@ -1868,24 +1787,24 @@ public class TxnManagerImpl /*extends RemoteServer*/
                 }
             }
 
-            if (activationID != null) {
-                if (destroyLogger.isTraceEnabled()) {
-                    destroyLogger.trace("Calling Activatable.inactive.");
-                }
-                try {
-                    Activatable.inactive(activationID);
-                } catch (RemoteException e) { // ignore
-                    if (destroyLogger.isDebugEnabled()) {
-                        destroyLogger.debug(
-                                "Problem inactivating service", e);
-                    }
-                } catch (ActivationException e) { // ignore
-                    if (destroyLogger.isDebugEnabled()) {
-                        destroyLogger.debug(
-                                "Problem inactivating service", e);
-                    }
-                }
-            }
+//            if (activationID != null) {
+//                if (destroyLogger.isTraceEnabled()) {
+//                    destroyLogger.trace("Calling Activatable.inactive.");
+//                }
+//                try {
+//                    Activatable.inactive(activationID);
+//                } catch (RemoteException e) { // ignore
+//                    if (destroyLogger.isDebugEnabled()) {
+//                        destroyLogger.debug(
+//                                "Problem inactivating service", e);
+//                    }
+//                } catch (ActivationException e) { // ignore
+//                    if (destroyLogger.isDebugEnabled()) {
+//                        destroyLogger.debug(
+//                                "Problem inactivating service", e);
+//                    }
+//                }
+//            }
 
             if (lifeCycle != null) {
                 if (destroyLogger.isTraceEnabled()) {

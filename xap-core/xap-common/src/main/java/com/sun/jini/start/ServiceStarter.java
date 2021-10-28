@@ -28,8 +28,8 @@ import net.jini.security.BasicProxyPreparer;
 import net.jini.security.ProxyPreparer;
 
 import java.rmi.Naming;
-import java.rmi.activation.ActivationException;
-import java.rmi.activation.ActivationSystem;
+
+
 import java.security.PrivilegedActionException;
 import java.security.PrivilegedExceptionAction;
 import java.util.ArrayList;
@@ -247,59 +247,6 @@ public class ServiceStarter {
 
         LogUtils.exiting(logger, ServiceStarter.class, "create", proxies);
         return (Result[]) proxies.toArray(new Result[proxies.size()]);
-    }
-
-    /**
-     * Utility routine that returns a "prepared" activation system proxy for a system at the given
-     * <code>host</code> and <code>port</code>.
-     *
-     * @param host   The host of the desired activation system
-     * @param port   The port of the desired activation system
-     * @param config The <code>Configuration</code> used to prepare the system proxy.
-     * @return A prepared activation system proxy
-     * @throws ActivationException If there was a problem communicating with the activation system.
-     * @see net.jini.config.Configuration
-     */
-    static ActivationSystem getActivationSystem(
-            String host, int port, Configuration config)
-            throws ActivationException, ConfigurationException {
-        if (config == null) {
-            throw new NullPointerException(
-                    "Configuration argument cannot be null");
-        }
-
-        ActivationSystem sys = null;
-        final String h = (host == null) ? "" : host;
-        final int p = (port <= 0) ? getActivationSystemPort() : port;
-        try {
-            sys = (ActivationSystem)
-                    Naming.lookup("//" + h + ":" + p +
-                            "/java.rmi.activation.ActivationSystem");
-            ProxyPreparer activationSystemPreparer =
-                    (ProxyPreparer) Config.getNonNullEntry(config,
-                            START_PACKAGE, "activationSystemPreparer",
-                            ProxyPreparer.class, new BasicProxyPreparer());
-            sys = (ActivationSystem) activationSystemPreparer.prepareProxy(sys);
-        } catch (Exception e) {
-            throw new ActivationException(
-                    "ActivationSystem @ " + host + ":" + port +
-                            " could not be obtained", e);
-        }
-        return sys;
-    }
-
-    /**
-     * Utility routine that returns a "default" activation system port. The default port is
-     * determined by: <UL> <LI> the value of the <code>java.rmi.activation.port</code> system
-     * property, if set <LI> the value of <code>ActivationSystem.SYSTEM_PORT</code> </UL>
-     *
-     * @return The activation system port
-     * @see java.rmi.activation.ActivationSystem
-     */
-    static int getActivationSystemPort() {
-        return ((Integer) java.security.AccessController.doPrivileged(
-                new GetIntegerAction("java.rmi.activation.port",
-                        ActivationSystem.SYSTEM_PORT))).intValue();
     }
 
     /**

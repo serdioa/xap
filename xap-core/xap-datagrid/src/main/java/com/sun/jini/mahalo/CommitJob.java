@@ -39,7 +39,7 @@ import java.rmi.MarshalException;
 import java.rmi.NoSuchObjectException;
 import java.rmi.RemoteException;
 import java.rmi.UnknownHostException;
-import java.rmi.activation.ActivateFailedException;
+;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -216,11 +216,7 @@ public class CommitJob extends Job implements TransactionConstants {
         } catch (AccessException ae) {
             //Access error on registry or rmid consider done
             response = new Integer(COMMITTED);
-        } catch (ActivateFailedException afe) {
-            //Activatable Ref Stub couldn't activate
-            //participant, so stop and consider done
-            response = new Integer(COMMITTED);
-        } catch (RemoteException re) {
+        }  catch (RemoteException re) {
             //Something happened with the network, so
             //return null to retry at a later time.
             response = new Integer(COMMITTED);

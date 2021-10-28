@@ -20,7 +20,7 @@ package com.sun.jini.reggie;
 import com.sun.jini.start.LifeCycle;
 
 import java.rmi.MarshalledObject;
-import java.rmi.activation.ActivationID;
+
 
 /**
  * Class for starting activatable and non-activatable persistent lookup services.
@@ -36,15 +36,6 @@ class PersistentRegistrarImpl extends RegistrarImpl {
      */
     PersistentRegistrarImpl(String[] configArgs, LifeCycle lifeCycle)
             throws Exception {
-        super(configArgs, null, true, lifeCycle);
-    }
-
-    /**
-     * Constructs an activatable PersistentRegistrarImpl assigned the given activation ID, based on
-     * a configuration obtained using the provided marshalled string array.
-     */
-    PersistentRegistrarImpl(ActivationID activationID, MarshalledObject data)
-            throws Exception {
-        super((String[]) data.get(), activationID, true, null);
+        super(configArgs, true, lifeCycle);
     }
 }

@@ -33,6 +33,6 @@ class TransientRegistrarImpl extends RegistrarImpl {
      */
     TransientRegistrarImpl(String[] configArgs, LifeCycle lifeCycle)
             throws Exception {
-        super(configArgs, null, false, lifeCycle);
+        super(configArgs, false, lifeCycle);
     }
 }

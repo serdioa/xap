@@ -16,24 +16,14 @@
 
 package com.gigaspaces.internal.reflection;
 
+import com.gigaspaces.internal.jvm.JavaUtils;
 import com.gigaspaces.internal.metadata.SpaceTypeInfo;
 import com.gigaspaces.internal.reflection.standard.StandardReflectionFactory;
 
 import net.jini.core.entry.Entry;
 
-import java.lang.reflect.Array;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
-import java.lang.reflect.Proxy;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashSet;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Set;
+import java.lang.reflect.*;
+import java.util.*;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -400,5 +390,21 @@ public class ReflectionUtil {
         buf.append(')');
         getDescriptor(buf, m.getReturnType());
         return buf.toString();
+    }
+
+    public static Method getMethodFromClass(Class<?> clazz, String methodName, Class<?>... parameterTypes) throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
+        if(JavaUtils.greaterOrEquals(17)) {
+            Method getDeclaredMethods0 = Class.class.getDeclaredMethod("getDeclaredMethods0", boolean.class);
+            getDeclaredMethods0.setAccessible(true);
+            final Method[] allMethods = (Method[]) getDeclaredMethods0.invoke(ClassLoader.class, false);
+            for (Method method : allMethods) {
+                if(method.getName().equals(methodName) && Arrays.equals(method.getParameterTypes(), parameterTypes)){
+                    return method;
+                }
+            }
+        } else{
+            return clazz.getDeclaredMethod(methodName, parameterTypes);
+        }
+        return null;
     }
 }

@@ -136,7 +136,7 @@ import java.rmi.MarshalException;
 import java.rmi.MarshalledObject;
 import java.rmi.NoSuchObjectException;
 import java.rmi.RemoteException;
-import java.rmi.activation.ActivationException;
+
 import java.security.PrivilegedActionException;
 import java.security.PrivilegedExceptionAction;
 import java.util.ArrayList;
@@ -4685,7 +4685,7 @@ public class GigaRegistrar implements Registrar, ProxyAccessor, ServerProxyTrust
     /**
      * Post-login (if login configured) initialization.
      */
-    private void init(Configuration config, LifeCycle lifeCycle) throws IOException, ConfigurationException, ActivationException {
+    private void init(Configuration config, LifeCycle lifeCycle) throws IOException, ConfigurationException {
         final long startTime = System.currentTimeMillis();
 
         RuntimeInfo.logRuntimeInfo(logger, "Starting Lookup Service...");
