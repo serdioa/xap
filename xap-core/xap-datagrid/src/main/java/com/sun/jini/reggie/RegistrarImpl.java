@@ -41,9 +41,6 @@ import com.sun.jini.thread.ReadersWriter;
 import com.sun.jini.thread.ReadersWriter.ConcurrentLockException;
 import com.sun.jini.thread.ReadyState;
 import com.sun.jini.thread.TaskManager;
-
-import net.jini.activation.ActivationExporter;
-import net.jini.activation.ActivationGroup;
 import net.jini.config.Configuration;
 import net.jini.config.ConfigurationException;
 import net.jini.config.ConfigurationProvider;
@@ -104,9 +101,9 @@ import java.nio.ByteBuffer;
 import java.rmi.MarshalledObject;
 import java.rmi.NoSuchObjectException;
 import java.rmi.RemoteException;
-import java.rmi.activation.ActivationException;
-import java.rmi.activation.ActivationID;
-import java.rmi.activation.ActivationSystem;
+
+
+
 import java.security.PrivilegedActionException;
 import java.security.PrivilegedExceptionAction;
 import java.util.ArrayList;
@@ -200,14 +197,6 @@ class RegistrarImpl implements Registrar, ProxyAccessor, ServerProxyTrust {
      * Our service ID
      */
     private ServiceID myServiceID;
-    /**
-     * Our activation id, or null if not activatable
-     */
-    private ActivationID activationID;
-    /**
-     * Associated activation system, or null if not activatable
-     */
-    private ActivationSystem activationSystem;
     /**
      * Our LookupLocator
      */
@@ -519,13 +508,9 @@ class RegistrarImpl implements Registrar, ProxyAccessor, ServerProxyTrust {
      * unregister method is invoked during shutdown.
      */
     RegistrarImpl(String[] configArgs,
-                  final ActivationID activationID,
                   final boolean persistent,
                   final LifeCycle lifeCycle)
             throws Exception {
-        if (activationID != null && !persistent) {
-            throw new IllegalArgumentException();
-        }
         try {
             final Configuration config = ConfigurationProvider.getInstance(
                     configArgs, getClass().getClassLoader());
@@ -534,7 +519,7 @@ class RegistrarImpl implements Registrar, ProxyAccessor, ServerProxyTrust {
 
             PrivilegedExceptionAction init = new PrivilegedExceptionAction() {
                 public Object run() throws Exception {
-                    init(config, activationID, persistent, lifeCycle);
+                    init(config, persistent, lifeCycle);
                     return null;
                 }
             };
@@ -2442,13 +2427,6 @@ class RegistrarImpl implements Registrar, ProxyAccessor, ServerProxyTrust {
                 log.deletePersistentStore();
                 logger.debug("deleted persistence directory");
             }
-            if (activationID != null) {
-                try {
-                    ActivationGroup.inactive(activationID, serverExporter);
-                } catch (Exception e) {
-                    logger.info("exception going inactive", e);
-                }
-            }
             if (lifeCycle != null) {
                 lifeCycle.unregister(RegistrarImpl.this);
             }
@@ -3558,19 +3536,6 @@ class RegistrarImpl implements Registrar, ProxyAccessor, ServerProxyTrust {
         try {
             ready.check();
             logger.info("starting Reggie shutdown");
-	    /* unregister with activation system if activatable */
-            if (activationID != null) {
-                try {
-                    activationSystem.unregisterObject(activationID);
-                } catch (ActivationException e) {
-                    logger.debug(
-                            "exception unregistering activation ID", e);
-                } catch (RemoteException e) {
-                    logger.warn(
-                            "aborting Reggie shutdown", e);
-                    throw e;
-                }
-            }
             ready.shutdown();
             new DestroyThread().start();
         } finally {
@@ -4468,10 +4433,9 @@ class RegistrarImpl implements Registrar, ProxyAccessor, ServerProxyTrust {
      * Post-login (if login configured) initialization.
      */
     private void init(Configuration config,
-                      ActivationID activationID,
                       boolean persistent,
                       LifeCycle lifeCycle)
-            throws IOException, ConfigurationException, ActivationException {
+            throws IOException, ConfigurationException {
         this.lifeCycle = lifeCycle;
 
 	/* persistence-specific initialization */
@@ -4502,33 +4466,9 @@ class RegistrarImpl implements Registrar, ProxyAccessor, ServerProxyTrust {
             log = null;
         }
 
-	/* activation-specific initialization */
-        if (activationID != null) {
-            ProxyPreparer activationIdPreparer = (ProxyPreparer)
-                    Config.getNonNullEntry(
-                            config, COMPONENT, "activationIdPreparer",
-                            ProxyPreparer.class, new BasicProxyPreparer());
-            ProxyPreparer activationSystemPreparer = (ProxyPreparer)
-                    Config.getNonNullEntry(
-                            config, COMPONENT, "activationSystemPreparer",
-                            ProxyPreparer.class, new BasicProxyPreparer());
-
-            this.activationID = (ActivationID)
-                    activationIdPreparer.prepareProxy(activationID);
-            activationSystem = (ActivationSystem)
-                    activationSystemPreparer.prepareProxy(
-                            ActivationGroup.getSystem());
-
             serverExporter = (Exporter) Config.getNonNullEntry(
                     config, COMPONENT, "serverExporter", Exporter.class);
-            serverExporter = new ActivationExporter(activationID, serverExporter);
-        } else {
-            this.activationID = null;
-            activationSystem = null;
 
-            serverExporter = (Exporter) Config.getNonNullEntry(
-                    config, COMPONENT, "serverExporter", Exporter.class);
-        }
 
 	/* fetch "initial*" config entries, if first time starting up */
         if (!recoveredSnapshot) {

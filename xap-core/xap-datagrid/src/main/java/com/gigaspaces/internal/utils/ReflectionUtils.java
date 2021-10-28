@@ -16,6 +16,8 @@
 
 package com.gigaspaces.internal.utils;
 
+import com.gigaspaces.internal.jvm.JavaUtils;
+
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -136,7 +138,7 @@ public abstract class ReflectionUtils {
     }
 
     public static void setField(Object target, String fieldName, Object value) throws IllegalAccessException {
-        setField(target, getDeclaredField(target.getClass(), fieldName), value);
+        setField(target, getDeclaredFieldIncludeSuperTypes(target.getClass(), fieldName), value);
     }
 
     public static void setField(Object target, Field field, Object value) throws IllegalAccessException {
@@ -149,18 +151,43 @@ public abstract class ReflectionUtils {
      * such field, tries to get to get this field from 'type' parent class. This procedure continues
      * until a matching field is found or until Object is reached in which case, null is returned.
      */
-    public static Field getDeclaredField(Class<?> type, String fieldName) {
+    public static Field getDeclaredFieldIncludeSuperTypes(Class<?> type, String fieldName) {
         Field result = null;
         Class<?> currentType = type;
         while (currentType != null) {
             try {
-                result = currentType.getDeclaredField(fieldName);
+                result = getDeclaredField(currentType, fieldName);
                 break;
             } catch (NoSuchFieldException e) {
                 currentType = currentType.getSuperclass();
             }
         }
         return result;
+    }
+
+    /**
+     * Gets the declared field named 'fieldName' from the 'type' class.
+     */
+    public static Field getDeclaredField(Class<?> type, String fieldName) throws NoSuchFieldException{
+        if(JavaUtils.greaterOrEquals(17)){
+            Method getDeclaredFields0 = null;
+            try {
+                getDeclaredFields0 = Class.class.getDeclaredMethod("getDeclaredFields0", boolean.class);
+                getDeclaredFields0.setAccessible(true);
+                Field[] unfilteredFields = (Field[]) getDeclaredFields0.invoke(type, false);
+                for (Field unfilteredField : unfilteredFields) {
+                    if(unfilteredField.getName().equals(fieldName)){
+                        return unfilteredField;
+                    }
+                }
+            } catch (NoSuchMethodException | IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
+                throw new NoSuchFieldException(fieldName);
+            }
+        }
+        else {
+            return type.getDeclaredField(fieldName);
+        }
+        throw new NoSuchFieldException(fieldName);
     }
 
     /**

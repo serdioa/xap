@@ -24,10 +24,8 @@ import java.rmi.MarshalException;
 import java.rmi.NoSuchObjectException;
 import java.rmi.RemoteException;
 import java.rmi.UnknownHostException;
-import java.rmi.activation.ActivateFailedException;
 
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import net.jini.core.transaction.CannotAbortException;
 import net.jini.core.transaction.Transaction;
@@ -234,11 +232,7 @@ public class AbortJob extends Job implements TransactionConstants {
             } catch (AccessException ae) {
                 //Access error on registry or rmid consider done
                 response = ABORTED;
-            } catch (ActivateFailedException afe) {
-                //Activatable Ref Stub couldn't activate
-                //participant, so stop and consider done
-                response = ABORTED;
-            } catch (RemoteException re) {
+            }  catch (RemoteException re) {
                 //Something happened with the network, so
                 //retry at a later time.
                 response = ABORTED;

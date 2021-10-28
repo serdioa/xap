@@ -7,6 +7,8 @@ import com.gigaspaces.internal.utils.GsEnv;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * @author Niv Ingberg
@@ -154,17 +156,9 @@ public class GsCommandFactory {
             } else if (vendor.startsWith("IBM ")) {
                 command.option("-XX:MaxPermSize=256m");
             }
-            if (JavaUtils.greaterOrEquals(9)) {
-                command.option("--add-opens=jdk.management/com.sun.management.internal=ALL-UNNAMED");
-                command.option("--add-modules=ALL-SYSTEM");
-                if (JavaUtils.greaterOrEquals(17)) {
-                    command.option("--add-opens=java.base/java.lang=ALL-UNNAMED");
-                    command.option("--add-exports=java.base/sun.net.util=ALL-UNNAMED");
-                    command.option("--add-exports=java.base/sun.security.provider=ALL-UNNAMED");
-                    command.option("--add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED");
-                }
+            for (String mandatoryJvmOption : getMandatoryJvmOptions(JavaUtils.getMajorJavaVersion())) {
+                command.option(mandatoryJvmOption);
             }
-
             command.systemProperty(CommonSystemProperties.GS_HOME, BootIOUtils.quoteIfContainsSpace(locations().home().toString()));
             command.systemProperty("java.util.logging.config.file", BootIOUtils.quoteIfContainsSpace(GsEnv.getOrElse("LOGS_CONFIG_FILE", this::defaultConfigPath)));
             command.systemProperty("java.rmi.server.hostname", GsEnv.get("NIC_ADDRESS"));
@@ -218,6 +212,33 @@ public class GsCommandFactory {
                 return Collections.singletonList("-Xmx512m");
             default: return Collections.emptyList();
         }
+    }
+
+    public static Collection<String> getMandatoryJvmOptions(int javaVersion){
+        Set<String> result = new HashSet<>();
+        switch (javaVersion) {
+            case 8: {
+                return Collections.emptyList();
+            }
+            case 9: {
+                result.add("--add-opens=jdk.management/com.sun.management.internal=ALL-UNNAMED");
+                result.add("--add-modules=ALL-SYSTEM");
+            }
+            case 11:
+            case 17: {
+                result.add("--add-opens=java.base/java.lang=ALL-UNNAMED");
+                result.add("--add-opens=java.base/sun.security.provider=ALL-UNNAMED");
+                result.add("--add-opens=java.base/java.util=ALL-UNNAMED");
+                result.add("--add-opens=java.base/java.util.zip=ALL-UNNAMED");
+                result.add("--add-exports=java.base/sun.net.util=ALL-UNNAMED");
+                result.add("--add-opens=java.base/java.net=ALL-UNNAMED");
+                result.add("--add-opens=java.base/java.io=ALL-UNNAMED");
+                result.add("--add-opens=java.rmi/sun.rmi.transport=ALL-UNNAMED");
+                result.add("--add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED");
+                result.add("--add-exports=java.naming/com.sun.jndi.ldap=ALL-UNNAMED");
+            }
+        }
+        return result;
     }
 
 }

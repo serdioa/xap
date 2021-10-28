@@ -25,6 +25,7 @@ import com.gigaspaces.admin.cli.RuntimeInfo;
 import com.gigaspaces.client.transaction.MahaloFactory;
 import com.gigaspaces.internal.io.IOUtils;
 import com.gigaspaces.internal.jmx.JMXUtilities;
+import com.gigaspaces.internal.jvm.JavaUtils;
 import com.gigaspaces.internal.lookup.RegistrarFactory;
 import com.gigaspaces.internal.server.space.SpaceConfigReader;
 import com.gigaspaces.internal.server.space.SpaceImpl;
@@ -309,20 +310,22 @@ public class JSpaceContainerImpl implements IJSpaceContainer, IJSpaceContainerAd
 
     private static void initSecurity() {
         // This will eliminate the need to modify the IBM JDK java.security when using IBM JDK.
-        try {
-            java.security.Security.addProvider(new sun.security.provider.Sun());
-        } catch (SecurityException e) {
-            /**
-             * SecurityException might be caught, if a security manager exists and
-             * its <code>{@link
-             * java.lang.SecurityManager#checkSecurityAccess}</code>
-             * method denies access to add a new provider. The security exception
-             * might happen while running in the context of other container e.g.
-             * embedded space inside Application server without granting implicit
-             * policy permissions.
-             */
-            if (_logger.isErrorEnabled())
-                _logger.error("Failed to add the sun.security.provider.Sun SecurityManager: " + e.toString(), e);
+        if(JavaUtils.getVendor().equals("IBM")) {
+            try {
+                java.security.Security.addProvider(new sun.security.provider.Sun());
+            } catch (SecurityException e) {
+                /**
+                 * SecurityException might be caught, if a security manager exists and
+                 * its <code>{@link
+                 * java.lang.SecurityManager#checkSecurityAccess}</code>
+                 * method denies access to add a new provider. The security exception
+                 * might happen while running in the context of other container e.g.
+                 * embedded space inside Application server without granting implicit
+                 * policy permissions.
+                 */
+                if (_logger.isErrorEnabled())
+                    _logger.error("Failed to add the sun.security.provider.Sun SecurityManager: " + e.toString(), e);
+            }
         }
     }
 

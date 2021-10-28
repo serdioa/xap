@@ -61,7 +61,6 @@ import java.io.ObjectOutput;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -1133,7 +1132,7 @@ public class SpaceTypeInfo implements SmartExternalizable {
 
             if (property.getSetterMethod() == null) {
                 try {
-                    Field field = ReflectionUtils.getDeclaredField(_type, property.getName());
+                    Field field = ReflectionUtils.getDeclaredFieldIncludeSuperTypes(_type, property.getName());
                     if (field == null)
                         throw new SpaceMetadataValidationException(_type, property, "Failed finding matching field for setter-less property.");
                     if (field.getType() != property.getType())

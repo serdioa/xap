@@ -36,15 +36,16 @@ final public class ASMFactoryUtils {
         Method defineMethod = null;
         Method findLoaded = null;
         try {
-            defineMethod = ClassLoader.class.getDeclaredMethod("defineClass", String.class, byte[].class, int.class, int.class);
-            defineMethod.setAccessible(true);
-            findLoaded = ClassLoader.class.getDeclaredMethod("findLoadedClass", String.class);
-            findLoaded.setAccessible(true);
+            defineMethod = ReflectionUtil.getMethodFromClass(ClassLoader.class, "defineClass", String.class, byte[].class, int.class, int.class);
+            findLoaded = ReflectionUtil.getMethodFromClass(ClassLoader.class, "findLoadedClass", String.class);
         } catch (Exception e) {
         }
+        assert defineMethod != null;
+        assert findLoaded != null;
+        defineMethod.setAccessible(true);
+        findLoaded.setAccessible(true);
         DEFINE_METHOD = defineMethod;
         FIND_LODADED = findLoaded;
-
     }
 
 

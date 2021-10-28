@@ -74,8 +74,6 @@ import org.slf4j.LoggerFactory;
  *
  * <a name="configEntries"> <h3>Configuring NonActivatableServiceDescriptor</h3> </a>
  *
- * <code>NonActivatableServiceDescriptor</code> depends on {@link ActivateWrapper}, which can itself
- * be configured. See {@linkplain ActivateWrapper}'s <A HREF="ActivateWrapper.html#configEntries">configuration</A>
  * information for details. <p> This implementation obtains its configuration entries from the
  * {@link net.jini.config.Configuration Configuration} object passed into the {@link
  * #create(net.jini.config.Configuration) create} method. The following configuration entries use
@@ -522,11 +520,11 @@ public class NonActivatableServiceDescriptor
                 logger.trace("Global policy set: {}", globalPolicy);
             }
 
-            Policy service_policy =
-                    ActivateWrapper.getServicePolicyProvider(
-                            new PolicyFileProvider(getPolicy()));
-            Policy backstop_policy =
-                    ActivateWrapper.getServicePolicyProvider(initialGlobalPolicy);
+            Policy service_policy = null;
+//                    ActivateWrapper.getServicePolicyProvider(
+//                            new PolicyFileProvider(getPolicy()));
+            Policy backstop_policy = null;
+//                    ActivateWrapper.getServicePolicyProvider(initialGlobalPolicy);
             LoaderSplitPolicyProvider split_service_policy =
                     new LoaderSplitPolicyProvider(
                             newClassLoader, service_policy, backstop_policy);
