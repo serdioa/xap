@@ -192,6 +192,14 @@ public class SingleExplainPlan implements SmartExternalizable {
         return Objects.equals(scanningInfo, that.scanningInfo);
     }
 
+    public void clearAllChosenIndexes() {
+        getIndexesInfo().forEach(
+                (string, indexChoiceNodes) ->
+                        indexChoiceNodes.forEach(
+                                        indexChoiceNode ->
+                                                indexChoiceNode.setChosen(null)));
+    }
+
     @Override
     public int hashCode() {
         int result = partitionId != null ? partitionId.hashCode() : 0;

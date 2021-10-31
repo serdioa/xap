@@ -18,6 +18,7 @@ package com.gigaspaces.internal.query;
 
 import com.gigaspaces.internal.query.explainplan.ExplainPlanContext;
 import com.gigaspaces.internal.query.explainplan.IndexChoiceNode;
+import com.gigaspaces.internal.query.explainplan.IndexInfo;
 import com.gigaspaces.internal.query.explainplan.UnionIndexInfo;
 import com.gigaspaces.internal.server.storage.ITemplateHolder;
 import com.j_spaces.core.cache.IEntryCacheInfo;
@@ -26,6 +27,9 @@ import com.j_spaces.core.cache.TypeDataIndex;
 import com.j_spaces.core.cache.context.Context;
 import com.j_spaces.kernel.list.IObjectsList;
 import com.j_spaces.kernel.list.MultiStoredList;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Scans the indexes and gets the union of all indexed entries. This will be used as the potential
@@ -89,8 +93,12 @@ public class CompoundOrIndexScanner extends AbstractCompoundIndexScanner
             IObjectsList indexResult = indexScanner.getIndexedEntriesByType(context, typeData, template, latestIndexToConsider);
 
             if (indexResult == IQueryIndexScanner.RESULT_IGNORE_INDEX) {
+                if (context.getExplainPlanContext() != null && choiceNode != null) {
+                    context.getExplainPlanContext().getSingleExplainPlan().clearAllChosenIndexes();
+                }
                 context.setBlobStoreUsePureIndexesAccess(false);
-                return indexResult;
+                return indexResult; // full scan is mandatory.
+                //TODO need to consider an optimization if rowNum/Limit is involved.
             }
 
             if (indexResult == IQueryIndexScanner.RESULT_NO_MATCH)
@@ -101,8 +109,12 @@ public class CompoundOrIndexScanner extends AbstractCompoundIndexScanner
 
             unionList.add(indexResult);
         }
-        if(context.getExplainPlanContext() != null){
-            choiceNode.setChosen(new UnionIndexInfo(choiceNode.getOptions()));
+        if (context.getExplainPlanContext() != null && choiceNode != null) {
+            final List<IndexInfo> usableOptions =
+                    choiceNode.getOptions().stream().distinct().filter(IndexInfo::isUsable).collect(Collectors.toList());
+            if (!usableOptions.isEmpty()) {
+                choiceNode.setChosen(new UnionIndexInfo(usableOptions));
+            }
         }
         return unionList;
     }

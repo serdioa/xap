@@ -111,7 +111,7 @@ public class ExplainPlanInfoBuilder {
         if (indexInfo instanceof UnionIndexInfo) {
             final List<IndexInfo> options = ((UnionIndexInfo) indexInfo).getOptions();
             if (options.size() == 0)
-                return null;
+                return indexInfoDetails;
 
             for (int i = options.size() - 1; i >= 0; i--) {
                 final IndexInfo option = options.get(i);
