@@ -89,9 +89,15 @@ public class IndexInfoDetail {
             return getString(false);
         }
 
-        return String.format("- " + getValueFormatting() + ", size=[min=%s, max=%s]"
-                , getNameDescription(), getOperationDescription()
-                , getValueDescription(value), min, max); //TODO mishel - move to another method in my code instead of here.
+        if (min == 0) {
+            return String.format("- " + getValueFormatting() + ", size=[max=%s]"
+                    , getNameDescription(), getOperationDescription()
+                    , getValueDescription(value), max);
+        } else {
+            return String.format("- " + getValueFormatting() + ", size=[min=%s, max=%s]"
+                    , getNameDescription(), getOperationDescription()
+                    , getValueDescription(value), min, max); //TODO mishel - move to another method in my code instead of here.
+        }
     }
 //
     protected String getString(boolean verbose) {
