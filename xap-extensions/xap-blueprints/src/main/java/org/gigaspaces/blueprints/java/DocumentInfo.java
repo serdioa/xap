@@ -20,6 +20,7 @@ public class DocumentInfo {
     private final Set<String> warnings = new LinkedHashSet<>();
     private final List<PropertyInfo> properties = new ArrayList<>();
 
+
     public DocumentInfo(String className, String packageName, String fileName,
                         boolean broadcastObject, boolean storageOptimized) {
         this.className = className;
