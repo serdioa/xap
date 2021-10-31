@@ -75,7 +75,7 @@ public class BetweenRangeNode extends RangeNode{
     public String getPrettifiedString() {
         return "(" + minValue + " " +
                 (includeMin ? QueryOperator.LE.getOperatorString() : QueryOperator.LT.getOperatorString()) +
-                " " + (getFunctionName() != null ? getFunctionName() : getFieldName()) + " " +
+                " " + (getFunctionName() != null ? getFunctionName() : "'"+getFieldName()+"'") + " " +
                 (includeMax ? QueryOperator.LE.getOperatorString() : QueryOperator.LT.getOperatorString()) +
                 " " + maxValue +
                 ")";

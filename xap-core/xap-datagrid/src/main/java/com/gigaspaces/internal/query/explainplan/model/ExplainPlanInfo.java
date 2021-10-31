@@ -155,6 +155,10 @@ public class ExplainPlanInfo extends JdbcExplainPlan {
         indexInspectionsPerPartition.add(indexInspection);
     }
 
+    public boolean isSinglePartition() {
+        return executionType != null && executionType.equals(PartitionedClusterExecutionType.SINGLE);
+    }
+
 
     @Override
     public void format(TextReportFormatter formatter) {
@@ -165,7 +169,7 @@ public class ExplainPlanInfo extends JdbcExplainPlan {
             formatter.line("Filter: " + getFilter());
         }
 
-        if (executionType != null && executionType.equals(PartitionedClusterExecutionType.SINGLE)) {
+        if (isSinglePartition()) {
             formatter.line("Execution type: " + "Single Partition");
         }
 
@@ -174,7 +178,7 @@ public class ExplainPlanInfo extends JdbcExplainPlan {
         formatter.unindent();
     }
 
-    private void formatVerbose(TextReportFormatter formatter, @SuppressWarnings("SameParameterValue") boolean verbose) {
+    public void formatVerbose(TextReportFormatter formatter, @SuppressWarnings("SameParameterValue") boolean verbose) {
         if (!verbose) {
             Map<PartitionFinalSelectedIndexes, List<PartitionAndSizes>> groupedSelectedIndexes =
                     getFinalSelectedIndexesMap().entrySet().stream().collect(
@@ -193,9 +197,9 @@ public class ExplainPlanInfo extends JdbcExplainPlan {
                 }
                 String partitions = partitionAndSizes.stream().map(PartitionAndSizes::getPartitionId).collect(joining(", "));
                 if (partitions.contains(",")) {
-                    formatter.line(String.format("Partitions: [%s]", partitions));
+                    formatter.line(String.format("partitions: [%s]", partitions));
                 } else {
-                    formatter.line(String.format("Partition: [%s]", partitions));
+                    formatter.line(String.format("partition: [%s]", partitions));
                 }
                 formatter.indent();
                 if (usedTieredStorage) {
@@ -215,10 +219,10 @@ public class ExplainPlanInfo extends JdbcExplainPlan {
                     selectedIndexesFormatted.add(index.toStringNotVerbose(min, max));
                 }
                 if (!selectedIndexesFormatted.isEmpty()) {
-                    formatter.line("Selected index:");
+                    formatter.line("selected index:");
                     if (unionIndexChoice) {
                         formatter.indent();
-                        formatter.line("Union:");
+                        formatter.line("union:");
                     }
                     formatter.indent();
                     selectedIndexesFormatted.forEach(formatter::line);
@@ -237,7 +241,7 @@ public class ExplainPlanInfo extends JdbcExplainPlan {
                     continue;
                 }
 
-                formatter.line(String.format("Partition: [%s]", inspectionDetail.getPartition()));
+                formatter.line(String.format("partition: [%s]", inspectionDetail.getPartition()));
                 formatter.indent();
                 if (inspectionDetail.getUsedTiers() != null && inspectionDetail.getUsedTiers().size() != 0) {
                     formatter.line(getTiersFormatted(inspectionDetail.getUsedTiers()));
@@ -256,15 +260,15 @@ public class ExplainPlanInfo extends JdbcExplainPlan {
                     IndexChoiceDetail indexChoice = inspectionDetail.getIndexes().get(i);
                     formatter.line(indexChoice.getOperator());
                     formatter.indent();
-                    formatter.line("Inspected index: ");
+                    formatter.line("inspected index: ");
                     formatter.indent();
                     indexChoice.getInspectedIndexes().forEach(inspected -> formatter.line(inspected.toString()));
                     formatter.unindent();
 
-                    formatter.line("Selected index:");
+                    formatter.line("selected index:");
                     if (indexChoice.isUnion()) {
                         formatter.indent();
-                        formatter.line("Union:");
+                        formatter.line("union:");
                     }
 
                     formatter.indent();
