@@ -10,7 +10,11 @@ public enum Step {
     DELETE_CHUNKS("delete-chunks"),
     SET_NEW_TOPOLOGY("set-new-topology"),
     INFORM_TOPOLOGY_CHANGE("inform-topology-change"),
-    UNQUIESCE("unquiesce");
+    UNQUIESCE("unquiesce"),
+    REVERT_PU_METADATA("revert-pu-metadata"),
+    KILL_INSTANCES("kill-instances"),
+    REVERT_TOPOLOGY("revert-topology"),
+    UNQUIESCE_ON_ROLLBACK("unquiesce-on-rollback");
 
 
     private String name;
@@ -26,25 +30,33 @@ public enum Step {
     public static Step convertToStep(int ordinal) {
         switch (ordinal){
             case 0:
-                return Step.Start;
+                return Start;
             case 1:
-                return Step.Quiesce;
+                return Quiesce;
             case 2:
-                return Step.Drain;
+                return Drain;
             case 3:
-                return Step.CREATE_NEW_TOPOLOGY;
+                return CREATE_NEW_TOPOLOGY;
             case 4:
-                return Step.CREATE_INSTANCES;
+                return CREATE_INSTANCES;
             case 5:
-                return Step.COPY_CHUNKS;
+                return COPY_CHUNKS;
             case 6:
-                return Step.DELETE_CHUNKS;
+                return DELETE_CHUNKS;
             case 7:
-                return Step.SET_NEW_TOPOLOGY;
+                return SET_NEW_TOPOLOGY;
             case 8:
-                return Step.INFORM_TOPOLOGY_CHANGE;
+                return INFORM_TOPOLOGY_CHANGE;
             case 9:
-                return Step.UNQUIESCE;
+                return UNQUIESCE;
+            case 10:
+                return REVERT_PU_METADATA;
+            case 11:
+                return KILL_INSTANCES;
+            case 12:
+                return REVERT_TOPOLOGY;
+            case 13:
+                return UNQUIESCE_ON_ROLLBACK;
             default:
                 throw new IllegalArgumentException("Step in order " + ordinal + " doesn't exist");
         }
@@ -52,25 +64,33 @@ public enum Step {
     public static Step convertToStep(String step) {
         switch (step){
             case "start":
-                return Step.Start;
+                return Start;
             case "quiesce":
-                return Step.Quiesce;
+                return Quiesce;
             case "drain":
-                return Step.Drain;
+                return Drain;
             case "create-new-topology":
-                return Step.CREATE_NEW_TOPOLOGY;
+                return CREATE_NEW_TOPOLOGY;
             case "create-instances":
-                return Step.CREATE_INSTANCES;
+                return CREATE_INSTANCES;
             case "copy-chunks":
-                return Step.COPY_CHUNKS;
+                return COPY_CHUNKS;
             case "delete-chunks":
-                return Step.DELETE_CHUNKS;
+                return DELETE_CHUNKS;
             case "set-new-topology":
-                   return Step.SET_NEW_TOPOLOGY;
+                   return SET_NEW_TOPOLOGY;
             case "inform-topology-change":
-                return Step.INFORM_TOPOLOGY_CHANGE;
+                return INFORM_TOPOLOGY_CHANGE;
             case "unquiesce":
-                return Step.UNQUIESCE;
+                return UNQUIESCE;
+            case "revert-pu-metadata":
+                return REVERT_PU_METADATA;
+            case "kill-instances":
+                return KILL_INSTANCES;
+            case "revert-topology":
+                return REVERT_TOPOLOGY;
+            case "unquiesce-on-rollback":
+                    return UNQUIESCE_ON_ROLLBACK;
             default:
                 throw new IllegalArgumentException("Step " + step + " doesn't exist");
         }

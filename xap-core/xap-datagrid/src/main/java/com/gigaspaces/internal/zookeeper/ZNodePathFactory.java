@@ -1,6 +1,9 @@
 package com.gigaspaces.internal.zookeeper;
 
 import com.gigaspaces.api.InternalApi;
+import com.gigaspaces.attribute_store.AttributeStore;
+import com.gigaspaces.internal.server.space.repartitioning.Step;
+import com.gigaspaces.internal.server.space.repartitioning.ZKScaleOutUtils;
 
 /**
  * @author Niv Ingberg
@@ -34,6 +37,10 @@ public class ZNodePathFactory {
 
     public static String lockPersistentName(String puName) {
         return path(LOCKS,PUS, puName+"/persistent");
+    }
+
+    public static String lockScaleOutScaleStatus(String puName) {
+        return path(LOCKS, PUS, puName + "/scale-out/scale-status");
     }
 
     public static String lockPuSlaName(String puName) {

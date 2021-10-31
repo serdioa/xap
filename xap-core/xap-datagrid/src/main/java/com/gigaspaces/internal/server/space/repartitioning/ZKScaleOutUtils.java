@@ -2,11 +2,13 @@ package com.gigaspaces.internal.server.space.repartitioning;
 
 import com.gigaspaces.admin.quiesce.QuiesceToken;
 import com.gigaspaces.attribute_store.AttributeStore;
+import com.gigaspaces.internal.cluster.ClusterTopologyState;
 import com.gigaspaces.internal.zookeeper.ZNodePathFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -28,6 +30,10 @@ public class ZKScaleOutUtils {
 
     public static void setScaleOutMetaData(AttributeStore attributeStore, String puName, String key, String value) throws IOException {
         attributeStore.set(ZKScaleOutUtils.getScaleOutPath(puName) + "/" + key, value);
+    }
+
+    public static void setScaleOutLastStep(AttributeStore attributeStore, String puName, String step) throws IOException {
+        attributeStore.set(ZKScaleOutUtils.getScaleOutPath(puName) + "/last-step", step);
     }
 
     public static void setQuiesceToken(AttributeStore attributeStore, String puName, Object value) throws IOException {
@@ -62,7 +68,7 @@ public class ZKScaleOutUtils {
         }
     }
 
-    public static boolean isScaleStatusInProgress(AttributeStore attributeStore, String puName){
+    public static boolean isScaleInProgress(AttributeStore attributeStore, String puName){
        try {
            String status = getScaleOutMetaData(attributeStore, puName, "scale-status");
            if (status != null){
@@ -73,14 +79,46 @@ public class ZKScaleOutUtils {
         return false;
     }
 
-    public static boolean didScaleSucceed(AttributeStore attributeStore, String puName){
+    public static Status getScaleStatusOnCompletion(AttributeStore attributeStore, String puName){
         try {
             String status = getScaleOutMetaData(attributeStore, puName, "scale-status");
             if (status != null){
-                return Status.SUCCESS.getStatus().equals(status);
+                Status result =Status.convertToStatus(status);
+                if(Status.SUCCESS.equals(result) || Status.CANCELLED_SUCCESSFULLY.equals(result)){
+                    return result;
+                }
             }
         } catch (IOException e) {
         }
+        return null;
+    }
+
+    public static boolean checkIfScaleIsCanceled(AttributeStore attributeStore, String puName){
+        try {
+            String isCanceled = getScaleOutMetaData(attributeStore, puName, "cancel");
+            if(isCanceled != null){
+                return Boolean.parseBoolean(isCanceled);
+            }
+        } catch (IOException ignored) {
+        }
         return false;
+    }
+
+    public static void setOldTopologyState(AttributeStore attributeStore, String puName, ClusterTopologyState topologyState) {
+        try {
+            attributeStore.setObject(ZKScaleOutUtils.getScaleOutPath(puName) + "/old cluster topology state", topologyState);
+        } catch (IOException e) {
+            if (logger.isErrorEnabled()) logger.error("Failed to set cluster topology state", e);
+            throw new UncheckedIOException("Failed to set cluster topology state for pu [" + puName + "]", e);
+        }
+    }
+
+    public static ClusterTopologyState getOldTopologyState(AttributeStore attributeStore, String puName) {
+        try {
+            return attributeStore.getObject(ZKScaleOutUtils.getScaleOutPath(puName) + "/old cluster topology state");
+        } catch (IOException e) {
+            if (logger.isErrorEnabled()) logger.error("Failed to set cluster topology state", e);
+            throw new UncheckedIOException("Failed to set cluster topology state for pu [" + puName + "]", e);
+        }
     }
 }
