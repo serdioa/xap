@@ -88,7 +88,7 @@ public class DocumentInfo {
     }
 
     public PropertyInfo addProperty(String name, Class<?> type) {
-        return addPropertyImpl(name, type, NONE, false, false, false, false);
+        return addPropertyImpl(name, type, null, false, false, false, false);
     }
 
     public PropertyInfo addIndexProperty(String name, Class<?> type, SpaceIndexType indexType, boolean unique) {
