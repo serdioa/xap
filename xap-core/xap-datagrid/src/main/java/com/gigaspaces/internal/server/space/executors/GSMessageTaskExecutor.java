@@ -74,8 +74,17 @@ public class GSMessageTaskExecutor extends SpaceActionExecutor {
             singleProxy.write(cdcInfo, transaction, Lease.FOREVER, 0, WriteModifiers.UPDATE_OR_WRITE.getCode());
             switch (operationType) {
                 case INSERT:
-                    logger.debug("inserting message to space: " + entry);
-                    singleProxy.write(entry, transaction, Lease.FOREVER, 0, WriteModifiers.WRITE_ONLY.getCode());
+                    try {
+                        logger.debug("inserting message to space: " + entry);
+                        singleProxy.write(entry, transaction, Lease.FOREVER, 0, WriteModifiers.WRITE_ONLY.getCode());
+                    } catch (EntryAlreadyInSpaceException e) {
+                        if (cdcInfo.getMessageID() != 0) {
+                            logger.error("failed to write entry of type: " + entry.getTypeName() + ", for message id: " + cdcInfo.getMessageID());
+                            throw e; //might be the first time writing this to space
+                        }
+                        // on a long full sync there might be a failover and therefore retry, so we ignore exceptions like this
+                        logger.debug("received same message again, ignoring write entry of type: " + entry.getTypeName() + ", for message id: " + cdcInfo.getMessageID());
+                    }
                     break;
                 case UPDATE:
                     logger.debug("update message: " + entry);
