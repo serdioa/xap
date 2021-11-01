@@ -26,6 +26,7 @@ import com.j_spaces.core.cache.TypeDataIndex;
 import com.j_spaces.core.cache.context.Context;
 import com.j_spaces.kernel.IStoredList;
 import com.j_spaces.kernel.list.IObjectsList;
+import com.j_spaces.kernel.list.IScanListIterator;
 
 import java.io.IOException;
 import java.io.ObjectInput;
@@ -137,7 +138,10 @@ public abstract class AbstractQueryIndex implements IQueryIndexScanner {
                 size = 0;
             } else if (entriesByIndex instanceof IStoredList){
                 size = ((IStoredList) entriesByIndex).size();
-            } else{
+            } else if (entriesByIndex instanceof IScanListIterator) {
+                IScanListIterator list = (IScanListIterator)entriesByIndex;
+                size = list.hasSize() ? list.size() : -1;
+            } else {
                 size = -1;
             }
             IndexInfo info = ExplainPlanUtil.createIndexInfo(this, index, typeData, size, true);
