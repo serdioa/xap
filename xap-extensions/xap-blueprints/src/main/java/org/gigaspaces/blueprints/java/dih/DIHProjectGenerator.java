@@ -1,5 +1,6 @@
 package org.gigaspaces.blueprints.java.dih;
 
+import com.gigaspaces.api.InternalApi;
 import com.gigaspaces.start.SystemLocations;
 import org.gigaspaces.blueprints.Blueprint;
 import org.gigaspaces.blueprints.java.DocumentInfo;
@@ -12,6 +13,14 @@ import java.nio.file.Path;
 import java.util.*;
 import java.util.stream.Collectors;
 
+/**
+ * Generates a whole DIH consumer project
+ * This api is hidden from the user, thus hidden from the cli
+ *
+ * @author Mishel Liberman
+ * @since 16.1
+ */
+@InternalApi
 public class DIHProjectGenerator {
 
     private final TypeRegistrarInfo typeRegistrarInfo;
@@ -63,7 +72,7 @@ public class DIHProjectGenerator {
     }
 
     private static void generateDocuments(DIHProjectPropertiesOverrides projectProperties, Path consumerProjectTargetPath, String pipelineRootFolderName) throws IOException {
-        Path consumerModelTypesPath = consumerProjectTargetPath.resolve(pipelineRootFolderName+"/dih-model/src/main/java/com/gigaspaces/dih/model/types");
+        Path consumerModelTypesPath = consumerProjectTargetPath.resolve(pipelineRootFolderName + "/dih-model/src/main/java/com/gigaspaces/dih/model/types");
         for (DocumentInfo doc : projectProperties.getDocuments()) {
             File docFile = consumerModelTypesPath.resolve(doc.getClassName() + "Document.java").toFile();
             writeDocToFile(doc, docFile);
@@ -78,6 +87,7 @@ public class DIHProjectGenerator {
             properties.put(property, propertyValue);
         }
     }
+
     /**
      * Set the property only if he was initialized
      */
