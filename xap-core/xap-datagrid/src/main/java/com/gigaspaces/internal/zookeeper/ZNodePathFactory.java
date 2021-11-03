@@ -65,6 +65,8 @@ public class ZNodePathFactory {
 
     public static String totalOperation(String pipeline){ return path(PIPELINES, pipeline + "/total_operation");}
 
+    public static String connector_started(String pipeline){ return path(PIPELINES, pipeline + "/connector_started");}
+
     public static String processingUnit(String puName, String component, int partitionId, String ... elements) {
         return path(PUS, puName, component, String.valueOf(partitionId), elements);
     }
