@@ -67,7 +67,11 @@ public class CDCInfo extends SpaceDocument {
     }
 
     public CDCInfo setID(String streamName, Integer partitionID) {
-        setProperty(ID, streamName+"_"+partitionID);
+        if (partitionID == null){
+            setProperty(ID, null);
+        } else {
+            setProperty(ID, streamName + "_" + partitionID);
+        }
         return this;
     }
 
