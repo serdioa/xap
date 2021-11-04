@@ -51,7 +51,7 @@ public class CopyChunksConsumer implements Runnable {
                         } catch (WriteMultipleException e){
                             WriteMultipleException.IWriteResult[] results = e.getResults();
                             for(com.gigaspaces.client.WriteMultipleException.IWriteResult result: results){
-                                if(!(result.getError() instanceof EntryAlreadyInSpaceException)){ //in case of pu failover
+                                if(result.isError() && !(result.getError() instanceof EntryAlreadyInSpaceException)){ //in case of pu failover
                                     throw e;
                                 }
                             }

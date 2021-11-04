@@ -20,16 +20,18 @@ public class CopyChunksRequestInfo implements SpaceRequestInfo {
     private Map<Integer, String> instanceIds;
     private QuiesceToken token;
     private ScaleType scaleType;
+    private int generation;
 
     public CopyChunksRequestInfo() {
     }
 
-    CopyChunksRequestInfo(ClusterTopology newMap, String spaceName, Map<Integer, String> instanceIds, QuiesceToken token, ScaleType scaleType) {
+    CopyChunksRequestInfo(ClusterTopology newMap, String spaceName, Map<Integer, String> instanceIds, QuiesceToken token, ScaleType scaleType, int generation) {
         this.newMap = newMap;
         this.spaceName = spaceName;
         this.instanceIds = instanceIds;
         this.token = token;
         this.scaleType = scaleType;
+        this.generation = generation;
     }
 
     public ClusterTopology getNewMap() {
@@ -46,6 +48,10 @@ public class CopyChunksRequestInfo implements SpaceRequestInfo {
 
     public QuiesceToken getToken() {
         return token;
+    }
+
+    public int getGeneration() {
+        return generation;
     }
 
     @Override
@@ -67,6 +73,7 @@ public class CopyChunksRequestInfo implements SpaceRequestInfo {
         IOUtils.writeObject(out, newMap);
         IOUtils.writeString(out, spaceName);
         IOUtils.writeObject(out, token);
+        IOUtils.writeInt(out,generation);
         IOUtils.writeShort(out, (short) instanceIds.size());
         for (Map.Entry<Integer, String> entry : instanceIds.entrySet()) {
             IOUtils.writeShort(out, entry.getKey().shortValue());
@@ -80,6 +87,7 @@ public class CopyChunksRequestInfo implements SpaceRequestInfo {
         this.newMap = IOUtils.readObject(in);
         this.spaceName = IOUtils.readString(in);
         this.token = IOUtils.readObject(in);
+        this.generation = IOUtils.readInt(in);
         short size = IOUtils.readShort(in);
         this.instanceIds = new HashMap<>(size);
         for (int i = 0; i < size; i++) {

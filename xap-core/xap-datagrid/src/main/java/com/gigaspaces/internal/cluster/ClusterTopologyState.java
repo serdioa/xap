@@ -13,19 +13,22 @@ public class ClusterTopologyState implements SmartExternalizable {
 
     private Map <Integer,Integer> partitionGenerationMap;
     private int currentGeneration;
+    private int maxTopologyGeneration;
 
     public ClusterTopologyState() {
     }
 
-    public ClusterTopologyState(int generation, int numOfPartitions) {
+    public ClusterTopologyState(int generation, int numOfPartitions, int maxTopologyGeneration) {
         this.currentGeneration = generation;
         partitionGenerationMap = new HashMap<>();
         addGeneration(generation, numOfPartitions,1);
+        this.maxTopologyGeneration = maxTopologyGeneration;
     }
 
     public ClusterTopologyState(ClusterTopologyState other) {
         this.partitionGenerationMap = new HashMap<>(other.partitionGenerationMap);
         this.currentGeneration = other.currentGeneration;
+        this.maxTopologyGeneration = other.maxTopologyGeneration;
     }
 
     public void addGeneration(int generation, int numOfPartitions, int basePartitionToUpdate) {
@@ -54,9 +57,18 @@ public class ClusterTopologyState implements SmartExternalizable {
         this.currentGeneration = currentGeneration;
     }
 
+    public void setMaxTopologyGeneration(int maxTopologyGeneration){
+        this.maxTopologyGeneration = maxTopologyGeneration;
+    }
+
+    public int getMaxTopologyGeneration() {
+        return maxTopologyGeneration;
+    }
+
     @Override
     public void writeExternal(ObjectOutput out) throws IOException {
         out.writeShort(currentGeneration);
+        out.writeShort(maxTopologyGeneration);
         out.writeShort(partitionGenerationMap.size());
         for (Map.Entry<Integer, Integer> entry : partitionGenerationMap.entrySet()) {
             out.writeShort(entry.getKey());
@@ -67,6 +79,7 @@ public class ClusterTopologyState implements SmartExternalizable {
     @Override
     public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         this.currentGeneration = in.readShort();
+        this.maxTopologyGeneration = in.readShort();
         int size = in.readShort();
         partitionGenerationMap = new HashMap<>(size);
         for (int i = 0; i < size; i++) {
@@ -79,6 +92,7 @@ public class ClusterTopologyState implements SmartExternalizable {
         return "ClusterTopologyState{" +
                 "partitionGenerationMap=" + partitionGenerationMap +
                 ", currentGeneration=" + currentGeneration +
+                ", maxTopologyGeneration=" + maxTopologyGeneration +
                 '}';
     }
 }

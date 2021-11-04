@@ -71,6 +71,10 @@ public class ZookeeperTopologyHandler implements Closeable {
         return attributeStore.getObject(getZkTopologyGenerationPath(puName,generation));
     }
 
+    public static ClusterTopology getClusterTopology(AttributeStore attributeStore, String puName, int generation) throws IOException {
+        return attributeStore.getObject(getZkTopologyGenerationPath(puName,generation));
+    }
+
     @Override
     public void close() throws IOException {
         executorService.shutdownNow();

@@ -22,8 +22,8 @@ public class CopyChunksTask extends SystemDistributedTask<SpaceResponseInfo> imp
     public CopyChunksTask() {
     }
 
-    public CopyChunksTask(ClusterTopology newMap, String spaceName, Map<Integer, String> instanceIds, QuiesceToken token, ScaleType scaleType) {
-        this.requestInfo = new CopyChunksRequestInfo(newMap, spaceName, instanceIds, token, scaleType);
+    public CopyChunksTask(ClusterTopology newMap, String spaceName, Map<Integer, String> instanceIds, QuiesceToken token, ScaleType scaleType, int generation) {
+        this.requestInfo = new CopyChunksRequestInfo(newMap, spaceName, instanceIds, token, scaleType, generation);
     }
 
     @Override

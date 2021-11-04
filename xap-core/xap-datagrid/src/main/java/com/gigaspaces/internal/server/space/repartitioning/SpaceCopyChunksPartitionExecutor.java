@@ -60,7 +60,7 @@ public class SpaceCopyChunksPartitionExecutor extends SpaceActionExecutor {
         CopyChunksRequestInfo info = (CopyChunksRequestInfo) requestInfo;
         CopyChunksResponseInfo responseInfo = new CopyChunksResponseInfo(space.getPartitionIdOneBased(),info.getInstanceIds().keySet());
         try {
-            HashMap<Integer, ISpaceProxy> proxyMap = createProxyMap(space, info.getInstanceIds(), info.getToken());
+            HashMap<Integer, ISpaceProxy> proxyMap = createProxyMap(space, info.getInstanceIds(), info.getToken(), info.getGeneration());
             CopyBarrier barrier = new CopyBarrier(threadCount);
             for (int i = 0; i < threadCount; i++) {
                 executorService.submit(new CopyChunksConsumer(proxyMap, batchQueue, responseInfo, barrier));
@@ -91,9 +91,10 @@ public class SpaceCopyChunksPartitionExecutor extends SpaceActionExecutor {
         return responseInfo;
     }
 
-    private static HashMap<Integer, ISpaceProxy> createProxyMap(SpaceImpl space, Map<Integer, String> instanceIds, QuiesceToken token) throws IOException {
+    private static HashMap<Integer, ISpaceProxy> createProxyMap(SpaceImpl space, Map<Integer, String> instanceIds,
+                                                                QuiesceToken token, int generation) throws IOException {
         HashMap<Integer, ISpaceProxy> proxyMap = new HashMap<>(instanceIds.size());
-        SpaceSettings spaceSettings = getNewTopology(space);
+        SpaceSettings spaceSettings = getNewTopology(space, generation);
         for (Map.Entry<Integer, String> entry : instanceIds.entrySet()) {
             try {
                 SpaceProxyImpl proxy = createProxyWithNewTopology( space, spaceSettings, entry.getKey() - 1);
@@ -115,10 +116,9 @@ public class SpaceCopyChunksPartitionExecutor extends SpaceActionExecutor {
         return spaceProxy;
     }
 
-    private static SpaceSettings getNewTopology(SpaceImpl space) throws IOException {
-        int generation = space.getClusterInfo().getTopology().getGeneration();
+    private static SpaceSettings getNewTopology(SpaceImpl space, int generation) throws IOException {
         ZookeeperTopologyHandler handler = new ZookeeperTopologyHandler(space.getPuName(), space.getAttributeStore());
-        ClusterTopology newMap = handler.getClusterTopology(generation + 1);
+        ClusterTopology newMap = handler.getClusterTopology(generation);
         return space.createSpaceSettingsWithNewClusterTopology(newMap);
     }
 }

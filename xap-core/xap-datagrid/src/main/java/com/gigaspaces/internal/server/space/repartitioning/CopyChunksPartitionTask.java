@@ -20,8 +20,8 @@ public class CopyChunksPartitionTask extends SystemTask<SpaceResponseInfo> imple
     public CopyChunksPartitionTask() {
     }
 
-    public CopyChunksPartitionTask(ClusterTopology newMap, String spaceName, Map<Integer, String> instanceIds, QuiesceToken token, ScaleType scaleType) {
-        this.requestInfo = new CopyChunksRequestInfo(newMap, spaceName, instanceIds, token, scaleType);
+    public CopyChunksPartitionTask(ClusterTopology newMap, String spaceName, Map<Integer, String> instanceIds, QuiesceToken token, ScaleType scaleType, int generation) {
+        this.requestInfo = new CopyChunksRequestInfo(newMap, spaceName, instanceIds, token, scaleType, generation);
     }
 
     @Override

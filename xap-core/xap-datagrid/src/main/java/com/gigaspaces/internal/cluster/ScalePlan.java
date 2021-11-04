@@ -31,7 +31,7 @@ public class ScalePlan {
         }
     }
 
-    public static ScalePlan createScaleOutPlan(ClusterTopology currentTopology, int factor) {
+    public static ScalePlan createScaleOutPlan(ClusterTopology currentTopology, int factor, int maxTopologyGeneration) {
         int currPartitionCount = currentTopology.getNumberOfInstances();
         int newPartitionCount = currPartitionCount + factor;
         Map<Integer, Map<Integer, Set<Integer>>> plans = initPlans(factor, 1, currPartitionCount);
@@ -58,12 +58,13 @@ public class ScalePlan {
                 }
             }
         }
-        ClusterTopology newTopology = currentTopology.copy().setGeneration(currentTopology.getGeneration()+1)
+
+        ClusterTopology newTopology = currentTopology.copy().setGeneration(maxTopologyGeneration + 1)
                 .setNumOfInstances(newPartitionCount).setPartitionsToChunksMap(newMap);
         return new ScalePlan(currentTopology, newTopology, plans);
     }
 
-    public static ScalePlan createScaleInPlan(ClusterTopology currentTopology, int factor) {
+    public static ScalePlan createScaleInPlan(ClusterTopology currentTopology, int factor, int maxTopologyGeneration) {
         int currPartitionCount = currentTopology.getNumberOfInstances();
         int newPartitionCount = currPartitionCount - factor;
         Map<Integer, Map<Integer, Set<Integer>>> plans = initPlans(factor, newPartitionCount + 1, currPartitionCount);
@@ -89,7 +90,7 @@ public class ScalePlan {
             }
         }
 
-        ClusterTopology newTopology = currentTopology.copy().setGeneration(currentTopology.getGeneration()+1)
+        ClusterTopology newTopology = currentTopology.copy().setGeneration(maxTopologyGeneration + 1)
                 .setNumOfInstances(newPartitionCount).setPartitionsToChunksMap(newMap);
         return new ScalePlan(currentTopology, newTopology, plans);
     }

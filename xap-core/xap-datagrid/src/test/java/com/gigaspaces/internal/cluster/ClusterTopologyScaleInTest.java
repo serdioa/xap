@@ -9,7 +9,7 @@ public class ClusterTopologyScaleInTest {
     public void testScaleTwoToOne() {
         int numberOfPartitions = 2;
         ClusterTopology map = new ClusterTopology(numberOfPartitions);
-        ScalePlan plan = ScalePlan.createScaleInPlan(map, 1);
+        ScalePlan plan = ScalePlan.createScaleInPlan(map, 1, 0);
         printPlan(plan);
         Assert.assertEquals(2048, plan.getPlans().get(2).get(1).size());
     }
@@ -18,7 +18,7 @@ public class ClusterTopologyScaleInTest {
     public void testScaleThreeToOne() {
         int numberOfPartitions = 3;
         ClusterTopology map = new ClusterTopology(numberOfPartitions);
-        ScalePlan plan = ScalePlan.createScaleInPlan(map, 2);
+        ScalePlan plan = ScalePlan.createScaleInPlan(map, 2, 0);
         printPlan(plan);
         Assert.assertEquals(1365, plan.getPlans().get(2).get(1).size());
         Assert.assertEquals(1365, plan.getPlans().get(3).get(1).size());
@@ -28,7 +28,7 @@ public class ClusterTopologyScaleInTest {
     public void testScaleFourToTwo() {
         int numberOfPartitions = 4;
         ClusterTopology map = new ClusterTopology(numberOfPartitions);
-        ScalePlan plan = ScalePlan.createScaleInPlan(map, 2);
+        ScalePlan plan = ScalePlan.createScaleInPlan(map, 2, 0);
         printPlan(plan);
         Assert.assertEquals(1024, plan.getPlans().get(3).get(1).size());
         Assert.assertEquals(1024, plan.getPlans().get(4).get(2).size());
@@ -38,7 +38,7 @@ public class ClusterTopologyScaleInTest {
     public void testScaleSixToTwo() {
         int numberOfPartitions = 6;
         ClusterTopology map = new ClusterTopology(numberOfPartitions);
-        ScalePlan plan = ScalePlan.createScaleInPlan(map, 4);
+        ScalePlan plan = ScalePlan.createScaleInPlan(map, 4, 0);
         printPlan(plan);
         Assert.assertEquals(683, plan.getPlans().get(3).get(1).size());
         Assert.assertEquals(682, plan.getPlans().get(4).get(1).size());
@@ -51,7 +51,7 @@ public class ClusterTopologyScaleInTest {
     public void testScaleSevenToThree() {
         int numberOfPartitions = 7;
         ClusterTopology map = new ClusterTopology(numberOfPartitions);
-        ScalePlan plan = ScalePlan.createScaleInPlan(map, 4);
+        ScalePlan plan = ScalePlan.createScaleInPlan(map, 4, 0);
         printPlan(plan);
         Assert.assertEquals(585, plan.getPlans().get(4).get(1).size());
         Assert.assertEquals(195, plan.getPlans().get(5).get(1).size());
