@@ -164,6 +164,7 @@ public class GsCommandFactory {
                     command.option("--add-opens=java.base/java.util.zip=ALL-UNNAMED");
                     command.option("--add-exports=java.base/sun.net.util=ALL-UNNAMED");
                     command.option("--add-opens=java.base/java.net=ALL-UNNAMED");
+                    command.option("--add-opens=java.base/java.io=ALL-UNNAMED");
                     command.option("--add-opens=java.rmi/sun.rmi.transport=ALL-UNNAMED");
                     command.option("--add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED");
                     command.option("--add-exports=java.naming/com.sun.jndi.ldap=ALL-UNNAMED");
