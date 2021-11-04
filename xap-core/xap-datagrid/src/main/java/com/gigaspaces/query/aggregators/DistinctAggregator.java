@@ -65,7 +65,9 @@ public class DistinctAggregator<T> extends SpaceEntriesAggregator<DistinctResult
 
     @Override
     public String getDefaultAlias() {
-        return "distinct (" + Arrays.toString(distinctPaths) + ")";
+        StringJoiner joiner = new StringJoiner(", ");
+        Arrays.stream(distinctPaths).forEach(joiner::add);
+        return (groupByAggregator ? joiner.toString() : "distinct(" + joiner + ")");
     }
 
     @Override

@@ -132,7 +132,7 @@ public class AggregationSet implements SmartExternalizable {
         return add(aggregator);
     }
 
-    List<SpaceEntriesAggregator> getAggregators() {
+    public List<SpaceEntriesAggregator> getAggregators() {
         return aggregators;
     }
 
