@@ -77,7 +77,7 @@ public class CDCInfo extends SpaceDocument {
 
     @Override
     public String toString() {
-        return "streamName = " + getPipelineName() + " " +
+        return "pipelineName = " + getPipelineName() + " " +
                 "messageID = " + getMessageID() + " " +
                 "partitionID =" + getPartitionID() + " " +
                 "ID = " + getID();
