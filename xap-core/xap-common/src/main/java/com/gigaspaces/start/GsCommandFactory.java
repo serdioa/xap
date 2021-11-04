@@ -159,12 +159,13 @@ public class GsCommandFactory {
                 command.option("--add-modules=ALL-SYSTEM");
                 if (JavaUtils.greaterOrEquals(17)) {
                     command.option("--add-opens=java.base/java.lang=ALL-UNNAMED");
-                    command.option("--add-exports=java.base/sun.net.util=ALL-UNNAMED");
                     command.option("--add-opens=java.base/sun.security.provider=ALL-UNNAMED");
-                    command.option("--add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED");
                     command.option("--add-opens=java.base/java.util=ALL-UNNAMED");
                     command.option("--add-opens=java.base/java.util.zip=ALL-UNNAMED");
+                    command.option("--add-exports=java.base/sun.net.util=ALL-UNNAMED");
+                    command.option("--add-opens=java.base/java.net=ALL-UNNAMED");
                     command.option("--add-opens=java.rmi/sun.rmi.transport=ALL-UNNAMED");
+                    command.option("--add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED");
                     command.option("--add-exports=java.naming/com.sun.jndi.ldap=ALL-UNNAMED");
                 }
             }
