@@ -67,6 +67,8 @@ public class ZNodePathFactory {
 
     public static String connector_started(String pipeline){ return path(PIPELINES, pipeline + "/connector_started");}
 
+    public static String full_sync_completed(String pipeline){ return path(PIPELINES, pipeline + "/full_sync_completed");}
+
     public static String processingUnit(String puName, String component, int partitionId, String ... elements) {
         return path(PUS, puName, component, String.valueOf(partitionId), elements);
     }
