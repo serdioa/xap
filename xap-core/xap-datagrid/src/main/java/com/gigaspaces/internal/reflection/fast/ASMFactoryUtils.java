@@ -33,7 +33,7 @@ final public class ASMFactoryUtils {
     final static private Method FIND_LODADED;
 
     static {
-        Method defineMethod = null;
+        Method defineMethod = null; //-addopens java.lang
         Method findLoaded = null;
         try {
             defineMethod = ReflectionUtil.getMethodFromClass(ClassLoader.class, "defineClass", String.class, byte[].class, int.class, int.class);
