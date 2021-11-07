@@ -41,8 +41,8 @@ public class DIHProjectTestCase {
         DocumentInfo employeeDocumentInfo = new DocumentInfo("Employee", "com.gigaspaces.dih.model.types",
                 "companyDb_companySchema_Employee", false, true);
         employeeDocumentInfo.addIdProperty("employeeId", Long.class, SpaceIndexType.EQUAL, false);
-        employeeDocumentInfo.addIndexProperty("name", String.class, SpaceIndexType.EQUAL, false);
-        employeeDocumentInfo.addRoutingProperty("age", Integer.class, SpaceIndexType.EQUAL_AND_ORDERED);
+        employeeDocumentInfo.addIndexProperty("naME", String.class, SpaceIndexType.EQUAL, false);
+        employeeDocumentInfo.addRoutingProperty("My_Age", Integer.class, SpaceIndexType.EQUAL_AND_ORDERED);
 
         DocumentInfo studentDocumentInfo = new DocumentInfo("Student", "com.gigaspaces.dih.model.types",
                 "Student", false, true);
