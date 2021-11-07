@@ -76,6 +76,7 @@
                 <include>spring-security-core-*</include>
                 <include>spring-security-config-*</include>
                 <include>spring-security-web-*</include>
+                <include>spring-security-crypto-*</include>
             </includes>
         </fileSet>
         <fileSet>
