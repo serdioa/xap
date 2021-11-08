@@ -21,5 +21,7 @@ public class PipelineTypeRegistrar {
 {{#type-registrar.class-names}}
         typeManager.registerTypeDescriptor({{.}}.getTypeDescriptor());
 {{/type-registrar.class-names}}
+        System.out.println(gigaSpace.getTypeDescriptor("DALLASC_GSTST_CUSTOMER"));
+
     }
 }
