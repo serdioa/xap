@@ -14,20 +14,19 @@
  * limitations under the License.
  */
 
-package com.gigaspaces.internal.cluster.node.impl;
+package com.gigaspaces.internal.cluster.node.handlers;
 
+import com.gigaspaces.internal.cluster.node.IReplicationInContext;
+import com.gigaspaces.internal.cluster.node.IReplicationNode;
+import com.gigaspaces.internal.metadata.ITypeDesc;
 
 /**
- * Represents replication operation type, used internally by the {@link ReplicationNode}
+ * Handle incoming replication event of new data types {@link IReplicationNode}
  *
- * @author eitany
+ * @author anna
  * @since 8.0
  */
-public enum ReplicationSingleOperationType {
-    WRITE, UPDATE, REMOVE_ENTRY,
-    CANCEL_LEASE, EVICT,
-    INSERT_NOTIFY_TEMPLATE, REMOVE_NOTIFY_TEMPLATE,
-    EXTEND_ENTRY_LEASE, EXTEND_NOTIFY_TEMPLATE_LEASE, DISCARD, DATA_TYPE_INTRODUCE, DATA_TYPE_ADD_INDEX,DATA_TYPE_DROP,
-    ENTRY_LEASE_EXPIRED, NOTIFY_TEMPLATE_LEASE_EXPIRED, CHANGE;
-
+public interface IReplicationInDataTypeDropHandler {
+    void inDataTypeDrop(IReplicationInContext context,
+                             String className) throws Exception;
 }

@@ -385,4 +385,6 @@ public interface IReplicationNode {
     void setBlobStoreReplicationBulkConsumeHelper(BlobStoreReplicationBulkConsumeHelper blobStoreReplicationBulkConsumeHelper);
 
     BlobStoreReplicationBulkConsumeHelper getBlobStoreReplicationBulkConsumeHelper();
+
+    void outDataTypeDrop(IReplicationOutContext context, String className);
 }

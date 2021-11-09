@@ -38,6 +38,7 @@ public interface IReplicationInFacade
         IReplicationInEntryHandler,
         IReplicationInDataTypeCreatedHandler,
         IReplicationInDataTypeIndexAddedHandler,
+        IReplicationInDataTypeDropHandler,
         IReplicationInEntryLeaseExpiredHandler,
         IReplicationInNotifyTemplateLeaseExpiredHandler,
         IReplicationInBatchConsumptionHandler

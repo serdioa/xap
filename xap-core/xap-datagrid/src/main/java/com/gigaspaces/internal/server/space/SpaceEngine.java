@@ -3115,6 +3115,13 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
     public synchronized void dropClass(String className)
             throws DropClassException {
         _typeManager.dropClass(className);
+         // Replicate the new type:
+        final IReplicationOutContext context = getReplicationNode().createContext();
+
+        //TODO  If operation was executed from a gateway, specify its from gateway
+
+        getReplicationNode().outDataTypeDrop(context, className);
+        getReplicationNode().execute(context);
     }
 
     /*----------------- Admin API : end -----------------*/
