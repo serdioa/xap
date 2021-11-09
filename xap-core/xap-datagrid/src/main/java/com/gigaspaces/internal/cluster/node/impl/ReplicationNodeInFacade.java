@@ -20,24 +20,10 @@ import com.gigaspaces.client.mutators.SpaceEntryMutator;
 import com.gigaspaces.events.NotifyInfo;
 import com.gigaspaces.internal.cluster.node.IReplicationInBatchContext;
 import com.gigaspaces.internal.cluster.node.IReplicationInContext;
-import com.gigaspaces.internal.cluster.node.handlers.IReplicationInBatchConsumptionHandler;
-import com.gigaspaces.internal.cluster.node.handlers.IReplicationInDataTypeCreatedHandler;
-import com.gigaspaces.internal.cluster.node.handlers.IReplicationInDataTypeIndexAddedHandler;
-import com.gigaspaces.internal.cluster.node.handlers.IReplicationInEntryHandler;
-import com.gigaspaces.internal.cluster.node.handlers.IReplicationInEntryLeaseCancelledHandler;
-import com.gigaspaces.internal.cluster.node.handlers.IReplicationInEntryLeaseExpiredHandler;
-import com.gigaspaces.internal.cluster.node.handlers.IReplicationInEntryLeaseExtendedHandler;
-import com.gigaspaces.internal.cluster.node.handlers.IReplicationInEvictEntryHandler;
-import com.gigaspaces.internal.cluster.node.handlers.IReplicationInFacade;
-import com.gigaspaces.internal.cluster.node.handlers.IReplicationInNotificationSentHandler;
-import com.gigaspaces.internal.cluster.node.handlers.IReplicationInNotifyTemplateCreatedHandler;
-import com.gigaspaces.internal.cluster.node.handlers.IReplicationInNotifyTemplateLeaseExpiredHandler;
-import com.gigaspaces.internal.cluster.node.handlers.IReplicationInNotifyTemplateLeaseExtendedHandler;
-import com.gigaspaces.internal.cluster.node.handlers.IReplicationInNotifyTemplateRemovedHandler;
-import com.gigaspaces.internal.cluster.node.handlers.IReplicationInTransactionHandler;
-import com.gigaspaces.internal.cluster.node.handlers.ITransactionInContext;
+import com.gigaspaces.internal.cluster.node.handlers.*;
 import com.gigaspaces.internal.cluster.node.impl.groups.IReplicationSourceGroup;
 import com.gigaspaces.internal.cluster.node.impl.groups.ReplicationNodeGroupsHolder;
+import com.gigaspaces.internal.cluster.node.impl.handlers.SpaceReplicationMetadataEventHandler;
 import com.gigaspaces.internal.metadata.ITypeDesc;
 import com.gigaspaces.internal.space.requests.AddTypeIndexesRequestInfo;
 import com.gigaspaces.internal.transport.IEntryPacket;
@@ -73,6 +59,7 @@ public class ReplicationNodeInFacade
     private IReplicationInDataTypeIndexAddedHandler _inDataTypeAddIndex;
     private IReplicationInNotifyTemplateLeaseExpiredHandler _inNotifyTemplateLeaseExpiredHandler;
     private IReplicationInBatchConsumptionHandler _inBatchConsumptionHandler;
+    private IReplicationInDataTypeDropHandler _inDataTypeDrop;
 
     public ReplicationNodeInFacade(ReplicationNodeGroupsHolder groupsHolder) {
         _groupsHolder = groupsHolder;
@@ -300,6 +287,14 @@ public class ReplicationNodeInFacade
     }
 
     @Override
+    public void inDataTypeDrop(IReplicationInContext context, String className) throws Exception {
+        if (_inDataTypeDrop != null)
+            _inDataTypeDrop.inDataTypeDrop(context, className);
+        else if (context.isBatchContext())
+            ((IReplicationInBatchContext) context).currentConsumed();
+    }
+
+    @Override
     public void consumePendingOperationsInBatch(
             IReplicationInBatchContext context) throws Exception {
         if (_inBatchConsumptionHandler != null)
@@ -365,6 +360,10 @@ public class ReplicationNodeInFacade
     public synchronized void setInDataTypeCreatedHandler(
             IReplicationInDataTypeCreatedHandler handler) {
         _inDataTypeIntroduce = handler;
+    }
+
+    public void setInDataTypeDrop(SpaceReplicationMetadataEventHandler handler) {
+        _inDataTypeDrop = handler;
     }
 
     public synchronized void setInDataTypeIndexAddedHandler(

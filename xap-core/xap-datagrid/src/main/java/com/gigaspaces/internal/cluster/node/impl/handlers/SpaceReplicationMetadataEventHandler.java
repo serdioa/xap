@@ -18,6 +18,7 @@ package com.gigaspaces.internal.cluster.node.impl.handlers;
 
 import com.gigaspaces.internal.cluster.node.IReplicationInContext;
 import com.gigaspaces.internal.cluster.node.handlers.IReplicationInDataTypeCreatedHandler;
+import com.gigaspaces.internal.cluster.node.handlers.IReplicationInDataTypeDropHandler;
 import com.gigaspaces.internal.cluster.node.handlers.IReplicationInDataTypeIndexAddedHandler;
 import com.gigaspaces.internal.metadata.ITypeDesc;
 import com.gigaspaces.internal.server.space.SpaceEngine;
@@ -36,7 +37,7 @@ import org.slf4j.LoggerFactory;
 @com.gigaspaces.api.InternalApi
 public class SpaceReplicationMetadataEventHandler implements
         IReplicationInDataTypeCreatedHandler,
-        IReplicationInDataTypeIndexAddedHandler {
+        IReplicationInDataTypeIndexAddedHandler, IReplicationInDataTypeDropHandler {
     private static final Logger _logger = LoggerFactory.getLogger(Constants.LOGGER_REPLICATION);
     private final SpaceTypeManager _typeManager;
     private final SpaceEngine _spaceEngine;
@@ -58,6 +59,19 @@ public class SpaceReplicationMetadataEventHandler implements
         } catch (Exception e) {
             if (_logger.isErrorEnabled())
                 _logger.error("Conflict in type introduction.", e);
+        }
+    }
+
+    @Override
+    public void inDataTypeDrop(IReplicationInContext context, String className){
+        try {
+            _typeManager.dropClass(className);
+            if (_spaceEngine.getCacheManager().isBlobStoreCachePolicy()) //need to be stored in case blobStore recovery will be used
+                throw new UnsupportedOperationException("memoryXtend does not support drop class operation");
+
+        } catch (Exception e) {
+            if (_logger.isErrorEnabled())
+                _logger.error("Conflict in type deletion.", e);
         }
     }
 
