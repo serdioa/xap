@@ -264,8 +264,4 @@ public class SystemLocations {
     public Path dataGatewayJar() {
         return tools().resolve("data-gateway").resolve("xap-data-gateway.jar");
     }
-
-    public Path dataIntegrationJar () {return libOptional().resolve("data-integration").resolve("xap-data-integration.jar");}
-
-
 }
