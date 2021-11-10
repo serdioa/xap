@@ -2,32 +2,15 @@ package org.gigaspaces.blueprints;
 
 import com.gigaspaces.internal.io.BootIOUtils;
 import org.gigaspaces.blueprints.java.dih.dih_model.TypeRegistrarInfo;
-import org.junit.jupiter.api.AfterEach;
+import org.junit.Test;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
-import org.openspaces.core.GigaSpace;
 
 import java.io.IOException;
 
-public class TypeRegistratInfoTestCase {
-
-    private static final String SPACE_NAME = "demo";
-    private static GigaSpace gigaSpace;
-
-    @BeforeAll
-    static void setUp() {
-//        gigaSpace = new GigaSpaceConfigurer(new EmbeddedSpaceConfigurer(SPACE_NAME)).gigaSpace();
-//        gigaSpace.getTypeManager().registerTypeDescriptor(EmployeeDocument.getTypeDescriptor());
-    }
-
-    @AfterEach
-//    void tearDown() {
-//        gigaSpace.clear(null);
-//    }
+public class TypeRegistrarInfoTestCase {
 
     @Test
-    public void basicTestWithInitialLoad() throws IOException {
+    public void generateTest() throws IOException {
         String expected = BootIOUtils.readAsString(BootIOUtils.getResourcePath("samples/TypeRegistrar.java"));
         TypeRegistrarInfo typeRegistrarInfo = new TypeRegistrarInfo("org.gigaspaces.blueprints");
         typeRegistrarInfo.addClass("com.gigaspaces.dih.consumer", "CDCInfo");

@@ -1,21 +1,31 @@
 package org.gigaspaces.blueprints;
 
+import com.gigaspaces.internal.io.BootIOUtils;
 import com.gigaspaces.metadata.index.SpaceIndexType;
 import com.gigaspaces.start.SystemLocations;
 import org.gigaspaces.blueprints.java.DocumentInfo;
 import org.gigaspaces.blueprints.java.dih.DIHProjectGenerator;
 import org.gigaspaces.blueprints.java.dih.DIHProjectPropertiesOverrides;
-import org.jetbrains.annotations.NotNull;
-import org.junit.jupiter.api.Test;
+import org.junit.After;
+import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
 
+import java.io.File;
+import java.io.IOException;
+import java.net.URISyntaxException;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 
 public class DIHProjectTestCase {
 
+    private Path target;
+
     @Test
-    void generateProject() {
+    public void generateProject() {
         String projectPipelineName = "Foo";
         String projectVersion = "1.0";
         String kafkaSpaceName = "mySpace";
@@ -23,7 +33,7 @@ public class DIHProjectTestCase {
         String resourcesTypeMetadataJson = getTypeMetadataJson();
         String resourcesDefaultTypeConversionMap = getDefaultTypeConversionMap();
         String configStreamJson = getStreamJson();
-        Path target = SystemLocations.singleton().work("data-integration");
+        target = SystemLocations.singleton().work("data-integration");
         List<DocumentInfo> documents = getDocumentsInfo();
 
         DIHProjectPropertiesOverrides dihProjectProperties = new DIHProjectPropertiesOverrides(
@@ -33,10 +43,69 @@ public class DIHProjectTestCase {
                 null, null, resourcesTypeMetadataJson,
                 resourcesDefaultTypeConversionMap, configStreamJson, target, documents);
 
-        DIHProjectGenerator.generate(dihProjectProperties);
+        try {
+            if (target.toFile().exists()) {
+                BootIOUtils.deleteRecursive(target);
+            }
+            // Blueprint path when executed from a gigaspaces source code
+            Path consumerBlueprint = SystemLocations.singleton().home("blueprints").resolve("dih-consumer");
+            DIHProjectGenerator.generate(dihProjectProperties, consumerBlueprint);
+            assertPathsRecursively(target, getResourcePath("blueprints/dih-project/work/data-integration"));
+        } catch (Throwable e) {
+            Assertions.fail("failed to validate generated dih consumer blueprint with the expected project", e);
+        }
     }
 
-    @NotNull
+    @After
+    public void tearDown() {
+        if (target.toFile().exists()) {
+            try {
+                BootIOUtils.deleteRecursive(target);
+            } catch (IOException ignored) {
+            }
+        }
+    }
+
+    private void assertPathsRecursively(Path actual, Path expected) throws IOException {
+        File actualRoot = actual.toFile();
+        File expectedRoot = expected.toFile();
+
+        if (!actualRoot.isDirectory() || !expectedRoot.isDirectory()) {
+            fail(actualRoot, expectedRoot);
+        }
+
+        Iterator<Path> actualIter = Files.walk(actual).sorted().iterator();
+        Iterator<Path> expectedIter = Files.walk(expected).sorted().iterator();
+        while (actualIter.hasNext() && expectedIter.hasNext()) {
+            File actualFile = actualIter.next().toFile();
+            File expectedFile = expectedIter.next().toFile();
+
+            if (actualFile.isDirectory() && expectedFile.isDirectory()) {
+                Assertions.assertEquals(actualFile.getName(), expectedFile.getName());
+            } else {
+                if (actualFile.isDirectory() || expectedFile.isDirectory()) {
+                    fail(actualFile, expectedFile);
+                }
+
+                String actualFileContent = String.join("\n", Files.readAllLines(actualFile.toPath()));
+                String expectedFileContent = String.join("\n", Files.readAllLines(expectedFile.toPath()));
+                if (!actualFileContent.equals(expectedFileContent)) {
+                    System.out.printf("The actual file: %s located under: %s%n", actualFile.getName(), actualFile.getAbsolutePath());
+                    System.out.println(actualFileContent);
+                    System.out.printf("The expected file: %s located under: %s%n", expectedFile.getName(), expectedFile.getAbsolutePath());
+                    System.out.println(expectedFileContent);
+                    fail(actualFile, expectedFile);
+                }
+            }
+        }
+    }
+
+    private void fail(File generatedFile, File sourceFile) {
+        Assertions.fail(String.format("Failed to validate the following files: %s and %s \nlocated under %s \nAnd %s ",
+                generatedFile.getName(), sourceFile.getName(),
+                generatedFile.getAbsolutePath(), sourceFile.getAbsolutePath()));
+    }
+
     private List<DocumentInfo> getDocumentsInfo() {
         DocumentInfo employeeDocumentInfo = new DocumentInfo("Employee", "com.gigaspaces.dih.model.types",
                 "companyDb_companySchema_Employee", false, true);
@@ -51,6 +120,10 @@ public class DIHProjectTestCase {
         studentDocumentInfo.addRoutingProperty("age", Integer.class, SpaceIndexType.EQUAL_AND_ORDERED);
 
         return Arrays.asList(employeeDocumentInfo, studentDocumentInfo);
+    }
+
+    private Path getResourcePath(String resource) throws URISyntaxException {
+        return Paths.get(getClass().getResource("/" + resource).toURI());
     }
 
     private static String getTypeMetadataJson() {
