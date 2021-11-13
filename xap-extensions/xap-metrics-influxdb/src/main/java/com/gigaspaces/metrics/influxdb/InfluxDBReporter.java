@@ -59,10 +59,12 @@ public class InfluxDBReporter extends MetricReporter {
 
     protected InfluxDBDispatcher createDispatcher(InfluxDBReporterFactory factory) {
         final String protocol = factory.getProtocol();
-        if (protocol.equalsIgnoreCase("http"))
+        if (protocol.equalsIgnoreCase("http") || protocol.equalsIgnoreCase("https")) {
             return new InfluxDBHttpDispatcher(factory);
-        if (protocol.equalsIgnoreCase("udp"))
+        }
+        if (protocol.equalsIgnoreCase("udp")) {
             return new InfluxDBUdpDispatcher(factory);
+        }
         throw new IllegalArgumentException("Unsupported InfluxDB Reporter protocol: " + protocol);
     }
 

@@ -18,14 +18,13 @@ package com.gigaspaces.metrics.influxdb;
 
 import com.gigaspaces.internal.utils.StringUtils;
 import com.gigaspaces.metrics.HttpUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.concurrent.TimeUnit;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * @author Niv Ingberg
@@ -35,12 +34,12 @@ public class InfluxDBHttpDispatcher extends InfluxDBDispatcher {
     private static final Logger logger = LoggerFactory.getLogger(InfluxDBHttpDispatcher.class.getName());
     private static final String CONTENT_TYPE = System.getProperty("com.gigaspaces.metrics.influxdb.http.content_type", "text/plain");
     private static final int TIMEOUT = Integer.getInteger("com.gigaspaces.metrics.influxdb.http.timeout", 30000);
+
     private final URL url;
 
     public InfluxDBHttpDispatcher(InfluxDBReporterFactory factory) {
         this.url = toUrl("write", factory);
-        if (logger.isDebugEnabled())
-            logger.debug("InfluxDBHttpDispatcher created [url=" + url + "]");
+        logger.debug("InfluxDBHttpDispatcher created [url=" + url + "]");
     }
 
     public URL getUrl() {
@@ -54,8 +53,8 @@ public class InfluxDBHttpDispatcher extends InfluxDBDispatcher {
             throw new IOException("Failed to post [HTTP Code=" + httpCode + ", url=" + url.toString() + "]");
     }
 
-    private static URL toUrl(String operationName,  InfluxDBReporterFactory factory) {
-        return toUrl( operationName, null, factory );
+    private static URL toUrl(String operationName, InfluxDBReporterFactory factory) {
+        return toUrl(operationName, null, factory);
     }
 
     public static URL toUrl(String operationName, String encodedQuery, InfluxDBReporterFactory factory) {
@@ -73,12 +72,12 @@ public class InfluxDBHttpDispatcher extends InfluxDBDispatcher {
             suffix = append(suffix, "precision", toString(factory.getTimePrecision()));
             suffix = append(suffix, "consistency", factory.getConsistency());
 
-            if( encodedQuery != null ){
+            if (encodedQuery != null) {
                 //Returns epoch timestamps
                 suffix = append(suffix, "epoch", "ms");
                 suffix = append(suffix, "q", encodedQuery);
             }
-            return new URL("http", factory.getHost(), factory.getPort(), suffix);
+            return new URL(factory.getProtocol(), factory.getHost(), factory.getPort(), suffix);
         } catch (MalformedURLException e) {
             throw new RuntimeException("Failed to create InfluxDB HTTP url", e);
         }
