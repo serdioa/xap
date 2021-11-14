@@ -47,22 +47,6 @@
             <source>${project.basedir}/../xap-core/xap-datagrid/src/main/resources/gigaspaces-metadata.xsd</source>
             <outputDirectory>metadata</outputDirectory>
         </file>
-        <file>
-            <source>${project.basedir}/../xap-extensions/xap-mule/src/main/resources/org/openspaces/esb/mule/eventcontainer/config/mule-os-eventcontainer.xsd</source>
-            <outputDirectory>mule</outputDirectory>
-        </file>
-        <file>
-            <source>${project.basedir}/../xap-extensions/xap-mule/src/main/resources/org/openspaces/esb/mule/queue/config/mule-os-queue.xsd</source>
-            <outputDirectory>mule</outputDirectory>
-        </file>
-        <file>
-            <source>${project.basedir}/../xap-extensions/xap-mule/src/main/resources/org/openspaces/esb/mule/eventcontainer/config/mule-os-eventcontainer.xsd</source>
-            <outputDirectory>mule/3.7</outputDirectory>
-        </file>
-        <file>
-            <source>${project.basedir}/../xap-extensions/xap-mule/src/main/resources/org/openspaces/esb/mule/queue/config/mule-os-queue.xsd</source>
-            <outputDirectory>mule/3.7</outputDirectory>
-        </file>
 
         <file>
             <source>${project.basedir}/../xap-core/xap-openspaces/src/main/resources/org/openspaces/remoting/config/openspaces-remoting.xsd</source>

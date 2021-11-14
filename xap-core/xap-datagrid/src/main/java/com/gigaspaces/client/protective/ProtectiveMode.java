@@ -64,8 +64,6 @@ public class ProtectiveMode {
     private static final Set<String> _ignoreWithoutIdProtectiveModeTypeNames = new HashSet<String>();
 
     static {
-        // Protective mode for Mule's FIFO wrapper object is disabled.
-        _ignoreRoutingProtectiveModeTypeNames.add("org.openspaces.esb.mule.queue.OpenSpacesFifoQueueObject");
         // Protective mode for hashed event driven space remoting entry is disabled.
         _ignoreWithoutIdProtectiveModeTypeNames.add("org.openspaces.remoting.HashedEventDrivenSpaceRemotingEntry");
     }

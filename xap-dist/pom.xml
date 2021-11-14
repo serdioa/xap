@@ -51,10 +51,6 @@
         </dependency>
         <dependency>
             <groupId>org.gigaspaces</groupId>
-            <artifactId>xap-mule</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.gigaspaces</groupId>
             <artifactId>xap-groovy</artifactId>
         </dependency>
         <dependency>
