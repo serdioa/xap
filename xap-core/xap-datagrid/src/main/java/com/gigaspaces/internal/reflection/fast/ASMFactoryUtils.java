@@ -16,10 +16,16 @@
 
 package com.gigaspaces.internal.reflection.fast;
 
+import com.gigaspaces.internal.jvm.JavaUtils;
 import com.gigaspaces.internal.reflection.ReflectionUtil;
+import org.burningwave.core.assembler.StaticComponentContainer;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import static org.burningwave.core.assembler.StaticComponentContainer.Modules;
+import static org.burningwave.core.assembler.StaticComponentContainer.Methods;
+import static org.burningwave.core.assembler.StaticComponentContainer.GlobalProperties;
+
 
 /**
  * Base class for all the ASM factories
@@ -35,15 +41,26 @@ final public class ASMFactoryUtils {
     static {
         Method defineMethod = null;
         Method findLoaded = null;
-        try {
-            defineMethod = ReflectionUtil.getMethodFromClass(ClassLoader.class, "defineClass", String.class, byte[].class, int.class, int.class);
-            findLoaded = ReflectionUtil.getMethodFromClass(ClassLoader.class, "findLoadedClass", String.class);
-        } catch (Exception e) {
+        Class<ClassLoader> clazz = ClassLoader.class;
+        if (Modules != null) {
+            GlobalProperties.setProperty("banner.hide", "true");
+            GlobalProperties.setProperty("background-executor.all-tasks-monitoring.logger.enabled", "false");
+            Modules.exportPackageToAllUnnamed("java.base", "java.lang");
+            Modules.exportPackageToAllUnnamed("java.base", "java.util.zip");
+            defineMethod = Methods.findOneAndMakeItAccessible(clazz, "defineClass", String.class, byte[].class, int.class, int.class);
+            findLoaded = Methods.findOneAndMakeItAccessible(clazz, "findLoadedClas", String.class);
         }
-        assert defineMethod != null;
-        assert findLoaded != null;
-        defineMethod.setAccessible(true);
-        findLoaded.setAccessible(true);
+        else {
+            try {
+                defineMethod = clazz.getDeclaredMethod("defineClass", String.class, byte[].class, int.class, int.class);
+                findLoaded = clazz.getDeclaredMethod("findLoadedClass", String.class);
+                assert defineMethod != null;
+                assert findLoaded != null;
+                defineMethod.setAccessible(true);
+                findLoaded.setAccessible(true);
+            } catch (Exception ignored) {
+            }
+        }
         DEFINE_METHOD = defineMethod;
         FIND_LODADED = findLoaded;
     }

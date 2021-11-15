@@ -76,6 +76,12 @@
             <version>1.9.0</version>
             <scope>test</scope>
         </dependency>
+
+        <dependency>
+            <groupId>org.burningwave</groupId>
+            <artifactId>core</artifactId>
+            <version>12.20.1</version>
+        </dependency>
     </dependencies>
 
     <build>
