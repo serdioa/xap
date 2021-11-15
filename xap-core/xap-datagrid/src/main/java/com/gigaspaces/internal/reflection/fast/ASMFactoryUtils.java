@@ -18,13 +18,9 @@ package com.gigaspaces.internal.reflection.fast;
 
 import com.gigaspaces.internal.jvm.JavaUtils;
 import com.gigaspaces.internal.reflection.ReflectionUtil;
-import org.burningwave.core.assembler.StaticComponentContainer;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import static org.burningwave.core.assembler.StaticComponentContainer.Modules;
-import static org.burningwave.core.assembler.StaticComponentContainer.Methods;
-import static org.burningwave.core.assembler.StaticComponentContainer.GlobalProperties;
 
 
 /**
@@ -42,23 +38,22 @@ final public class ASMFactoryUtils {
         Method defineMethod = null;
         Method findLoaded = null;
         Class<ClassLoader> clazz = ClassLoader.class;
-        if (Modules != null) {
-            GlobalProperties.setProperty("banner.hide", "true");
-            GlobalProperties.setProperty("background-executor.all-tasks-monitoring.logger.enabled", "false");
-            Modules.exportPackageToAllUnnamed("java.base", "java.lang");
-            Modules.exportPackageToAllUnnamed("java.base", "java.util.zip");
-            defineMethod = Methods.findOneAndMakeItAccessible(clazz, "defineClass", String.class, byte[].class, int.class, int.class);
-            findLoaded = Methods.findOneAndMakeItAccessible(clazz, "findLoadedClas", String.class);
+        try {
+            defineMethod = clazz.getDeclaredMethod("defineClass", String.class, byte[].class, int.class, int.class);
+            findLoaded = clazz.getDeclaredMethod("findLoadedClass", String.class);
+            defineMethod.setAccessible(true);
+            findLoaded.setAccessible(true);
         }
-        else {
-            try {
-                defineMethod = clazz.getDeclaredMethod("defineClass", String.class, byte[].class, int.class, int.class);
-                findLoaded = clazz.getDeclaredMethod("findLoadedClass", String.class);
-                assert defineMethod != null;
-                assert findLoaded != null;
-                defineMethod.setAccessible(true);
-                findLoaded.setAccessible(true);
-            } catch (Exception ignored) {
+        catch (Exception e) {
+            if(e.getClass().getName().equals("java.lang.reflect.InaccessibleObjectException")) {
+                if (JavaUtils.greaterOrEquals(17)) {
+                    if (org.burningwave.core.assembler.StaticComponentContainer.Modules != null) {
+                        org.burningwave.core.assembler.StaticComponentContainer.Modules.exportPackageToAllUnnamed("java.base", "java.lang");
+                        org.burningwave.core.assembler.StaticComponentContainer.Modules.exportPackageToAllUnnamed("java.base", "java.util.zip");
+                        defineMethod = org.burningwave.core.assembler.StaticComponentContainer.Methods.findOneAndMakeItAccessible(clazz, "defineClass", String.class, byte[].class, int.class, int.class);
+                        findLoaded = org.burningwave.core.assembler.StaticComponentContainer.Methods.findOneAndMakeItAccessible(clazz, "findLoadedClass", String.class);
+                    }
+                }
             }
         }
         DEFINE_METHOD = defineMethod;
