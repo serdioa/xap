@@ -391,20 +391,4 @@ public class ReflectionUtil {
         getDescriptor(buf, m.getReturnType());
         return buf.toString();
     }
-
-    public static Method getMethodFromClass(Class<?> clazz, String methodName, Class<?>... parameterTypes) throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
-        if(JavaUtils.greaterOrEquals(17)) {
-            Method getDeclaredMethods0 = Class.class.getDeclaredMethod("getDeclaredMethods0", boolean.class);
-            getDeclaredMethods0.setAccessible(true);
-            final Method[] allMethods = (Method[]) getDeclaredMethods0.invoke(ClassLoader.class, false);
-            for (Method method : allMethods) {
-                if(method.getName().equals(methodName) && Arrays.equals(method.getParameterTypes(), parameterTypes)){
-                    return method;
-                }
-            }
-        } else{
-            return clazz.getDeclaredMethod(methodName, parameterTypes);
-        }
-        return null;
-    }
 }

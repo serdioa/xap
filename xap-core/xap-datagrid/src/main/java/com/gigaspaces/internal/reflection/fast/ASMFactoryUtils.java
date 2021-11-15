@@ -16,10 +16,13 @@
 
 package com.gigaspaces.internal.reflection.fast;
 
+import com.gigaspaces.internal.jvm.JavaUtils;
+import com.gigaspaces.internal.jvm.burningwave.BurningWave;
 import com.gigaspaces.internal.reflection.ReflectionUtil;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+
 
 /**
  * Base class for all the ASM factories
@@ -35,19 +38,25 @@ final public class ASMFactoryUtils {
     static {
         Method defineMethod = null;
         Method findLoaded = null;
+        Class<ClassLoader> clazz = ClassLoader.class;
         try {
-            defineMethod = ReflectionUtil.getMethodFromClass(ClassLoader.class, "defineClass", String.class, byte[].class, int.class, int.class);
-            findLoaded = ReflectionUtil.getMethodFromClass(ClassLoader.class, "findLoadedClass", String.class);
-        } catch (Exception e) {
+            defineMethod = clazz.getDeclaredMethod("defineClass", String.class, byte[].class, int.class, int.class);
+            findLoaded = clazz.getDeclaredMethod("findLoadedClass", String.class);
+            defineMethod.setAccessible(true);
+            findLoaded.setAccessible(true);
         }
-        assert defineMethod != null;
-        assert findLoaded != null;
-        defineMethod.setAccessible(true);
-        findLoaded.setAccessible(true);
+        catch (Exception e) {
+            if(e.getClass().getName().equals("java.lang.reflect.InaccessibleObjectException")
+                    && JavaUtils.greaterOrEquals(17) && BurningWave.enabled()) {
+                BurningWave.exportPackageToAllUnnamed("java.base", "java.lang");
+                defineMethod = BurningWave.findOneMethodAndMakeItAccessible(clazz, "defineClass", String.class, byte[].class, int.class, int.class);
+                findLoaded = BurningWave.findOneMethodAndMakeItAccessible(clazz, "findLoadedClass", String.class);
+            }
+
+        }
         DEFINE_METHOD = defineMethod;
         FIND_LODADED = findLoaded;
     }
-
 
     public static Class defineClass(ClassLoader loader, String name, byte[] b) throws Exception {
         if (FIND_LODADED != null) {
@@ -78,5 +87,4 @@ final public class ASMFactoryUtils {
     public static String getCreateClassNamePrefix(String className) {
         return className.startsWith("java.") ? "com.gigaspaces." + className : className;
     }
-
 }
