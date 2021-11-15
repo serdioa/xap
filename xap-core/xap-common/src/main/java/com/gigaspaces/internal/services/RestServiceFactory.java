@@ -15,7 +15,6 @@
  */
 package com.gigaspaces.internal.services;
 
-import com.gigaspaces.admin.ManagerClusterType;
 import com.gigaspaces.start.*;
 
 /**
@@ -51,13 +50,5 @@ public class RestServiceFactory extends ServiceFactory {
                 .appendPlatformJars("jdbc")
                 .appendPlatformJars("zookeeper")
                 .appendJars(SystemLocations.singleton().libPlatformExt());
-
-        // Prevents ClassDef Exception while using kubernetes because he uses okhttp3 client (3.14.3) while we use okhttp2 (2.7.5) in other places.
-        if (SystemInfo.singleton().getManagerClusterInfo().getManagerClusterType() == ManagerClusterType.ELASTIC_GRID) {
-            classpath.appendJars(SystemLocations.singleton().tools().resolve("cli"), path ->
-                    path.toFile().getName().startsWith("okhttp")
-                            || path.toFile().getName().startsWith("okio")
-                            || path.toFile().getName().startsWith("gson"));
-        }
     }
 }
