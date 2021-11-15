@@ -43,7 +43,6 @@ public interface Constants {
     final public static String LOGGER_WEB_UI_ALERTS = "com.gigaspaces.webui.alerts";
     final public static String LOGGER_WEB_UI_PU_EVENTS = "com.gigaspaces.webui.pu.events";
     final public static String LOGGER_WEB_UI_PUI_STATUS_EVENTS = "com.gigaspaces.webui.pui.status.events";
-    final public static String LOGGER_WEB_UI_ELASTIC_EVENTS = "com.gigaspaces.webui.elastic.events";
     final public static String LOGGER_WEB_UI_RUNTIME_INFO = "com.gigaspaces.webui.runtimeinfo";
     final public static String LOGGER_WEB_UI_STATISTICS_PROVIDER = "com.gigaspaces.webui.statistics.provider";
     final public static String LOGGER_WEB_UI_REMOTE_ACTIVITIES = "com.gigaspaces.webui.remote.activities";
