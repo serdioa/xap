@@ -65,6 +65,12 @@
             <artifactId>bcpkix-jdk15on</artifactId>
         </dependency>
 
+        <dependency>
+            <groupId>org.burningwave</groupId>
+            <artifactId>core</artifactId>
+            <version>12.20.1</version>
+        </dependency>
+
     </dependencies>
 
     <build>
