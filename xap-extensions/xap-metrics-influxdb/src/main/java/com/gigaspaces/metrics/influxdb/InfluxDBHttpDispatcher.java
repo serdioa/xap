@@ -67,7 +67,7 @@ public class InfluxDBHttpDispatcher extends InfluxDBDispatcher {
             suffix = append(suffix, "p", factory.getPassword());
             suffix = append(suffix, "precision", toString(factory.getTimePrecision()));
             suffix = append(suffix, "consistency", factory.getConsistency());
-            return new URL("http", factory.getHost(), factory.getPort(), suffix);
+            return new URL(factory.getProtocol(), factory.getHost(), factory.getPort(), suffix);
         } catch (MalformedURLException e) {
             throw new RuntimeException("Failed to create InfluxDB HTTP url", e);
         }

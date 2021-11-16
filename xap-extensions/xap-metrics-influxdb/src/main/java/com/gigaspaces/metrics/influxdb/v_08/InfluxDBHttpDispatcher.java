@@ -65,7 +65,7 @@ public class InfluxDBHttpDispatcher extends InfluxDBDispatcher {
             if (factory.getTimePrecision() != null)
                 suffix = append(suffix, "time_precision", toString(factory.getTimePrecision()));
             suffix = "/db/" + factory.getDatabase() + "/series" + suffix;
-            return new URL("http", factory.getHost(), factory.getPort(), suffix);
+            return new URL(factory.getProtocol(), factory.getHost(), factory.getPort(), suffix);
         } catch (UnsupportedEncodingException e) {
             throw new RuntimeException("Failed to create InfluxDB reporter", e);
         } catch (MalformedURLException e) {

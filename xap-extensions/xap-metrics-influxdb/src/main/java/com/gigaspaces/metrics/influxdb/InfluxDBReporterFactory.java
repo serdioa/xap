@@ -54,7 +54,7 @@ public class InfluxDBReporterFactory extends MetricReporterFactory<MetricReporte
         setVersion(properties.getProperty("version", DEFAULT_VERSION));
         setProtocol(properties.getProperty("protocol", DEFAULT_PROTOCOL));
         setMaxReportLength(getIntProperty(properties, "max-report-length", DEFAULT_MAX_REPORT_LENGTH));
-        if (protocol.equalsIgnoreCase("http")) {
+        if (protocol.equalsIgnoreCase("http") || protocol.equalsIgnoreCase("https")) {
             setHost(properties.getProperty("host"));
             setPort(getIntProperty(properties, "port", DEFAULT_PORT_HTTP));
             setDatabase(properties.getProperty("database"));
