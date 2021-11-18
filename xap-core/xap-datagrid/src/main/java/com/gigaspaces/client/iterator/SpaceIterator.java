@@ -16,6 +16,7 @@
 
 package com.gigaspaces.client.iterator;
 
+import com.gigaspaces.client.ReadModifiers;
 import com.gigaspaces.internal.client.spaceproxy.ISpaceProxy;
 import com.gigaspaces.internal.utils.GsEnv;
 import com.gigaspaces.logger.Constants;
@@ -44,6 +45,8 @@ public class SpaceIterator<T> implements Iterator<T>, Iterable<T>, Closeable {
     private final IEntryPacketIterator iterator;
 
     public SpaceIterator(ISpaceProxy spaceProxy, Object query, Transaction txn, SpaceIteratorConfiguration spaceIteratorConfiguration) {
+        if (query == null)
+            query = new Object();
         if (query instanceof SQLQuery && ((SQLQuery)query).getExplainPlan() != null) {
             throw new UnsupportedOperationException("Sql explain plan does not support space iterator");
         }
@@ -54,12 +57,14 @@ public class SpaceIterator<T> implements Iterator<T>, Iterable<T>, Closeable {
         if(iteratorType.equals(SpaceIteratorType.PREFETCH_UIDS) && spaceIteratorConfiguration.getMaxInactiveDuration() != null){
             throw new UnsupportedOperationException("Setting the maxInactiveDuration value in not supported for space iterator of type " + iteratorType.toString());
         }
+        ReadModifiers modifiers = spaceIteratorConfiguration.getReadModifiers();
+        int modifiersCode = modifiers != null ? modifiers.getCode() : spaceProxy.getReadModifiers();
         if(_logger.isDebugEnabled()) {
             _logger.debug("Space Iterator is of type " + iteratorType);
         }
         this.iterator = iteratorType.equals(SpaceIteratorType.CURSOR)
                 ? new CursorEntryPacketIterator(spaceProxy, query, spaceIteratorConfiguration)
-                : new SpaceEntryPacketIterator(spaceProxy, query, txn, spaceIteratorConfiguration.getBatchSize(), spaceIteratorConfiguration.getReadModifiers().getCode());
+                : new SpaceEntryPacketIterator(spaceProxy, query, txn, spaceIteratorConfiguration.getBatchSize(), modifiersCode);
     }
 
     private boolean usePrefetchUIDsIterator(ISpaceProxy spaceProxy) {
