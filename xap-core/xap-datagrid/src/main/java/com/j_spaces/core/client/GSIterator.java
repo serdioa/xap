@@ -191,61 +191,6 @@ public class GSIterator implements Iterator, Iterable {
                     NotifyActionType.NOTIFY_LEASE_EXPIRATION);
 
     /**
-     * Equivalent to calling {@link #GSIterator(IJSpace, Collection, com.gigaspaces.client.iterator.GSIteratorConfig)}.
-     * <p> <b>i.e.</b> <code>new GSIterator(spaceProxy, templates, new GSIteratorConfig());</code>
-     *
-     * @param spaceProxy a Space instance to iterate over.
-     * @param templates  a Collection of entity instances, each representing a template. All the
-     *                   entities added to the resulting match set will match one or more elements
-     *                   of templates.
-     * @throws RemoteException          if a communication error occurs.
-     * @throws UnusableEntryException   if history contained an unusable entity.
-     * @throws IllegalArgumentException if any non-null element of <code>templates</code> is a mix
-     *                                  of {@link ExternalEntry} and {@link Entry}/POJO instance, if
-     *                                  <code>templates</code> is empty or <code>null</code>, if
-     *                                  <code>bufferSize</code> is non-positive, or if
-     *                                  <code>leaseDuration</code> is neither positive nor {@link
-     *                                  Lease#ANY}.
-     * @see #GSIterator(IJSpace, Collection, GSIteratorConfig)
-     */
-    public GSIterator(IJSpace spaceProxy, Collection<?> templates)
-            throws RemoteException, UnusableEntryException {
-        this(spaceProxy, templates, new GSIteratorConfig());
-    }
-
-    /**
-     * Equivalent to calling {@link #GSIterator(IJSpace, Collection, GSIteratorConfig)}, translating
-     * withHistory to CURRENT_AND_FUTURE or FUTURE.
-     *
-     * @param spaceProxy    a Space instance to iterate over.
-     * @param templates     a Collection of entity instances, each representing a template. All the
-     *                      entities added to the resulting match set will match one or more
-     *                      elements of templates.
-     * @param bufferSize    the maximum number of entities to pool each time from the space.
-     * @param withHistory   set <code>true</code> to initially contain all of the visible matching
-     *                      entities in the space. Otherwise, will contain only visible matching
-     *                      entities thereafter.
-     * @param leaseDuration the requested initial lease time on the resulting match set.
-     * @throws RemoteException          if a communication error occurs.
-     * @throws UnusableEntryException   if history contained an unusable entity.
-     * @throws IllegalArgumentException if any non-null element of <code>templates</code> is a mix
-     *                                  of {@link ExternalEntry} and {@link Entry}/POJO instance, if
-     *                                  <code>templates</code> is empty or <code>null</code>, if
-     *                                  <code>bufferSize</code> is non-positive, or if
-     *                                  <code>leaseDuration</code> is neither positive nor {@link
-     *                                  Lease#ANY}.
-     * @deprecated Use {@link #GSIterator(IJSpace, Collection, GSIteratorConfig)} instead.
-     */
-    @Deprecated
-    public GSIterator(IJSpace spaceProxy, Collection<?> templates, int bufferSize, boolean withHistory, long leaseDuration)
-            throws RemoteException, UnusableEntryException {
-        this(spaceProxy, templates, new GSIteratorConfig()
-                .setBufferSize(bufferSize)
-                .setLeaseDuration(leaseDuration)
-                .setIteratorScope(withHistory ? IteratorScope.CURRENT_AND_FUTURE : IteratorScope.FUTURE));
-    }
-
-    /**
      * Constructs an iterator over a space using a collection of entity instances to be
      * incrementally returned. Some operations on a space must return more entities than can be
      * conveniently returned by a single call, generally because returning all the entries in one
