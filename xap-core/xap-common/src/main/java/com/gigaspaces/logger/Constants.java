@@ -77,7 +77,6 @@ public interface Constants {
     final public static String LOGGER_PERSISTENT = "com.gigaspaces.persistent";
     final public static String LOGGER_PERSISTENT_SHARED_ITERATOR = LOGGER_PERSISTENT + ".shared_iterator";
     final public static String LOGGER_QUERY = "com.gigaspaces.query";
-    final public static String LOGGER_JMS = "com.gigaspaces.jms";
     final public static String LOGGER_KERNEL = "com.gigaspaces.kernel";
     final public static String LOGGER_WORKER = "com.gigaspaces.worker";
     final public static String LOGGER_MULTICAST_WORKER = "com.gigaspaces.worker.multicast";

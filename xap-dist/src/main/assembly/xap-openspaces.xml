@@ -62,7 +62,6 @@
             <outputDirectory>product/lib/optional/spring</outputDirectory>
             <includes>
                 <include>spring-jdbc-*</include>
-                <include>spring-jms-*</include>
                 <include>spring-orm-*</include>
                 <include>spring-oxm-*</include>
                 <include>spring-web-*</include>

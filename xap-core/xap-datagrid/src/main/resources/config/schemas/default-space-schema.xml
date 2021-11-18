@@ -214,43 +214,4 @@
                      <pass-filter-entry>false</pass-filter-entry>
                 </Statistics>
            </filters>
-           <!--GigaSpaces JMS API: this section lists all the Destinations bonded names-->
-           <jms>
-                <!--The JMS Admin Connection Factories details:
-                 The container and space names which are associated to this JMS Connection Factory-->
-                <connections>
-                     <!--the rmi port which is used for the spaceURL of the
-                    JMS connection factory. Default 10098 port is used.-->
-                     <rmi-port>10098</rmi-port>
-                </connections>
-                <!--Coma separated list of the JMS Admin objects.-->
-                <!--MyTopic/MyQueue are default destinations 
-				while TempTopic/TempQueue are default temporary destinations.-->
-                <administrated-destinations>
-                     <topics>
-                          <topic-names>MyTopic,TempTopic</topic-names>
-                     </topics>
-                     <queues>
-                          <queue-names>MyQueue,TempQueue</queue-names>
-                     </queues>
-                </administrated-destinations>
-           </jms>
-           <workers>
-                <worker-names>DurableServiceWorker</worker-names>
-                <!--interrupt the worker on shutdown-->
-                <interrupt>false</interrupt>
-                <DurableServiceWorker>
-                     <enabled>false</enabled>
-                     <class-name>com.j_spaces.jms.DurableServiceWorkerImpl</class-name>
-                     <arg>
-                     </arg>
-                     <description>Provides JMS Durable Subscriber capabilitiesfor jms clients</description>
-                     <!-- default is true -->
-					<active-when-backup>true</active-when-backup>
-					<!-- default is false -->
-					<shutdown-space-on-init-failure>false</shutdown-space-on-init-failure>
-					<!-- default is 1 -->					
-					<instances>1</instances>
-                </DurableServiceWorker>          
-           </workers>
 </space-config>

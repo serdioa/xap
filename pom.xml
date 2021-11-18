@@ -47,7 +47,6 @@
         <module>xap-core/xap-openspaces</module>
         <module>xap-examples/hello-world</module>
         <module>xap-examples/hola-mundo</module>
-        <module>xap-extensions/xap-jms</module>
         <module>xap-extensions/xap-rest</module>
         <module>xap-extensions/xap-rest-spring</module>
         <module>xap-extensions/xap-jetty</module>
@@ -124,12 +123,6 @@
             <dependency>
                 <groupId>org.gigaspaces</groupId>
                 <artifactId>xap-asm</artifactId>
-                <version>${project.version}</version>
-                <scope>${xap.dep.scope}</scope>
-            </dependency>
-            <dependency>
-                <groupId>org.gigaspaces</groupId>
-                <artifactId>xap-jms</artifactId>
                 <version>${project.version}</version>
                 <scope>${xap.dep.scope}</scope>
             </dependency>

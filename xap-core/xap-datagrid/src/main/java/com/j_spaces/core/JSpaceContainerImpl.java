@@ -1806,16 +1806,6 @@ public class JSpaceContainerImpl implements IJSpaceContainer, IJSpaceContainerAd
 
             SpaceConfig defaultSpaceConfig = containerConfig.getSpaceSchemasMap().get(DEFAULT_SCHEMA);
 
-            // JMS settings
-            containerConfig.jmsEnabled = Boolean.valueOf(JProperties.getContainerProperty(
-                    _containerName, LOOKUP_JMS_ENABLED_PROP, LOOKUP_JMS_ENABLED_DEFAULT)).booleanValue();
-
-            containerConfig.jmsInternalJndiEnabled = Boolean.valueOf(JProperties.getContainerProperty(
-                    _containerName, LOOKUP_JMS_INTERNAL_ENABLED_PROP, LOOKUP_JMS_INTERNAL_ENABLED_DEFAULT)).booleanValue();
-
-            containerConfig.jmsExtJndiEnabled = Boolean.valueOf(JProperties.getContainerProperty(
-                    _containerName, LOOKUP_JMS_EXT_ENABLED_PROP, LOOKUP_JMS_EXT_ENABLED_DEFAULT)).booleanValue();
-
             containerConfig.setSchemaName(_schemaName);
 
             containerConfig.setShutdownHook(Boolean.valueOf(JProperties.getContainerProperty(

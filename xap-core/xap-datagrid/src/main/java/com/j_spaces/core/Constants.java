@@ -277,61 +277,9 @@ public interface Constants {
         String LOOKUP_JNDI_URL_PROP = Container.PREFIX
                 + "directory_services.jndi.url";
 
-
-        String LOOKUP_JMS_ENABLED_DEFAULT = "false";
-
-        String LOOKUP_JMS_ENABLED_PROP = Container.PREFIX
-                + "directory_services.jms_services.enabled";
-
-        String LOOKUP_JMS_INTERNAL_ENABLED_DEFAULT = "false";
-
-        String LOOKUP_JMS_INTERNAL_ENABLED_PROP = Container.PREFIX
-                + "directory_services.jms_services.internal-jndi.internal-jndi-enabled";
-
-        //In case we bind the jms objects into an external jndi registry (such
-        // as JBoss JNDI reg implementation) we use the default jndi.properties file
-        //for the Context details of the external jndi service to be used.
-        String LOOKUP_JMS_EXT_ENABLED_DEFAULT = "false";
-
-        String LOOKUP_JMS_EXT_ENABLED_PROP = Container.PREFIX
-                + "directory_services.jms_services.ext-jndi.ext-jndi-enabled";
-
         String LOOKUP_IS_PRIVATE_PROP = "isPrivate";
         String FULL_LOOKUP_IS_PRIVATE_PROP = SPACE_CONFIG_PREFIX + LOOKUP_IS_PRIVATE_PROP;
         String LOOKUP_IS_PRIVATE_DEFAULT = Boolean.FALSE.toString();
-    }
-
-    public interface Jms {
-        String JMS_DELIMITER = ";";
-        String JMS_CONFIG_FILE_NAME = "jms-config.xml";
-        //e.g. "<GS-Root>/config/jms"
-        String JMS_CONFIG_DIRECTORY = "config/jms/";
-
-        /**
-         * prop names for the jms container section in the xml file
-         */
-        String JMS_RMI_PORT_PROP = "jms.connections.rmi-port";
-        String JMS_RMI_PORT_DEFAULT = "10098";
-
-        String JMS_TOPIC_NAMES_PROP = "jms.administrated-destinations.topics.topic-names";
-        String JMS_QUEUE_NAMES_PROP = "jms.administrated-destinations.queues.queue-names";
-
-        String FULL_JMS_QUEUE_NAMES_PROP = SPACE_CONFIG_PREFIX + JMS_QUEUE_NAMES_PROP;
-        String FULL_JMS_RMI_PORT_PROP = SPACE_CONFIG_PREFIX + JMS_RMI_PORT_PROP;
-        String FULL_JMS_TOPIC_NAMES_PROP = SPACE_CONFIG_PREFIX + JMS_TOPIC_NAMES_PROP;
-
-        //default queues/topics which are bonded to the jndi registry
-        String JMS_QUEUE_NAMES_DEFAULT = "MyQueue,TempQueue";
-        String JMS_TOPIC_NAMES_DEFAULT = "MyTopic,TempTopic";
-
-        //jms names used in jndi looksup etc.
-        String JMS_JMS_NAME = "jms";
-        String JMS_DESTINATIONS_NAME = "destinations";
-        String JMS_CON_FAC_NAME = "GSConnectionFactoryImpl";
-        String JMS_TOPIC_CON_FAC_NAME = "GSTopicConnectionFactoryImpl";
-        String JMS_XATOPIC_CON_FAC_NAME = "GSXATopicConnectionFactoryImpl";
-        String JMS_QUEUE_CON_FAC_NAME = "GSQueueConnectionFactoryImpl";
-        String JMS_XAQUEUE_CON_FAC_NAME = "GSXAQueueConnectionFactoryImpl";
     }
 
     public interface Management {

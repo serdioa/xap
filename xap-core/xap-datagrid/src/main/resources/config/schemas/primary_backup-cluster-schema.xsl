@@ -46,7 +46,6 @@
 		<cluster-config>
 			<xsl:copy-of select="cluster-config/cluster-name"/>
 			<xsl:copy-of select="cluster-config/dist-cache"/>
-			<xsl:copy-of select="cluster-config/jms"/>
 			<description>This topology constructs backup(s) spaces for a primary space. Replication from source space to backup space(s) is done in synchronous manner.</description>
 			<notify-recovery>true</notify-recovery>
 			<cache-loader>

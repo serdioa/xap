@@ -47,10 +47,6 @@
         </dependency>
         <dependency>
             <groupId>org.gigaspaces</groupId>
-            <artifactId>xap-jms</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.gigaspaces</groupId>
             <artifactId>xap-groovy</artifactId>
         </dependency>
         <dependency>
@@ -65,10 +61,6 @@
         <dependency>
             <groupId>org.hsqldb</groupId>
             <artifactId>hsqldb</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>javax.jms</groupId>
-            <artifactId>jms</artifactId>
         </dependency>
         <dependency>
             <groupId>org.gigaspaces</groupId>
@@ -212,11 +204,6 @@
                 <groupId>org.hsqldb</groupId>
                 <artifactId>hsqldb</artifactId>
                 <version>${hsqldb.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>javax.jms</groupId>
-                <artifactId>jms</artifactId>
-                <version>1.1</version>
             </dependency>
             <dependency>
                 <groupId>com.fasterxml.jackson.core</groupId>

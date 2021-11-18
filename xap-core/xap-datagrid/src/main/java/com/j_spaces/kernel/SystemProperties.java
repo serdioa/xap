@@ -83,12 +83,6 @@ public class SystemProperties extends CommonSystemProperties {
     public final static String NOTIFY_FIFO_QUEUE = "com.gs.fifo_notify.queue";
 
     /**
-     * if true, when JMS clients use transacted sessions the JMS transactions will use the Mahalo
-     * Jini transaction manager, which expects the manager to be started.
-     */
-    public final static String JMS_USE_MAHALO_PROP = "com.gs.jms.use_mahalo";
-
-    /**
      * When set to false, the XAResource will not throw an error when a non existing or already
      * rolled back transaction is rolled back.
      *
@@ -101,13 +95,6 @@ public class SystemProperties extends CommonSystemProperties {
      * called GS_JAXP_EnvironmentCheck.xml in current directory.
      */
     public final static String JAXP_ENV_DEBUG_REPORT = "com.gs.XMLEnvCheck";
-
-    /**
-     * If true it will register the jms administrated objects in the rmi registry
-     **/
-    public final static String JMS_LOOKUP_ENABLED = "com.gs.jms.enabled";
-
-    public final static String JMS_FACTORY = "com.gs.jms.factory-class";
 
     /**
      * When it is necessary to ensure that DGC clean calls for unreachable remote references are

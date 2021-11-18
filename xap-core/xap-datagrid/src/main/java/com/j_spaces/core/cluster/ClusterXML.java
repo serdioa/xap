@@ -383,10 +383,6 @@ public class ClusterXML {
     final static public String DCACHE_TAG = "dist-cache";
     final static public String DCACHE_CONFIG_NAME_TAG = "config-name";
 
-    //JMS configuration
-    final static public String JMS_TAG = "jms";
-    final static public String JMS_CONFIG_NAME_TAG = "config-name";
-
     // this trans-policy need for dynamic clustering support
     //final static String TRANSMISSION_POLICY_TEMPLATE="/transmission-policy-template.xml";
 
@@ -470,7 +466,6 @@ public class ClusterXML {
 
             init(numOfPrimaryMembers, numOfBackupMembersPerPrimary, clusterSchemaName,
                     spaceName, null,//"default",//TODO which dcache config file name to use ???
-                    null,//"default"//TODO which JMS config file name to use ???
                     spaceURL.getProperty(SpaceURL.GROUPS),
                     spaceURL);
         } else {
@@ -500,15 +495,13 @@ public class ClusterXML {
      * @see <code>com.j_spaces.kernel.JSpaceUtilities.buildClusterXMLDom()</code>
      */
     public ClusterXML(int _totalMembers, int _backupMembers, String _clusterSchemaName
-            , String _clusterName, String _distCacheConfigName, String _jmsConfigName, String _groups)
+            , String _clusterName, String _distCacheConfigName)
             throws IOException, SAXException, ParserConfigurationException, CreateException {
-        init(_totalMembers, _backupMembers, _clusterSchemaName
-                , _clusterName, _distCacheConfigName, _jmsConfigName, _groups, null);
+        init(_totalMembers, _backupMembers, _clusterSchemaName, _clusterName, _distCacheConfigName, null, null);
     } // Constructor
 
     private void init(int _totalMembers, int _backupMembers, String _clusterSchemaName,
-                      String _clusterName, String _distCacheConfigName,
-                      String _jmsConfigName, String _groups, SpaceURL spaceURL)
+                      String _clusterName, String _distCacheConfigName, String _groups, SpaceURL spaceURL)
             throws IOException, CreateException {
 
         _spaceURL = spaceURL;
@@ -557,7 +550,7 @@ public class ClusterXML {
              * input to the XSLT parser) according to the inputs.
              */
             Document clusterXMLDomElement = JSpaceUtilities.buildClusterXMLDom(_totalMembers, _backupMembers, _clusterSchemaName
-                    , _clusterName, _distCacheConfigName, _jmsConfigName, _groups);
+                    , _clusterName, _distCacheConfigName, _groups);
 
             if (isClusterXMLInDebugMode()) {
                 //use the XSLT transformation package to output the DOM tree we just created

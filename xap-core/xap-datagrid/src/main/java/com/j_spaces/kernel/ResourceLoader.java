@@ -47,7 +47,7 @@ import javax.xml.parsers.ParserConfigurationException;
 
 /**
  * The class is responsible on loading the product resources such as space/container/cluster schema
- * xsl files, static cluster xml files, custom properties files, DCache and JMS config files etc.
+ * xsl files, static cluster xml files, custom properties files, DCache config files etc.
  *
  * It also provides the common methods to get the resource InputStream or URL using the current
  * thread context class loader. The useful methods for such purpose will be: {@link
@@ -730,55 +730,6 @@ public class ResourceLoader {
         final InputStream inputStream = getResourceStream(filePath);
         if (inputStream != null && _logger.isDebugEnabled())
             _logger.debug("Loaded DCache configuration from < " + getResourceURL(filePath) + " > ");
-        return inputStream;
-    }
-
-
-    /**
-     * Find in classpath jms-config file.
-     *
-     * @param customConfigFileName e.g. myFile-jms-config.xml which is been looked under
-     *                             config/jms/
-     * @return JMS config xml input stream
-     */
-    static public InputStream findJMSConfig(String customConfigFileName)
-            throws Exception {
-        URL configURL = null;
-        String filePath = Constants.Jms.JMS_CONFIG_DIRECTORY;
-        boolean isFullURLPath = false;
-        try {
-            configURL = new URL(customConfigFileName);
-        } catch (MalformedURLException e) {
-            // e.printStackTrace();
-        }
-        if (configURL != null) {
-            if (!JSpaceUtilities.isEmpty(configURL.getProtocol())) {
-                filePath = configURL.getFile();
-                isFullURLPath = true;
-            }
-        }
-
-        if (!isFullURLPath) {
-            if (customConfigFileName != null) {
-                filePath = Constants.Jms.JMS_CONFIG_DIRECTORY
-                        + customConfigFileName;
-            } else {
-                filePath = Constants.Jms.JMS_CONFIG_DIRECTORY
-                        + Constants.Jms.JMS_CONFIG_FILE_NAME;
-            }
-        }
-        InputStream inputStream = getResourceStream(filePath);
-
-        if (inputStream == null) {
-            String missingJMSConfigFileMsg = "Could not find the JMS configuration file '"
-                    + filePath + "'. It does not exist or not readable.";
-            throw new Exception(missingJMSConfigFileMsg);
-        } else {
-            if (_logger.isInfoEnabled()) {
-                _logger.info("Loaded the JMS configuration file from < "
-                        + getResourceURL(filePath) + " > ");
-            }
-        }
         return inputStream;
     }
 

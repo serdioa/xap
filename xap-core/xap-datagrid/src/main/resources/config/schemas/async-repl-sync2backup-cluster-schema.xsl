@@ -74,7 +74,6 @@
         <cluster-config>
             <xsl:copy-of select="cluster-config/cluster-name"/>
             <xsl:copy-of select="cluster-config/dist-cache"/>
-            <xsl:copy-of select="cluster-config/jms"/>
             <description>Mix between the async_replicated and the sync_replicated topologies. This topology replicates
                 data between cluster members in an asynchronous manner and constructs backup(s) space for each cluster
                 space where replication to backup spaces is done in a synchronous manner. This topology provides good

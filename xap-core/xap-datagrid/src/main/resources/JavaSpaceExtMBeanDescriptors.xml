@@ -44,9 +44,6 @@
 	
 	
 	
-	<attribute name="jms.administrated-destinations.queues.queue-names" type="java.lang.String" isReadable="true" isWritable="true" description=""/>
-	<attribute name="jms.administrated-destinations.topics.topic-names" type="java.lang.String" isReadable="true" isWritable="true" description=""/>
-	<attribute name="jms.connections.rmi-port" type="java.lang.String" isReadable="true" isWritable="true" description=""/>
 	<attribute name="max_sa_connections" type="java.lang.Integer" isReadable="true" isWritable="true" description=""/>
 	<attribute name="sa_reset_on_failure" type="java.lang.Boolean" isReadable="true" isWritable="true" description=""/>
 

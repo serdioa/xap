@@ -38,11 +38,6 @@
             <outputDirectory>jdbc</outputDirectory>
         </file>
 
-
-        <file>
-            <source>${project.basedir}/../xap-core/xap-openspaces/src/main/resources/org/openspaces/jms/config/openspaces-jms.xsd</source>
-            <outputDirectory>jms</outputDirectory>
-        </file>
         <file>
             <source>${project.basedir}/../xap-core/xap-datagrid/src/main/resources/gigaspaces-metadata.xsd</source>
             <outputDirectory>metadata</outputDirectory>

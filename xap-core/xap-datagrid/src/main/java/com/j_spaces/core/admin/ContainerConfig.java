@@ -58,11 +58,6 @@ public class ContainerConfig
     public final static int WEB_CONTAINER_MODE_JINI = 0;
     public final static int WEB_CONTAINER_MODE_TOMCAT = 1;
 
-    // JMS Settings
-    public boolean jmsEnabled;
-    public boolean jmsInternalJndiEnabled;
-    public boolean jmsExtJndiEnabled;
-
     private String _schemaName;
     private boolean _isShutdownHook;
     private boolean _isHttpdEnabled;

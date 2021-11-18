@@ -69,25 +69,6 @@
 						<lus_host>${com.gs.jini_lus.locators}</lus_host>	
 					</unicast_discovery>
 				</jini_lus>
-				<!-- JMS Services: if true, the JMS API supported by GS.
-				The JMS Administrated Objects, such as ConnectionFactories, Destinations etc.
-				must be bonded into a jndi registry. GS JMS is bonded by default in the internal
-				jndi rmi registry. It is possible to use and external jndi registry, such as JBoss
-				jndi reg implementation, in order to use it, the external jndi should be enabled.
-				--> 
-			   <jms_services>
-				  <!-- if true, we enable Gigaspaces jms support by registering the jms administrated objects
-				  in the directory service. Default value: false -->
-				  <enabled>${com.gs.jms.enabled}</enabled>
-				  <!-- Binding jms admin objects in the GS internal rmiReg. -->
-				  <internal-jndi>
-						<internal-jndi-enabled>true</internal-jndi-enabled>
-				  </internal-jndi>
-				  <!-- Binding jms admin objects on an external jndi registry -->
-				  <ext-jndi>
-					<ext-jndi-enabled>false</ext-jndi-enabled>
-				  </ext-jndi>
-				</jms_services>
 		       </directory_services>
 		</container>
 	</core>

@@ -307,7 +307,6 @@ public class SystemConfig {
 
         classpathBuilder.appendOptionalJars("jee");// Different J2EE jars support
         classpathBuilder.appendJars(locations.libPlatformExt()); // ext support
-        classpathBuilder.appendOptionalJars("jms");
         classpathBuilder.appendOptionalJars("metrics");
         classpathBuilder.appendOptionalJars("spatial");
         classpathBuilder.appendOptionalJars("full-text-search");

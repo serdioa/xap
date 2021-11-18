@@ -54,16 +54,6 @@
 
         <dependencySet>
             <useProjectArtifact>false</useProjectArtifact>
-            <outputDirectory>product/lib/optional/jms</outputDirectory>
-            <includes>
-                <include>org.gigaspaces:xap-jms</include>
-                <include>javax.jms:jms</include>
-            </includes>
-            <outputFileNameMapping>${artifact.artifactId}.${artifact.extension}</outputFileNameMapping>
-        </dependencySet>
-
-        <dependencySet>
-            <useProjectArtifact>false</useProjectArtifact>
             <outputDirectory>product/lib/optional/jruby</outputDirectory>
             <includes>
                 <include>org.gigaspaces:xap-jruby</include>
