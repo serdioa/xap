@@ -19,16 +19,16 @@ package com.gigaspaces.logger;
 
 import com.gigaspaces.lrmi.LRMIInvocationContext;
 
+import com.gigaspaces.start.SystemInfo;
 import org.jini.rio.boot.LoggableClassLoader;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.text.MessageFormat;
 import java.util.Date;
-import java.util.logging.Formatter;
-import java.util.logging.LogManager;
-import java.util.logging.LogRecord;
-import java.util.logging.Logger;
+import java.util.logging.*;
 
 /**
  * Print a brief summary of the LogRecord in a human readable messageFormat. This class is a
@@ -52,7 +52,15 @@ public class GSSimpleFormatter extends Formatter {
     final static int THREAD_ID = 8;
     final static int LRMI_INVOCATION_SHORT_CONTEXT = 9;
     final static int LRMI_INVOCATION_LONG_CONTEXT = 10;
-    final static int lastIndex = LRMI_INVOCATION_LONG_CONTEXT + 1;
+    final static int HOST = 11;
+    final static int CEF_VERSION = 12;
+    final static int DEVICE_VENDOR = 13;
+    final static int DEVICE_PRODUCT = 14;
+    final static int DEVICE_VERSION = 15;
+    final static int SIGNATURE_ID = 16;
+    final static int NAME = 17;
+    final static int SEVERITY = 18;
+    final static int lastIndex = SEVERITY + 1;
 
     private final static String defaultPattern = "{0,date,yyyy-MM-dd HH:mm:ss,SSS} {6} {3} [{4}] - {5}";
     private final MessageFormat messageFormat;
@@ -167,6 +175,58 @@ public class GSSimpleFormatter extends Formatter {
 
         if (patternIds[LRMI_INVOCATION_LONG_CONTEXT])
             _args[LRMI_INVOCATION_LONG_CONTEXT] = LRMIInvocationContext.getContextMethodLongDisplayString();
+
+        // TODO : add additional arguments for CEF if needed
+        // Jan 18 11:07:53 host CEF:Version|Device Vendor|Device Product|Device Version|SignatureID|Name|Severity|Extension
+        // CEF:0|security|threatmanager|1.0|100|detected a \\| in message|10|src=10.0.0.1 act=blocked a \\= and \\ dst=1.1.1.1 fileName=C:\\Program Files\\test.txt port=test
+
+        if (patternIds[HOST]) {
+            _args[HOST] = SystemInfo.singleton().network().getHostId();
+        }
+
+        // TODO : move static to pattern
+        if (patternIds[CEF_VERSION]) {
+            _args[CEF_VERSION] = "0";
+        }
+
+        if (patternIds[DEVICE_VENDOR]) { // operator|agent|manager|lookup|container
+            _args[DEVICE_VENDOR] = RollingFileHandler.overrides.getProperty(RollingFileHandler.SERVICE_PROP);
+        }
+
+        if (patternIds[DEVICE_PRODUCT]) { //artifact ID of module or properties sections
+            _args[DEVICE_PRODUCT] = null;
+        }
+
+        if (patternIds[DEVICE_VERSION]) { // TODO :  use project.version
+            _args[DEVICE_VERSION] = SystemInfo.singleton().lookup().groups();
+        }
+
+//  TODO  Signature ID is a unique identifier per event-type. This can be a string or an
+//        integer. Signature ID identifies the type of event reported. In the intrusion
+//        detection system (IDS) world, each signature or rule that detects certain
+//        activity has a unique signature ID assigned. This is a requirement for other
+//        types of devices as well, and helps correlation engines deal with the events.
+
+        if (patternIds[SIGNATURE_ID]) {
+            _args[SIGNATURE_ID] = null;
+        }
+
+// TODO : Name is a string representing a human-readable and understandable
+//        description of the event. The event name should not contain information that
+//        is specifically mentioned in other fields. For example: “Port scan from 10.0.0.1
+//        targeting 20.1.1.1” is not a good event name. It should be: “Port scan”. The
+
+        if (patternIds[NAME]) {
+            _args[NAME] = record.getSourceMethodName();
+        }
+// TODO : create enum of SEVERITY
+//        Severity is an integer and reflects the importance of the event. Only
+//        numbers from 0 to 10 are allowed, where 10 indicates the most important
+//        event.
+
+        if (patternIds[SEVERITY]) {
+            _args[SEVERITY] = 0;
+        }
     }
 
     private String findContext() {
