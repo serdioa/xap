@@ -17,6 +17,7 @@
 
 package com.gigaspaces.client.iterator;
 
+import com.gigaspaces.client.ReadModifiers;
 import com.gigaspaces.client.iterator.cursor.SpaceIteratorBatchResultsManager;
 import com.gigaspaces.client.iterator.internal.ArrayIterator;
 import com.gigaspaces.internal.client.spaceproxy.ISpaceProxy;
@@ -63,7 +64,9 @@ public class CursorEntryPacketIterator implements IEntryPacketIterator {
         this._spaceProxy = spaceProxy;
         this._serverLookupTimeout = _spaceProxy.getDirectProxy().getProxyRouter().getConfig().getActiveServerLookupTimeout();
         this._queryPacket = toTemplatePacket(query);
-        this._spaceIteratorBatchResultsManager = new SpaceIteratorBatchResultsManager(_spaceProxy, batchSize, spaceIteratorConfiguration.getReadModifiers().getCode(), _queryPacket, maxInactiveDuration.toMillis());
+        ReadModifiers modifiers = spaceIteratorConfiguration.getReadModifiers();
+        int modifiersCode = modifiers != null ? modifiers.getCode() : spaceProxy.getReadModifiers();
+        this._spaceIteratorBatchResultsManager = new SpaceIteratorBatchResultsManager(_spaceProxy, batchSize, modifiersCode, _queryPacket, maxInactiveDuration.toMillis());
         this._bufferIterator = getNextBatch();
     }
 
