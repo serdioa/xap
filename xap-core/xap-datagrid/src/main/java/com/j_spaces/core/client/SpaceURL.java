@@ -339,13 +339,11 @@ public class SpaceURL extends Properties implements SmartExternalizable {
      * When setting this URL property a view will be created according to the query.
      * The views value can include a list of queries separated by ";".
      * Query structure: Class-Name:SQL-Where-clause
-     * The SQL-Where-clause should keep the {@link com.j_spaces.core.client.view.View} rules.
+     * The SQL-Where-clause should keep the {@link com.j_spaces.core.client.SQLQuery} rules.
      * Notice: views are only supported in conjuction with useLocalCache.
      * Example: /./JavaSpace?useLocalCache&views={MyEntry:fieldA=3;UserEntry:fieldB=3 AND fieldC=2}
      * Default: no views
      * </pre>
-     *
-     * @see com.j_spaces.core.client.view.View
      **/
     public final static String VIEWS = "views";
 
