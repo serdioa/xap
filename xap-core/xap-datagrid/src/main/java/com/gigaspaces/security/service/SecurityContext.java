@@ -108,6 +108,7 @@ public class SecurityContext implements SmartExternalizable {
     public SecurityContext(UserDetails userDetails, AuthenticationToken authenticationToken) {
         this.userDetails = userDetails;
         this.authenticationToken = authenticationToken;
+        this.auditDetails = new AuditDetails();
     }
 
     /**
