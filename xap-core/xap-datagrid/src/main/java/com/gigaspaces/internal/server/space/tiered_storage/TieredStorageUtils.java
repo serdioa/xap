@@ -192,7 +192,12 @@ public class TieredStorageUtils {
     }
 
     public static boolean isSupportedTimeColumn(Class<?> type) {
-        return type.equals(Instant.class) || type.equals(Timestamp.class) || type.equals(long.class) || type.equals(Long.class)
-                || type.equals(Date.class) || type.equals(LocalDateTime.class);
+        return type.equals(Instant.class)
+                || type.equals(Timestamp.class)
+                || type.equals(long.class)
+                || type.equals(Long.class)
+                || type.equals(java.util.Date.class)
+                || type.equals(LocalDateTime.class)
+                || type.equals(java.sql.Date.class);
     }
 }
