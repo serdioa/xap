@@ -236,7 +236,8 @@ public class CompressedMarshObjectConvertor extends Resource implements MarshObj
             super(out);
             Field names = null;
             try {
-                names = ReflectionUtils.getDeclaredField(this.getClass(), "names");
+                names = ReflectionUtils.getDeclaredFieldIncludeSuperTypes(this.getClass(), "names");
+                ReflectionUtils.makeAccessible(names);
             } catch (Exception e){
                 if(JavaUtils.greaterOrEquals(17) && BurningWave.enabled()){
                     BurningWave.exportPackageToAllUnnamed("java.base", "java.util.zip");
