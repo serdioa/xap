@@ -28,8 +28,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.*;
 
-import static com.gigaspaces.internal.server.space.tiered_storage.SqliteUtils.checkEquals;
-import static com.gigaspaces.internal.server.space.tiered_storage.SqliteUtils.getPropertyValue;
+import static com.gigaspaces.internal.server.space.tiered_storage.SqliteUtils.*;
 
 public class TieredStorageUtils {
     private static Logger logger = LoggerFactory.getLogger(TieredStorageUtils.class);
@@ -178,7 +177,8 @@ public class TieredStorageUtils {
         for (int i = 0; i < properties.length; i++) {
             values[i] = getPropertyValue(resultSet, properties[i].getType(), properties[i].getOriginalIndex() + 1);
         }
-        FlatEntryData data = new FlatEntryData(values, null, typeDesc.getEntryTypeDesc(EntryType.DOCUMENT_JAVA), 0, Lease.FOREVER, null);
+        FlatEntryData data = new FlatEntryData(values, null, typeDesc.getEntryTypeDesc(EntryType.DOCUMENT_JAVA),
+                getVersionValue(resultSet), Lease.FOREVER, null);
         String uid;
         List<String> idPropertiesNames = typeDesc.getIdPropertiesNames();
         if (typeDesc.isAutoGenerateId()) {

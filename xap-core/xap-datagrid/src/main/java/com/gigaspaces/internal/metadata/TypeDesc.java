@@ -217,41 +217,10 @@ public class TypeDesc implements ITypeDesc {
     }
 
     public TypeDesc cloneWithoutObjectClass(EntryType entryType ) {
-
-        TypeDesc newTypeDesc = new TypeDesc();
+        TypeDesc newTypeDesc =  (TypeDesc) this.clone();
         newTypeDesc._objectType = entryType;
-
-        newTypeDesc._typeName = this.getTypeName();
-        newTypeDesc._codeBase = this.getCodeBase();
-        newTypeDesc._superTypesNames = this.getSuperClassesNames();
-        newTypeDesc._fixedProperties = this.getProperties();
-        newTypeDesc._supportsDynamicProperties = this.supportsDynamicProperties();
-        newTypeDesc._indexes = this.getIndexes();
-        newTypeDesc._idPropertiesNames = this._idPropertiesNames;
-        newTypeDesc._autoGenerateId = this.isAutoGenerateId();
-        newTypeDesc._documentWrapperClassName = this.getDocumentWrapperClassName();
-        newTypeDesc._dotnetDocumentWrapperTypeName = this.getDotnetDocumentWrapperTypeName();
-        newTypeDesc._dotnetDynamicPropertiesStorageType = this.getDotnetDynamicPropertiesStorageType();
-        newTypeDesc._defaultPropertyName = this.getDefaultPropertyName();
-        newTypeDesc._routingPropertyName = this.getRoutingPropertyName();
-        newTypeDesc._fifoGroupingName = this.getFifoGroupingPropertyPath();
-        newTypeDesc._fifoGroupingIndexes = this.getFifoGroupingIndexesPaths();
-
-        newTypeDesc._systemType = this.isSystemType();
-        newTypeDesc._fifoSupport = this.getFifoSupport();
-        newTypeDesc._replicable = this.isReplicable();
-        newTypeDesc._supportsOptimisticLocking = this.supportsOptimisticLocking();
-        newTypeDesc._storageType = this.getStorageType();
-
-        newTypeDesc._externalEntryWrapperClass = this.getExternalEntryWrapperClass();
-        newTypeDesc._blobstoreEnabled = this.isBlobstoreEnabled();
-        newTypeDesc.queryExtensionsInfo = this.getQueryExtensions();
-        newTypeDesc._broadcast = this.isBroadcast();
-        newTypeDesc.classBinaryStorageAdapter = this.getClassBinaryStorageAdapter();
-        newTypeDesc._sequenceNumberFixedPropertyPos = this._sequenceNumberFixedPropertyPos;
-
-        newTypeDesc.initializeV9_0_0();
-
+        newTypeDesc._objectClass = null;
+        newTypeDesc._objectIntrospector = null;
         return newTypeDesc;
     }
 
