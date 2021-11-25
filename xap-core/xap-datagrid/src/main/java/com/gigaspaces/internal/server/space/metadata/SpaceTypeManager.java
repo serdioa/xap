@@ -28,7 +28,9 @@ import com.gigaspaces.internal.server.metadata.AddTypeDescResultType;
 import com.gigaspaces.internal.server.metadata.IServerTypeDesc;
 import com.gigaspaces.internal.server.space.SpaceConfigReader;
 import com.gigaspaces.internal.server.space.SpaceInstanceConfig;
-import com.gigaspaces.internal.server.space.tiered_storage.*;
+import com.gigaspaces.internal.server.space.tiered_storage.TieredStorageManager;
+import com.gigaspaces.internal.server.space.tiered_storage.TieredStorageTableConfig;
+import com.gigaspaces.internal.server.space.tiered_storage.TieredStorageUtils;
 import com.gigaspaces.internal.server.space.tiered_storage.error.TieredStorageMetadataException;
 import com.gigaspaces.internal.transport.ITransportPacket;
 import com.gigaspaces.internal.utils.GsEnv;
@@ -304,6 +306,14 @@ public class SpaceTypeManager {
             logExit("createOrUpdateServerTypeDesc", "typeName", typeName);
             return new AddTypeDescResult(serverTypeDesc, action);
         }
+    }
+
+    /**
+     * @param typeDesc type descriptor of entry
+     * @return true if type is marked 'transient' in tiered storage configuration
+     */
+    public boolean isTransientTieredStorageType(ITypeDesc typeDesc) {
+        return tieredStorageManager != null && tieredStorageManager.isTransient(typeDesc.getTypeName());
     }
 
     private void validateTieredStorage(ITypeDesc typeDesc) {
