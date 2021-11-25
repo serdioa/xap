@@ -17,6 +17,7 @@
 
 package com.gigaspaces.logger;
 
+import com.gigaspaces.internal.version.PlatformVersion;
 import com.gigaspaces.lrmi.LRMIInvocationContext;
 
 import com.gigaspaces.start.SystemInfo;
@@ -26,6 +27,7 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.nio.charset.StandardCharsets;
 import java.text.MessageFormat;
 import java.util.Date;
 import java.util.logging.*;
@@ -60,7 +62,8 @@ public class GSSimpleFormatter extends Formatter {
     final static int SIGNATURE_ID = 16;
     final static int NAME = 17;
     final static int SEVERITY = 18;
-    final static int lastIndex = SEVERITY + 1;
+    final static int EXTENSION = 19;
+    final static int lastIndex = EXTENSION + 1;
 
     private final static String defaultPattern = "{0,date,yyyy-MM-dd HH:mm:ss,SSS} {6} {3} [{4}] - {5}";
     private final MessageFormat messageFormat;
@@ -184,49 +187,91 @@ public class GSSimpleFormatter extends Formatter {
             _args[HOST] = SystemInfo.singleton().network().getHostId();
         }
 
-        // TODO : move static to pattern
         if (patternIds[CEF_VERSION]) {
             _args[CEF_VERSION] = "0";
         }
 
         if (patternIds[DEVICE_VENDOR]) { // operator|agent|manager|lookup|container
-            _args[DEVICE_VENDOR] = RollingFileHandler.overrides.getProperty(RollingFileHandler.SERVICE_PROP);
+            // gsa|gsm|gsc
+            _args[DEVICE_VENDOR] = "gigaspaces";//RollingFileHandler.overrides.getProperty(RollingFileHandler.SERVICE_PROP);
         }
 
-        if (patternIds[DEVICE_PRODUCT]) { //artifact ID of module or properties sections
-            _args[DEVICE_PRODUCT] = null;
+        if (patternIds[DEVICE_PRODUCT]) {
+//            _args[DEVICE_PRODUCT] = findContext();
+            _args[DEVICE_PRODUCT] = RollingFileHandler.overrides.getProperty(RollingFileHandler.SERVICE_PROP);
+//            _args[DEVICE_PRODUCT] = record.getLoggerName();
         }
 
-        if (patternIds[DEVICE_VERSION]) { // TODO :  use project.version
-            _args[DEVICE_VERSION] = SystemInfo.singleton().lookup().groups();
+        if (patternIds[DEVICE_VERSION]) {
+            _args[DEVICE_VERSION] = PlatformVersion.getVersion();
         }
-
-//  TODO  Signature ID is a unique identifier per event-type. This can be a string or an
-//        integer. Signature ID identifies the type of event reported. In the intrusion
-//        detection system (IDS) world, each signature or rule that detects certain
-//        activity has a unique signature ID assigned. This is a requirement for other
-//        types of devices as well, and helps correlation engines deal with the events.
 
         if (patternIds[SIGNATURE_ID]) {
-            _args[SIGNATURE_ID] = null;
+            _args[SIGNATURE_ID] = "0";
         }
-
-// TODO : Name is a string representing a human-readable and understandable
-//        description of the event. The event name should not contain information that
-//        is specifically mentioned in other fields. For example: “Port scan from 10.0.0.1
-//        targeting 20.1.1.1” is not a good event name. It should be: “Port scan”. The
 
         if (patternIds[NAME]) {
-            _args[NAME] = record.getSourceMethodName();
+            _args[NAME] = "Legacy Message";
         }
-// TODO : create enum of SEVERITY
-//        Severity is an integer and reflects the importance of the event. Only
-//        numbers from 0 to 10 are allowed, where 10 indicates the most important
-//        event.
 
         if (patternIds[SEVERITY]) {
-            _args[SEVERITY] = 0;
+            _args[SEVERITY] = toSeverity(record.getLevel());
         }
+
+        if (patternIds[EXTENSION]) {
+//            Extension = should be in key-value format, with the following keys
+//                    method={class name}.{method name}
+//                    context={context} (if not used in the header fields)
+//                    thread={thread id}
+//                    msg={message}
+//                    LRMI={LRMI long invocation context}
+            String ext = " method=" + record.getSourceClassName() + "." + record.getSourceMethodName() + " " +
+                    "thread=" + record.getThreadID() + " " +
+                    "msg=" + quoteSpaces(formatMessage(record)) + " " +
+                    "LRMI=" + quoteSpaces(LRMIInvocationContext.getContextMethodLongDisplayString()) + " ";
+            _args[EXTENSION] = toCEFEncoding(ext);
+        }
+    }
+
+    private static String quoteSpaces(String value) {
+        value = value.replace("\n","\\n");
+        return "\""+value.replace("\"", "\\\"")+"\"";
+    }
+
+    private int toSeverity(Level level) {
+        switch (level.intValue()){
+            case 1000:
+                return 9;
+            case 900:
+                return 5;
+            case 800:
+                return 4;
+            case 700:
+                return 3;
+            case 500:
+                return 2;
+            case 400:
+                return 1;
+            default:
+                return 0;
+        }
+    }
+
+    private enum ESCAPE {
+        BLACKSLASH('\\'),
+        PIPE('|'); // TODO : think about '='
+        char ch;
+        ESCAPE(char ch) {
+            this.ch=ch;
+        }
+    }
+
+    private String toCEFEncoding(String log) {
+        // TODO : encode escape symbols
+        for(ESCAPE sign:ESCAPE.values()) {
+            log = log.replace(String.valueOf(sign.ch), "\\");
+        }
+        return new String(log.getBytes(), StandardCharsets.UTF_8);
     }
 
     private String findContext() {
