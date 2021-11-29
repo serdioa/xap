@@ -69,13 +69,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 
 import java.io.IOException;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Hashtable;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.*;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -667,13 +661,16 @@ public class SpaceAPIController {
         }
 
         //Investigate id type
-        String idPropertyName = typeDescriptor.getIdPropertyName();
+        List<String> idPropertiesNames = typeDescriptor.getIdPropertiesNames();
+        if (idPropertiesNames.size() > 1)
+            throw new UnsupportedTypeException("Only single SpaceId is currently supported by xap-rest");
+
+        String idPropertyName = idPropertiesNames.get(0);
         SpacePropertyDescriptor idProperty = typeDescriptor.getFixedProperty(idPropertyName);
         try {
             return ControllerUtils.convertPropertyToPrimitiveType(id, idProperty.getType(), idPropertyName);
         } catch (UnsupportedTypeException e) {
-            throw new UnsupportedTypeException("Only primitive SpaceId is currently supported by xap-rest") {
-            };
+            throw new UnsupportedTypeException("Only primitive SpaceId is currently supported by xap-rest");
         }
     }
 

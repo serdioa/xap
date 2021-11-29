@@ -25,6 +25,7 @@ import com.gigaspaces.internal.client.FailedChangedEntryDetailsImpl;
 import com.gigaspaces.internal.client.spaceproxy.operations.ChangeEntriesSpaceOperationRequest;
 import com.gigaspaces.internal.client.spaceproxy.operations.ChangeEntriesSpaceOperationResult;
 import com.gigaspaces.internal.metadata.ITypeDesc;
+import com.gigaspaces.internal.metadata.TypeDescriptorUtils;
 import com.gigaspaces.internal.server.space.SpaceImpl;
 import com.gigaspaces.internal.server.storage.IEntryData;
 import com.gigaspaces.lrmi.nio.IResponseContext;
@@ -198,14 +199,20 @@ public class ChangeEntriesSpaceOperation
 
 
     private static Object extractId(Object templateId, IEntryData entryData) {
-        Object idValue = entryData.getPropertyValue(entryData.getSpaceTypeDescriptor().getIdPropertyName());
-        //TODO MU: (GS-10649)work around, when using auto generated id sometimes the IEntryData does not contain the id, in our case
-        //the matching is by id only so we can quite safely use the template id to fill in the missing id property. However this is risky
-        //and may hide other problems if for example a different entry was changed for some reason, this should be removed if we change the
-        //entry data to contain the id
-        if (idValue == null && ((ITypeDesc) entryData.getSpaceTypeDescriptor()).isAutoGenerateId())
-            idValue = templateId;
-        return idValue;
+        ITypeDesc typeDesc = entryData.getSpaceTypeDescriptor();
+        List<String> idPropertiesNames = typeDesc.getIdPropertiesNames();
+        if (idPropertiesNames.size() == 1) {
+            Object idValue = entryData.getPropertyValue(idPropertiesNames.get(0));
+            //TODO MU: (GS-10649)work around, when using auto generated id sometimes the IEntryData does not contain the id, in our case
+            //the matching is by id only so we can quite safely use the template id to fill in the missing id property. However this is risky
+            //and may hide other problems if for example a different entry was changed for some reason, this should be removed if we change the
+            //entry data to contain the id
+            if (idValue == null && typeDesc.isAutoGenerateId())
+                idValue = templateId;
+            return idValue;
+        } else {
+            return TypeDescriptorUtils.toSpaceId(idPropertiesNames, entryData::getPropertyValue);
+        }
     }
 
     @Override

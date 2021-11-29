@@ -463,7 +463,7 @@ public class SpaceProxyTypeManager implements ISpaceProxyTypeManager {
         Object id = idQuery.getId();
         int version = idQuery.getVersion();
 
-        if (ObjectUtils.equals(typeDesc.getIdPropertyName(), typeDesc.getRoutingPropertyName())) {
+        if (typeDesc.isRoutingSameAsId()) {
             if (routing != null && !routing.equals(id))
                 throw new IllegalArgumentException("routing must be null or same as id if routing property and id property are the same.");
         }

@@ -23,6 +23,7 @@ import com.gigaspaces.internal.metadata.*;
 import com.gigaspaces.internal.metadata.converter.ConversionException;
 import com.gigaspaces.internal.reflection.IField;
 import com.gigaspaces.internal.reflection.ReflectionUtil;
+import com.gigaspaces.internal.utils.StringUtils;
 import com.gigaspaces.metadata.SpaceMetadataException;
 import com.gigaspaces.metadata.StorageType;
 import com.gigaspaces.metadata.index.SpaceIndex;
@@ -41,12 +42,7 @@ import java.io.Externalizable;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -100,7 +96,7 @@ public class TypeDescFactory {
         Set<String> fifoGroupingIndexes = typeInfo.getFifoGroupingIndexes();
         final boolean supportsDynamicProperties = typeInfo.getDynamicPropertiesProperty() != null;
         final boolean supportsOptimisticLocking = typeInfo.getVersionProperty() != null;
-        final String idPropertyName = typeInfo.getIdProperty() != null ? typeInfo.getIdProperty().getName() : null;
+        final List<String> idPropertiesNames = typeInfo.getIdPropertiesNames();
         final String defaultPropertyName = null;
         final String routingPropertyName = typeInfo.getRoutingProperty() != null ? typeInfo.getRoutingProperty().getName() : null;
         final FifoSupport fifoSupport = isFifoProxy() ? FifoSupport.ALL : typeInfo.getFifoSupport();
@@ -110,7 +106,7 @@ public class TypeDescFactory {
         TypeQueryExtensions queryExtensionsInfo = new TypeQueryExtensionsImpl(typeInfo);
 
         ITypeDesc typeDesc = new TypeDesc(typeInfo.getName(), codeBase, typeInfo.getSuperClasses(),
-                properties, supportsDynamicProperties, indexes, idPropertyName, typeInfo.getIdAutoGenerate(),
+                properties, supportsDynamicProperties, indexes, idPropertiesNames, typeInfo.getIdAutoGenerate(),
                 defaultPropertyName, routingPropertyName, fifoGroupingName, fifoGroupingIndexes, typeInfo.isSystemClass(), fifoSupport,
                 typeInfo.isReplicate(), supportsOptimisticLocking, defaultStorageType,
                 EntryType.OBJECT_JAVA, type, ExternalEntry.class, SpaceDocument.class, null, DotNetStorageType.NULL,
@@ -186,12 +182,12 @@ public class TypeDescFactory {
         final boolean supportsDynamicProperties = false;
         final boolean isSystemType = false;
         final boolean replicable = IReplicatable.class.isAssignableFrom(realClass);
-        final String idPropertyName = null;
+        final List<String> idPropertiesNames = Collections.emptyList();
         final boolean idAutoGenerate = false;
         final String routingPropertyName = null;
 
         return new TypeDesc(className, codeBase, superClasses, properties, supportsDynamicProperties,
-                indexes, idPropertyName, idAutoGenerate, defaultPropertyName, routingPropertyName, null, null, isSystemType,
+                indexes, idPropertiesNames, idAutoGenerate, defaultPropertyName, routingPropertyName, null, null, isSystemType,
                 fifoMode, replicable, isVersionedProxy(), _storageType,
                 EntryType.OBJECT_JAVA, realClass, ExternalEntry.class, SpaceDocument.class, null, DotNetStorageType.NULL,
                 PojoDefaults.BLOBSTORE_ENABLED, null /*sequence number*/, null, null, PojoDefaults.BROADCAST);
@@ -276,12 +272,12 @@ public class TypeDescFactory {
 
         final boolean supportsDynamicProperties = false;
         final boolean isSystemType = false;
-        final String idPropertyName = null;
+        final List<String> idPropertiesNames = Collections.emptyList();
         final boolean idAutoGenerate = false;
         final String defaultPropertyName = null;
 
         return new TypeDesc(externalEntry.getClassName(), codeBase, superClasses,
-                properties, supportsDynamicProperties, indexes, idPropertyName, idAutoGenerate, defaultPropertyName,
+                properties, supportsDynamicProperties, indexes, idPropertiesNames, idAutoGenerate, defaultPropertyName,
                 externalEntry.getRoutingFieldName(), null, null, isSystemType, fifoMode, externalEntry.isReplicatable(),
                 true, _storageType, EntryType.EXTERNAL_ENTRY, null, externalEntry.getClass(), SpaceDocument.class, null,
                 DotNetStorageType.NULL, PojoDefaults.BLOBSTORE_ENABLED, null, null, null, PojoDefaults.BROADCAST);
@@ -310,10 +306,11 @@ public class TypeDescFactory {
         // Do not set default property - the typeDesc ctor will calculate it.
         final String defaultPropertyName = null;
         final boolean isSystemType = false;
+        List<String> idPropertiesNames = StringUtils.hasLength(idPropertyName) ? Collections.singletonList(idPropertyName) : Collections.emptyList();
         //TODO FG : add fifo grouping property and indexes
         // Create type descriptor:
         return new TypeDesc(className, codeBase, superClassesNames,
-                properties, supportsDynamicProperties, indexes, idPropertyName, idAutoGenerate, defaultPropertyName, routingPropertyName,
+                properties, supportsDynamicProperties, indexes, idPropertiesNames, idAutoGenerate, defaultPropertyName, routingPropertyName,
                 null, null, isSystemType, fifoMode, isReplicable, supportsOptimisticLocking, StorageType.OBJECT,
                 entryType, null, ExternalEntry.class, SpaceDocument.class, null, DotNetStorageType.NULL,
                 blobstoreEnabled, null, null, null, PojoDefaults.BROADCAST);
@@ -329,8 +326,9 @@ public class TypeDescFactory {
 
         final String defaultPropertyName = null;
         final boolean isSystemType = false;
+        List<String> idPropertiesNames = StringUtils.hasLength(idPropertyName) ? Collections.singletonList(idPropertyName) : Collections.emptyList();
         return new TypeDesc(className, null, superClassesNames,
-                properties, supportsDynamicProperties, indexes, idPropertyName, idAutoGenerate, defaultPropertyName, routingPropertyName,
+                properties, supportsDynamicProperties, indexes, idPropertiesNames, idAutoGenerate, defaultPropertyName, routingPropertyName,
                 fifoGroupingPropertyPath, fifoGroupingIndexPaths, isSystemType, fifoMode, isReplicable, supportsOptimisticLocking, StorageType.OBJECT,
                 entryType, null, ExternalEntry.class, SpaceDocument.class, documentWrapperType,
                 dynamicPropertiesStorageType, blobstoreEnabled, null, null, null, PojoDefaults.BROADCAST);

@@ -22,6 +22,7 @@ import com.gigaspaces.document.SpaceDocument;
 import com.gigaspaces.metadata.index.SpaceIndex;
 import com.gigaspaces.query.extension.metadata.TypeQueryExtensions;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -125,8 +126,20 @@ public interface SpaceTypeDescriptor {
 
     /**
      * Gets the ID property name.
+     * @deprecated since 16.2 - use {@link #getIdPropertiesNames()} instead.
      */
-    String getIdPropertyName();
+    @Deprecated
+    default String getIdPropertyName() {
+        List<String> idPropertiesNames = getIdPropertiesNames();
+        if (idPropertiesNames.size() > 1)
+            throw new IllegalStateException("Type " + getTypeName() + " id is composed of multiple properties: " + String.join(",", idPropertiesNames));
+        return idPropertiesNames.isEmpty() ? null : idPropertiesNames.get(0);
+    }
+
+    /**
+     * Gets the ID properties names.
+     */
+    List<String> getIdPropertiesNames();
 
     /**
      * Gets the routing property name.

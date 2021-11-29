@@ -155,11 +155,13 @@ import java.util.Set;
         throw new UnsupportedOperationException();
     }
 
-    public String getIdPropertyName() {
+    @Override
+    public List<String> getIdPropertiesNames() {
         throw new UnsupportedOperationException();
     }
 
-    public int getIdentifierPropertyId() {
+    @Override
+    public int[] getIdentifierPropertiesId() {
         throw new UnsupportedOperationException();
     }
 

@@ -17,6 +17,7 @@
 package com.gigaspaces.internal.server.storage;
 
 import com.gigaspaces.internal.metadata.ITypeDesc;
+import com.gigaspaces.internal.metadata.TypeDescriptorUtils;
 import com.gigaspaces.internal.server.metadata.IServerTypeDesc;
 import com.gigaspaces.internal.server.space.SpaceUidFactory;
 import com.gigaspaces.internal.utils.Textualizable;
@@ -221,14 +222,16 @@ public abstract class AbstractSpaceItem implements ISpaceItem, Textualizable {
     }
 
     public Object getEntryId() {
-        if (getEntryData().getEntryTypeDesc().getTypeDesc().isAutoGenerateId())
+        IEntryData entryData = getEntryData();
+        ITypeDesc typeDesc = entryData.getEntryTypeDesc().getTypeDesc();
+        if (typeDesc.isAutoGenerateId())
             return getUID();
 
-        int identifierPropertyId = getEntryData().getEntryTypeDesc().getTypeDesc().getIdentifierPropertyId();
-        if (identifierPropertyId == -1)
+        int[] identifierPropertiesId = typeDesc.getIdentifierPropertiesId();
+        if (identifierPropertiesId.length == 0)
             return null;
 
-        return getEntryData().getFixedPropertyValue(identifierPropertyId);
+        return TypeDescriptorUtils.toSpaceId(identifierPropertiesId, entryData::getFixedPropertyValue);
     }
 
     @Override

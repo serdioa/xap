@@ -91,7 +91,7 @@ public class ReadTakeByIdsProxyActionInfo extends CommonProxyActionInfo {
         if (ids == null)
             throw new IllegalArgumentException("IDs array cannot be null.");
 
-        boolean validateIdType = typeDesc.getIdPropertyName() == null || typeDesc.isAutoGenerateId();
+        boolean validateIdType = typeDesc.getIdPropertiesNames().isEmpty() || typeDesc.isAutoGenerateId();
         if (routings != null) {
             if (routings.length != ids.length)
                 throw new IllegalArgumentException("IDs array and routing array size is not the same.");
@@ -113,7 +113,7 @@ public class ReadTakeByIdsProxyActionInfo extends CommonProxyActionInfo {
             }
         }
 
-        if (ObjectUtils.equals(typeDesc.getIdPropertyName(), typeDesc.getRoutingPropertyName())) {
+        if (typeDesc.isRoutingSameAsId()) {
             if (routing != null || (routings != null && routings != ids))
                 throw new IllegalArgumentException("When the id property is used for routing, the routing argument must be null.");
 

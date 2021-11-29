@@ -50,7 +50,7 @@ public class LocalCacheResponseEntryPacket extends AbstractEntryPacket {
 
         //if object doesn't have an id field - keep the uid in the packet
         // it is needed by the local cache
-        if (_typeDesc.getIdentifierPropertyId() == -1)
+        if (_typeDesc.getIdentifierPropertiesId().length == 0)
             _uid = uid;
 
     }

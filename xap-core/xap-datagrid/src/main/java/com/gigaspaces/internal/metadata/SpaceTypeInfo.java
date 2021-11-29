@@ -73,6 +73,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.StringTokenizer;
+import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -103,8 +104,9 @@ public class SpaceTypeInfo implements SmartExternalizable {
     private Map<String, SpacePropertyInfo> _properties;
     private SpacePropertyInfo[] _spaceProperties;
     private Class<? extends ClassBinaryStorageAdapter> _spaceClassStorageAdapter;
-    private SpacePropertyInfo _idProperty;
+    private List<SpacePropertyInfo> _idProperties = Collections.emptyList();
     private Boolean _idAutoGenerate;
+    private SpaceIndexType _idIndexType;
     private SpacePropertyInfo _routingProperty;
     private SpacePropertyInfo _versionProperty;
     private SpacePropertyInfo _persistProperty;
@@ -270,8 +272,12 @@ public class SpaceTypeInfo implements SmartExternalizable {
         return -1;
     }
 
-    public SpacePropertyInfo getIdProperty() {
-        return _idProperty;
+    public List<SpacePropertyInfo> getIdProperties() {
+        return _idProperties;
+    }
+
+    public List<String> getIdPropertiesNames() {
+        return getIdProperties().stream().map(SpacePropertyInfo::getName).collect(Collectors.toList());
     }
 
     public boolean getIdAutoGenerate() {
@@ -342,8 +348,8 @@ public class SpaceTypeInfo implements SmartExternalizable {
 
         if (_constructorDescriptor.getDynamicPropertiesConstructorIndex() >= 0)
             constructorArguments[_constructorDescriptor.getDynamicPropertiesConstructorIndex()] = getDocumentProperties(dynamicProperties);
-        if (_idAutoGenerate && _constructorDescriptor.getIdPropertyConstructorIndex() >= 0)
-            constructorArguments[_constructorDescriptor.getIdPropertyConstructorIndex()] = uid;
+        if (_idAutoGenerate && _constructorDescriptor.getAutoGenIdPropertyConstructorIndex() >= 0)
+            constructorArguments[_constructorDescriptor.getAutoGenIdPropertyConstructorIndex()] = uid;
         if (_constructorDescriptor.getVersionConstructorIndex() >= 0)
             constructorArguments[_constructorDescriptor.getVersionConstructorIndex()] = version;
         if (_constructorDescriptor.getLeaseConstructorIndex() >= 0)
@@ -374,8 +380,8 @@ public class SpaceTypeInfo implements SmartExternalizable {
         }
 
         // Handling of metadata properties which can bet set using a setter method as well.
-        if (_idAutoGenerate && _idProperty != null && _constructorDescriptor.getIdPropertyConstructorIndex() < 0)
-            _idProperty.setValue(result, uid);
+        if (_idAutoGenerate && !_idProperties.isEmpty() && _constructorDescriptor.getAutoGenIdPropertyConstructorIndex() < 0)
+            _idProperties.get(0).setValue(result, uid);
 
         if (_versionProperty != null && _constructorDescriptor.getVersionConstructorIndex() < 0)
             _versionProperty.setValue(result, version);
@@ -481,7 +487,11 @@ public class SpaceTypeInfo implements SmartExternalizable {
             _includeProperties = PojoDefaults.INCLUDE_PROPERTIES;
 
         if (_superTypeInfo != null) {
-            _idProperty = updatePropertyBySuper(_idProperty, _superTypeInfo._idProperty);
+            if (_idProperties.isEmpty() && !_superTypeInfo._idProperties.isEmpty()) {
+                _idProperties = new ArrayList<>(_superTypeInfo._idProperties.size());
+                for (SpacePropertyInfo superProperty : _superTypeInfo._idProperties)
+                    _idProperties.add(_properties.get(superProperty.getName()));
+            }
             _leaseExpirationProperty = updatePropertyBySuper(_leaseExpirationProperty, _superTypeInfo._leaseExpirationProperty);
             _persistProperty = updatePropertyBySuper(_persistProperty, _superTypeInfo._persistProperty);
             _routingProperty = updatePropertyBySuper(_routingProperty, _superTypeInfo._routingProperty);
@@ -585,7 +595,7 @@ public class SpaceTypeInfo implements SmartExternalizable {
 
                 initContext.explicitlyIncluded.add(property);
             } else if (nodeName.equals("id")) {
-                _idProperty = updateProperty(_idProperty, propertyNode);
+                _idProperties = Collections.singletonList(updateProperty(toSingleOrEmptyItem(_idProperties), propertyNode));
                 _idAutoGenerate = XmlUtils.getAttributeBoolean(propertyNode, "auto-generate");
             } else if (nodeName.equals("routing"))
                 _routingProperty = updateProperty(_routingProperty, propertyNode);
@@ -874,8 +884,11 @@ public class SpaceTypeInfo implements SmartExternalizable {
 
             SpaceId idAnnotation = getter.getAnnotation(SpaceId.class);
             if (idAnnotation != null) {
-                _idProperty = updateProperty(_idProperty, property, idAnnotation);
+                if (idAnnotation.properties().length != 0)
+                    throw new SpaceMetadataException("SpaceId with properties is supported only as a class level annotation");
+                _idProperties = Collections.singletonList(updateProperty(toSingleOrEmptyItem(_idProperties), property, idAnnotation));
                 _idAutoGenerate = idAnnotation.autoGenerate();
+                _idIndexType = idAnnotation.indexType();
             }
 
             _routingProperty = updateProperty(_routingProperty, property, SpaceRouting.class);
@@ -917,6 +930,26 @@ public class SpaceTypeInfo implements SmartExternalizable {
             }
         }
 
+        // add composite id, done after properties are set since they are required:
+        SpaceId compositeIdAnnotation = _type.getAnnotation(SpaceId.class);
+        if (compositeIdAnnotation != null) {
+            if (!_idProperties.isEmpty())
+                throw new SpaceMetadataException("SpaceId annotation cannot be used at class level and property level simultaneously");
+            _idProperties = new ArrayList<>(compositeIdAnnotation.properties().length);
+            for (String propertyName : compositeIdAnnotation.properties()) {
+                SpacePropertyInfo property = _properties.get(propertyName);
+                if (property == null)
+                    throw new SpaceMetadataException("Property '" + propertyName + "' defined in SpaceId was not found");
+                _idProperties.add(property);
+            }
+            if (_idProperties.isEmpty())
+                throw new SpaceMetadataException("properties cannot be empty when using SpaceId as a class level annotation");
+            _idAutoGenerate = compositeIdAnnotation.autoGenerate();
+            if (_idAutoGenerate && _idProperties.size() != 1)
+                throw new SpaceMetadataException("autoGenerate cannot be true with composite space id");
+            _idIndexType = compositeIdAnnotation.indexType();
+        }
+
         //add the compound indexes, done after properties are set so a check can be made
         CompoundSpaceIndex csi = _type.getAnnotation(CompoundSpaceIndex.class);
         if (csi != null) {//a single compound
@@ -946,6 +979,43 @@ public class SpaceTypeInfo implements SmartExternalizable {
         if (spaceClassConstructor != null) {
             _constructorDescriptor = new ConstructorInstantiationDescriptor();
             _constructorDescriptor.setConstructor(spaceClassConstructor);
+        }
+    }
+
+    private void processSpaceIdIndex(SpaceIndexType indexType, List<SpacePropertyInfo> idProperties, boolean idAutoGenerate) {
+        if (indexType == null)
+            indexType = SpaceIndexType.DEFAULT;
+        if (idProperties.isEmpty())
+            return;
+        if (idProperties.size() == 1) {
+            SpacePropertyInfo singleIdProperty = idProperties.get(0);
+            if (_indexes.containsKey(singleIdProperty.getName())) {
+                if (indexType != SpaceIndexType.DEFAULT)
+                    throw new SpaceMetadataException("SpaceId.indexType should not be set when declaring explicit index on a property");
+            } else {
+                if (indexType == SpaceIndexType.DEFAULT)
+                    indexType = _idAutoGenerate ? SpaceIndexType.NONE : SpaceIndexType.EQUAL;
+                if (indexType != SpaceIndexType.NONE) {
+                    SpaceIndex index = new SpacePropertyIndex(singleIdProperty.getName(), indexType, true, indexOf(singleIdProperty));
+                    _indexes.put(index.getName(), index);
+                }
+            }
+        } else {
+            if (indexType == SpaceIndexType.DEFAULT)
+                indexType = SpaceIndexType.EQUAL;
+            switch (indexType) {
+                case NONE:
+                    break;
+                case EQUAL:
+                case BASIC:
+                    String[] propertiesNames = idProperties.stream().map(SpacePropertyInfo::getName).toArray(String[]::new);
+                    addCompoundIndex(propertiesNames, indexType, true);
+                    break;
+                case ORDERED:
+                case EQUAL_AND_ORDERED:
+                case EXTENDED:
+                    throw new SpaceMetadataException("Compound space id does not support index type " + indexType);
+            }
         }
     }
 
@@ -985,7 +1055,6 @@ public class SpaceTypeInfo implements SmartExternalizable {
 
     private void addCompoundIndex(CompoundSpaceIndex csi) {
         addCompoundIndex(csi.paths(), SpaceIndexType.EQUAL /*csi.type()*/, csi.unique());
-
     }
 
     private void addCompoundIndex(String paths[], SpaceIndexType type, boolean unique) {
@@ -1095,13 +1164,13 @@ public class SpaceTypeInfo implements SmartExternalizable {
                 }
             }
             processSpaceProperty(initContext, list, propertyInfo, false);
-            if (propertyInfo == _idProperty)
+            if (_idProperties.contains(propertyInfo))
                 idPropertyInParameterNames = true;
         }
 
-        // Allow constructors without an id property in case the id is auto generated
+        // Allow constructors without an id property in case the id is auto generated (single property)
         if (_idAutoGenerate && !idPropertyInParameterNames)
-            processSpaceProperty(initContext, list, _idProperty, false);
+            processSpaceProperty(initContext, list, _idProperties.get(0), false);
 
         generateSpaceProperties(initContext, list, true);
 
@@ -1127,7 +1196,7 @@ public class SpaceTypeInfo implements SmartExternalizable {
         for (SpacePropertyInfo property : extractedProperties) {
             // Changing an id propertly is illegal, so there is no point of
             // enforcing a matching field to this property.
-            if (property == _idProperty)
+            if (_idProperties.contains(property))
                 continue;
 
             if (property.getSetterMethod() == null) {
@@ -1198,7 +1267,7 @@ public class SpaceTypeInfo implements SmartExternalizable {
         if (isExplicitlyExcluded) {
             if (property == _routingProperty)
                 throw new SpaceMetadataValidationException(_type, property, "Cannot exclude a space routing property.");
-            if (property == _idProperty)
+            if (_idProperties.contains(property))
                 throw new SpaceMetadataValidationException(_type, property, "Cannot exclude a space id property.");
             if (initContext.indexedProperties.containsKey(propertyName)) {
                 throw new SpaceMetadataValidationException(_type, property, "Cannot exclude an indexed property.");
@@ -1232,7 +1301,7 @@ public class SpaceTypeInfo implements SmartExternalizable {
 
         if (isExplicitlyIncluded)
             return true;
-        if (property == _idProperty)
+        if (_idProperties.contains(property))
             return true;
         if (property == _routingProperty)
             return true;
@@ -1274,6 +1343,8 @@ public class SpaceTypeInfo implements SmartExternalizable {
     }
 
     private void initIndexes(InitContext initContext) {
+        // if id is single property, not autogenerated, it's unique by default
+        SpacePropertyInfo singleIdProperty = _idProperties.size() == 1 ? _idProperties.get(0) : null;
         for (Entry<String, SpaceIndex> entry : initContext.indexedProperties.entrySet()) {
             final String name = entry.getKey();
             if (_indexes.containsKey(name))
@@ -1281,7 +1352,7 @@ public class SpaceTypeInfo implements SmartExternalizable {
             SpacePropertyInfo property = getProperty(name);
             SpaceIndexType indexType = entry.getValue().getIndexType();
             int propertyPosition = indexOf(property);
-            boolean isUnique = (property == _idProperty && !_idAutoGenerate);
+            boolean isUnique = (property == singleIdProperty && !_idAutoGenerate);
             if (!isUnique && entry.getValue().getIndexType().isIndexed())
                 isUnique = ((ISpaceIndex) (entry.getValue())).isUnique();
             SpaceIndex index = new SpacePropertyIndex(property.getName(), indexType, isUnique, propertyPosition);
@@ -1300,11 +1371,7 @@ public class SpaceTypeInfo implements SmartExternalizable {
             }
         }
 
-        // Set default index for id property, if not set:
-        if (_idProperty != null && !_idAutoGenerate && !_indexes.containsKey(_idProperty.getName())) {
-            SpaceIndex index = new SpacePropertyIndex(_idProperty.getName(), SpaceIndexType.EQUAL, true, indexOf(_idProperty));
-            _indexes.put(index.getName(), index);
-        }
+        processSpaceIdIndex(_idIndexType, _idProperties, _idAutoGenerate);
 
         // Set default index for routing property, if not set:
         if (_routingProperty != null && !_indexes.containsKey(_routingProperty.getName())) {
@@ -1329,29 +1396,37 @@ public class SpaceTypeInfo implements SmartExternalizable {
         validatePropertyType(_leaseExpirationProperty, "lease expiration", long.class, Long.class);
         validatePropertyType(_versionProperty, "version", int.class, Integer.class);
         validatePropertyType(_dynamicPropertiesProperty, "dynamic properties", Map.class, Map.class);
-        if (_idProperty != null && _idAutoGenerate && _idProperty.getType() != String.class)
-            throw new SpaceMetadataValidationException(_type, _idProperty, "id property with autogenerate=true must be of type String.");
+        if (!_idProperties.isEmpty() && _idAutoGenerate && _idProperties.get(0).getType() != String.class)
+            throw new SpaceMetadataValidationException(_type, _idProperties.get(0), "id property with autogenerate=true must be of type String.");
         validateSequenceNumberProperty();
 
         // Validate combinations:
         validatePropertyCombination(_versionProperty, _leaseExpirationProperty, "version", "lease expiration");
         validatePropertyCombination(_versionProperty, _persistProperty, "version", "persist");
-        validatePropertyCombination(_versionProperty, _idProperty, "version", "id");
+        for (SpacePropertyInfo idProperty : _idProperties)
+            validatePropertyCombination(_versionProperty, idProperty, "version", "id");
         validatePropertyCombination(_versionProperty, _routingProperty, "version", "routing");
 
         validatePropertyCombination(_leaseExpirationProperty, _persistProperty, "lease expiration", "persist");
-        validatePropertyCombination(_leaseExpirationProperty, _idProperty, "lease expiration", "id");
+        for (SpacePropertyInfo idProperty : _idProperties)
+            validatePropertyCombination(_leaseExpirationProperty, idProperty, "lease expiration", "id");
         validatePropertyCombination(_leaseExpirationProperty, _routingProperty, "lease expiration", "routing");
 
-        validatePropertyCombination(_persistProperty, _idProperty, "persist", "id");
+        for (SpacePropertyInfo idProperty : _idProperties)
+            validatePropertyCombination(_persistProperty, idProperty, "persist", "id");
         validatePropertyCombination(_persistProperty, _routingProperty, "persist", "routing");
 
         if(isBroadcast())
             validateBroadcastTable();
 
-        validateGetterSetter(_idProperty, "Id", _idAutoGenerate ? ConstructorPropertyValidation.REQUIERS_SETTER :
-                ConstructorPropertyValidation.REQUIERS_CONSTRUCTOR_PARAM);
-        if (_routingProperty != _idProperty)
+        if (_idAutoGenerate) {
+            validateGetterSetter(_idProperties.get(0), "Id", ConstructorPropertyValidation.REQUIERS_SETTER);
+        } else {
+            for (SpacePropertyInfo idProperty : _idProperties)
+                validateGetterSetter(idProperty, "Id", ConstructorPropertyValidation.REQUIERS_CONSTRUCTOR_PARAM);
+        }
+        SpacePropertyInfo firstIdProperty = _idProperties.size() == 1 ? _idProperties.get(0) : null;
+        if (_routingProperty != firstIdProperty)
             validateGetterSetter(_routingProperty, "Routing", ConstructorPropertyValidation.REQUIERS_CONSTRUCTOR_PARAM);
         validateGetterSetter(_versionProperty, "Version", ConstructorPropertyValidation.REQUIERS_SETTER);
         validateGetterSetter(_persistProperty, "Persist", ConstructorPropertyValidation.REQUIERS_AT_LEAST_ONE);
@@ -1359,7 +1434,7 @@ public class SpaceTypeInfo implements SmartExternalizable {
 
         for (int i = 0; i < _spaceProperties.length; i++) {
             // Already validated
-            if (_spaceProperties[i] == _idProperty || _spaceProperties[i] == _routingProperty)
+            if (_idProperties.contains(_spaceProperties[i]) || _spaceProperties[i] == _routingProperty)
                 continue;
 
             validateGetterSetter(_spaceProperties[i], "Space", ConstructorPropertyValidation.REQUIERS_CONSTRUCTOR_PARAM);
@@ -1453,7 +1528,7 @@ public class SpaceTypeInfo implements SmartExternalizable {
         }
 
         // No explicit routing/id:
-        if (_routingProperty == null && (_idProperty == null || _idAutoGenerate))
+        if (_routingProperty == null && (_idProperties.isEmpty() || _idAutoGenerate))
             _logger.warn("Type [" + _type.getName() + "] does not define a routing property or an id property with autoGenerate=false - The routing property will be selected implicitly.\n"
                     + "Consider setting a routing property explicitly to avoid unexpected behaviour or errors.");
 
@@ -1497,7 +1572,7 @@ public class SpaceTypeInfo implements SmartExternalizable {
             sb.append("Property #" + i + " - Name: [" + prop.getName() +
                     "], NullValue: [" + prop.getNullValue() + "]\n");
         }
-        sb.append("Id Property: [" + getPropertyName(_idProperty) + "], AutoGenerate: [" + _idAutoGenerate + "]\n");
+        sb.append("Id Property: [" + String.join(",", getIdPropertiesNames()) + "], AutoGenerate: [" + _idAutoGenerate + "]\n");
         sb.append("Routing Property: [" + getPropertyName(_routingProperty) + "]\n");
         sb.append("Version Property: [" + getPropertyName(_versionProperty) + "]\n");
         sb.append("Persist Property: [" + getPropertyName(_persistProperty) + "]\n");
@@ -1593,7 +1668,14 @@ public class SpaceTypeInfo implements SmartExternalizable {
         _constructorDescriptor = IOUtils.readObject(in);
 
         // Read type special properties:
-        _idProperty = readProperty(in);
+        if (version.greaterOrEquals(PlatformLogicalVersion.v16_2_0)) {
+            int length = in.readInt();
+            _idProperties = new ArrayList<>(length);
+            for (int i = 0; i < length; i++)
+                _idProperties.add(readProperty(in));
+        } else {
+            _idProperties = toSingleOrEmptyList(readProperty(in));
+        }
         _idAutoGenerate = in.readBoolean();
         _routingProperty = readProperty(in);
         _versionProperty = readProperty(in);
@@ -1651,7 +1733,7 @@ public class SpaceTypeInfo implements SmartExternalizable {
         _fifoSupport = FifoHelper.fromCode(in.readByte());
 
         // Read type special properties:
-        _idProperty = readProperty(in);
+        _idProperties = toSingleOrEmptyList(readProperty(in));
         _idAutoGenerate = in.readBoolean();
         _routingProperty = readProperty(in);
         _versionProperty = readProperty(in);
@@ -1746,7 +1828,13 @@ public class SpaceTypeInfo implements SmartExternalizable {
         IOUtils.writeObject(out, _constructorDescriptor);
 
         // Write type special properties:
-        IOUtils.writeString(out, getPropertyName(_idProperty));
+        if (version.greaterOrEquals(PlatformLogicalVersion.v16_2_0)) {
+            out.writeInt(_idProperties.size());
+            for (SpacePropertyInfo idProperty : _idProperties)
+                IOUtils.writeString(out, getPropertyName(idProperty));
+        } else {
+            IOUtils.writeString(out, getPropertyName(toSingleOrEmptyItem(_idProperties)));
+        }
         out.writeBoolean(_idAutoGenerate);
         IOUtils.writeString(out, getPropertyName(_routingProperty));
         IOUtils.writeString(out, getPropertyName(_versionProperty));
@@ -1791,7 +1879,7 @@ public class SpaceTypeInfo implements SmartExternalizable {
         out.writeByte(FifoHelper.toCode(_fifoSupport));
 
         // Write type special properties:
-        IOUtils.writeString(out, getPropertyName(_idProperty));
+        IOUtils.writeString(out, getPropertyName(toSingleOrEmptyItem(_idProperties)));
         out.writeBoolean(_idAutoGenerate);
         IOUtils.writeString(out, getPropertyName(_routingProperty));
         IOUtils.writeString(out, getPropertyName(_versionProperty));
@@ -1831,5 +1919,13 @@ public class SpaceTypeInfo implements SmartExternalizable {
                         + name + "] is already defined.");
             indexedProperties.put(name, SpaceIndexFactory.createPropertyIndex(name, indexType, unique));
         }
+    }
+
+    private static <T> List<T> toSingleOrEmptyList(T item) {
+        return item != null ? Collections.singletonList(item) : Collections.emptyList();
+    }
+
+    private static <T> T toSingleOrEmptyItem(List<T> list) {
+        return list.isEmpty() ? null : list.get(0);
     }
 }

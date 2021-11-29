@@ -105,6 +105,7 @@ public class DefaultSpaceDocumentMapper implements
     private final PojoRepository repository = new PojoRepository();
     private final SpaceTypeDescriptor spaceTypeDescriptor;
     private final boolean prefferPojo;
+    private final String idPropertyName;
 
     public DefaultSpaceDocumentMapper(SpaceTypeDescriptor spaceTypeDescriptor) {
         this(spaceTypeDescriptor, true);
@@ -113,6 +114,7 @@ public class DefaultSpaceDocumentMapper implements
     public DefaultSpaceDocumentMapper(SpaceTypeDescriptor spaceTypeDescriptor, boolean prefferPojo) {
         this.spaceTypeDescriptor = spaceTypeDescriptor;
         this.prefferPojo = prefferPojo;
+        this.idPropertyName = spaceTypeDescriptor.getIdPropertyName();
     }
 
     private byte type(Class c) {
@@ -193,7 +195,7 @@ public class DefaultSpaceDocumentMapper implements
                     continue;
 
                 if (Constants.ID_PROPERTY.equals(property))
-                    property = spaceTypeDescriptor.getIdPropertyName();
+                    property = idPropertyName;
 
                 ISetterMethod<Object> setter = repository.getSetter(type,
                         property);
@@ -239,7 +241,7 @@ public class DefaultSpaceDocumentMapper implements
                 continue;
 
             if (Constants.ID_PROPERTY.equals(property))
-                property = spaceTypeDescriptor.getIdPropertyName();
+                property = idPropertyName;
 
             document.setProperty(property, fromDBObject(value));
         }
@@ -444,7 +446,7 @@ public class DefaultSpaceDocumentMapper implements
             if (value == null)
                 continue;
 
-            if (spaceTypeDescriptor.getIdPropertyName().equals(property))
+            if (idPropertyName.equals(property))
                 property = Constants.ID_PROPERTY;
 
             bson.add(property, toObject(value));
@@ -472,7 +474,7 @@ public class DefaultSpaceDocumentMapper implements
                 if (value == null)
                     continue;
 
-                if (spaceTypeDescriptor.getIdPropertyName().equals(property))
+                if (idPropertyName.equals(property))
                     property = Constants.ID_PROPERTY;
 
                 bson.add(property, toObject(value));

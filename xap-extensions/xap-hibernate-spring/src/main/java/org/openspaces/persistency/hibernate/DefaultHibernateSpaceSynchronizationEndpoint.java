@@ -136,7 +136,9 @@ public class DefaultHibernateSpaceSynchronizationEndpoint extends AbstractHibern
         for (Map.Entry<String, Object> updateEntry : itemValues.entrySet()) {
             query.setParameter(updateEntry.getKey(), updateEntry.getValue());
         }
-        query.setParameter("id_" + typeDescriptor.getIdPropertyName(), spaceDocument.getProperty(typeDescriptor.getIdPropertyName()));
+
+        for (String idPropertyName : typeDescriptor.getIdPropertiesNames())
+            query.setParameter("id_" + idPropertyName, spaceDocument.getProperty(idPropertyName));
         query.executeUpdate();
     }
 

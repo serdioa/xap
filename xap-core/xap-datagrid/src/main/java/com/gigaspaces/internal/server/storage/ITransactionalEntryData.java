@@ -83,8 +83,8 @@ public interface ITransactionalEntryData extends IEntryData, MutableServerEntry 
     default void setPathValue(String path, Object value) {
         ITypeDesc typeDesc = getSpaceTypeDescriptor();
         if (!path.contains(".")) {
-            if (typeDesc.getIdPropertyName().equals(path))
-                throwChangeIdException(value);
+            if (typeDesc.getIdPropertiesNames().contains(path))
+                throwChangeIdException(path, value);
 
             int pos = typeDesc.getFixedPropertyPosition(path);
             if (pos >= 0) {
@@ -114,8 +114,8 @@ public interface ITransactionalEntryData extends IEntryData, MutableServerEntry 
             else throw new IllegalArgumentException("Unknown property name '" + path + "'");
         } else {
             String rootPropertyName = path.substring(0, path.indexOf("."));
-            if (typeDesc.getIdPropertyName().equals(rootPropertyName))
-                throwChangeIdException(value);
+            if (typeDesc.getIdPropertiesNames().contains(rootPropertyName))
+                throwChangeIdException(rootPropertyName, value);
 
             deepCloneProperty(rootPropertyName);
             int propertyNameSeperatorIndex = path.lastIndexOf(".");
@@ -151,12 +151,12 @@ public interface ITransactionalEntryData extends IEntryData, MutableServerEntry 
             else throw new IllegalArgumentException("Unknown property name '" + path + "'");
         } else {
             String rootPropertyName = path.substring(0, path.indexOf("."));
-            if (getSpaceTypeDescriptor().getIdPropertyName().equals(rootPropertyName)) {
+            if (getSpaceTypeDescriptor().getIdPropertiesNames().contains(rootPropertyName)) {
                 throw new UnsupportedOperationException("Attempting to unset the id property named '"
-                        + getSpaceTypeDescriptor().getIdPropertyName()
+                        + rootPropertyName
                         + "' of type '"
                         + getSpaceTypeDescriptor().getTypeName()
-                        + "' which has a current value of [" + getPropertyValue(getSpaceTypeDescriptor().getIdPropertyName()) + "]. Changing the id property of an existing entry is not allowed.");
+                        + "' which has a current value of [" + getPropertyValue(rootPropertyName) + "]. Changing the id property of an existing entry is not allowed.");
             }
             deepCloneProperty(rootPropertyName);
             int propertyNameSeperatorIndex = path.lastIndexOf(".");
@@ -197,10 +197,10 @@ public interface ITransactionalEntryData extends IEntryData, MutableServerEntry 
                     + "] because it has no null value defined");
     }
 
-    default void throwChangeIdException(Object value) {
-        Object currentId = getPropertyValue(getSpaceTypeDescriptor().getIdPropertyName());
+    default void throwChangeIdException(String propertyName, Object value) {
+        Object currentId = getPropertyValue(propertyName);
         throw new UnsupportedOperationException("Attempting to change the id property named '"
-                + getSpaceTypeDescriptor().getIdPropertyName()
+                + propertyName
                 + "' of type '"
                 + getSpaceTypeDescriptor().getTypeName()
                 + "' which has a current value of [" + currentId + "] with a new value ["

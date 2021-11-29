@@ -341,7 +341,7 @@ public class SqliteUtils {
             TemplateEntryData entryData = template.getTemplateEntryData();
             Object value = entryData.getFixedPropertyValue(index);
 
-            if (template.getExtendedMatchCodes() == null || (template.isIdQuery() && typeDesc.getIdPropertyName().equalsIgnoreCase(criteria.getPath()))) {
+            if (template.getExtendedMatchCodes() == null || (template.isIdQuery() && typeDesc.getIdPropertiesNames().contains(criteria.getPath()))) {
                 if (value == null) {
                     return TemplateMatchTier.MATCH_HOT_AND_COLD;
                 } else if (timeType != null) {
@@ -366,7 +366,7 @@ public class SqliteUtils {
             }
             int index = ((PropertyInfo) property).getOriginalIndex();
             Object value = packet.getFieldValue(index);
-            if (packet instanceof TemplatePacket || (packet.isIdQuery() && packet.getTypeDescriptor().getIdPropertyName().equalsIgnoreCase(criteria.getPath()))) {
+            if (packet instanceof TemplatePacket || (packet.isIdQuery() && packet.getTypeDescriptor().getIdPropertiesNames().contains(criteria.getPath()))) {
                 if (value == null) {
                     return TemplateMatchTier.MATCH_HOT_AND_COLD;
                 } else if (timeType != null) {

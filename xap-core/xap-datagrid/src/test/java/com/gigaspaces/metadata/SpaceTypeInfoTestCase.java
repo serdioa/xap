@@ -449,7 +449,8 @@ public class SpaceTypeInfoTestCase extends TestCase {
         assertPropertyInfo(typeInfo, 0, "id", String.class, 0, SpaceIndexType.EQUAL);
         assertPropertyInfo(typeInfo, 1, "routing", String.class, 0, SpaceIndexType.EQUAL);
 
-        Assert.assertEquals("id", typeInfo.getProperty("id"), typeInfo.getIdProperty());
+        Assert.assertEquals("idProperties.size", 1, typeInfo.getIdProperties().size());
+        Assert.assertEquals("id", typeInfo.getProperty("id"), typeInfo.getIdProperties().get(0));
         Assert.assertEquals("leaseExpiration", typeInfo.getProperty("leaseExpiration"), typeInfo.getLeaseExpirationProperty());
         Assert.assertEquals("persist", typeInfo.getProperty("persist"), typeInfo.getPersistProperty());
         Assert.assertEquals("routing", typeInfo.getProperty("routing"), typeInfo.getRoutingProperty());
@@ -474,7 +475,8 @@ public class SpaceTypeInfoTestCase extends TestCase {
         assertPropertyInfo(typeInfo, 0, "id", String.class, 1, SpaceIndexType.EQUAL);
         assertPropertyInfo(typeInfo, 1, "routing", String.class, 1, SpaceIndexType.EQUAL);
 
-        Assert.assertEquals("id", typeInfo.getProperty("id"), typeInfo.getIdProperty());
+        Assert.assertEquals("idProperties.size", 1, typeInfo.getIdProperties().size());
+        Assert.assertEquals("id", typeInfo.getProperty("id"), typeInfo.getIdProperties().get(0));
         Assert.assertEquals("leaseExpiration", typeInfo.getProperty("leaseExpiration"), typeInfo.getLeaseExpirationProperty());
         Assert.assertEquals("persist", typeInfo.getProperty("persist"), typeInfo.getPersistProperty());
         Assert.assertEquals("routing", typeInfo.getProperty("routing"), typeInfo.getRoutingProperty());
@@ -504,7 +506,8 @@ public class SpaceTypeInfoTestCase extends TestCase {
         assertPropertyInfo(typeInfo, 2, "id2", String.class, 0, SpaceIndexType.EQUAL);
         assertPropertyInfo(typeInfo, 3, "routing2", String.class, 0, SpaceIndexType.EQUAL);
 
-        Assert.assertEquals("id", typeInfo.getProperty("id2"), typeInfo.getIdProperty());
+        Assert.assertEquals("idProperties.size", 1, typeInfo.getIdProperties().size());
+        Assert.assertEquals("id", typeInfo.getProperty("id2"), typeInfo.getIdProperties().get(0));
         Assert.assertEquals("leaseExpiration", typeInfo.getProperty("leaseExpiration2"), typeInfo.getLeaseExpirationProperty());
         Assert.assertEquals("persist", typeInfo.getProperty("persist2"), typeInfo.getPersistProperty());
         Assert.assertEquals("routing", typeInfo.getProperty("routing2"), typeInfo.getRoutingProperty());
@@ -698,7 +701,8 @@ public class SpaceTypeInfoTestCase extends TestCase {
         assertPropertyInfo(typeInfo, 0, "someProperty1", String.class, 0, SpaceIndexType.NONE);
         assertPropertyInfo(typeInfo, 1, "someProperty2", String.class, 0, SpaceIndexType.NONE);
         assertPropertyInfo(typeInfo, 2, "someProperty3", String.class, 0, SpaceIndexType.EQUAL);
-        Assert.assertEquals("id", typeInfo.getProperty("someProperty2"), typeInfo.getIdProperty());
+        Assert.assertEquals("idProperties.size", 1, typeInfo.getIdProperties().size());
+        Assert.assertEquals("id", typeInfo.getProperty("someProperty2"), typeInfo.getIdProperties().get(0));
         Assert.assertEquals("idAutoGenerate", true, typeInfo.getIdAutoGenerate());
     }
 

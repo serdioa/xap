@@ -114,7 +114,7 @@ public class UidQueryPacket extends AbstractQueryPacket {
      */
     @Override
     public boolean isTransient() {
-        return _typeDesc == null || _typeDesc.getIdPropertyName() == null || super.isTransient();
+        return _typeDesc == null || _typeDesc.getIdPropertiesNames().isEmpty() || super.isTransient();
     }
 
     @Override

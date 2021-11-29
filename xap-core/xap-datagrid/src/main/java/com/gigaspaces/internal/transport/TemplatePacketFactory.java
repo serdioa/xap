@@ -105,7 +105,7 @@ public class TemplatePacketFactory {
             Object routing, Object id, int version, AbstractProjectionTemplate projectionTemplate) {
         // Translate classname + id to uid:
         // If no identifier or autogenerate identifier, id is uid:
-        if (typeDesc.getIdPropertyName() == null || typeDesc.isAutoGenerateId()) {
+        if (typeDesc.getIdPropertiesNames().isEmpty() || typeDesc.isAutoGenerateId()) {
             if (!(id instanceof String))
                 throw new IllegalArgumentException("id must be a String if no SpaceID or SpaceID with AutoGenerate set to true.");
             // Create uid template:

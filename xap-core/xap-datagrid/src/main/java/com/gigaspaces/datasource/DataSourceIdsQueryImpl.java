@@ -88,7 +88,7 @@ public class DataSourceIdsQueryImpl implements InternalDataSourceIdsQuery {
 
     @Override
     public boolean supportsAsSQLQuery() {
-        return _typeDescriptor.getIdPropertyName() != null;
+        return _typeDescriptor.getIdPropertiesNames().size() == 1;
     }
 
     @Override
@@ -96,7 +96,8 @@ public class DataSourceIdsQueryImpl implements InternalDataSourceIdsQuery {
         if (!supportsAsSQLQuery())
             throw new UnsupportedOperationException();
 
-        ICustomQuery query = new InRange(_typeDescriptor.getIdPropertyName(),
+        // Assume single id property, as verified in supportsAsSQLQuery()
+        ICustomQuery query = new InRange(_typeDescriptor.getIdPropertiesNames().get(0),
                 // preserve ids order
                 new LinkedHashSet<Object>(Arrays.asList(_ids)));
         SQLQuery<?> sqlQuery = query.toSQLQuery(_typeDescriptor);

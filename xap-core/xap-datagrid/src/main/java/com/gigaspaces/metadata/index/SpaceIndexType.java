@@ -25,6 +25,12 @@ package com.gigaspaces.metadata.index;
  */
 public enum SpaceIndexType {
     /**
+     * Default value, used for SpaceId. The default is {@link #NONE} for auto-generated Id, {@link #EQUAL} otherwise.
+     * If the Space ID is compound (multiple properties), a compound index is created.
+     * @since 16.2
+     */
+    DEFAULT,
+    /**
      * Not indexed.
      */
     NONE,

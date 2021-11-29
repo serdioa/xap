@@ -61,7 +61,7 @@ public class TypeDesc implements ITypeDesc {
     private PropertyInfo[] _fixedProperties;
     private boolean _supportsDynamicProperties;
     private boolean _supportsOptimisticLocking;
-    private String _idPropertyName;
+    private List<String> _idPropertiesNames;
     private boolean _autoGenerateId;
     private String _defaultPropertyName;
     private String _routingPropertyName;
@@ -88,8 +88,7 @@ public class TypeDesc implements ITypeDesc {
     private transient String _typeSimpleName;
     private transient boolean _isExternalizable;
     private transient Map<String, Integer> _fixedPropertiesMap;
-    private transient int _idPropertyPos;
-    private transient int _defaultPropertyPos;
+    private transient int[] _idPropertiesPos;
     private transient int _routingPropertyPos;
 
     private transient Class<? extends ExternalEntry> _externalEntryWrapperClass;
@@ -130,7 +129,7 @@ public class TypeDesc implements ITypeDesc {
 
     public TypeDesc(String typeName, String codeBase, String[] superTypesNames,
                     PropertyInfo[] properties, boolean supportsDynamicProperties, Map<String, SpaceIndex> indexes,
-                    String idPropertyName, boolean idAutoGenerate, String defaultPropertyName, String routingPropertyName,
+                    List<String> idPropertiesNames, boolean idAutoGenerate, String defaultPropertyName, String routingPropertyName,
                     String fifoGroupingName, Set<String> fifoGroupingIndexes,
                     boolean systemType, FifoSupport fifoMode, boolean replicable, boolean supportsOptimisticLocking,
                     StorageType storageType, EntryType entryType, Class<? extends Object> objectClass,
@@ -143,12 +142,12 @@ public class TypeDesc implements ITypeDesc {
         _fixedProperties = properties;
         _supportsDynamicProperties = supportsDynamicProperties;
         _indexes = indexes;
-        _idPropertyName = idPropertyName;
+        _idPropertiesNames = Collections.unmodifiableList(idPropertiesNames);
         _autoGenerateId = idAutoGenerate;
         _documentWrapperClassName = documentWrapperClass == null ? null : documentWrapperClass.getName();
         _dotnetDocumentWrapperTypeName = dotnetDocumentWrapperType;
         _dotnetDynamicPropertiesStorageType = dotnetStorageType;
-        _defaultPropertyName = calcDefaultPropertyName(defaultPropertyName, _idPropertyName, properties, indexes);
+        _defaultPropertyName = calcDefaultPropertyName(defaultPropertyName, idPropertiesNames, properties, indexes);
         _routingPropertyName = routingPropertyName != null ? routingPropertyName : _defaultPropertyName;
         _fifoGroupingName = fifoGroupingName;
         _fifoGroupingIndexes = fifoGroupingIndexes != null ? fifoGroupingIndexes : new HashSet<String>();
@@ -230,7 +229,7 @@ public class TypeDesc implements ITypeDesc {
         newTypeDesc._fixedProperties = this.getProperties();
         newTypeDesc._supportsDynamicProperties = this.supportsDynamicProperties();
         newTypeDesc._indexes = this.getIndexes();
-        newTypeDesc._idPropertyName = this.getIdPropertyName();
+        newTypeDesc._idPropertiesNames = this._idPropertiesNames;
         newTypeDesc._autoGenerateId = this.isAutoGenerateId();
         newTypeDesc._documentWrapperClassName = this.getDocumentWrapperClassName();
         newTypeDesc._dotnetDocumentWrapperTypeName = this.getDotnetDocumentWrapperTypeName();
@@ -268,7 +267,7 @@ public class TypeDesc implements ITypeDesc {
             String propertyName = property.getName();
 
             // validate SpaceId, SpaceRouting and SpcaeFifoGrouping (property and indexes) with OBJECT storage type
-            if (propertyName.equals(_idPropertyName))
+            if (_idPropertiesNames.contains(propertyName))
                 assertSupportsMatching(property, "SpaceId");
             if (propertyName.equals(_routingPropertyName))
                 assertSupportsMatching(property, "SpaceRouting");
@@ -437,11 +436,14 @@ public class TypeDesc implements ITypeDesc {
     public PropertyInfo[] getProperties(boolean isPrimaryKeyFirst) {
         if (isPrimaryKeyFirst) {
             PropertyInfo[] propertyInfos = new PropertyInfo[_fixedProperties.length];
-            int idIndex = getIdentifierPropertyId();
-            int currIndex = 1;
+            int[] idIndexes = getIdentifierPropertiesId();
+            int idIndex = 0;
+            int currIndex = idIndexes.length;
             for (int i = 0; i < _fixedProperties.length; i++) {
-                if (i == idIndex) {
-                    propertyInfos[0] = _fixedProperties[i];
+                if (idIndex != -1 && i == idIndexes[idIndex]) {
+                    propertyInfos[idIndex++] = _fixedProperties[i];
+                    if (idIndex == idIndexes.length)
+                        idIndex = -1;
                 } else {
                     propertyInfos[currIndex++] = _fixedProperties[i];
                 }
@@ -488,17 +490,19 @@ public class TypeDesc implements ITypeDesc {
         return _indexedPropertiesIDs[propertyID];
     }
 
-    public int getIdentifierPropertyId() {
-        return _idPropertyPos;
+    @Override
+    public int[] getIdentifierPropertiesId() {
+        return _idPropertiesPos;
     }
 
-    public String getIdPropertyName() {
-        return _idPropertyName;
+    @Override
+    public List<String> getIdPropertiesNames() {
+        return _idPropertiesNames;
     }
 
     @Override
     public SpaceIdType getSpaceIdType() {
-        if (_idPropertyName == null || _idPropertyName.length() == 0)
+        if (_idPropertiesNames.isEmpty())
             return SpaceIdType.NONE;
 
         return _autoGenerateId ? SpaceIdType.AUTOMATIC : SpaceIdType.MANUAL;
@@ -677,14 +681,14 @@ public class TypeDesc implements ITypeDesc {
     }
 
     private static String calcDefaultPropertyName(String explicitDefaultPropertyName,
-                                                  String idPropertyName, PropertyInfo[] properties, Map<String, SpaceIndex> indexes) {
+                                                  List<String> idPropertiesNames, PropertyInfo[] properties, Map<String, SpaceIndex> indexes) {
         // If default property was set explicitly, use it:
         if (explicitDefaultPropertyName != null)
             return explicitDefaultPropertyName;
 
         // Otherwise, if identifier property is set, return it:
-        if (idPropertyName != null)
-            return idPropertyName;
+        if (!idPropertiesNames.isEmpty())
+            return idPropertiesNames.get(0);
 
         // Otherwise, return first index, if any:
         if (indexes != null)
@@ -778,7 +782,7 @@ public class TypeDesc implements ITypeDesc {
         sb.append("broadcast").append(_broadcast).append(", ");
         sb.append("storageType=").append(_storageType).append(", ");
         sb.append("fifoSupport=").append(_fifoSupport).append(", ");
-        sb.append("idPropertyName=").append(_idPropertyName).append(", ");
+        sb.append("idPropertiesNames=").append(String.join(";", _idPropertiesNames)).append(", ");
         sb.append("idAutoGenerate=").append(_autoGenerateId).append(", ");
         sb.append("routingPropertyName=").append(_routingPropertyName).append(", ");
         sb.append("fifoGroupingPropertyName=").append(_fifoGroupingName).append(", ");
@@ -817,6 +821,16 @@ public class TypeDesc implements ITypeDesc {
             readExternalV9_0_2(in, version);
     }
 
+    private static List<String> toSingleOrEmptyList(String s) {
+        return s != null && !s.isEmpty() ? Collections.singletonList(s) : Collections.emptyList();
+    }
+
+    private static String firstOrNull(List<String> list) {
+        if (list.size() > 1)
+            throw new IllegalStateException("Composite space id is not supported in this context");
+        return list.isEmpty() ? null : list.get(0);
+    }
+
     private void readExternalV10_1(ObjectInput in, PlatformLogicalVersion version, boolean swap) throws IOException, ClassNotFoundException {
         _typeName = IOUtils.readString(in);
         _codeBase = IOUtils.readString(in);
@@ -827,7 +841,7 @@ public class TypeDesc implements ITypeDesc {
             for (int i = 0; i < numOfProperties; i++)
                 _fixedProperties[i] = PropertyInfo.deserialize(in, version);
         }
-        _idPropertyName = IOUtils.readString(in);
+        _idPropertiesNames = toSingleOrEmptyList(IOUtils.readString(in));
         _autoGenerateId = in.readBoolean();
         _defaultPropertyName = IOUtils.readString(in);
         _routingPropertyName = IOUtils.readString(in);
@@ -888,7 +902,10 @@ public class TypeDesc implements ITypeDesc {
             for (int i = 0; i < numOfProperties; i++)
                 _fixedProperties[i] = PropertyInfo.deserialize(in, version);
         }
-        _idPropertyName = IOUtils.readString(in);
+        if (version.greaterOrEquals(PlatformLogicalVersion.v16_2_0))
+            _idPropertiesNames = IOUtils.readListString(in);
+        else
+            _idPropertiesNames = toSingleOrEmptyList(IOUtils.readString(in));
         _autoGenerateId = in.readBoolean();
         _defaultPropertyName = IOUtils.readString(in);
         _routingPropertyName = IOUtils.readString(in);
@@ -979,7 +996,7 @@ public class TypeDesc implements ITypeDesc {
             for (int i = 0; i < numOfProperties; i++)
                 _fixedProperties[i] = PropertyInfo.deserialize(in, version);
         }
-        _idPropertyName = IOUtils.readString(in);
+        _idPropertiesNames = toSingleOrEmptyList(IOUtils.readString(in));
         _autoGenerateId = in.readBoolean();
         _defaultPropertyName = IOUtils.readString(in);
         _routingPropertyName = IOUtils.readString(in);
@@ -1032,7 +1049,7 @@ public class TypeDesc implements ITypeDesc {
             for (int i = 0; i < numOfProperties; i++)
                 _fixedProperties[i] = PropertyInfo.deserialize(in, version);
         }
-        _idPropertyName = IOUtils.readString(in);
+        _idPropertiesNames = toSingleOrEmptyList(IOUtils.readString(in));
         _autoGenerateId = in.readBoolean();
         _defaultPropertyName = IOUtils.readString(in);
         _routingPropertyName = IOUtils.readString(in);
@@ -1077,13 +1094,15 @@ public class TypeDesc implements ITypeDesc {
     private void initializeV9_0_0() {
         _typeSimpleName = StringUtils.getSuffix(_typeName, ".");
         _typeUidPrefix = SpaceUidFactory.generateTypePrefix(_typeName);
-        _idPropertyPos = indexOfProperty(_fixedProperties, _idPropertyName);
+        _idPropertiesPos = new int[_idPropertiesNames.size()];
+        for (int i = 0; i < _idPropertiesPos.length; i++) {
+            _idPropertiesPos[i] = indexOfProperty(_fixedProperties, _idPropertiesNames.get(i));
+        }
         // map properties names to positions:
         _fixedPropertiesMap = new HashMap<String, Integer>();
         for (int i = 0; i < _fixedProperties.length; i++)
             _fixedPropertiesMap.put(_fixedProperties[i].getName(), i);
 
-        _defaultPropertyPos = indexOfProperty(_fixedProperties, _defaultPropertyName);
         _routingPropertyPos = indexOfProperty(_fixedProperties, _routingPropertyName);
         _restrictedSuperClasses = calcRestrictSuperClasses(_superTypesNames, _typeName);
         _checksum = calcChecksum(_superTypesNames, _fixedProperties);
@@ -1102,7 +1121,7 @@ public class TypeDesc implements ITypeDesc {
         // load the class locally - document wrapper class is a proxy level feature and not propagated to the space
         _documentWrapperClass = ClassLoaderHelper.loadClass(_documentWrapperClassName, true, SpaceDocument.class);
         _documentIntrospector = new VirtualEntryIntrospector(this, _documentWrapperClass);
-        _autoGenerateRouting = _autoGenerateId && _idPropertyName.equals(_routingPropertyName);
+        _autoGenerateRouting = _autoGenerateId && !_idPropertiesNames.isEmpty() && _idPropertiesNames.get(0).equals(_routingPropertyName);
 
         this._isAllPropertiesObjectStorageType = initializeAllPropertiesObjectStorageType();
         this._entryTypeDescs = initEntryTypeDescs();
@@ -1240,7 +1259,10 @@ public class TypeDesc implements ITypeDesc {
         for (int i = 0; i < numOfProperties; i++) {
             _fixedProperties[i].serialize(out, version);
         }
-        IOUtils.writeString(out, _idPropertyName);
+        if (version.greaterOrEquals(PlatformLogicalVersion.v16_2_0))
+            IOUtils.writeListString(out, _idPropertiesNames);
+        else
+            IOUtils.writeString(out, firstOrNull(_idPropertiesNames));
         out.writeBoolean(_autoGenerateId);
         IOUtils.writeString(out, _defaultPropertyName);
         IOUtils.writeString(out, _routingPropertyName);
@@ -1303,7 +1325,7 @@ public class TypeDesc implements ITypeDesc {
         for (int i = 0; i < numOfProperties; i++) {
             _fixedProperties[i].serialize(out, version);
         }
-        IOUtils.writeString(out, _idPropertyName);
+        IOUtils.writeString(out, firstOrNull(_idPropertiesNames));
         out.writeBoolean(_autoGenerateId);
         IOUtils.writeString(out, _defaultPropertyName);
         IOUtils.writeString(out, _routingPropertyName);
@@ -1355,7 +1377,7 @@ public class TypeDesc implements ITypeDesc {
         out.writeInt(numOfProperties);
         for (int i = 0; i < numOfProperties; i++)
             _fixedProperties[i].serialize(out, version);
-        IOUtils.writeString(out, _idPropertyName);
+        IOUtils.writeString(out, firstOrNull(_idPropertiesNames));
         out.writeBoolean(_autoGenerateId);
         IOUtils.writeString(out, _defaultPropertyName);
         IOUtils.writeString(out, _routingPropertyName);
@@ -1397,7 +1419,7 @@ public class TypeDesc implements ITypeDesc {
         out.writeInt(numOfProperties);
         for (int i = 0; i < numOfProperties; i++)
             _fixedProperties[i].serialize(out, version);
-        IOUtils.writeString(out, _idPropertyName);
+        IOUtils.writeString(out, firstOrNull(_idPropertiesNames));
         out.writeBoolean(_autoGenerateId);
         IOUtils.writeString(out, _defaultPropertyName);
         IOUtils.writeString(out, _routingPropertyName);
