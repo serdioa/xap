@@ -1,25 +1,26 @@
 /*
- * 
+ *
  * Copyright 2005 Sun Microsystems, Inc.
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  * 	http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * 
+ *
  */
 package com.gigaspaces.logger;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.StringJoiner;
+import java.util.logging.Level;
 
 import org.slf4j.Logger;
 import org.slf4j.helpers.MessageFormatter;
@@ -27,9 +28,17 @@ import org.slf4j.helpers.MessageFormatter;
 @com.gigaspaces.api.InternalApi
 public class LogUtils {
 
+    public static final int SEVERE = 1000;
+    public static final int WARNING = 900;
+    public static final int INFO = 800;
+    public static final int CONFIG = 700;
+    public static final int FINE = 500;
+    public static final int FINER = 400;
+
     private void foo() {
         LogLevel.INFO.isEnabled(null);
     }
+
     static String getStackTrace(Throwable t) {
         StringWriter sw = new StringWriter();
         PrintWriter pw = new PrintWriter(sw);
@@ -53,13 +62,13 @@ public class LogUtils {
         return message + " [Duration = " + duration + "ms]";
     }
 
-    public static String format(String message, Object ... args) {
+    public static String format(String message, Object... args) {
         if (args == null || args.length == 0)
             return message;
         return MessageFormatter.arrayFormat(message, args, null).getMessage();
     }
 
-    public static String format(Class<?> sourceClass, String sourceMethod, String format, Object ... params) {
+    public static String format(Class<?> sourceClass, String sourceMethod, String format, Object... params) {
         if (format == null || format.isEmpty())
             return sourceClass.getName() + "#" + sourceMethod;
         if (params == null || params.length == 0)
@@ -75,14 +84,14 @@ public class LogUtils {
     }
 
     public static void throwing(Logger logger, Class<?> sourceClass, String sourceMethod, Throwable thrown,
-                                String format, Object ... params) {
+                                String format, Object... params) {
         if (logger.isDebugEnabled()) {
             logger.debug(format(sourceClass, sourceMethod, format, params), thrown);
         }
     }
 
     public static void throwing(LogLevel level, Logger logger, Class<?> sourceClass, String sourceMethod, Throwable thrown,
-                                String format, Object ... params) {
+                                String format, Object... params) {
         if (level.isEnabled(logger)) {
             level.log(logger, format(sourceClass, sourceMethod, format, params), thrown);
         }
@@ -128,7 +137,7 @@ public class LogUtils {
             logger.debug(action("exit", sourceClass.getName(), sourceMethod, args));
     }
 
-    private static String action(String action, String sourceClass, String sourceMethod, Object ... params) {
+    private static String action(String action, String sourceClass, String sourceMethod, Object... params) {
         if (params == null || params.length == 0)
             return sourceClass + "#" + sourceMethod + ": " + action;
         if (params.length == 1)
@@ -138,5 +147,28 @@ public class LogUtils {
             sj.add(String.valueOf(param));
         }
         return sj.toString();
+    }
+
+
+    /*
+     **
+     */
+    public static int toSeverity(Level level) {
+        switch (level.intValue()) {
+            case SEVERE:
+                return 9;
+            case WARNING:
+                return 5;
+            case INFO:
+                return 4;
+            case CONFIG:
+                return 3;
+            case FINE:
+                return 2;
+            case FINER:
+                return 1;
+            default:
+                return 0;
+        }
     }
 }
