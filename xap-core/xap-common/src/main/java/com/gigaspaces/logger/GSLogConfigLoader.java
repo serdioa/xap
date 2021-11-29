@@ -127,7 +127,6 @@ public class GSLogConfigLoader {
      * @return GSLogConfigLoader instance
      */
     public static synchronized GSLogConfigLoader getLoader(String fileHanderPattern) {
-        // TODO : extract it
         RollingFileHandlerConfigurer.setServiceProperty(fileHanderPattern, false /*override if exists*/);
         _filePatternName = fileHanderPattern;
         return getLoader();
