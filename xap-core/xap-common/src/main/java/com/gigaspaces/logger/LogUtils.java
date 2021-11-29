@@ -149,10 +149,6 @@ public class LogUtils {
         return sj.toString();
     }
 
-
-    /*
-     **
-     */
     public static int toSeverity(Level level) {
         switch (level.intValue()) {
             case SEVERE:

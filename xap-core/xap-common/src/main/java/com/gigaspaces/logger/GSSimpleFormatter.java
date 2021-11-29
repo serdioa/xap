@@ -184,7 +184,7 @@ public class GSSimpleFormatter extends Formatter {
         }
 
         if (patternIds[DEVICE_PRODUCT]) {
-            _args[DEVICE_PRODUCT] = RollingFileHandler.overrides.getProperty(RollingFileHandler.SERVICE_PROP);
+            _args[DEVICE_PRODUCT] = findContext();
         }
 
         if (patternIds[DEVICE_VERSION]) {
