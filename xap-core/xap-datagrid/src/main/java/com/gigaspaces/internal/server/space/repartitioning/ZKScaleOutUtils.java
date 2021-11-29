@@ -68,7 +68,7 @@ public class ZKScaleOutUtils {
         }
     }
 
-    public static boolean isScaleInProgress(AttributeStore attributeStore, String puName){
+    public static boolean isScaleInProgress(AttributeStore attributeStore, String puName){//include cancel status
        try {
            String status = getScaleOutMetaData(attributeStore, puName, "scale-status");
            if (status != null){
@@ -113,6 +113,29 @@ public class ZKScaleOutUtils {
         }
     }
 
+    public static Status getScaleStatus(AttributeStore attributeStore, String puName){
+        try {
+            String status = getScaleOutMetaData(attributeStore, puName, "scale-status");
+            return status != null? Status.convertToStatus(status): null;
+            /*if (status != null){
+                boolean isCanceled = checkIfScaleIsCanceled(attributeStore, puName);
+                if (Status.IN_PROGRESS.getStatus().equals(status) && isCanceled){
+
+                }
+
+                if (isCanceled) {
+
+                }
+                Status result =Status.convertToStatus(status);
+                if(Status.SUCCESS.equals(result) || Status.CANCELLED_SUCCESSFULLY.equals(result)){
+                    return result;
+                }
+            }*/
+        } catch (IOException e) {
+        }
+        return null;
+    }
+
     public static ClusterTopologyState getOldTopologyState(AttributeStore attributeStore, String puName) {
         try {
             return attributeStore.getObject(ZKScaleOutUtils.getScaleOutPath(puName) + "/old cluster topology state");
@@ -121,4 +144,36 @@ public class ZKScaleOutUtils {
             throw new UncheckedIOException("Failed to set cluster topology state for pu [" + puName + "]", e);
         }
     }
+
+    public static ScaleRequestInfo getScaleRequestInfoIfExist(AttributeStore attributeStore, String requestId,
+                                                              List<String> pusName){
+        for(String puName: pusName){
+            boolean isScaling = isScaleInProgress(attributeStore, puName);
+            if(isScaling){
+                try {
+                    if(requestId.equals(getScaleOutMetaData(attributeStore, puName, "requestId"))){
+                        ScaleRequestInfo scaleRequestInfo = new ScaleRequestInfo();
+                        scaleRequestInfo.setId(requestId);
+                        scaleRequestInfo.setCanceled(checkIfScaleIsCanceled(attributeStore, requestId));
+                        if (scaleRequestInfo.isCanceled()){
+                            scaleRequestInfo.setDescription("Cancelling horizontal scale request for processing unit [" + puName + "]");
+                        } else {
+                            scaleRequestInfo.setDescription("Scale partitions of processing unit [" + puName +"]");//todo- add cpu and memory
+                        }
+                        return scaleRequestInfo;
+                    }
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            } //todo- refer success and failure
+        }
+        return null;
+    }
+    /*public static List<String> getChildren(AttributeStore attributeStore,  String path) throws IOException {
+        try {
+            return attributeStore.getsharedClient.value().getChildren().forPath(path);
+        } catch (Exception e) {
+            throw new IOException(e);
+        }
+    }*/
 }
