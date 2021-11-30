@@ -35,9 +35,7 @@ import com.gigaspaces.metadata.index.SpaceIndexFactory;
 import com.gigaspaces.metadata.index.SpaceIndexType;
 import com.gigaspaces.query.extension.metadata.TypeQueryExtensions;
 import com.j_spaces.core.client.ExternalEntry;
-import com.j_spaces.core.client.MetaDataEntry;
 import com.j_spaces.kernel.ClassLoaderHelper;
-import net.jini.core.entry.Entry;
 
 import java.io.*;
 import java.util.*;
@@ -346,10 +344,6 @@ public class TypeDesc implements ITypeDesc {
 
         if (ExternalEntry.class.isAssignableFrom(_objectClass))
             return null;
-        if (MetaDataEntry.class.isAssignableFrom(_objectClass))
-            return new MetadataEntryIntrospector<>(this);
-        if (Entry.class.isAssignableFrom(_objectClass))
-            return new EntryIntrospector<>(this);
 
         return new PojoIntrospector<>(this);
     }
@@ -1480,10 +1474,6 @@ public class TypeDesc implements ITypeDesc {
                 return null;
             case PojoIntrospector.EXTERNALIZABLE_CODE:
                 return new PojoIntrospector();
-            case EntryIntrospector.EXTERNALIZABLE_CODE:
-                return new EntryIntrospector();
-            case MetadataEntryIntrospector.EXTERNALIZABLE_CODE:
-                return new MetadataEntryIntrospector();
             case ExternalEntryIntrospector.EXTERNALIZABLE_CODE:
                 return new ExternalEntryIntrospector();
             default:

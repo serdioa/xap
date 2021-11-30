@@ -17,9 +17,10 @@
 
 package org.openspaces.remoting;
 
+import com.gigaspaces.annotation.pojo.SpaceClass;
+import com.gigaspaces.annotation.pojo.SpaceId;
+import com.gigaspaces.annotation.pojo.SpaceRouting;
 import com.gigaspaces.serialization.SmartExternalizable;
-import com.j_spaces.core.client.IReplicatable;
-import com.j_spaces.core.client.MetaDataEntry;
 
 import java.io.IOException;
 import java.io.ObjectInput;
@@ -31,12 +32,11 @@ import java.util.Arrays;
  * result.
  *
  * @author kimchy
- * @deprecated
  */
-@Deprecated
-public class EventDrivenSpaceRemotingEntry extends MetaDataEntry implements SpaceRemotingEntry, SmartExternalizable, IReplicatable {
+@SpaceClass(persist = false)
+public class EventDrivenSpaceRemotingEntry implements SpaceRemotingEntry, SmartExternalizable {
 
-    static final long serialVersionUID = 7009426586658014410L;
+    static final long serialVersionUID = 1L;
     static int bitIndexCounter = 0;
     private static final int LOOKUP_NAME_BIT_MASK = 1 << bitIndexCounter++;
     private static final int METHOD_NAME_BIT_MASK = 1 << bitIndexCounter++;
@@ -48,37 +48,47 @@ public class EventDrivenSpaceRemotingEntry extends MetaDataEntry implements Spac
     private static final int EX_BIT_MASK = 1 << bitIndexCounter++;
     private static final int INSTANCE_ID_BIT_MASK = 1 << bitIndexCounter++;
 
+    private String uid;
 
-    public Boolean isInvocation;
+    private Boolean isInvocation;
 
-    public String lookupName;
+    private String lookupName;
 
-    public String methodName;
+    private String methodName;
 
-    public Object[] arguments;
+    private Object[] arguments;
 
-    public Object[] metaArguments;
+    private Object[] metaArguments;
 
-    public Boolean oneWay;
+    private Boolean oneWay;
 
-    public Integer routing;
+    private Integer routing;
 
-    public Object result;
+    private Object result;
 
-    public Throwable ex;
+    private Throwable ex;
 
-    public Integer instanceId;
+    private Integer instanceId;
 
     /**
      * Constructs a new Async remoting entry. By default a transient one witn that does not return a
      * lease. Also, by default, this is an invocation entry.
      */
     public EventDrivenSpaceRemotingEntry() {
-        setNOWriteLeaseMode(true);
-        makeTransient();
         setInvocation(Boolean.TRUE);
     }
 
+    @SpaceId(autoGenerate = true)
+    public String getUid() {
+        return uid;
+    }
+    public void setUid(String uid) {
+        this.uid = uid;
+    }
+
+    Boolean isInvocation() {
+        return isInvocation;
+    }
     public void setInvocation(Boolean invocation) {
         this.isInvocation = invocation;
     }
@@ -123,12 +133,15 @@ public class EventDrivenSpaceRemotingEntry extends MetaDataEntry implements Spac
         this.oneWay = oneWay;
     }
 
+    @SpaceRouting
     public Integer getRouting() {
         return routing;
     }
-
+    public void setRouting(Integer routing) {
+        this.routing = routing;
+    }
     public void setRouting(Object routing) {
-        this.routing = routing.hashCode();
+        setRouting(routing.hashCode());
     }
 
     public Object getResult() {
@@ -154,11 +167,6 @@ public class EventDrivenSpaceRemotingEntry extends MetaDataEntry implements Spac
     public void setInstanceId(Integer instanceId) {
         this.instanceId = instanceId;
     }
-
-    public static String[] __getSpaceIndexedFields() {
-        return new String[]{"routing"};
-    }
-
 
     public SpaceRemotingEntry buildInvocation(String lookupName, String methodName, Object[] arguments) {
         clearResultData();
@@ -207,9 +215,11 @@ public class EventDrivenSpaceRemotingEntry extends MetaDataEntry implements Spac
     }
 
     private void buildResultUID() {
+    /*
         if (__getEntryInfo() != null && __getEntryInfo().m_UID != null) {
             __getEntryInfo().m_UID += "Result";
         }
+    */
     }
 
     @Override
@@ -218,7 +228,6 @@ public class EventDrivenSpaceRemotingEntry extends MetaDataEntry implements Spac
     }
 
     public void writeExternal(ObjectOutput out) throws IOException {
-        super._writeExternal(out);
         short nullableFieldsBitMask = getNullableFieldsBitMask();
         out.writeShort(nullableFieldsBitMask);
         out.writeBoolean(isInvocation);
@@ -269,7 +278,6 @@ public class EventDrivenSpaceRemotingEntry extends MetaDataEntry implements Spac
     }
 
     public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        super._readExternal(in);
         short bitMask = in.readShort();
         isInvocation = in.readBoolean();
         if (isInvocation) {

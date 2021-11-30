@@ -130,8 +130,6 @@ public class SpaceTypeDescriptorBuilder {
             throw new IllegalArgumentException("Creating SpaceTypeDescriptor for enumerations is not supported.");
         if (type.isPrimitive())
             throw new IllegalArgumentException("Creating SpaceTypeDescriptor for primitive types is not supported.");
-        if (net.jini.core.entry.Entry.class.isAssignableFrom(type))
-            throw new IllegalArgumentException("Creating SpaceTypeDescriptor for types implementing 'net.jini.core.entry.Entry' is not supported.");
 
         Class<?> superType = type.getSuperclass();
         if (superType != null && superType.getName().equals(ROOT_TYPE_NAME))

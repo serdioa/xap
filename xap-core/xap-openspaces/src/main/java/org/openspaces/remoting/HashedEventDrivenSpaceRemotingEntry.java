@@ -22,18 +22,20 @@ import java.io.ObjectOutput;
 
 /**
  * @author kimchy (shay.banon)
- * @deprecated
  */
-@Deprecated
 public class HashedEventDrivenSpaceRemotingEntry extends EventDrivenSpaceRemotingEntry
         implements HashedSpaceRemotingEntry {
 
-    private static final long serialVersionUID = -6752531933557296453L;
+    private static final long serialVersionUID = 1L;
 
     public RemotingUtils.MethodHash methodHash;
 
     public RemotingUtils.MethodHash getMethodHash() {
         return methodHash;
+    }
+
+    public void setMethodHash(RemotingUtils.MethodHash methodHash) {
+        this.methodHash = methodHash;
     }
 
     public HashedSpaceRemotingEntry buildInvocation(String lookupName, String methodName, RemotingUtils.MethodHash methodHash, Object[] arguments) {

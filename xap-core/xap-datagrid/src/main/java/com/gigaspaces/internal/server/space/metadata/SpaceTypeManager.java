@@ -47,7 +47,6 @@ import com.j_spaces.core.client.SpaceURL;
 import com.j_spaces.core.exception.internal.DirectoryInternalSpaceException;
 import com.j_spaces.core.sadapter.SAException;
 import com.j_spaces.kernel.SystemProperties;
-import net.jini.core.entry.Entry;
 import net.jini.core.entry.UnusableEntryException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -608,8 +607,6 @@ public class SpaceTypeManager {
         switch (objectType) {
             case POJO:
                 return createPojoTypeDesc(obj.getClass(), null /*codebase*/);
-            case ENTRY:
-                return _typeDescFactory.createEntryTypeDesc((Entry) obj, obj.getClass().getName(), null /*codebase*/, obj.getClass());
             case DOCUMENT:
                 final String typeName = ((SpaceDocument) obj).getTypeName();
                 final Class<?> type = ClientTypeDescRepository.getRealClass(typeName, null /*codebase*/);

@@ -36,8 +36,6 @@ public interface SpaceRemotingEntry extends SpaceRemotingInvocation, SpaceRemoti
 
     void setOneWay(Boolean oneWay);
 
-    void setFifo(boolean isfifo);
-
     SpaceRemotingEntry buildResult(Object obj);
 
     SpaceRemotingEntry buildResult(Throwable e);

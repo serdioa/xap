@@ -21,7 +21,7 @@ package org.openspaces.remoting;
  * @since 8.0
  */
 public interface SpaceRemotingEntryFactory {
-    SpaceRemotingEntry createEntry();
+    SpaceRemotingEntry createEntry(boolean fifo);
 
-    HashedSpaceRemotingEntry createHashEntry();
+    HashedSpaceRemotingEntry createHashEntry(boolean fifo);
 }

@@ -19,12 +19,12 @@ package com.j_spaces.jdbc;
 import com.gigaspaces.client.WriteMultipleException;
 import com.gigaspaces.internal.client.spaceproxy.ISpaceProxy;
 import com.gigaspaces.internal.metadata.ITypeDesc;
+import com.gigaspaces.internal.server.space.SpaceUidFactory;
 import com.gigaspaces.security.authorities.SpaceAuthority.SpacePrivilege;
 import com.gigaspaces.security.service.SecurityContext;
 import com.j_spaces.core.IJSpace;
 import com.j_spaces.core.SpaceContext;
 import com.j_spaces.core.SpaceContextHelper;
-import com.j_spaces.core.client.ClientUIDHandler;
 import com.j_spaces.core.client.ExternalEntry;
 import com.j_spaces.jdbc.batching.BatchResponsePacket;
 import com.j_spaces.jdbc.driver.GPreparedStatement.PreparedValuesCollection;
@@ -110,7 +110,7 @@ public class InsertQuery extends AbstractDMLQuery {
                     if (literalNode.getValue() != null &&
                             (types[i].endsWith(".Blob") || types[i].endsWith(".Clob"))) {
                         if (myUid == null)
-                            myUid = ClientUIDHandler.createUIDFromName(String.valueOf(Math.random()), types[i]);
+                            myUid = SpaceUidFactory.createUidFromTypeAndId(types[i], String.valueOf(Math.random()));
 
                         ((ObjectWithUID) literalNode.getValue()).setEntryUID(myUid);
                         ((ObjectWithUID) literalNode.getValue()).setObjectIndex(i);
@@ -333,7 +333,7 @@ public class InsertQuery extends AbstractDMLQuery {
                     if (literalNode.getValue() != null &&
                             (types[i].endsWith(".Blob") || types[i].endsWith(".Clob"))) {
                         if (myUid == null)
-                            myUid = ClientUIDHandler.createUIDFromName(String.valueOf(Math.random()), types[i]);
+                            myUid = SpaceUidFactory.createUidFromTypeAndId(types[i], String.valueOf(Math.random()));
 
                         ((ObjectWithUID) literalNode.getValue()).setEntryUID(myUid);
                         ((ObjectWithUID) literalNode.getValue()).setObjectIndex(i);

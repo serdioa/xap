@@ -16,7 +16,6 @@
 
 package com.gigaspaces.internal.server.space.metadata;
 
-import com.gigaspaces.internal.metadata.EntryIntrospector;
 import com.gigaspaces.internal.metadata.ITypeDesc;
 import com.gigaspaces.internal.server.metadata.IServerTypeDesc;
 import com.gigaspaces.internal.server.metadata.InactiveTypeDesc;
@@ -237,10 +236,6 @@ public class ServerTypeDesc implements IServerTypeDesc {
             }
         }
         return target;
-    }
-
-    public static boolean isEntry(IServerTypeDesc typeDesc) {
-        return typeDesc.getTypeDesc().getIntrospector(null) instanceof EntryIntrospector;
     }
 
     @Override
