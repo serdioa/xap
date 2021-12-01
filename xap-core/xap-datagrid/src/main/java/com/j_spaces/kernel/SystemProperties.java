@@ -709,7 +709,7 @@ public class SystemProperties extends CommonSystemProperties {
     /**
      * The default indication for if the QueryCache inner implementation will be bounded or not
      */
-    public final static String ENABLE_BOUNDED_QUERY_CACHE_DEFAULT = "true";
+    public final static boolean ENABLE_BOUNDED_QUERY_CACHE_DEFAULT = true;
 
     /**
      * The bounded query cache size
