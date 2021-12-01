@@ -16,6 +16,7 @@
 
 package com.j_spaces.jdbc;
 
+import com.gigaspaces.internal.utils.GsEnv;
 import com.gigaspaces.internal.utils.collections.ConcurrentBoundedCache;
 import com.gigaspaces.internal.utils.collections.ConcurrentSoftCache;
 import com.j_spaces.kernel.SystemProperties;
@@ -34,7 +35,7 @@ public abstract class QueryCache {
 
     public static QueryCache create() {
         String val = System.getProperty(SystemProperties.ENABLE_BOUNDED_QUERY_CACHE);
-        boolean isCacheBounded = Boolean.parseBoolean(val != null ? val : SystemProperties.ENABLE_BOUNDED_QUERY_CACHE_DEFAULT);
+        boolean isCacheBounded = GsEnv.propertyBoolean(SystemProperties.ENABLE_BOUNDED_QUERY_CACHE).get(SystemProperties.ENABLE_BOUNDED_QUERY_CACHE_DEFAULT);
         if (isCacheBounded) {
             long upperBound = Long.getLong(SystemProperties.BOUNDED_QUERY_CACHE_SIZE, SystemProperties.BOUNDED_QUERY_CACHE_SIZE_DEFAULT);
             boolean warnWhenFull = val == null; // If implicit config, warn when full to ensure user's aware of potential problem
