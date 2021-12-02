@@ -17,18 +17,24 @@
 
 package com.gigaspaces.logger;
 
+import com.gigaspaces.internal.version.PlatformVersion;
+import com.gigaspaces.logger.cef.ESCAPE_SYMBOLS;
 import com.gigaspaces.lrmi.LRMIInvocationContext;
 
+import com.gigaspaces.start.SystemInfo;
 import org.jini.rio.boot.LoggableClassLoader;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+import java.nio.charset.StandardCharsets;
 import java.text.MessageFormat;
 import java.util.Date;
-import java.util.logging.Formatter;
-import java.util.logging.LogManager;
-import java.util.logging.LogRecord;
-import java.util.logging.Logger;
+import java.util.logging.*;
+
+import static com.gigaspaces.logger.LogUtils.toSeverity;
+import static com.gigaspaces.logger.cef.ESCAPE_SYMBOLS.quoteSpaces;
 
 /**
  * Print a brief summary of the LogRecord in a human readable messageFormat. This class is a
@@ -52,7 +58,12 @@ public class GSSimpleFormatter extends Formatter {
     final static int THREAD_ID = 8;
     final static int LRMI_INVOCATION_SHORT_CONTEXT = 9;
     final static int LRMI_INVOCATION_LONG_CONTEXT = 10;
-    final static int lastIndex = LRMI_INVOCATION_LONG_CONTEXT + 1;
+    final static int HOST = 11;
+    final static int DEVICE_PRODUCT = 12;
+    final static int DEVICE_VERSION = 13;
+    final static int SEVERITY = 14;
+    final static int EXTENSION = 15;
+    final static int lastIndex = EXTENSION + 1;
 
     private final static String defaultPattern = "{0,date,yyyy-MM-dd HH:mm:ss,SSS} {6} {3} [{4}] - {5}";
     private final MessageFormat messageFormat;
@@ -167,6 +178,30 @@ public class GSSimpleFormatter extends Formatter {
 
         if (patternIds[LRMI_INVOCATION_LONG_CONTEXT])
             _args[LRMI_INVOCATION_LONG_CONTEXT] = LRMIInvocationContext.getContextMethodLongDisplayString();
+
+        if (patternIds[HOST]) {
+            _args[HOST] = SystemInfo.singleton().network().getHostId();
+        }
+
+        if (patternIds[DEVICE_PRODUCT]) {
+            _args[DEVICE_PRODUCT] = findContext();
+        }
+
+        if (patternIds[DEVICE_VERSION]) {
+            _args[DEVICE_VERSION] = PlatformVersion.getVersion();
+        }
+
+        if (patternIds[SEVERITY]) {
+            _args[SEVERITY] = toSeverity(record.getLevel());
+        }
+
+        if (patternIds[EXTENSION]) {
+            String ext = " method=" + record.getSourceClassName() + "." + record.getSourceMethodName() + " " +
+                    "thread=" + record.getThreadID() + " " +
+                    "msg=" + quoteSpaces(formatMessage(record)) + " " +
+                    "LRMI=" + quoteSpaces(LRMIInvocationContext.getContextMethodLongDisplayString()) + " ";
+            _args[EXTENSION] = new String(ext.getBytes() , StandardCharsets.UTF_8);
+        }
     }
 
     private String findContext() {
@@ -183,4 +218,5 @@ public class GSSimpleFormatter extends Formatter {
         }
         return "";
     }
+
 }

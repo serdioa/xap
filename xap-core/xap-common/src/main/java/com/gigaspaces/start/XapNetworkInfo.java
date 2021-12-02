@@ -71,4 +71,15 @@ public class XapNetworkInfo {
     public boolean isPublicHostConfigured(){
         return publicHostConfigured;
     }
+
+    @Override
+    public String toString() {
+        return "XapNetworkInfo{" +
+                "hostId='" + hostId + '\'' +
+                ", host=" + host +
+                ", publicHost=" + publicHost +
+                ", publicHostId='" + publicHostId + '\'' +
+                ", publicHostConfigured=" + publicHostConfigured +
+                '}';
+    }
 }
