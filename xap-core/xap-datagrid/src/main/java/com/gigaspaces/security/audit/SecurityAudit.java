@@ -69,4 +69,8 @@ public interface SecurityAudit {
      * @param className       The class name on which to operate
      */
     void accessGranted(SecurityContext securityContext, SessionDetails sessionDetails, Privilege privilege, String className);
+
+    void operationsGranted(String operationsPath, String username, String session);
+
+    void operationsDenied(String operationsPath,  String username, String session);
 }
