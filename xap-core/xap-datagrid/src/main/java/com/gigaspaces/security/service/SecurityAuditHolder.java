@@ -6,17 +6,10 @@ import com.gigaspaces.security.audit.SecurityAudit;
 import java.util.Properties;
 
 public class SecurityAuditHolder {
-    private static volatile SecurityAudit securityAuditInstance;
+    public static final SecurityAudit INSTANCE = createSecurityAudit();
 
-    private SecurityAuditHolder() {
-    }
-
-    public static synchronized SecurityAudit getOrCreate(){
-        if(securityAuditInstance==null){
-            Properties securityProperties = SecurityFactory.loadComponentSecurityProperties("grid", false);
-            securityProperties.putAll(new Properties());
-            securityAuditInstance = SecurityAuditFactory.createSecurityAudit(securityProperties);
-        }
-        return securityAuditInstance;
+    private static SecurityAudit createSecurityAudit() {
+        Properties securityProperties = SecurityFactory.loadComponentSecurityProperties("grid", false);
+        return SecurityAuditFactory.createSecurityAudit(securityProperties);
     }
 }
