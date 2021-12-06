@@ -9,15 +9,6 @@
     <dependencySets>
         <dependencySet>
             <useProjectArtifact>false</useProjectArtifact>
-            <outputDirectory>product/lib/optional/cassandra</outputDirectory>
-            <includes>
-                <include>org.gigaspaces:xap-cassandra</include>
-            </includes>
-            <outputFileNameMapping>${artifact.artifactId}.${artifact.extension}</outputFileNameMapping>
-        </dependencySet>
-
-        <dependencySet>
-            <useProjectArtifact>false</useProjectArtifact>
             <outputDirectory>product/lib/optional/groovy</outputDirectory>
             <includes>
                 <include>org.gigaspaces:xap-groovy</include>

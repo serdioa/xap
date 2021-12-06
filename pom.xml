@@ -57,7 +57,6 @@
         <module>xap-extensions/xap-spatial</module>
         <module>xap-extensions/xap-mongodb</module>
         <module>xap-extensions/xap-blueprints</module>
-        <module>xap-extensions/xap-cassandra</module>
         <module>xap-extensions/xap-metrics-influxdb</module>
         <module>xap-extensions/xap-metrics-hsqldb</module>
         <module>xap-extensions/xap-groovy</module>
@@ -196,12 +195,6 @@
             <dependency>
                 <groupId>org.gigaspaces</groupId>
                 <artifactId>xap-blueprints</artifactId>
-                <version>${project.version}</version>
-                <scope>${xap.dep.scope}</scope>
-            </dependency>
-            <dependency>
-                <groupId>org.gigaspaces</groupId>
-                <artifactId>xap-cassandra</artifactId>
                 <version>${project.version}</version>
                 <scope>${xap.dep.scope}</scope>
             </dependency>
