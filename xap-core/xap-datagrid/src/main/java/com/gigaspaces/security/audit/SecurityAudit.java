@@ -21,6 +21,7 @@ import com.gigaspaces.security.AuthenticationToken;
 import com.gigaspaces.security.authorities.Privilege;
 import com.gigaspaces.security.service.SecurityContext;
 import com.gigaspaces.security.session.SessionDetails;
+import java.util.Map;
 
 /**
  * Security auditing interface
@@ -70,7 +71,7 @@ public interface SecurityAudit {
      */
     void accessGranted(SecurityContext securityContext, SessionDetails sessionDetails, Privilege privilege, String className);
 
-    void operationsGranted(String operationsPath, String username, String session);
+    void operationsGranted(String operationsMethod, String operationsPath, Map<String, String[]> parameterMap, String username, String session, int httpStatus);
 
-    void operationsDenied(String operationsPath,  String username, String session);
+    void operationsDenied(String operationsMethod, String operationsPath, Map<String, String[]> parameterMap, String username, String session, int httpStatus);
 }
