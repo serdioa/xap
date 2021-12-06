@@ -136,7 +136,7 @@ public class GSSimpleFormatter extends Formatter {
         return text.toString();
     }
 
-    private void setArgsWithRecordData(LogRecord record) {
+    protected void setArgsWithRecordData(LogRecord record) {
 
         if (patternIds[DATE_TIME]) {
             _date.setTime(record.getMillis());
@@ -196,12 +196,16 @@ public class GSSimpleFormatter extends Formatter {
         }
 
         if (patternIds[EXTENSION]) {
-            String ext = " method=" + record.getSourceClassName() + "." + record.getSourceMethodName() + " " +
-                    "thread=" + record.getThreadID() + " " +
-                    "msg=" + quoteSpaces(formatMessage(record)) + " " +
-                    "LRMI=" + quoteSpaces(LRMIInvocationContext.getContextMethodLongDisplayString()) + " ";
+            String ext = setArgsWithRecordExtension(record);
             _args[EXTENSION] = new String(ext.getBytes() , StandardCharsets.UTF_8);
         }
+    }
+
+    public String setArgsWithRecordExtension(LogRecord record) {
+         return " method=" + record.getSourceClassName() + "." + record.getSourceMethodName() + " " +
+                "thread=" + record.getThreadID() + " " +
+                "msg=" + quoteSpaces(formatMessage(record)) + " " +
+                "LRMI=" + quoteSpaces(LRMIInvocationContext.getContextMethodLongDisplayString()) + " ";
     }
 
     private String findContext() {
