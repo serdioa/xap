@@ -210,7 +210,6 @@ public class DocumentProperties implements Map<String, Object>, Externalizable {
     public void writeExternal(ObjectOutput out)
             throws IOException {
         final int size = _map.size();
-        System.out.println("Writing DocumentProperties - size: " + size + ", id: " + System.identityHashCode(this));
         out.writeInt(size);
         if (size != 0)
             SerializationProcedure.execute(_map, out);
