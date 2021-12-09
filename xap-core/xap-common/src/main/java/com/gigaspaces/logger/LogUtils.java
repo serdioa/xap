@@ -154,17 +154,17 @@ public class LogUtils {
             case SEVERE:
                 return 9;
             case WARNING:
-                return 5;
-            case INFO:
                 return 4;
-            case CONFIG:
-                return 3;
-            case FINE:
-                return 2;
-            case FINER:
-                return 1;
-            default:
+            case INFO:
                 return 0;
+            case CONFIG:
+                return 0;
+            case FINE:
+                return 0;
+            case FINER:
+                return 0;
+            default:
+                return 8;
         }
     }
 }
