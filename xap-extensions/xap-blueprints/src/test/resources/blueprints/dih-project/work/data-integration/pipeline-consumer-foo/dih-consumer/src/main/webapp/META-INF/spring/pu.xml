@@ -21,6 +21,8 @@
         <constructor-arg value="${kafka.topic}" />
         <constructor-arg value="${kafka.message.command.class}" />
         <constructor-arg value="${kafka.message.validate.class}" />
+        <constructor-arg value="${kafka.max-poll-records}" />
+        <constructor-arg value="${kafka.receive-buffer-config}" />
     </bean>
 
 
