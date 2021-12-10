@@ -193,17 +193,20 @@ public class MetricSampler implements Closeable {
             buffer.add(snapshot);
 
             if (buffer.size() == batchSize) {
+                ExecutorService executor = Executors.newFixedThreadPool(batchSize);
                 for (MetricReporter reporter : reporters) {
-                    long startTime = 0;
-                    if (logger.isTraceEnabled()) {
-                        startTime = System.currentTimeMillis();
-                        logger.trace("Starting buffer report via " + reporter.toString());
+                    SamplerReporter samplerReporter = new SamplerReporter(buffer, reporter);
+                    executor.execute(samplerReporter);
+                }
+
+                executor.shutdown();
+                try {
+                    if (!executor.awaitTermination(8000, TimeUnit.MILLISECONDS)) {
+                        executor.shutdownNow();
                     }
-                    reporter.report(buffer);
-                    if (logger.isTraceEnabled()) {
-                        long duration = System.currentTimeMillis() - startTime;
-                        logger.trace("Finished buffer report via " + reporter.toString() + "[duration=" + duration + "ms]");
-                    }
+                } catch (InterruptedException e) {
+                    executor.shutdownNow();
+                    logger.warn("ExecutorService was shutdown with InterruptedException: " + e.getMessage());
                 }
                 buffer.clear();
             }
@@ -211,6 +214,30 @@ public class MetricSampler implements Closeable {
             if (logger.isTraceEnabled()) {
                 final long duration = System.currentTimeMillis() - sampleTime;
                 logger.trace("Sample completed [duration=" + duration + "ms]");
+            }
+        }
+    }
+
+    private class SamplerReporter implements Runnable {
+        private final List<MetricRegistrySnapshot> buffer;
+        private final MetricReporter reporter;
+
+        SamplerReporter(List<MetricRegistrySnapshot> buffer, MetricReporter reporter) {
+            this.buffer = buffer;
+            this.reporter = reporter;
+        }
+
+        @Override
+        public void run() {
+            long startTime = 0;
+            if (logger.isTraceEnabled()) {
+                startTime = System.currentTimeMillis();
+                logger.trace("Starting buffer report via " + reporter.toString());
+            }
+            reporter.report(buffer);
+            if (logger.isTraceEnabled()) {
+                long duration = System.currentTimeMillis() - startTime;
+                logger.trace("Finished buffer report via " + reporter.toString() + "[duration=" + duration + "ms]");
             }
         }
     }
