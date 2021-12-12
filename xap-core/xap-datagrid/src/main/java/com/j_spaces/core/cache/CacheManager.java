@@ -1441,7 +1441,8 @@ public class CacheManager extends AbstractCacheManager
             }
         } else {//(isTieredStorage() && !context.isRAMEntry())
             pE = EntryCacheInfoFactory.createEntryCacheInfo(entryHolder);
-            context.setWriteResult(new WriteEntryResult(pE.getUID(), 0, 0));
+            //lease in TieredStorage is not supported. result contains persistent entry values.
+            context.setWriteResult(new WriteEntryResult(pE.getUID(), pE.getVersion(), pE.getExpirationTime()));
         }
 
         if (pE == _entryAlreadyInSpaceIndication) {
