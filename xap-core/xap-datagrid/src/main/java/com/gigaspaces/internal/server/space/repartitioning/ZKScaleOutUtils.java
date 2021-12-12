@@ -83,7 +83,7 @@ public class ZKScaleOutUtils {
         try {
             String status = getScaleOutMetaData(attributeStore, puName, "scale-status");
             if (status != null){
-                Status result =Status.convertToStatus(status);
+                Status result = Status.convertToStatus(status);
                 if(Status.SUCCESS.equals(result) || Status.CANCELLED_SUCCESSFULLY.equals(result)){
                     return result;
                 }

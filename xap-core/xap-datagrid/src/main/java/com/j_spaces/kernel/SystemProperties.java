@@ -792,13 +792,17 @@ public class SystemProperties extends CommonSystemProperties {
     public static final String MANAGER_REST_REQUESTS_MAX_RUNNING = "com.gs.manager.rest.max-running-requests";
     public static final String MANAGER_REST_REQUESTS_MAX_COMPLETED = "com.gs.manager.rest.max-completed-requests";
     public static final String MANAGER_REST_PLUGINS_PATH = "com.gs.manager.rest.plugins.path";
-    public static final String MANAGER_REST_REQUESTS_CURATOR_SHARED_COUNT_ENABLED = "com.gs.manager.rest.enable-requests-curator-shared-count";
+    public static final String MANAGER_REST_REQUESTS_GLOBAL_COUNTER_DISABLED = "com.gs.manager.rest.disable-global-counter";
 
     public static final String SPARK_REST_REQUEST_TIMEOUT = "com.gs.manager.rest.spark.request-timeout";
     public static final String SPARK_REST_REQUEST_TIMEOUT_DEFAULT = "10000";
 
     public static final String MANAGER_ZOOKEEPER_DISCOVERY_PORT = "com.gs.manager.zookeeper.discovery.port";
     public static final String MANAGER_ZOOKEEPER_LEADER_ELECTION_PORT = "com.gs.manager.zookeeper.leader-election.port";
+    public static final String MANAGER_GLOBAL_COUNTER_RETRY_POLICY_MAX_RETRIES = "com.gs.manager.zookeeper.global-counter-max-retries";
+    public static final int MANAGER_GLOBAL_COUNTER_RETRY_POLICY_MAX_RETRIES_DEFAULT = 3;
+    public static final String MANAGER_GLOBAL_COUNTER_RETRY_POLICY_INTERVAL_MS_BETWEEN_RETRIES = "com.gs.manager.zookeeper.interval-between-retries";
+    public static final int MANAGER_GLOBAL_COUNTER_RETRY_POLICY_INTERVAL_MS_BETWEEN_RETRIES_DEFAULT = 500;
 
     public static final String MANAGER_ADMIN_WITH_STATISTICS_HISTORY = "com.gs.admin.with-stats-history";
     public static final String MANAGER_ADMIN_DISCOVER_UN_MANAGED_SPACES = "com.gs.admin.discover-un-managed-spaces";
