@@ -19,9 +19,10 @@ import com.j_spaces.jdbc.builder.range.*;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.sql.*;
-import java.sql.Date;
 import java.time.*;
 import java.util.*;
+
+import static com.j_spaces.core.Constants.TieredStorage.VERSION_DB_FIELD_NAME;
 
 
 public class SqliteUtils {
@@ -210,17 +211,18 @@ public class SqliteUtils {
     }
 
     public static String getPropertyType(String typeName) {
-        if (!sqlTypesMap.containsKey(typeName)) {
+        final String propertyType = sqlTypesMap.get(typeName);
+        if (propertyType == null) {
             throw new IllegalArgumentException("cannot map non trivial type " + typeName);
         }
-        return sqlTypesMap.get(typeName);
+        return propertyType;
     }
 
     public static Object getPropertyValue(ResultSet resultSet, Class<?> propertyType, int index) throws SQLException {
-        if (!sqlExtractorsMap.containsKey(propertyType.getName())) {
+        final ExtractFunction extractFunction = sqlExtractorsMap.get(propertyType.getName());
+        if (extractFunction == null) {
             throw new IllegalArgumentException("cannot map non trivial type " + propertyType.getName());
         }
-        final ExtractFunction extractFunction = sqlExtractorsMap.get(propertyType.getName());
         Object value = extractFunction.extract(resultSet, index);
         if(resultSet.wasNull()){
             return null;
@@ -228,20 +230,22 @@ public class SqliteUtils {
         return value;
     }
 
-
+    public static int getVersionValue(ResultSet resultSet) throws SQLException {
+        return resultSet.getInt(VERSION_DB_FIELD_NAME);
+    }
 
     public static void setPropertyValue(boolean isUpdate, PreparedStatement statement, Class<?> propertyType, int index, Object value) throws SQLException {
-        if (!sqlInjectorsMap.containsKey(propertyType.getName())) {
+        final InjectFunction injectFunction = sqlInjectorsMap.get(propertyType.getName());
+        if (injectFunction == null) {
             throw new IllegalArgumentException("cannot map non trivial type " + propertyType.getName());
         }
         if (value == null) {
             if (isUpdate) {
-                statement.setObject(index, value);
+                statement.setObject(index, null);
             } else {
                 statement.setString(index, "Null");
             }
         } else {
-            final InjectFunction injectFunction = sqlInjectorsMap.get(propertyType.getName());
             injectFunction.inject(statement, index, value);
         }
     }

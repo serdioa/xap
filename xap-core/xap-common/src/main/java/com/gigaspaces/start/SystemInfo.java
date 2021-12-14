@@ -30,6 +30,7 @@ import net.jini.core.discovery.LookupLocator;
 
 import java.net.MalformedURLException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.StringTokenizer;
 
@@ -200,6 +201,16 @@ public class SystemInfo {
         private static String setSystemProperty(String key, String value) {
             return value != null ? System.setProperty(key, value) : System.clearProperty(key);
         }
+
+        @Override
+        public String toString() {
+            return "XapLookup{" +
+                    "groups='" + groups + '\'' +
+                    ", groupsArray=" + Arrays.toString(groupsArray) +
+                    ", locators='" + locators + '\'' +
+                    ", locatorsArray=" + Arrays.toString(locatorsArray) +
+                    '}';
+        }
     }
 
     public static class XapOperatingSystem {
@@ -217,6 +228,15 @@ public class SystemInfo {
 
         public boolean isWindows() {
             return isWindows;
+        }
+
+        @Override
+        public String toString() {
+            return "XapOperatingSystem{" +
+                    "processId=" + processId +
+                    ", username='" + username + '\'' +
+                    ", isWindows=" + isWindows +
+                    '}';
         }
     }
 
@@ -260,5 +280,17 @@ public class SystemInfo {
         public long timeMillis() {
             return _timeProvider.timeMillis();
         }
+    }
+
+    @Override
+    public String toString() {
+        return "SystemInfo{" +
+                "lookup=" + lookup +
+                ", network=" + network +
+                ", os=" + os +
+                ", timeProvider=" + timeProvider +
+                ", managerClusterInfo=" + managerClusterInfo +
+                ", kubernetesClusterInfo=" + kubernetesClusterInfo +
+                '}';
     }
 }

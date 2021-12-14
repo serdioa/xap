@@ -22,7 +22,6 @@ package com.j_spaces.core;
 
 import com.gigaspaces.internal.lease.SpaceEntryLease;
 import com.gigaspaces.serialization.SmartExternalizable;
-import com.j_spaces.core.client.EntryInfo;
 
 import net.jini.core.lease.Lease;
 import net.jini.core.lease.LeaseMap;
@@ -183,10 +182,6 @@ public class LeaseInitializer {
 
     public static LeaseContext<?> createDummyLease(String uid, int version, Object obj) {
         return new UpdateContextLease(uid, version, obj);
-    }
-
-    public static EntryInfo getEntryInfo(LeaseContext<?> lease) {
-        return new EntryInfo(lease.getUID(), 1);
     }
 
     public static boolean isDummyLease(LeaseContext<?> lease) {

@@ -21,8 +21,6 @@ import com.gigaspaces.document.SpaceDocument;
 import com.gigaspaces.internal.client.spaceproxy.IDirectSpaceProxy;
 import com.gigaspaces.internal.metadata.*;
 import com.gigaspaces.internal.metadata.converter.ConversionException;
-import com.gigaspaces.internal.reflection.IField;
-import com.gigaspaces.internal.reflection.ReflectionUtil;
 import com.gigaspaces.internal.utils.StringUtils;
 import com.gigaspaces.metadata.SpaceMetadataException;
 import com.gigaspaces.metadata.StorageType;
@@ -32,11 +30,7 @@ import com.gigaspaces.metadata.index.SpacePropertyIndex;
 import com.gigaspaces.query.extension.metadata.TypeQueryExtensions;
 import com.gigaspaces.query.extension.metadata.impl.TypeQueryExtensionsImpl;
 import com.j_spaces.core.client.ExternalEntry;
-import com.j_spaces.core.client.IReplicatable;
-import com.j_spaces.core.client.MetaDataEntry;
 import com.j_spaces.core.client.ReadModifiers;
-
-import net.jini.core.entry.Entry;
 
 import java.io.Externalizable;
 import java.lang.reflect.InvocationTargetException;
@@ -130,67 +124,6 @@ public class TypeDescFactory {
 
     private static boolean shouldWarnExternalizable(SpaceTypeInfo typeInfo) {
         return true;
-    }
-
-    public ITypeDesc createEntryTypeDesc(Entry obj, String className, String codeBase, Class<?> realClass) {
-        /**
-         * Build up the per-field and superclass information through
-         * the reflection API.  These variables are declared here so
-         * they can be used in the catch clause.
-         **/
-        final List<IField> fieldsList = ReflectionUtil.getCanonicalSortedFields(realClass);
-        final IField<?, ?>[] fields = fieldsList.toArray(new IField[fieldsList.size()]);
-        final int length = fields.length;
-        final PropertyInfo[] properties = new PropertyInfo[length];
-        final String[] fieldsNames = new String[length];
-        final String[] fieldsTypes = new String[length];
-        final SpaceIndexType[] fieldsIndexes = new SpaceIndexType[length];
-
-        for (int i = 0; i < length; i++) {
-            fieldsNames[i] = fields[i].getName();
-            fieldsTypes[i] = fields[i].getType().getName();
-            properties[i] = PropertyInfo.builder(fields[i].getName())
-                    .type(fields[i].getType())
-                    .defaultStorageType(_storageType)
-                    .build();
-        }
-        final String defaultPropertyName = getEntryIndices(realClass, fieldsNames, fieldsTypes, fieldsIndexes);
-
-        final Map<String, SpaceIndex> indexes = new HashMap<String, SpaceIndex>();
-        for (int i = 0; i < length; i++) {
-            if (fieldsIndexes[i] != null && fieldsIndexes[i].isIndexed()) {
-                SpaceIndex index = new SpacePropertyIndex(properties[i].getName(), fieldsIndexes[i], false, i);
-                indexes.put(index.getName(), index);
-            }
-        }
-
-        // Generate super types names array:
-        ArrayList<String> superClassesList = new ArrayList<String>();
-        for (Class<?> c = realClass; c != null; c = c.getSuperclass())
-            superClassesList.add(c.getName());
-        final String[] superClasses = superClassesList.toArray(new String[superClassesList.size()]);
-
-        // Check if fifo:
-        FifoSupport fifoMode = FifoSupport.OFF;
-        if (MetaDataEntry.class.isAssignableFrom(realClass)) {
-            boolean isFifo = (obj != null && ((MetaDataEntry) obj).isFifo()) || isFifoProxy() || isFifoProxyModifiers();
-            fifoMode = isFifo ? FifoSupport.OPERATION : FifoSupport.OFF;
-        }
-        if (isFifoProxy())
-            fifoMode = FifoSupport.ALL;
-
-        final boolean supportsDynamicProperties = false;
-        final boolean isSystemType = false;
-        final boolean replicable = IReplicatable.class.isAssignableFrom(realClass);
-        final List<String> idPropertiesNames = Collections.emptyList();
-        final boolean idAutoGenerate = false;
-        final String routingPropertyName = null;
-
-        return new TypeDesc(className, codeBase, superClasses, properties, supportsDynamicProperties,
-                indexes, idPropertiesNames, idAutoGenerate, defaultPropertyName, routingPropertyName, null, null, isSystemType,
-                fifoMode, replicable, isVersionedProxy(), _storageType,
-                EntryType.OBJECT_JAVA, realClass, ExternalEntry.class, SpaceDocument.class, null, DotNetStorageType.NULL,
-                PojoDefaults.BLOBSTORE_ENABLED, null /*sequence number*/, null, null, PojoDefaults.BROADCAST);
     }
 
     public ITypeDesc createExternalEntryTypeDesc(ExternalEntry externalEntry, String codeBase) {

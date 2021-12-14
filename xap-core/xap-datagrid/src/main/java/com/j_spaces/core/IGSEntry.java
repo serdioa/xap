@@ -126,7 +126,6 @@ public interface IGSEntry extends Serializable {
      * Check if replicatable, applicable only when used with partial replication.
      *
      * @return <code>true</code> if this entry is replicatable.
-     * @see com.j_spaces.core.client.IReplicatable
      */
     boolean isReplicatable();
 

@@ -284,7 +284,7 @@ public class EventDrivenSpaceRemotingProxyFactoryBean extends RemoteAccessor imp
             }
         }
 
-        SpaceRemotingEntry remotingEntry = remotingEntryFactory.createHashEntry().buildInvocation(lookupName, methodName,
+        SpaceRemotingEntry remotingEntry = remotingEntryFactory.createHashEntry(localFifo).buildInvocation(lookupName, methodName,
                 methodHashLookup.get(methodInvocation.getMethod()), methodInvocation.getArguments());
 
         remotingEntry.setRouting(RemotingProxyUtils.computeRouting(remotingEntry, localRoutingHandler, methodInvocation));
@@ -301,7 +301,6 @@ public class EventDrivenSpaceRemotingProxyFactoryBean extends RemoteAccessor imp
                 remotingEntry.setOneWay(Boolean.TRUE);
             }
         }
-        remotingEntry.setFifo(localFifo);
 
         gigaSpace.write(remotingEntry);
 

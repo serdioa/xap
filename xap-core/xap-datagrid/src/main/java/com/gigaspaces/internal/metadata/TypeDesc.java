@@ -35,9 +35,7 @@ import com.gigaspaces.metadata.index.SpaceIndexFactory;
 import com.gigaspaces.metadata.index.SpaceIndexType;
 import com.gigaspaces.query.extension.metadata.TypeQueryExtensions;
 import com.j_spaces.core.client.ExternalEntry;
-import com.j_spaces.core.client.MetaDataEntry;
 import com.j_spaces.kernel.ClassLoaderHelper;
-import net.jini.core.entry.Entry;
 
 import java.io.*;
 import java.util.*;
@@ -219,41 +217,10 @@ public class TypeDesc implements ITypeDesc {
     }
 
     public TypeDesc cloneWithoutObjectClass(EntryType entryType ) {
-
-        TypeDesc newTypeDesc = new TypeDesc();
+        TypeDesc newTypeDesc =  (TypeDesc) this.clone();
         newTypeDesc._objectType = entryType;
-
-        newTypeDesc._typeName = this.getTypeName();
-        newTypeDesc._codeBase = this.getCodeBase();
-        newTypeDesc._superTypesNames = this.getSuperClassesNames();
-        newTypeDesc._fixedProperties = this.getProperties();
-        newTypeDesc._supportsDynamicProperties = this.supportsDynamicProperties();
-        newTypeDesc._indexes = this.getIndexes();
-        newTypeDesc._idPropertiesNames = this._idPropertiesNames;
-        newTypeDesc._autoGenerateId = this.isAutoGenerateId();
-        newTypeDesc._documentWrapperClassName = this.getDocumentWrapperClassName();
-        newTypeDesc._dotnetDocumentWrapperTypeName = this.getDotnetDocumentWrapperTypeName();
-        newTypeDesc._dotnetDynamicPropertiesStorageType = this.getDotnetDynamicPropertiesStorageType();
-        newTypeDesc._defaultPropertyName = this.getDefaultPropertyName();
-        newTypeDesc._routingPropertyName = this.getRoutingPropertyName();
-        newTypeDesc._fifoGroupingName = this.getFifoGroupingPropertyPath();
-        newTypeDesc._fifoGroupingIndexes = this.getFifoGroupingIndexesPaths();
-
-        newTypeDesc._systemType = this.isSystemType();
-        newTypeDesc._fifoSupport = this.getFifoSupport();
-        newTypeDesc._replicable = this.isReplicable();
-        newTypeDesc._supportsOptimisticLocking = this.supportsOptimisticLocking();
-        newTypeDesc._storageType = this.getStorageType();
-
-        newTypeDesc._externalEntryWrapperClass = this.getExternalEntryWrapperClass();
-        newTypeDesc._blobstoreEnabled = this.isBlobstoreEnabled();
-        newTypeDesc.queryExtensionsInfo = this.getQueryExtensions();
-        newTypeDesc._broadcast = this.isBroadcast();
-        newTypeDesc.classBinaryStorageAdapter = this.getClassBinaryStorageAdapter();
-        newTypeDesc._sequenceNumberFixedPropertyPos = this._sequenceNumberFixedPropertyPos;
-
-        newTypeDesc.initializeV9_0_0();
-
+        newTypeDesc._objectClass = null;
+        newTypeDesc._objectIntrospector = null;
         return newTypeDesc;
     }
 
@@ -346,10 +313,6 @@ public class TypeDesc implements ITypeDesc {
 
         if (ExternalEntry.class.isAssignableFrom(_objectClass))
             return null;
-        if (MetaDataEntry.class.isAssignableFrom(_objectClass))
-            return new MetadataEntryIntrospector<>(this);
-        if (Entry.class.isAssignableFrom(_objectClass))
-            return new EntryIntrospector<>(this);
 
         return new PojoIntrospector<>(this);
     }
@@ -1480,10 +1443,6 @@ public class TypeDesc implements ITypeDesc {
                 return null;
             case PojoIntrospector.EXTERNALIZABLE_CODE:
                 return new PojoIntrospector();
-            case EntryIntrospector.EXTERNALIZABLE_CODE:
-                return new EntryIntrospector();
-            case MetadataEntryIntrospector.EXTERNALIZABLE_CODE:
-                return new MetadataEntryIntrospector();
             case ExternalEntryIntrospector.EXTERNALIZABLE_CODE:
                 return new ExternalEntryIntrospector();
             default:

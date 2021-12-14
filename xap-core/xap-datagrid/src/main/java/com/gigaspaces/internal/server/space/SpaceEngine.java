@@ -856,7 +856,6 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
                     && serverTypeDesc.getTypeDesc().getIdPropertiesNames().isEmpty()
                     && !serverTypeDesc.getTypeDesc().isAutoGenerateId()
                     && serverTypeDesc.getTypeDesc().getObjectType() != EntryType.EXTERNAL_ENTRY
-                    && !ServerTypeDesc.isEntry(serverTypeDesc)
                     && !ProtectiveMode.shouldIgnoreTypeWithoutIdProtectiveMode(serverTypeDesc.getTypeName()))
                 throw new ProtectiveModeException("Cannot introduce a type named '"
                         + serverTypeDesc.getTypeName()

@@ -31,7 +31,7 @@ import org.slf4j.LoggerFactory;
 
 
 /**
- * This class represents an {@link net.jini.core.entry.Entry Entry} in a GigaSpace. Each instance of
+ * This class represents an entry in a GigaSpace. Each instance of
  * this class contains a reference to the Entry value plus any other necessary info about the entry;
  * including its class name, field types, and field values (could be in a {@link
  * java.rmi.MarshalledObject MarshalledObject} form).
