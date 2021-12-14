@@ -282,9 +282,8 @@ public class SpaceRemotingServiceExporter implements SpaceDataEventListener<Spac
      * SpaceRemotingEntry}.
      */
     public Object getTemplate() {
-        SpaceRemotingEntry remotingEntry = remotingEntryFactory.createEntry();
+        SpaceRemotingEntry remotingEntry = remotingEntryFactory.createEntry(fifo);
         remotingEntry.setInvocation(Boolean.TRUE);
-        remotingEntry.setFifo(fifo);
         remotingEntry.setLookupName(templateLookupName);
         if (logger.isDebugEnabled()) {
             logger.debug("Registering async remoting service template [" + remotingEntry + "]");

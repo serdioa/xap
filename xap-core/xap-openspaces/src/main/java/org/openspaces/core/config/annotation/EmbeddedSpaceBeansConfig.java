@@ -15,6 +15,7 @@
  */
 package org.openspaces.core.config.annotation;
 
+import com.gigaspaces.internal.server.space.tiered_storage.TieredStorageConfig;
 import com.gigaspaces.start.ClasspathBuilder;
 import org.jini.rio.boot.ServiceClassLoader;
 import org.openspaces.core.space.AbstractSpaceFactoryBean;
@@ -25,6 +26,8 @@ import org.springframework.core.env.Environment;
 import org.springframework.core.env.PropertyResolver;
 
 import javax.annotation.Resource;
+
+import static com.j_spaces.core.Constants.TieredStorage.SPACE_TIERED_STORAGE_ENABLED;
 
 /**
  * @author Niv Ingberg
@@ -44,6 +47,9 @@ public class EmbeddedSpaceBeansConfig extends AbstractSpaceBeansConfig {
     @Value("${space.mirrored:false}")
     private boolean mirrored;
 
+    @Value("${"+SPACE_TIERED_STORAGE_ENABLED+":false}")
+    private boolean tieredStorage;
+
     @Resource
     private Environment environment;
 
@@ -60,6 +66,9 @@ public class EmbeddedSpaceBeansConfig extends AbstractSpaceBeansConfig {
             factoryBean.setSecured(secured);
         if (mirrored)
             factoryBean.setMirrored(mirrored);
+        if (tieredStorage) {
+            factoryBean.setTieredStorageConfig(new TieredStorageConfig());
+        }
         for (CustomConfigurer customConfigurer : customConfigurers) {
             customConfigurer.configureIfNeeded(factoryBean, environment);
         }

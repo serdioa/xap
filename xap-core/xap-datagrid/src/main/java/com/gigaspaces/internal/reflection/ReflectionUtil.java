@@ -16,11 +16,8 @@
 
 package com.gigaspaces.internal.reflection;
 
-import com.gigaspaces.internal.jvm.JavaUtils;
 import com.gigaspaces.internal.metadata.SpaceTypeInfo;
 import com.gigaspaces.internal.reflection.standard.StandardReflectionFactory;
-
-import net.jini.core.entry.Entry;
 
 import java.lang.reflect.*;
 import java.util.*;
@@ -204,32 +201,6 @@ public class ReflectionUtil {
 
     public static void assertHasDefaultConstructor(Class<?> type) {
         getDefaultConstructor(type);
-    }
-
-    /**
-     * Check if the Object is pojo
-     *
-     * @param object the object
-     * @return true if the object is pojo otherwise false
-     */
-    public static boolean isPojo(Object object) {
-        if (object == null)
-            return false;
-
-        if (object instanceof Object[]) {
-            if (object instanceof Entry[])
-                return false;
-            if (Array.getLength(object) == 0)
-                return false;
-            // check the first value, if it is entry, then we assume that the rest
-            // are entries
-            // and no need for conversion
-            Object value = Array.get(object, 0);
-            if (value == null || value instanceof Entry)
-                return false;
-        } else if (object instanceof Entry)
-            return false;
-        return true;
     }
 
     public static boolean isProxyClass(Class<?> clz) {

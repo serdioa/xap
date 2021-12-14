@@ -18,10 +18,10 @@ package com.gigaspaces.internal.client.spaceproxy.actioninfo;
 
 import com.gigaspaces.internal.client.spaceproxy.ISpaceProxy;
 import com.gigaspaces.internal.client.spaceproxy.metadata.ObjectType;
+import com.gigaspaces.internal.server.space.SpaceUidFactory;
 import com.gigaspaces.internal.transport.AbstractProjectionTemplate;
 import com.gigaspaces.internal.transport.ITemplatePacket;
 import com.gigaspaces.logger.Constants;
-import com.j_spaces.core.client.ClientUIDHandler;
 import com.j_spaces.core.client.Modifiers;
 import com.j_spaces.core.client.ReadModifiers;
 import com.j_spaces.core.client.SQLQuery;
@@ -72,7 +72,7 @@ public abstract class QueryProxyActionInfo extends CommonProxyActionInfo {
         if (query instanceof Envelope) {
             Object id = queryPacket.getID();
             if (id != null)
-                this.queryPacket.setUID(ClientUIDHandler.createUIDFromName(id, Envelope.class.getName()));
+                this.queryPacket.setUID(SpaceUidFactory.createUidFromTypeAndId(Envelope.class.getName(), id.toString()));
         }
         if (requiresOperationId)
             initOperationId(spaceProxy, queryPacket);

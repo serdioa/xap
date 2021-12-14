@@ -68,7 +68,7 @@ public class ZKScaleOutUtils {
         }
     }
 
-    public static boolean isScaleInProgress(AttributeStore attributeStore, String puName){
+    public static boolean isScaleInProgress(AttributeStore attributeStore, String puName){//include cancel status
        try {
            String status = getScaleOutMetaData(attributeStore, puName, "scale-status");
            if (status != null){
@@ -83,7 +83,7 @@ public class ZKScaleOutUtils {
         try {
             String status = getScaleOutMetaData(attributeStore, puName, "scale-status");
             if (status != null){
-                Status result =Status.convertToStatus(status);
+                Status result = Status.convertToStatus(status);
                 if(Status.SUCCESS.equals(result) || Status.CANCELLED_SUCCESSFULLY.equals(result)){
                     return result;
                 }
@@ -120,5 +120,26 @@ public class ZKScaleOutUtils {
             if (logger.isErrorEnabled()) logger.error("Failed to set cluster topology state", e);
             throw new UncheckedIOException("Failed to set cluster topology state for pu [" + puName + "]", e);
         }
+    }
+
+    public static ScaleRequestInfo getScaleRequestInfoIfExist(AttributeStore attributeStore, String requestId,
+                                                              List<String> pusName) throws IOException {
+        for(String puName: pusName){
+            boolean isScaling = isScaleInProgress(attributeStore, puName);
+            if(isScaling){
+                if(requestId.equals(getScaleOutMetaData(attributeStore, puName, "requestId"))){
+                    ScaleRequestInfo requestInfo = new ScaleRequestInfo();
+                    requestInfo.setId(requestId);
+                    requestInfo.setCanceled(checkIfScaleIsCanceled(attributeStore, requestId));
+                    if (requestInfo.isCanceled()){
+                        requestInfo.setDescription("Cancelling horizontal scale request for processing unit [" + puName + "]");
+                    } else {
+                        requestInfo.setDescription("Scale partitions of processing unit [" + puName +"]");
+                    }
+                    return requestInfo;
+                }
+            }
+        }
+        return null;
     }
 }

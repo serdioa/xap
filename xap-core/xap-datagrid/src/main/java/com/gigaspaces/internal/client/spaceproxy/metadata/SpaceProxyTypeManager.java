@@ -32,14 +32,7 @@ import com.gigaspaces.internal.server.space.SpaceUidFactory;
 import com.gigaspaces.internal.server.space.operations.WriteEntryResult;
 import com.gigaspaces.internal.server.space.tiered_storage.TieredStorageConfig;
 import com.gigaspaces.internal.server.space.tiered_storage.TieredStorageTableConfig;
-import com.gigaspaces.internal.transport.AbstractProjectionTemplate;
-import com.gigaspaces.internal.transport.EntryPacket;
-import com.gigaspaces.internal.transport.EntryPacketFactory;
-import com.gigaspaces.internal.transport.IEntryPacket;
-import com.gigaspaces.internal.transport.ITemplatePacket;
-import com.gigaspaces.internal.transport.ITransportPacket;
-import com.gigaspaces.internal.transport.ProjectionTemplate;
-import com.gigaspaces.internal.transport.TemplatePacketFactory;
+import com.gigaspaces.internal.transport.*;
 import com.gigaspaces.internal.utils.ObjectUtils;
 import com.gigaspaces.lrmi.classloading.LRMIClassLoadersHolder;
 import com.gigaspaces.metadata.SpaceMetadataException;
@@ -48,18 +41,14 @@ import com.gigaspaces.query.IdsQuery;
 import com.j_spaces.core.IGSEntry;
 import com.j_spaces.core.LeaseContext;
 import com.j_spaces.core.LeaseInitializer;
-import com.j_spaces.core.client.EntrySnapshot;
-import com.j_spaces.core.client.ExternalEntry;
-import com.j_spaces.core.client.Modifiers;
-import com.j_spaces.core.client.OperationTimeoutException;
-import com.j_spaces.core.client.SQLQuery;
-import com.j_spaces.core.client.UpdateModifiers;
+import com.j_spaces.core.client.*;
 import com.j_spaces.jdbc.builder.SQLQueryTemplatePacket;
 import com.j_spaces.kernel.SystemProperties;
-
 import net.jini.core.entry.UnusableEntryException;
 
 import java.util.Map;
+
+import static com.j_spaces.core.Constants.TieredStorage.SPACE_CLUSTER_INFO_TIERED_STORAGE_COMPONENT_NAME;
 
 /**
  * Manages EntryPacket construction and TypeDescription
@@ -308,7 +297,7 @@ public class SpaceProxyTypeManager implements ISpaceProxyTypeManager {
 
     private void validateTimeValueNotNull(Object object, IEntryPacket packet){
         String typeName = object.getClass().getTypeName();
-        TieredStorageConfig tieredStorageConfig = _proxy.getSpaceClusterInfo().getCustomComponent("TieredStorage");
+        TieredStorageConfig tieredStorageConfig = _proxy.getSpaceClusterInfo().getCustomComponent(SPACE_CLUSTER_INFO_TIERED_STORAGE_COMPONENT_NAME);
         if (tieredStorageConfig.hasCacheRule(typeName)){
             TieredStorageTableConfig tieredStorageTableConfig = tieredStorageConfig.getTables().get(typeName);
             if (tieredStorageTableConfig.isTimeRule()){

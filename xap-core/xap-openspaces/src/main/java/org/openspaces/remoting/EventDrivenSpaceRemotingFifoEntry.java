@@ -14,21 +14,26 @@
  * limitations under the License.
  */
 
+
 package org.openspaces.remoting;
 
+import com.gigaspaces.annotation.pojo.FifoSupport;
+import com.gigaspaces.annotation.pojo.SpaceClass;
+import com.gigaspaces.annotation.pojo.SpaceRouting;
+import com.gigaspaces.serialization.SmartExternalizable;
+
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.util.Arrays;
+
 /**
- * SpaceRemotingEntryFactory for Pojo classes.
+ * Default implementation of a remoting entry that acts both as a remote invocation and a remote
+ * result.
  *
  * @author Niv Ingberg
- * @since 8.0
  */
-public class SpaceRemotingEntryPojoFactory implements SpaceRemotingEntryFactory {
-
-    public SpaceRemotingEntry createEntry() {
-        throw new UnsupportedOperationException("This operation is currently not supported.");
-    }
-
-    public HashedSpaceRemotingEntry createHashEntry() {
-        throw new UnsupportedOperationException("This operation is currently not supported.");
-    }
+@SpaceClass(fifoSupport = FifoSupport.ALL)
+public class EventDrivenSpaceRemotingFifoEntry extends EventDrivenSpaceRemotingEntry {
+    static final long serialVersionUID = 1L;
 }

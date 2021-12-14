@@ -14,17 +14,20 @@
  * limitations under the License.
  */
 
+package org.openspaces.remoting;
 
-package com.j_spaces.core.client;
-
+import com.gigaspaces.annotation.pojo.FifoSupport;
 import com.gigaspaces.annotation.pojo.SpaceClass;
 
-import net.jini.core.entry.Entry;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 
 /**
- * @deprecated Since 8.0 - This interface is no longer relevant since {@link Entry} usage in
- * GigaSpaces has been deprecated. use {@link SpaceClass} instead.
+ * @author kimchy (shay.banon)
  */
-@Deprecated
-public interface IReplicatable extends Entry {
+@SpaceClass(fifoSupport = FifoSupport.ALL)
+public class HashedEventDrivenSpaceRemotingFifoEntry extends HashedEventDrivenSpaceRemotingEntry {
+
+    private static final long serialVersionUID = 1L;
 }

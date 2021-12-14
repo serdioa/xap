@@ -24,6 +24,7 @@ import com.gigaspaces.internal.lookup.SpaceUrlUtils;
 import com.gigaspaces.internal.server.space.SpaceInstanceConfig;
 import com.gigaspaces.internal.server.space.tiered_storage.TieredStorageConfig;
 import com.gigaspaces.internal.sync.mirror.MirrorDistributedTxnConfig;
+import com.gigaspaces.internal.utils.GsEnv;
 import com.gigaspaces.internal.utils.StringUtils;
 import com.gigaspaces.metadata.SpaceTypeDescriptor;
 import com.gigaspaces.query.extension.QueryExtensionProvider;
@@ -40,11 +41,14 @@ import com.j_spaces.core.client.SpaceURL;
 import com.j_spaces.core.client.SpaceURLParser;
 import com.j_spaces.core.cluster.ReplicationFilterProvider;
 import com.j_spaces.core.filters.FilterProvider;
+import com.j_spaces.kernel.SystemProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.MalformedURLException;
 import java.util.*;
+
+import static com.j_spaces.core.Constants.TieredStorage.SPACE_CLUSTER_INFO_TIERED_STORAGE_COMPONENT_NAME;
 
 /**
  * @author Niv Ingberg
@@ -205,6 +209,16 @@ public class SpaceProxyFactory {
             }
         }
 
+        //if tiered storage is enabled using sys prop/ env variable/ space property, and not already configured using configurer
+        if (spaceInstanceConfig != null
+                && !spaceInstanceConfig.getCustomComponents().containsKey(SPACE_CLUSTER_INFO_TIERED_STORAGE_COMPONENT_NAME)
+                && isTieredStoragePropertyEnabled(props)) {
+            TieredStorageConfig config = new TieredStorageConfig();
+            config.setTables(new HashMap<>());
+            spaceInstanceConfig.addCustomComponent(config);
+            props.setProperty(Constants.TieredStorage.AUTO_GENERATE_SLA_PROP, "true");
+        }
+
         if (mirrorDistributedTxnConfig != null) {
             assertEmbedded(isRemote, "Distributed transaction processing configuration");
             if (schema == null || !schema.equalsIgnoreCase(Constants.Schemas.MIRROR_SCHEMA))
@@ -264,6 +278,16 @@ public class SpaceProxyFactory {
         }
 
         return props;
+    }
+
+    /**
+     * Tiered storage can be enabled using system property / env variable / space property
+     * @param props properties passed to the Space
+     * @return true if configured via property; false otherwise (may be configured using xml/configurer)
+     */
+    private boolean isTieredStoragePropertyEnabled(Properties props) {
+        return GsEnv.propertyBoolean(SystemProperties.TIERED_STORAGE_ENABLED).get(false)
+                || Boolean.parseBoolean(props.getProperty(Constants.TieredStorage.SPACE_TIERED_STORAGE_ENABLED));
     }
 
     private static void assertEmbedded(boolean isRemote, String componentName) {

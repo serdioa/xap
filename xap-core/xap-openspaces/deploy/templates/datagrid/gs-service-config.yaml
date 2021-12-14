@@ -1,6 +1,9 @@
 dataGridName: dataGrid
 
 space:
+  # Tiered Storage settings
+  tiered-storage:
+    enabled:
   # MemoryXTend settings
   mx:
     cache-entries-percentage:

@@ -130,8 +130,6 @@ public class SpaceTypeDescriptorBuilder {
             throw new IllegalArgumentException("Creating SpaceTypeDescriptor for enumerations is not supported.");
         if (type.isPrimitive())
             throw new IllegalArgumentException("Creating SpaceTypeDescriptor for primitive types is not supported.");
-        if (net.jini.core.entry.Entry.class.isAssignableFrom(type))
-            throw new IllegalArgumentException("Creating SpaceTypeDescriptor for types implementing 'net.jini.core.entry.Entry' is not supported.");
 
         Class<?> superType = type.getSuperclass();
         if (superType != null && superType.getName().equals(ROOT_TYPE_NAME))
@@ -459,14 +457,39 @@ public class SpaceTypeDescriptorBuilder {
         return this;
     }
 
+    /**
+     * Sets the ID properties
+     * @param idPropertiesNames Names of ID properties
+     * @since 16.2
+     */
     public SpaceTypeDescriptorBuilder idProperty(List<String> idPropertiesNames) {
+        return idProperty(idPropertiesNames, SpaceIndexType.EQUAL);
+    }
+
+    /**
+     *
+     * Sets the ID properties
+     * @param idPropertiesNames Names of ID properties
+     * @param indexType Type of compound index to create (EQUAL or NONE)
+     * @since 16.2
+     */
+    public SpaceTypeDescriptorBuilder idProperty(List<String> idPropertiesNames, SpaceIndexType indexType) {
         // Validate id not already set:
         if (!_idPropertiesNames.isEmpty())
             throw new IllegalStateException("Cannot set id property to '" + String.join(", ", idPropertiesNames) + "' - it was already set to '" + String.join(", ", _idPropertiesNames) + "'.");
+        if (idPropertiesNames.isEmpty())
+            throw new IllegalArgumentException("idPropertiesNames cannot be empty");
+        if (idPropertiesNames.size() == 1)
+            return idProperty(idPropertiesNames.get(0), false, indexType);
 
         this._idPropertiesNames = idPropertiesNames;
         this._idAutoGenerate = false;
-        addCompoundIndex(idPropertiesNames.toArray(new String[0]), true);
+        if (indexType != SpaceIndexType.NONE) {
+            if (indexType == SpaceIndexType.EQUAL || indexType == SpaceIndexType.DEFAULT)
+                addCompoundIndex(idPropertiesNames.toArray(new String[0]), true);
+            else
+                throw new IllegalArgumentException("Unsupported index type: " + indexType);
+        }
         return this;
     }
 

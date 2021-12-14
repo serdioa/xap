@@ -25,11 +25,11 @@ package org.openspaces.remoting;
  */
 @Deprecated
 public class SpaceRemotingEntryMetadataFactory implements SpaceRemotingEntryFactory {
-    public SpaceRemotingEntry createEntry() {
-        return new EventDrivenSpaceRemotingEntry();
+    public SpaceRemotingEntry createEntry(boolean fifo) {
+        return fifo ? new EventDrivenSpaceRemotingFifoEntry() : new EventDrivenSpaceRemotingEntry();
     }
 
-    public HashedSpaceRemotingEntry createHashEntry() {
-        return new HashedEventDrivenSpaceRemotingEntry();
+    public HashedSpaceRemotingEntry createHashEntry(boolean fifo) {
+        return fifo ? new HashedEventDrivenSpaceRemotingFifoEntry() : new HashedEventDrivenSpaceRemotingEntry();
     }
 }
