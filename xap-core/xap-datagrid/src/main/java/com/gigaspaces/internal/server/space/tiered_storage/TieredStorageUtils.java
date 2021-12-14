@@ -36,6 +36,8 @@ public class TieredStorageUtils {
 
     private static Set<String> initTypes() {
         Set<String> types = new HashSet<>();
+        types.add(char.class.getName());
+        types.add(Character.class.getName());
         types.add(String.class.getName());
         types.add(boolean.class.getName());
         types.add(Boolean.class.getName());
