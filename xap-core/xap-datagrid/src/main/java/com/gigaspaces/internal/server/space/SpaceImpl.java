@@ -3364,7 +3364,7 @@ public class SpaceImpl extends AbstractService implements IRemoteSpace, IInterna
                 final String persistentPath = ZNodePathFactory.space(_spaceName, "persistent");
                 String persistent = attributeStore.get(persistentPath);
                 if(persistent == null) {
-                    try (final SharedLock lock = attributeStore.getSharedLockProvider().acquire(ZNodePathFactory.lockPersistentName(_puName), 1, TimeUnit.SECONDS)) {
+                    try (final SharedLock lock = attributeStore.getSharedLockProvider().acquire(ZNodePathFactory.lockPersistentName(_puName), 1, TimeUnit.SECONDS, false)) {
                         persistent = attributeStore.get(persistentPath);
                         if (persistent == null) {
                             final String isPersistent = String.valueOf(_engine.isTieredStorage());

@@ -1,9 +1,6 @@
 package com.gigaspaces.internal.zookeeper;
 
 import com.gigaspaces.api.InternalApi;
-import com.gigaspaces.attribute_store.AttributeStore;
-import com.gigaspaces.internal.server.space.repartitioning.Step;
-import com.gigaspaces.internal.server.space.repartitioning.ZKScaleOutUtils;
 
 /**
  * @author Niv Ingberg
