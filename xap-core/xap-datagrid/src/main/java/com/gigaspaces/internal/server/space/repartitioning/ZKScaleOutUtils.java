@@ -30,14 +30,6 @@ public class ZKScaleOutUtils {
 
     public static void setScaleOutMetaData(AttributeStore attributeStore, String puName, String key, String value) throws IOException {
         attributeStore.set(ZKScaleOutUtils.getScaleOutPath(puName) + "/" + key, value);
-        logger.info("++++++++++++++=set meta data: " + key );
-        if("requestId".equals(key)){
-            String result = getScaleOutMetaData(attributeStore, puName, "requestId");
-            logger.info("+++++++++++++++++++=result is: " + result);
-        } else{
-            String result2 = getScaleOutMetaData(attributeStore, puName, "requestId");
-            logger.info("+++++++++++++++++++result is: " + result2);
-        }
     }
 
     public static String getScaleOutMetaData(AttributeStore attributeStore, String puName, String key) throws IOException {
@@ -71,19 +63,19 @@ public class ZKScaleOutUtils {
             attributeStore.set(ZKScaleOutUtils.getScaleStepsPath(puName, step) + "/" + key, value);
             return true;
         } catch (IOException e){
-           logger.warn("Failed to set on Zookeeper: " + key + " " + value , e);
-           return false;
+            logger.warn("Failed to set on Zookeeper: " + key + " " + value , e);
+            return false;
         }
     }
 
     public static boolean isScaleInProgress(AttributeStore attributeStore, String puName){//include cancel status
-       try {
-           String status = getScaleOutMetaData(attributeStore, puName, "scale-status");
-           if (status != null){
-               return Status.IN_PROGRESS.getStatus().equals(status);
-           }
-       } catch (IOException e) {
-       }
+        try {
+            String status = getScaleOutMetaData(attributeStore, puName, "scale-status");
+            if (status != null){
+                return Status.IN_PROGRESS.getStatus().equals(status);
+            }
+        } catch (IOException e) {
+        }
         return false;
     }
 
@@ -133,29 +125,35 @@ public class ZKScaleOutUtils {
     public static ScaleRequestInfo getScaleRequestInfoIfExist(AttributeStore attributeStore, String requestId,
                                                               List<String> pusName) throws IOException {
         for(String puName: pusName){
-            logger.info("++++++++++++++++++++on get scale out request info if exist");
-            logger.info("+++++++++++++++++++++++scale status? " + getScaleOutMetaData(attributeStore, puName, "scale-status").toString());
-            boolean isScaling = isScaleInProgress(attributeStore, puName);
-            logger.info("+++++++++++++++++++++++scale is in progress? " + isScaling);
-            if(isScaling){
-                logger.info("++++++++++++request id: " + requestId);
-                String result = getScaleOutMetaData(attributeStore, puName, "requestId");
-               logger.info("++++++++++++get scale out meta data: " + result);
-                if(requestId.equals(getScaleOutMetaData(attributeStore, puName, "requestId"))){
-                    ScaleRequestInfo requestInfo = new ScaleRequestInfo();
-                    requestInfo.setId(requestId);
-                    requestInfo.setCanceled(checkIfScaleIsCanceled(attributeStore, requestId));
-                    if (requestInfo.isCanceled()){
-                        requestInfo.setDescription("Cancelling horizontal scale request for processing unit [" + puName + "]");
-                    } else {
-                        requestInfo.setDescription("Scale partitions of processing unit [" + puName +"]");
-                    }
-                    logger.info("++++++++++++++++++++request info: " + requestInfo);
-                    return requestInfo;
-                }
+            if(requestId.equals(getScaleOutMetaData(attributeStore, puName, "requestId"))){
+                ScaleRequestInfo requestInfo = new ScaleRequestInfo();
+                requestInfo.setId(requestId);
+                requestInfo.setPuName(puName);
+                setScaleRequestDetails(attributeStore, requestInfo);
+                return requestInfo;
             }
         }
-        logger.info("++++++++++++++++++++returning null");
         return null;
+    }
+
+    private static void setScaleRequestDetails(AttributeStore attributeStore, ScaleRequestInfo requestInfo) throws IOException {
+        String puName = requestInfo.getPuName();
+        String status = getScaleOutMetaData(attributeStore, puName, "scale-status");
+        boolean isCanceled = checkIfScaleIsCanceled(attributeStore, puName);
+        if (Status.IN_PROGRESS.getStatus().equals(status) || Status.STARTED.getStatus().equals(status) ) {
+            if (isCanceled){
+                requestInfo.setCanceled(true);
+                requestInfo.setDescription("Cancelling horizontal scale request for processing unit [" + puName + "]");
+            } else {
+                requestInfo.setDescription("Scale partitions of processing unit [" + puName +"]");
+            }
+        } else if (Status.SUCCESS.getStatus().equals(status)){
+            requestInfo.setCompleted(true);
+            requestInfo.setDescription("Scale partitions of processing unit [" + puName +"] successfully");
+        } else if (Status.CANCELLED_SUCCESSFULLY.getStatus().equals(status)){
+            requestInfo.setCompleted(true);
+            requestInfo.setCanceled(true);
+            requestInfo.setDescription("Scale partitions of processing unit [" + puName +"] cancelled successfully");
+        }
     }
 }
