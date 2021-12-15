@@ -17,6 +17,7 @@
 package com.gigaspaces.metrics.influxdb;
 
 import com.gigaspaces.internal.utils.StringUtils;
+import com.gigaspaces.metrics.DbConnectionMetricReporterFactory;
 import com.gigaspaces.metrics.MetricReporter;
 import com.gigaspaces.metrics.MetricReporterFactory;
 
@@ -27,7 +28,7 @@ import java.util.concurrent.TimeUnit;
  * @author Barak Bar Orion
  * @since 10.1
  */
-public class InfluxDBReporterFactory extends MetricReporterFactory<MetricReporter> {
+public class InfluxDBReporterFactory extends MetricReporterFactory<MetricReporter> implements DbConnectionMetricReporterFactory {
 
     // Default max length is UDP max packet length (http://en.wikipedia.org/wiki/User_Datagram_Protocol)
     public static final int DEFAULT_MAX_REPORT_LENGTH = 65507;
@@ -90,6 +91,7 @@ public class InfluxDBReporterFactory extends MetricReporterFactory<MetricReporte
         this.maxReportLength = maxReportLength;
     }
 
+    @Override
     public TimeUnit getTimePrecision() {
         return timePrecision;
     }
@@ -102,6 +104,7 @@ public class InfluxDBReporterFactory extends MetricReporterFactory<MetricReporte
         this.version = version;
     }
 
+    @Override
     public String getProtocol() {
         return protocol;
     }
@@ -110,6 +113,7 @@ public class InfluxDBReporterFactory extends MetricReporterFactory<MetricReporte
         this.protocol = protocol;
     }
 
+    @Override
     public String getHost() {
         return host;
     }
@@ -118,6 +122,7 @@ public class InfluxDBReporterFactory extends MetricReporterFactory<MetricReporte
         this.host = host;
     }
 
+    @Override
     public int getPort() {
         return port;
     }
@@ -126,6 +131,7 @@ public class InfluxDBReporterFactory extends MetricReporterFactory<MetricReporte
         this.port = port;
     }
 
+    @Override
     public String getDatabase() {
         return database;
     }
@@ -134,6 +140,7 @@ public class InfluxDBReporterFactory extends MetricReporterFactory<MetricReporte
         this.database = database;
     }
 
+    @Override
     public String getUsername() {
         return username;
     }
@@ -142,6 +149,7 @@ public class InfluxDBReporterFactory extends MetricReporterFactory<MetricReporte
         this.username = username;
     }
 
+    @Override
     public String getPassword() {
         return password;
     }
@@ -150,6 +158,7 @@ public class InfluxDBReporterFactory extends MetricReporterFactory<MetricReporte
         this.password = password;
     }
 
+    @Override
     public String getRetentionPolicy() {
         return retentionPolicy;
     }
@@ -158,6 +167,7 @@ public class InfluxDBReporterFactory extends MetricReporterFactory<MetricReporte
         this.retentionPolicy = retentionPolicy;
     }
 
+    @Override
     public String getConsistency() {
         return consistency;
     }
