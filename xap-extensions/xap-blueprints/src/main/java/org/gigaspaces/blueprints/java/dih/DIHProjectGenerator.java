@@ -57,6 +57,8 @@ public class DIHProjectGenerator {
             setProperty("kafka.space-name", overrideProperties.getKafkaSpaceName(), properties);
             setProperty("kafka.bootstrap-servers", overrideProperties.getKafkaBootstrapServers(), properties);
             setProperty("kafka.topic", overrideProperties.getKafkaTopic(), properties);
+            setProperty("kafka.receive-buffer-config", overrideProperties.getKafkaReceiveBufferConfig(), properties);
+            setProperty("kafka.max-poll-records", overrideProperties.getKafkaMaxPollRecords(), properties);
             setProperty("kafka.message-command-class", overrideProperties.getKafkaMessageCommandClass(), properties);
             setProperty("kafka.message-validate-class", overrideProperties.getKafkaMessageValidateClass(), properties);
             setProperty("resources.types-metadata-json", overrideProperties.getResourcesTypeMetadataJson(), properties);

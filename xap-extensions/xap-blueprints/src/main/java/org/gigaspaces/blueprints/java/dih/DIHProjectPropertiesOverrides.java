@@ -25,16 +25,31 @@ public class DIHProjectPropertiesOverrides {
     private final String kafkaTopic;
     private final String kafkaMessageCommandClass;
     private final String kafkaMessageValidateClass;
+    private final String kafkaMaxPollRecords;
+    private final String kafkaReceiveBufferConfig;
     private final String resourcesTypeMetadataJson;
     private final String resourcesDefaultTypeConversionMap;
     private final String configStreamJson;
     private final Path target;
     private final List<DocumentInfo> documents;
 
-    public DIHProjectPropertiesOverrides(String projectPipelineName, String projectVersion,
-                                         String gsVersion, String slf4jVersion, String javaVersion, String kafkaWebPort, String kafkaSpaceName, String kafkaBootstrapServers,
-                                         String kafkaTopic, String kafkaMessageCommandClass, String kafkaMessageValidateClass,
-                                         String resourcesTypeMetadataJson, String resourcesDefaultTypeConversionMap, String configStreamJson, Path target, List<DocumentInfo> documents) {
+    public DIHProjectPropertiesOverrides(String projectPipelineName,
+                                         String projectVersion,
+                                         String gsVersion,
+                                         String slf4jVersion,
+                                         String javaVersion,
+                                         String kafkaWebPort,
+                                         String kafkaSpaceName,
+                                         String kafkaBootstrapServers,
+                                         String kafkaTopic,
+                                         String kafkaMessageCommandClass,
+                                         String kafkaMessageValidateClass,
+                                         String kafkaMaxPollRecords,
+                                         String kafkaReceiveBufferConfig,
+                                         String resourcesTypeMetadataJson,
+                                         String resourcesDefaultTypeConversionMap,
+                                         String configStreamJson, Path target,
+                                         List<DocumentInfo> documents) {
         this.projectPipelineName = projectPipelineName;
         this.projectVersion = projectVersion;
         this.gsVersion = gsVersion;
@@ -46,6 +61,8 @@ public class DIHProjectPropertiesOverrides {
         this.kafkaTopic = kafkaTopic;
         this.kafkaMessageCommandClass = kafkaMessageCommandClass;
         this.kafkaMessageValidateClass = kafkaMessageValidateClass;
+        this.kafkaMaxPollRecords = kafkaMaxPollRecords;
+        this.kafkaReceiveBufferConfig = kafkaReceiveBufferConfig;
         this.resourcesTypeMetadataJson = resourcesTypeMetadataJson;
         this.resourcesDefaultTypeConversionMap = resourcesDefaultTypeConversionMap;
         this.configStreamJson = configStreamJson;
@@ -115,5 +132,13 @@ public class DIHProjectPropertiesOverrides {
 
     public String getConfigStreamJson() {
         return configStreamJson;
+    }
+
+    public String getKafkaMaxPollRecords() {
+        return kafkaMaxPollRecords;
+    }
+
+    public String getKafkaReceiveBufferConfig() {
+        return kafkaReceiveBufferConfig;
     }
 }
