@@ -96,7 +96,7 @@ public class SqliteUtils {
             String includeMaxSign = segmentRange.isIncludeMax() ? "= " : " ";
             queryBuilder.append(range.getPath());
             if (min != null && max == null) {
-                queryBuilder.append(" > ?");
+                queryBuilder.append(" >").append(includeMinSign).append("?");
                 queryParams.addParameter(path, min);
             } else if (min == null && max != null) {
                 queryBuilder.append(" <").append(includeMaxSign).append("?");
@@ -311,10 +311,11 @@ public class SqliteUtils {
     }
 
     public static void appendRangeString(Range range, StringBuilder queryBuilder, QueryParameters queryParams) {
-        if(!rangeToStringFunctionMap.containsKey(range.getClass().getName())){
+        final RangeToStringFunction rangeToStringFunction = rangeToStringFunctionMap.get(range.getClass().getName());
+        if(rangeToStringFunction == null){
             throw new IllegalStateException("SQL query of type" + range.getClass().getName() + " is unsupported");
         }
-        rangeToStringFunctionMap.get(range.getClass().getName()).toString(range, queryBuilder, queryParams);
+        rangeToStringFunction.toString(range, queryBuilder, queryParams);
 
     }
 
