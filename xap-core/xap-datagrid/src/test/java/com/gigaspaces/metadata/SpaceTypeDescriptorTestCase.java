@@ -834,7 +834,8 @@ public class SpaceTypeDescriptorTestCase extends TestCase {
     }
 
     private static void assertIdProperty(SpaceTypeDescriptor typeInfo, String propertyName, boolean isAutoGenerate) {
-        Assert.assertEquals(propertyName, typeInfo.getIdPropertyName());
+        Assert.assertEquals(1, typeInfo.getIdPropertiesNames().size());
+        Assert.assertEquals(propertyName, typeInfo.getIdPropertiesNames().get(0));
         Assert.assertEquals(isAutoGenerate, getInternalTypeDesc(typeInfo).isAutoGenerateId());
     }
 

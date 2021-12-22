@@ -37,7 +37,9 @@ import com.j_spaces.core.client.ExternalEntry;
 import org.junit.Assert;
 import org.junit.Test;
 
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @com.gigaspaces.api.InternalApi
@@ -137,7 +139,7 @@ public class SpaceValueGettersTests {
         }
         boolean supportsDynamicProperties = false;
         boolean isSystemType = false;
-        String identifierPropertyName = null;
+        List<String> identifierPropertyName = Collections.emptyList();
         String defaultPropertyName = null;
         String routingPropertyName = null;
         FifoSupport fifoMode = null;

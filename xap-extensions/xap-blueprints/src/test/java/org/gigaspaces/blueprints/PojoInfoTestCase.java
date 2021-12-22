@@ -8,8 +8,9 @@ import org.junit.Test;
 import java.io.IOException;
 
 public class PojoInfoTestCase {
+
     @Test
-    public void basicTestWithInitialLoad() throws IOException {
+    public void generateTest() throws IOException {
         String expected = BootIOUtils.readAsString(BootIOUtils.getResourcePath("samples/Person.java"));
         PojoInfo personPojoInfo = new PojoInfo("Person", "com.gigaspaces.demo");
         personPojoInfo.addProperty("id", int.class);
@@ -22,17 +23,8 @@ public class PojoInfoTestCase {
         Assert.assertEquals(expected, actual);
     }
 
-//    @Test
-//    public void testEmptyInitialLoad() throws IOException {
-//        String expected = BootIOUtils.readAsString(BootIOUtils.getResourcePath("samples/Person.java"));
-//        PojoInfo personPojoInfo = new PojoInfo("Person", "com.gigaspaces.demo");
-//        personPojoInfo.addProperty("id", int.class);
-//        personPojoInfo.addProperty("name", String.class);
-//        personPojoInfo.addPropertyWithAutoGenerate("auto-generate", long.class);
-//    }
-
     @Test
-    public void basicCompoundId() throws IOException {
+    public void generateWithCompoundIdTest() throws IOException {
         String expected = BootIOUtils.readAsString(BootIOUtils.getResourcePath("samples/SimpleCompoundIdPojo.java"));
         PojoInfo simpleCompoundIdPojo = new PojoInfo("SimpleCompoundIdPojo", "com.gigaspaces.demo",true);
         simpleCompoundIdPojo.annotate("@Entity(name = \"SimpleCompoundIdPojo\")")

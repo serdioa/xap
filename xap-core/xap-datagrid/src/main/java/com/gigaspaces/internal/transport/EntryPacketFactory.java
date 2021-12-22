@@ -247,15 +247,15 @@ public class EntryPacketFactory {
         if (fieldValues != null && fieldValues.length > 0) {
             Object[] newValues = new Object[fieldValues.length];
             ITypeDesc typeDesc = entryData.getEntryTypeDesc().getTypeDesc();
-            final int idIndex = typeDesc.getIdentifierPropertyId();
+            final int[] idIndexes = typeDesc.getIdentifierPropertiesId();
             // special handling for non-pojo(entries/metadataentries)
             // instead ID use the first index
-            final boolean useFirstIndex = idIndex == -1;
+            final boolean useFirstIndex = idIndexes.length == 0;
             final PropertyInfo[] properties = typeDesc.getProperties();
 
             for (int i = 0; i < fieldValues.length; ++i) {
                 final boolean isPrimitive = ObjectUtils.isPrimitive(properties[i].getTypeName());
-                final boolean isIdField = !useFirstIndex && i == idIndex;
+                final boolean isIdField = !useFirstIndex && contains(idIndexes, i);
                 final boolean isFirstIndex = useFirstIndex && typeDesc.getIndexedPropertyID(i) == 0;
                 // We do not reset primitive fields
                 // We do not reset id field or first index in case there's no id
@@ -267,6 +267,12 @@ public class EntryPacketFactory {
         return fieldValues;
     }
 
+    private static boolean contains(int[] array, int value) {
+        for (int item : array)
+            if (item == value)
+                return true;
+        return false;
+    }
 
     private static IEntryPacket createHybrid(ITemplateHolder template, boolean isTransient, IEntryData entryData,
                                              String uid, long timeToLive, boolean forceNonExternalizable, HybridPropertiesHolder propertiesHolder) {

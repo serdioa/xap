@@ -26,14 +26,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class ZipkinTracerBean {
-    public static final String CONSUL_KEY = "gigaspaces/tracing";
     private Logger logger = LoggerFactory.getLogger(this.getClass().getName());
 
     private AsyncReporter<Span> reporter;
     private Tracing tracing;
     private BraveTracer tracer;
-    private Thread thread;
-    private boolean useConsul;
     private boolean startActive = false;
     private String serviceName;
     private String zipkinUrl = "http://zipkin.service.consul:9411";
@@ -58,7 +55,6 @@ public class ZipkinTracerBean {
 
     private ZipkinTracerBean() {
         if (GlobalTracer.isRegistered()) throw new IllegalArgumentException("GlobalTracer already exists");
-        useConsul = SystemInfo.singleton().getManagerClusterInfo().getManagerClusterType() == ManagerClusterType.ELASTIC_GRID;
     }
 
     public ZipkinTracerBean(String serviceName) {
@@ -80,10 +76,6 @@ public class ZipkinTracerBean {
     public void start() {
         logger.info("Starting " + (startActive ? "active" : "inactive") + " with service name [" + serviceName + "]");
         logger.info("Connecting to Zipkin at " + zipkinUrl);
-        if (useConsul) {
-            logger.info("Using Consul for turning tracing on/off, key is: " + CONSUL_KEY);
-        }
-
 
         OkHttpSender sender = OkHttpSender.create(
                 zipkinUrl + "/api/v2/spans");
@@ -98,50 +90,11 @@ public class ZipkinTracerBean {
 
         tracer = BraveTracer.create(tracing);
         GlobalTracer.registerIfAbsent(tracer);
-
-        if (useConsul) {
-
-            thread = new Thread(new Runnable() {
-                private final ConsulClient client = getClient("https://localhost:8500");
-
-                @Override
-                public void run() {
-                    while (!Thread.currentThread().isInterrupted()) {
-                        try {
-                            Response<GetValue> kvClient = client.getKVValue(CONSUL_KEY);
-                            if (kvClient.getValue() != null) {
-                                boolean tracingIsOn = Boolean.parseBoolean(kvClient.getValue().getDecodedValue());
-                                if (tracingIsOn && tracing.isNoop()) {
-                                    logger.info("Turning tracing on");
-                                    tracing.setNoop(false);
-                                } else if (!tracingIsOn && !tracing.isNoop()) {
-                                    logger.info("Turning tracing off");
-                                    tracing.setNoop(true);
-                                }
-                            }
-                        } catch (Exception e) {
-                            logger.error("Got exception while querying Consul", e);
-                        }
-                        try {
-                            TimeUnit.SECONDS.sleep(10);
-                        } catch (InterruptedException e) {
-                            Thread.currentThread().interrupt();
-                            break;
-                        }
-                    }
-                }
-            });
-
-            thread.start();
-        }
     }
 
 
     @PreDestroy
     public void destroy() throws Exception {
-        if (thread != null) {
-            thread.interrupt();
-        }
 
         if (tracer != null) {
             tracer.close();

@@ -101,12 +101,6 @@ import static com.j_spaces.core.Constants.Engine.FULL_ENGINE_MIN_THREADS_PROP;
 import static com.j_spaces.core.Constants.Engine.FULL_ENGINE_NOTIFIER_TTL_PROP;
 import static com.j_spaces.core.Constants.Engine.FULL_ENGINE_SERIALIZATION_TYPE_PROP;
 import static com.j_spaces.core.Constants.IS_SPACE_LOAD_ON_STARTUP;
-import static com.j_spaces.core.Constants.Jms.FULL_JMS_QUEUE_NAMES_PROP;
-import static com.j_spaces.core.Constants.Jms.FULL_JMS_RMI_PORT_PROP;
-import static com.j_spaces.core.Constants.Jms.FULL_JMS_TOPIC_NAMES_PROP;
-import static com.j_spaces.core.Constants.Jms.JMS_QUEUE_NAMES_DEFAULT;
-import static com.j_spaces.core.Constants.Jms.JMS_RMI_PORT_DEFAULT;
-import static com.j_spaces.core.Constants.Jms.JMS_TOPIC_NAMES_DEFAULT;
 import static com.j_spaces.core.Constants.LeaderSelector.CONNECTION_TIMEOUT_DEFAULT;
 import static com.j_spaces.core.Constants.LeaderSelector.FULL_LEADER_SELECTOR_CONNECTION_TIMEOUT;
 import static com.j_spaces.core.Constants.LeaderSelector.FULL_LEADER_SELECTOR_RETRY_INTERVAL;
@@ -986,53 +980,6 @@ public class JSpaceAttributes
     public String getClusterConfigURL() {
         return getProperty(FULL_CLUSTER_CONFIG_URL_PROP,
                 CLUSTER_CONFIG_URL_DEFAULT);
-    }
-
-    // JMS properties
-
-    /**
-     *
-     */
-    public void setJMSRmiPort(String rmiPort) {
-        this.setProperty(FULL_JMS_RMI_PORT_PROP, rmiPort);
-    }
-
-    /**
-     *
-     *
-     */
-    public String getJMSRmiPort() {
-        return getProperty(FULL_JMS_RMI_PORT_PROP, JMS_RMI_PORT_DEFAULT);
-    }
-
-    /**
-     * @param topicNames
-     */
-    public void setJMSTopicNames(String topicNames) {
-        this.setProperty(FULL_JMS_TOPIC_NAMES_PROP, topicNames);
-    }
-
-    /**
-     *
-     *
-     */
-    public String getJMSTopicNames() {
-        return getProperty(FULL_JMS_TOPIC_NAMES_PROP, JMS_TOPIC_NAMES_DEFAULT);
-    }
-
-    /**
-     * @param queueNames
-     */
-    public void setJMSQueueNames(String queueNames) {
-        this.setProperty(FULL_JMS_QUEUE_NAMES_PROP, queueNames);
-    }
-
-    /**
-     *
-     *
-     */
-    public String getJMSQueueNames() {
-        return getProperty(FULL_JMS_QUEUE_NAMES_PROP, JMS_QUEUE_NAMES_DEFAULT);
     }
 
     /**

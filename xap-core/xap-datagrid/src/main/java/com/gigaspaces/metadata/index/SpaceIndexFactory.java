@@ -20,6 +20,7 @@ package com.gigaspaces.metadata.index;
 import com.gigaspaces.internal.metadata.SpaceCollectionIndex;
 
 import java.util.HashSet;
+import java.util.List;
 
 /**
  * Factory which provides methods to create space indexes.
@@ -136,17 +137,12 @@ public class SpaceIndexFactory {
         return segments;
     }
 
+    private static final String COMPOUND_INDEX_DELIMITER = "+";
     static String createCompoundIndexName(String[] paths) {
-        StringBuffer sb = new StringBuffer();
-        boolean first = true;
-        for (String path : paths) {
-            if (!first)
-                sb.append("+");
-            else
-                first = false;
-            sb.append(path);
-        }
-        return sb.toString();
+        return String.join(COMPOUND_INDEX_DELIMITER, paths);
     }
 
+    public static String getIndexName(List<String> paths) {
+        return paths.size() == 1 ? paths.get(0) : String.join(COMPOUND_INDEX_DELIMITER, paths);
+    }
 }

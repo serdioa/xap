@@ -2,7 +2,7 @@ package org.openspaces.persistency.space;
 
 import com.gigaspaces.datasource.SpaceTypeSchemaAdapter;
 import com.gigaspaces.document.SpaceDocument;
-import com.gigaspaces.internal.metadata.ITypeDesc;
+import com.gigaspaces.internal.metadata.TypeDescriptorUtils;
 import com.gigaspaces.metadata.SpaceTypeDescriptor;
 import com.gigaspaces.query.IdQuery;
 import com.gigaspaces.sync.*;
@@ -63,11 +63,11 @@ public class GigaSpaceSynchronizationEndpoint extends SpaceSynchronizationEndpoi
     }
 
     private void processRemoveOperation(DataSyncOperation operation){
-        String idPropertyName = operation.getTypeDescriptor().getIdPropertyName();
-        String routingPropertyName = operation.getTypeDescriptor().getRoutingPropertyName();
-        Object id = operation.getDataAsDocument().getProperty(idPropertyName);
-        Object routing = operation.getDataAsDocument().getProperty(routingPropertyName);
-        IdQuery<SpaceDocument> idQuery = new IdQuery<>(operation.getTypeDescriptor().getTypeName(), id, routing);
+        SpaceTypeDescriptor typeDesc = operation.getTypeDescriptor();
+        SpaceDocument entry = operation.getDataAsDocument();
+        Object id = TypeDescriptorUtils.toSpaceId(typeDesc.getIdPropertiesNames(), entry::getProperty);
+        Object routing = entry.getProperty(typeDesc.getRoutingPropertyName());
+        IdQuery<SpaceDocument> idQuery = new IdQuery<>(typeDesc.getTypeName(), id, routing);
         targetSpace.takeById(idQuery);
     }
 

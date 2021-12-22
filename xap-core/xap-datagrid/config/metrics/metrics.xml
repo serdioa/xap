@@ -26,7 +26,7 @@
 
         <!-- Additional optional properties:
             Sets which communication protocol to use (default is http):
-            <property name="protocol" value="http|udp"/>
+            <property name="protocol" value="http|https|udp"/>
             Sets the communication port (default is 8086 for http, 4444 for udp):
             <property name="port" value="8086"/>
             Sets the maximum report length used for batching (default is 65507, i.e. max UDP packet size)

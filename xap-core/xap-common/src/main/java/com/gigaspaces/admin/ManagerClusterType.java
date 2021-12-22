@@ -5,5 +5,5 @@ package com.gigaspaces.admin;
  * @since 15.2.0
  */
 public enum ManagerClusterType {
-    SERVICE_GRID, ELASTIC_GRID, KUBERNETES
+    SERVICE_GRID, KUBERNETES
 }

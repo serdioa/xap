@@ -46,7 +46,6 @@
 		<cluster-config>
 			<xsl:copy-of select="cluster-config/cluster-name"/>
 			<xsl:copy-of select="cluster-config/dist-cache"/>
-			<xsl:copy-of select="cluster-config/jms"/>
 			<description>This topology constructs backup(s) for each partitioned space. Replication from each partition to its backup space is done in a synchronous manner.</description>
 			<notify-recovery>true</notify-recovery>
 			<cache-loader>

@@ -18,7 +18,10 @@ package com.gigaspaces.internal.server.space;
 
 import com.gigaspaces.admin.ManagerClusterType;
 import com.gigaspaces.admin.demote.DemoteFailedException;
-import com.gigaspaces.admin.quiesce.*;
+import com.gigaspaces.admin.quiesce.DefaultQuiesceToken;
+import com.gigaspaces.admin.quiesce.QuiesceException;
+import com.gigaspaces.admin.quiesce.QuiesceState;
+import com.gigaspaces.admin.quiesce.QuiesceStateChangedEvent;
 import com.gigaspaces.annotation.SupportCodeChange;
 import com.gigaspaces.attribute_store.AttributeStore;
 import com.gigaspaces.attribute_store.SharedLock;
@@ -90,7 +93,9 @@ import com.gigaspaces.internal.server.space.recovery.direct_persistency.DirectPe
 import com.gigaspaces.internal.server.space.recovery.direct_persistency.DirectPersistencyRecoveryHelper;
 import com.gigaspaces.internal.server.space.recovery.direct_persistency.StorageConsistencyModes;
 import com.gigaspaces.internal.server.space.recovery.strategy.SpaceRecoverStrategy;
-import com.gigaspaces.internal.server.space.repartitioning.*;
+import com.gigaspaces.internal.server.space.repartitioning.Status;
+import com.gigaspaces.internal.server.space.repartitioning.Step;
+import com.gigaspaces.internal.server.space.repartitioning.ZKScaleOutUtils;
 import com.gigaspaces.internal.server.space.suspend.SuspendTypeChangedInternalListener;
 import com.gigaspaces.internal.server.space.tiered_storage.TieredStorageUtils;
 import com.gigaspaces.internal.server.storage.EntryTieredMetaData;
@@ -140,6 +145,7 @@ import com.j_spaces.core.cluster.ClusterXML;
 import com.j_spaces.core.cluster.startup.ReplicationStartupManager;
 import com.j_spaces.core.exception.*;
 import com.j_spaces.core.filters.*;
+import com.j_spaces.core.sadapter.SAException;
 import com.j_spaces.core.server.processor.UpdateOrWriteBusPacket;
 import com.j_spaces.core.service.AbstractService;
 import com.j_spaces.core.service.Service;
@@ -875,6 +881,7 @@ public class SpaceImpl extends AbstractService implements IRemoteSpace, IInterna
 
                 _engine = new SpaceEngine(this);
                 initReplicationStateBasedOnActiveElection();
+                initTieredStorage();
                 _engine.init(isWarmInit, isRestart);
                 _statistics = (JSpaceStatistics) getFilterObject(Constants.Statistics.STATISTICS_FILTER_NAME);
 
@@ -1606,6 +1613,7 @@ public class SpaceImpl extends AbstractService implements IRemoteSpace, IInterna
         }
 
         initReplicationStateBasedOnActiveElection();
+        initTieredStorage();
     }
 
     /**
@@ -3379,10 +3387,7 @@ public class SpaceImpl extends AbstractService implements IRemoteSpace, IInterna
             _directPersistencyRecoveryHelper = initDirectPersistencyRecoveryHelper(_clusterPolicy);
             _leaderSelector = initLeaderSelectorHandler(isLookupServiceEnabled);
             initReplicationStateBasedOnActiveElection();
-            if (_engine.isTieredStorage()) {
-                _engine.getTieredStorageManager().initialize(_engine);
-                _engine.getTieredStorageManager().initTieredStorageMetrics(this, _engine.getMetricManager());
-            }
+            initTieredStorage();
             recover();
             _qp = createQueryProcessor();
 
@@ -3399,6 +3404,14 @@ public class SpaceImpl extends AbstractService implements IRemoteSpace, IInterna
             throw new RemoteException(ex.getMessage(), ex);
         }
 
+    }
+
+    //prerequisite - _engine initialized, type manager initialized, metric manager initialized
+    private void initTieredStorage() throws SAException, RemoteException {
+        if (_engine.isTieredStorage()) {
+            _engine.getTieredStorageManager().initialize(_engine);
+            _engine.getTieredStorageManager().initTieredStorageMetrics(this, _engine.getMetricManager());
+        }
     }
 
     private ServiceTemplate buildServiceTemplate(ClusterPolicy clusterPolicy, boolean isPrimary) {

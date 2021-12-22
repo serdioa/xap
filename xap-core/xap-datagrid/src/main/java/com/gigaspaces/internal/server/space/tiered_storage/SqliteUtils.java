@@ -19,9 +19,10 @@ import com.j_spaces.jdbc.builder.range.*;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.sql.*;
-import java.sql.Date;
 import java.time.*;
 import java.util.*;
+
+import static com.j_spaces.core.Constants.TieredStorage.VERSION_DB_FIELD_NAME;
 
 
 public class SqliteUtils {
@@ -43,11 +44,12 @@ public class SqliteUtils {
 
     private static Map<String, InstantToDateTypeFunction> initInstantToDateTypeMap() {
         Map<String, InstantToDateTypeFunction> map = new HashMap<>();
-        map.put(Timestamp.class.getName(), (instant)-> new Timestamp(instant.toEpochMilli()));
+        map.put(Timestamp.class.getName(), Timestamp::from);
         map.put(Long.class.getName(), Instant::toEpochMilli);
         map.put(long.class.getName(), Instant::toEpochMilli);
         map.put(java.util.Date.class.getName(),(instant)-> new java.util.Date(instant.toEpochMilli()));
         map.put(LocalDateTime.class.getName(), (instant)-> LocalDateTime.ofInstant(instant, ZoneId.of("UTC")));
+        map.put(java.sql.Date.class.getName(), java.sql.Date::from);
         return map;
     }
 
@@ -94,7 +96,7 @@ public class SqliteUtils {
             String includeMaxSign = segmentRange.isIncludeMax() ? "= " : " ";
             queryBuilder.append(range.getPath());
             if (min != null && max == null) {
-                queryBuilder.append(" > ?");
+                queryBuilder.append(" >").append(includeMinSign).append("?");
                 queryParams.addParameter(path, min);
             } else if (min == null && max != null) {
                 queryBuilder.append(" <").append(includeMaxSign).append("?");
@@ -209,17 +211,18 @@ public class SqliteUtils {
     }
 
     public static String getPropertyType(String typeName) {
-        if (!sqlTypesMap.containsKey(typeName)) {
+        final String propertyType = sqlTypesMap.get(typeName);
+        if (propertyType == null) {
             throw new IllegalArgumentException("cannot map non trivial type " + typeName);
         }
-        return sqlTypesMap.get(typeName);
+        return propertyType;
     }
 
     public static Object getPropertyValue(ResultSet resultSet, Class<?> propertyType, int index) throws SQLException {
-        if (!sqlExtractorsMap.containsKey(propertyType.getName())) {
+        final ExtractFunction extractFunction = sqlExtractorsMap.get(propertyType.getName());
+        if (extractFunction == null) {
             throw new IllegalArgumentException("cannot map non trivial type " + propertyType.getName());
         }
-        final ExtractFunction extractFunction = sqlExtractorsMap.get(propertyType.getName());
         Object value = extractFunction.extract(resultSet, index);
         if(resultSet.wasNull()){
             return null;
@@ -227,20 +230,22 @@ public class SqliteUtils {
         return value;
     }
 
-
+    public static int getVersionValue(ResultSet resultSet) throws SQLException {
+        return resultSet.getInt(VERSION_DB_FIELD_NAME);
+    }
 
     public static void setPropertyValue(boolean isUpdate, PreparedStatement statement, Class<?> propertyType, int index, Object value) throws SQLException {
-        if (!sqlInjectorsMap.containsKey(propertyType.getName())) {
+        final InjectFunction injectFunction = sqlInjectorsMap.get(propertyType.getName());
+        if (injectFunction == null) {
             throw new IllegalArgumentException("cannot map non trivial type " + propertyType.getName());
         }
         if (value == null) {
             if (isUpdate) {
-                statement.setObject(index, value);
+                statement.setObject(index, null);
             } else {
                 statement.setString(index, "Null");
             }
         } else {
-            final InjectFunction injectFunction = sqlInjectorsMap.get(propertyType.getName());
             injectFunction.inject(statement, index, value);
         }
     }
@@ -306,10 +311,11 @@ public class SqliteUtils {
     }
 
     public static void appendRangeString(Range range, StringBuilder queryBuilder, QueryParameters queryParams) {
-        if(!rangeToStringFunctionMap.containsKey(range.getClass().getName())){
+        final RangeToStringFunction rangeToStringFunction = rangeToStringFunctionMap.get(range.getClass().getName());
+        if(rangeToStringFunction == null){
             throw new IllegalStateException("SQL query of type" + range.getClass().getName() + " is unsupported");
         }
-        rangeToStringFunctionMap.get(range.getClass().getName()).toString(range, queryBuilder, queryParams);
+        rangeToStringFunction.toString(range, queryBuilder, queryParams);
 
     }
 
@@ -340,7 +346,7 @@ public class SqliteUtils {
             TemplateEntryData entryData = template.getTemplateEntryData();
             Object value = entryData.getFixedPropertyValue(index);
 
-            if (template.getExtendedMatchCodes() == null || (template.isIdQuery() && typeDesc.getIdPropertyName().equalsIgnoreCase(criteria.getPath()))) {
+            if (template.getExtendedMatchCodes() == null || (template.isIdQuery() && typeDesc.getIdPropertiesNames().contains(criteria.getPath()))) {
                 if (value == null) {
                     return TemplateMatchTier.MATCH_HOT_AND_COLD;
                 } else if (timeType != null) {
@@ -365,7 +371,7 @@ public class SqliteUtils {
             }
             int index = ((PropertyInfo) property).getOriginalIndex();
             Object value = packet.getFieldValue(index);
-            if (packet instanceof TemplatePacket || (packet.isIdQuery() && packet.getTypeDescriptor().getIdPropertyName().equalsIgnoreCase(criteria.getPath()))) {
+            if (packet instanceof TemplatePacket || (packet.isIdQuery() && packet.getTypeDescriptor().getIdPropertiesNames().contains(criteria.getPath()))) {
                 if (value == null) {
                     return TemplateMatchTier.MATCH_HOT_AND_COLD;
                 } else if (timeType != null) {
@@ -390,6 +396,8 @@ public class SqliteUtils {
             return Instant.ofEpochMilli(((java.util.Date) value).getTime());
         } else if (LocalDateTime.class.equals(value.getClass())) {
             return ((LocalDateTime) value).toInstant(ZoneOffset.UTC);
+        } else if (java.sql.Date.class.equals(value.getClass())) {
+            return ((java.sql.Date) value).toLocalDate().atStartOfDay(ZoneOffset.UTC).toInstant();
         }
         throw new IllegalStateException("Time type of " + value.getClass().toString() + " is unsupported");
     }
@@ -433,6 +441,21 @@ public class SqliteUtils {
         throw new IllegalStateException("Supports only equal and segment Range");
     }
 
+    private static Range convertRangeFromJavaSqlDateToInstant(Range queryValueRange) {
+        if (queryValueRange.isEqualValueRange()) {
+            java.sql.Date value = (java.sql.Date) ((EqualValueRange) queryValueRange).getValue();
+            return new EqualValueRange(queryValueRange.getPath(), value.toLocalDate().atStartOfDay(ZoneOffset.UTC).toInstant());
+        } else if (queryValueRange.isSegmentRange()) {
+            SegmentRange segmentRange = (SegmentRange) queryValueRange;
+            Comparable<Instant> minInstant = segmentRange.getMin() != null ?
+                    ((java.sql.Date) segmentRange.getMin()).toLocalDate().atStartOfDay(ZoneOffset.UTC).toInstant() : null;
+            Comparable<Instant> maxInstant = segmentRange.getMax() != null ?
+                    ((java.sql.Date) segmentRange.getMax()).toLocalDate().atStartOfDay(ZoneOffset.UTC).toInstant() : null;
+            return new SegmentRange(queryValueRange.getPath(), minInstant, ((SegmentRange) queryValueRange).isIncludeMin(), maxInstant, ((SegmentRange) queryValueRange).isIncludeMax());
+        }
+        throw new IllegalStateException("Supports only equal and segment Range");
+    }
+
     private static Range convertRangeFromLocalDateTimeToInstant(Range queryValueRange) {
         if (queryValueRange.isEqualValueRange()) {
             LocalDateTime value = (LocalDateTime) ((EqualValueRange) queryValueRange).getValue();
@@ -457,6 +480,8 @@ public class SqliteUtils {
                     queryValueRange = convertRangeFromJavaUtilDateToInstant(queryValueRange);
                 } else if (LocalDateTime.class.getName().equals(timeType)) {
                     queryValueRange = convertRangeFromLocalDateTimeToInstant(queryValueRange);
+                } else if (java.sql.Date.class.getName().equals(timeType)) {
+                    queryValueRange = convertRangeFromJavaSqlDateToInstant(queryValueRange);
                 }
             } else {
                 return TemplateMatchTier.MATCH_COLD;

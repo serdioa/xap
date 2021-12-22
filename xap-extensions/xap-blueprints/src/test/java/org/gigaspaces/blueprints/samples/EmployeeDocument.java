@@ -11,18 +11,18 @@ import com.gigaspaces.metadata.index.SpaceIndexType;
 public class EmployeeDocument extends SpaceDocument {
 
     private static final long serialVersionUID = 1L;
-    private static final String EMPLOYEE = "companyDb_companySchema_Employee";
+    private static final String COMPANYDB_COMPANYSCHEMA_EMPLOYEE = "companyDb_companySchema_Employee";
     private static final String EMPLOYEEID = "employeeId";
     private static final String NAME = "name";
     private static final String AGE = "age";
 
 
     public EmployeeDocument() {
-        super(EMPLOYEE);
+        super(COMPANYDB_COMPANYSCHEMA_EMPLOYEE);
     }
 
     public static SpaceTypeDescriptor getTypeDescriptor() {
-        return new SpaceTypeDescriptorBuilder(EMPLOYEE)
+        return new SpaceTypeDescriptorBuilder(COMPANYDB_COMPANYSCHEMA_EMPLOYEE)
                 .broadcast(false)
                 .documentWrapperClass(EmployeeDocument.class)
                 .binaryStorage()

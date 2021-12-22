@@ -38,11 +38,11 @@ import com.gigaspaces.start.SystemInfo;
  *
  * 1. Set via System property: (recommended option)
  * <code>
- * 	-Dcom.gs.time-provider=com.j_spaces.kernel.time.RelativeTime
+ * 	-Dcom.gs.time-provider=com.gigaspaces.time.RelativeTime
  * </code>
  * 2. Set via container xml-tag value:
  * <code>
- * 	&lt;time-provider&gt;com.j_spaces.kernel.time.RelativeTime&lt;/time-provider&gt;
+ * 	&lt;time-provider&gt;com.gigaspaces.time.RelativeTime&lt;/time-provider&gt;
  * </code>
  * </pre>
  * <p> All known implementations, can be queried as follows: <li><tt>SystemTime.isAbsoluteTime();</tt></li>

@@ -21,6 +21,7 @@ import com.gigaspaces.internal.client.QueryResultTypeInternal;
 import com.gigaspaces.internal.client.spaceproxy.ISpaceProxy;
 import com.gigaspaces.internal.client.spaceproxy.metadata.ObjectType;
 import com.gigaspaces.internal.metadata.ITypeDesc;
+import com.gigaspaces.internal.metadata.SpacePropertyInfo;
 import com.gigaspaces.internal.metadata.SpaceTypeInfo;
 import com.gigaspaces.internal.metadata.SpaceTypeInfoRepository;
 import com.gigaspaces.internal.transport.IEntryPacket;
@@ -1099,7 +1100,7 @@ public class StoreManager extends AbstractStoreManager {
                 final Collection<?> values = (Collection<?>) entry.getFieldValue(spacePropertyIndex);
                 if (values != null) {
                     for (Object item : values) {
-                        Object itemId = ownedTypeInfo.getIdProperty().getValue(item);
+                        Object itemId = getSingleIdProperty(ownedTypeInfo).getValue(item);
                         if (id.equals(itemId)) {
                             final IEntryPacket entryPacket = getEntryPacketFromEntity(item);
                             return (sms.isEmpty()) ? entryPacket : findObjectInEntry(tempStateManager, entryPacket, sms);
@@ -1112,7 +1113,7 @@ public class StoreManager extends AbstractStoreManager {
                 final Object id = ApplicationIds.toPKValues(tempStateManager.getId(), tempStateManager.getMetaData())[0];
                 final Object value = entry.getFieldValue(spacePropertyIndex);
                 if (value != null) {
-                    Object objectId = ownedTypeInfo.getIdProperty().getValue(value);
+                    Object objectId = getSingleIdProperty(ownedTypeInfo).getValue(value);
                     if (id.equals(objectId)) {
                         final IEntryPacket entryPacket = getEntryPacketFromEntity(value);
                         return (sms.isEmpty()) ? entryPacket : findObjectInEntry(tempStateManager, entryPacket, sms);
@@ -1128,6 +1129,13 @@ public class StoreManager extends AbstractStoreManager {
 
             // Object not found..
             return null;
+        }
+
+        private SpacePropertyInfo getSingleIdProperty(SpaceTypeInfo typeInfo) {
+            List<SpacePropertyInfo> idProperties = typeInfo.getIdProperties();
+            if (idProperties.size() > 1)
+                throw new IllegalStateException("Composite Space ID is not supported in this context.");
+            return idProperties.get(0);
         }
     }
 

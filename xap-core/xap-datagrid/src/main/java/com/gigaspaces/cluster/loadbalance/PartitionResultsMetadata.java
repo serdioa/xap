@@ -18,14 +18,12 @@ package com.gigaspaces.cluster.loadbalance;
 
 import com.gigaspaces.internal.query.IPartitionResultMetadata;
 import com.j_spaces.core.UidQueryPacket;
-import com.j_spaces.core.client.GSIterator;
 
 /**
  * PartitionResultsMetadata is meta data attached to the multiple uids entry/template.<br> Since
  * uids are just strings, they lose all the information about the space they came for.<br>
  * PartitionResultsMetadata keeps this data so it can be used to route the uids to specific
- * partition,<br> instead doing broadcast.<br> Used by {@link GSIterator}.<br> See {@link
- * UidQueryPacket}
+ * partition,<br> instead doing broadcast.<br> See {@link UidQueryPacket}
  *
  * @author anna
  * @since 7.1

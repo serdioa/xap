@@ -44,7 +44,7 @@ public class ConstructorInstantiationDescriptor implements SmartExternalizable {
     private boolean[] excludedIndexes;
     private int[] spacePropertyToConstructorIndex;
 
-    private int idPropertyConstructorIndex = NO_MATCH;
+    private int autoGenIdPropertyConstructorIndex = NO_MATCH;
     private int dynamicPropertiesConstructorIndex = NO_MATCH;
     private int versionConstructorIndex = NO_MATCH;
     private int persistConstructorIndex = NO_MATCH;
@@ -91,12 +91,12 @@ public class ConstructorInstantiationDescriptor implements SmartExternalizable {
         this.spacePropertyToConstructorIndex = spacePropertyToConstructorIndex;
     }
 
-    public int getIdPropertyConstructorIndex() {
-        return idPropertyConstructorIndex;
+    public int getAutoGenIdPropertyConstructorIndex() {
+        return autoGenIdPropertyConstructorIndex;
     }
 
-    public void setIdPropertyConstructorIndex(int idPropertyConstructorIndex) {
-        this.idPropertyConstructorIndex = idPropertyConstructorIndex;
+    public void setAutoGenIdPropertyConstructorIndex(int idPropertyConstructorIndex) {
+        this.autoGenIdPropertyConstructorIndex = idPropertyConstructorIndex;
     }
 
     public int getDynamicPropertiesConstructorIndex() {
@@ -170,7 +170,7 @@ public class ConstructorInstantiationDescriptor implements SmartExternalizable {
         IOUtils.writeIntegerArray(out, spacePropertyToConstructorIndex);
         for (Class<?> type : constructorParameterTypes)
             IOUtils.writeString(out, type.getName());
-        out.writeInt(idPropertyConstructorIndex);
+        out.writeInt(autoGenIdPropertyConstructorIndex);
         out.writeInt(dynamicPropertiesConstructorIndex);
         out.writeInt(versionConstructorIndex);
         out.writeInt(persistConstructorIndex);
@@ -190,7 +190,7 @@ public class ConstructorInstantiationDescriptor implements SmartExternalizable {
                     : ClassLoaderHelper.loadClass(typeName, false /* localOnly */);
             constructorParameterTypes[i] = type;
         }
-        idPropertyConstructorIndex = in.readInt();
+        autoGenIdPropertyConstructorIndex = in.readInt();
         dynamicPropertiesConstructorIndex = in.readInt();
         versionConstructorIndex = in.readInt();
         persistConstructorIndex = in.readInt();

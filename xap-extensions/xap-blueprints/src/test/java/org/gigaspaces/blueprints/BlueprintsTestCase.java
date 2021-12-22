@@ -30,7 +30,7 @@ public class BlueprintsTestCase {
     public void testNames() throws IOException {
         Path templates = getResourcePath("blueprints");
         BlueprintRepository repository = new BlueprintRepository(templates);
-        Assert.assertEquals(Files.list(templates).count(), repository.getNames().size());
+        Assert.assertEquals(Files.list(templates).filter(path -> !path.endsWith("dih-project")).count(), repository.getNames().size());
         Assert.assertTrue(repository.getNames().contains("sample"));
     }
 

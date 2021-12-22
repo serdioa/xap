@@ -28,7 +28,9 @@ public class TestSpaceTypeDescriptorUtils {
         Assert.assertEquals(expected.isAutoGenerateId(), actual.isAutoGenerateId());
         Assert.assertEquals(expected.getTypeSimpleName(), actual.getTypeSimpleName());
         Assert.assertEquals(expected.getFifoGroupingPropertyPath(), actual.getFifoGroupingPropertyPath());
-        Assert.assertEquals(expected.getIdPropertyName(), actual.getIdPropertyName());
+        Assert.assertEquals(expected.getIdPropertiesNames().size(), actual.getIdPropertiesNames().size());
+        for (int i = 0; i < expected.getIdPropertiesNames().size(); i++)
+            Assert.assertEquals(expected.getIdPropertiesNames().get(i), actual.getIdPropertiesNames().get(i));
         Assert.assertEquals(expected.getNumOfFixedProperties(), actual.getNumOfFixedProperties());
         Assert.assertEquals(expected.getRoutingPropertyName(), actual.getRoutingPropertyName());
         Assert.assertEquals(expected.isConcreteType(), actual.isConcreteType());

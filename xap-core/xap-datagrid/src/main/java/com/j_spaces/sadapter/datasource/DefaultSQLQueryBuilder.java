@@ -27,6 +27,7 @@ import com.gigaspaces.start.SystemLocations;
 import com.j_spaces.core.client.SQLQuery;
 import com.j_spaces.core.client.TemplateMatchCodes;
 
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -85,37 +86,44 @@ public class DefaultSQLQueryBuilder implements SQLQueryBuilder {
    * @see com.j_spaces.sadapter.datasource.SQLQueryBuilder#build(com.j_spaces.core.EntryHolder, com.j_spaces.core.server.TypeTableEntry)
    */
     public SQLQuery<?> build(IEntryPacket entry, ITypeDesc typeDesc) {
-        Object id = null;
+        List<Object> preparedValues = new LinkedList<Object>();
 
-        String idPropertyName = typeDesc.getIdPropertyName();
-        if (idPropertyName == null)
-            idPropertyName = typeDesc.getDefaultPropertyName();
+        List<String> idPropertiesNames = typeDesc.getIdPropertiesNames();
+        if (idPropertiesNames.isEmpty() && typeDesc.getDefaultPropertyName() != null)
+            idPropertiesNames = Collections.singletonList(typeDesc.getDefaultPropertyName());
 
         //if no fields are defined - create an empty query
-        if (idPropertyName == null)
+        if (idPropertiesNames.isEmpty())
             return new SQLQuery<Object>(entry.getTypeName(), "");
 
-        if (typeDesc.getIdPropertyName() != null && typeDesc.isAutoGenerateId())
-            id = entry.getUID();
-        else
-            id = entry.getPropertyValue(idPropertyName);
+        // Add the field values to the prepared values
+        if (!typeDesc.getIdPropertiesNames().isEmpty() && typeDesc.isAutoGenerateId()) {
+            preparedValues.add(entry.getUID());
+        } else {
+            for (String name : idPropertiesNames) {
+                preparedValues.add(entry.getPropertyValue(name));
+            }
+        }
 
         StringBuilder wherePart = new StringBuilder();
-        wherePart.append(idPropertyName);
-        wherePart.append(mapCodeToSign(TemplateMatchCodes.EQ));
-        wherePart.append(BIND_PARAMETER);
-        if (ADAPT_POSITIONAL_PARAMETERS)
-            wherePart.append("0");
-
-        // Add the field values to the prepared values
-        List<Object> preparedValues = new LinkedList<Object>();
-        preparedValues.add(id);
+        appendEqualsPredicate(wherePart, idPropertiesNames.get(0), 0);
+        for (int i = 1; i < idPropertiesNames.size(); i++) {
+            wherePart.append(" AND ");
+            appendEqualsPredicate(wherePart, idPropertiesNames.get(i), i);
+        }
 
         SQLQuery<?> query = new SQLQuery<Object>(entry.getTypeName(), wherePart.toString());
         query.setParameters(preparedValues.toArray());
         return query;
     }
 
+    private void appendEqualsPredicate(StringBuilder wherePart, String name, int pos) {
+        wherePart.append(name);
+        wherePart.append(mapCodeToSign(TemplateMatchCodes.EQ));
+        wherePart.append(BIND_PARAMETER);
+        if (ADAPT_POSITIONAL_PARAMETERS)
+            wherePart.append(pos);
+    }
 
     /**
      * Maps between extended match-codes to actual SQL Query sign.

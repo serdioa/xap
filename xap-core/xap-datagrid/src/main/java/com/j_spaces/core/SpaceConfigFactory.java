@@ -406,12 +406,6 @@ public class SpaceConfigFactory {
             }
         }// while filters...
 
-
-        spaceConfig.setJMSRmiPort(schemaProps.getProperty(Constants.SPACE_CONFIG_PREFIX + Constants.Jms.JMS_RMI_PORT_PROP, ""));
-        spaceConfig.setJMSTopicNames(schemaProps.getProperty(Constants.SPACE_CONFIG_PREFIX + Constants.Jms.JMS_TOPIC_NAMES_PROP, ""));
-        spaceConfig.setJMSQueueNames(schemaProps.getProperty(Constants.SPACE_CONFIG_PREFIX + Constants.Jms.JMS_QUEUE_NAMES_PROP, ""));
-
-
         // proxy
         spaceConfig.setProxyConnectionMode(schemaProps.getProperty(Constants.SpaceProxy.OldRouter.CONNECTION_MONITOR_FULL, Constants.SpaceProxy.OldRouter.CONNECTION_MONITOR_DEFAULT));
         spaceConfig.setProxyMonitorFrequency(Long.parseLong(schemaProps.getProperty(Constants.SpaceProxy.OldRouter.MONITOR_FREQUENCY_FULL, Constants.SpaceProxy.OldRouter.MONITOR_FREQUENCY_DEFAULT)));
@@ -423,69 +417,6 @@ public class SpaceConfigFactory {
         return spaceConfig;
 
     }
-    /*
-     private static void retriveSpaceResourceFiles( Properties schemaProps ) throws IOException {
-		 // Assure that the same place where the space config exist, you may find the
-		 // <DefaultConfig>_DCache.xml and <DefaultConfig>_ClusteredJMS.xml.
-		 // Otherwise create default files.
-
-
-		 String homeDir = System.getProperty( JSPACE_HOME_SYS_PROP, JSPACE_HOME_SYS_DEFAULT );
-		 String m_configDirectory = homeDir + File.separator + CONTAINER_CONFIG_DIRECTORY;
-
-		//Check that the default <DefaultConfig>_DCache.xml config file exist.
-		//otherwise create default config file.
-		String dCacheConfigFile = m_configDirectory + File.separator + Constants.DCache.DCACHE_CONFIG_FILE_DEFAULT;
-		if (!new File(dCacheConfigFile).isFile())//TODO make sure we wont write to disk with schemas
-			JSpaceUtilities.retriveResource(DCACHE_TEMPLATE_FILE_NAME_DEFAULT, dCacheConfigFile);
-
-		// check for dCache config file property, which exists in this specific space.
-		String dCacheConfigName = schemaProps.getProperty( Constants.SPACE_CONFIG_PREFIX + CONFIG_NAME_PROP, DCACHE_CONFIG_NAME_DEFAULT);
-
-		// create <dCacheConfig>_DCache.xml file if not exists
-		dCacheConfigFile = m_configDirectory + File.separator + dCacheConfigName + Constants.DCache.FILE_SUFFIX_EXTENTION;
-		if (!new File(dCacheConfigFile).isFile())
-		{
-			// retrieve from resource and copy xml file to the disk
-			JSpaceUtilities.retriveResource(DCACHE_TEMPLATE_FILE_NAME_DEFAULT, dCacheConfigFile);
-		}
-
-		// update space-config properties
-		//Properties spProp = JProperties.getSpaceProperties( spaceName );
-		//if (spProp != null) {
-		    schemaProps.setProperty(Constants.SPACE_CONFIG_PREFIX + CONFIG_NAME_PROP, dCacheConfigName);
-		    schemaProps.setProperty(Constants.SPACE_CONFIG_PREFIX + CONFIG_FILE_URL_PROP, dCacheConfigFile);
-		//}
-
-		//JMS staff
-		//Check that the default <DefaultConfig>_ClusteredJMS.xml config file exist.
-		//otherwise create default config file.
-//		String jmsConfigFile = m_configDirectory + File.separator + CLUSTERED_JMS_CONFIG_FILE_DEFAULT;
-//		if (!new File(jmsConfigFile).isFile())
-//			JSpaceUtilities.retriveResource(CLUSTERED_JMS_TEMPLATE_FILE_NAME_DEFAULT, jmsConfigFile);
-
-		// check for dCache config file property, which exists in this specific space.
-		String jmsConfigName = schemaProps.getProperty( Constants.SPACE_CONFIG_PREFIX + CLUSTERED_JMS_CONFIG_NAME_PROP, CLUSTERED_JMS_CONFIG_NAME_DEFAULT);
-
-		InputStream jmsConfigInputStream = JSpaceUtilities.findDefaultConfigClusteredJMS();
-
-		// create <jmsConfigName>_ClusteredJMS.xml file if not exists
-		String jmsConfigFile = m_configDirectory + File.separator + jmsConfigName + CLUSTERED_JMS_FILE_SUFFIX_EXTENTION;
-		//if file doesn't exist and this is not default config
-		if( !new File( jmsConfigFile ).isFile() &&
-				!Constants.Jms.CLUSTERED_JMS_CONFIG_NAME_DEFAULT.equals( jmsConfigName ) )	{
-			// retrieve from resource and copy xml file to the disk
-			JSpaceUtilities.retriveResource( jmsConfigInputStream, jmsConfigFile );
-		}
-
-		// update space-config properties
-		//if( spProp != null ) {
-		    schemaProps.setProperty(Constants.SPACE_CONFIG_PREFIX + CLUSTERED_JMS_CONFIG_NAME_PROP, jmsConfigFile);
-		    //schemaProps.setProperty(Constants.SPACE_CONFIG_PREFIX + CLUSTERED_JMS_CONFIG_FILE_URL_PROP, jmsConfigFile);
-		//}
-	}
-     */
-
 
     /**
      * Save content of SpaceAttributes instance into xml file( schema or configuration ).

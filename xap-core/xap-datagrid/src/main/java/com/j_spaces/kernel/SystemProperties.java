@@ -83,12 +83,6 @@ public class SystemProperties extends CommonSystemProperties {
     public final static String NOTIFY_FIFO_QUEUE = "com.gs.fifo_notify.queue";
 
     /**
-     * if true, when JMS clients use transacted sessions the JMS transactions will use the Mahalo
-     * Jini transaction manager, which expects the manager to be started.
-     */
-    public final static String JMS_USE_MAHALO_PROP = "com.gs.jms.use_mahalo";
-
-    /**
      * When set to false, the XAResource will not throw an error when a non existing or already
      * rolled back transaction is rolled back.
      *
@@ -101,13 +95,6 @@ public class SystemProperties extends CommonSystemProperties {
      * called GS_JAXP_EnvironmentCheck.xml in current directory.
      */
     public final static String JAXP_ENV_DEBUG_REPORT = "com.gs.XMLEnvCheck";
-
-    /**
-     * If true it will register the jms administrated objects in the rmi registry
-     **/
-    public final static String JMS_LOOKUP_ENABLED = "com.gs.jms.enabled";
-
-    public final static String JMS_FACTORY = "com.gs.jms.factory-class";
 
     /**
      * When it is necessary to ensure that DGC clean calls for unreachable remote references are
@@ -722,7 +709,7 @@ public class SystemProperties extends CommonSystemProperties {
     /**
      * The default indication for if the QueryCache inner implementation will be bounded or not
      */
-    public final static String ENABLE_BOUNDED_QUERY_CACHE_DEFAULT = "true";
+    public final static boolean ENABLE_BOUNDED_QUERY_CACHE_DEFAULT = true;
 
     /**
      * The bounded query cache size
@@ -805,12 +792,17 @@ public class SystemProperties extends CommonSystemProperties {
     public static final String MANAGER_REST_REQUESTS_MAX_RUNNING = "com.gs.manager.rest.max-running-requests";
     public static final String MANAGER_REST_REQUESTS_MAX_COMPLETED = "com.gs.manager.rest.max-completed-requests";
     public static final String MANAGER_REST_PLUGINS_PATH = "com.gs.manager.rest.plugins.path";
+    public static final String MANAGER_REST_REQUESTS_GLOBAL_COUNTER_DISABLED = "com.gs.manager.rest.disable-global-counter";
 
     public static final String SPARK_REST_REQUEST_TIMEOUT = "com.gs.manager.rest.spark.request-timeout";
     public static final String SPARK_REST_REQUEST_TIMEOUT_DEFAULT = "10000";
 
     public static final String MANAGER_ZOOKEEPER_DISCOVERY_PORT = "com.gs.manager.zookeeper.discovery.port";
     public static final String MANAGER_ZOOKEEPER_LEADER_ELECTION_PORT = "com.gs.manager.zookeeper.leader-election.port";
+    public static final String MANAGER_GLOBAL_COUNTER_RETRY_POLICY_MAX_RETRIES = "com.gs.manager.zookeeper.global-counter-max-retries";
+    public static final int MANAGER_GLOBAL_COUNTER_RETRY_POLICY_MAX_RETRIES_DEFAULT = 3;
+    public static final String MANAGER_GLOBAL_COUNTER_RETRY_POLICY_INTERVAL_MS_BETWEEN_RETRIES = "com.gs.manager.zookeeper.interval-between-retries";
+    public static final int MANAGER_GLOBAL_COUNTER_RETRY_POLICY_INTERVAL_MS_BETWEEN_RETRIES_DEFAULT = 500;
 
     public static final String MANAGER_ADMIN_WITH_STATISTICS_HISTORY = "com.gs.admin.with-stats-history";
     public static final String MANAGER_ADMIN_DISCOVER_UN_MANAGED_SPACES = "com.gs.admin.discover-un-managed-spaces";
@@ -837,6 +829,11 @@ public class SystemProperties extends CommonSystemProperties {
     public static final String OPS_UI_DEV_MODE = "com.gs.ops-ui.dev-mode";
     public static final String KAFKA_URL = "com.gs.dih.kafka.url";
 
+    /**
+     * Set system property to enable tiered storage when not configured using xml/configurer
+     * or enable using a Space property:
+     * @see Constants.TieredStorage#SPACE_TIERED_STORAGE_ENABLED */
+    public static final String TIERED_STORAGE_ENABLED = "com.gs.tiered-storage.enabled";
 
 
     private static final Map<String, String> defaultValues = initDefaultValues();

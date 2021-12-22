@@ -49,6 +49,11 @@ public class MetricManagerConfig {
     private final Map<String, MetricReporterFactory> reportersFactories;
     private final Map<String, MetricSamplerConfig> samplers;
 
+    public static final String INFLUXDB = "influxdb";
+    public static final String HSQLDB = "hsqldb";
+    public static final String CONSOLE = "console";
+    public static final String FILE = "file";
+
     public MetricManagerConfig() {
         this.separator = "_"; // TODO: Configurable
         this.patterns = new MetricPatternSet(separator);
@@ -116,10 +121,10 @@ public class MetricManagerConfig {
             return fromName(factoryClassName);
 
         switch (name) {
-            case "influxdb": return fromName("com.gigaspaces.metrics.influxdb.InfluxDBReporterFactory");
-            case "hsqldb": return fromName("com.gigaspaces.metrics.hsqldb.HsqlDBReporterFactory");
-            case "console": return new ConsoleReporterFactory();
-            case "file": return new FileReporterFactory();
+            case INFLUXDB: return fromName("com.gigaspaces.metrics.influxdb.InfluxDBReporterFactory");
+            case HSQLDB: return fromName("com.gigaspaces.metrics.hsqldb.HsqlDBReporterFactory");
+            case CONSOLE: return new ConsoleReporterFactory();
+            case FILE: return new FileReporterFactory();
             default: throw new IllegalArgumentException("Failed to create factory '" + name + "' without a custom class");
         }
     }
@@ -176,7 +181,7 @@ public class MetricManagerConfig {
                 } else {
                     String firstHost = managerClusterInfo.getServers().get(0).getHost();
                     logger.debug("Creating default metrics ui reporter to first manager: " + firstHost);
-                    MetricReporterFactory factory = toFactory("hsqldb", null);
+                    MetricReporterFactory factory = toFactory(HSQLDB, null);
                     Properties properties = new Properties();
                     properties.setProperty("driverClassName", "org.hsqldb.jdbc.JDBCDriver");
                     properties.setProperty("dbname", "metricsdb");

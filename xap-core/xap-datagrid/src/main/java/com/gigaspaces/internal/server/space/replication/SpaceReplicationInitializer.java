@@ -248,6 +248,7 @@ public class SpaceReplicationInitializer {
                 _spaceEngine.getTypeManager(), _spaceEngine);
         replicationNode.setInDataTypeCreatedHandler(metadataHandler);
         replicationNode.setInDataTypeIndexAddedHandler(metadataHandler);
+        replicationNode.setInDataTypeDrop(metadataHandler);
 
         replicationNode.getAdmin().setNodeStateListener(new ReplicationNodeStateListener(_spaceEngine));
         //Enable incomming communication of the router(though it should have been only after first copy stage of recovery, 

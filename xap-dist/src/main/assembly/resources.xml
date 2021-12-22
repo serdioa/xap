@@ -30,9 +30,22 @@
 
 		<dependencySet>
 			<useProjectArtifact>false</useProjectArtifact>
+			<outputDirectory>product/lib/optional/burningwave</outputDirectory>
+			<includes>
+				<include>org.burningwave:core</include>
+			</includes>
+			<excludes>
+				<exclude>io.github.toolfactory:narcissus</exclude>
+			</excludes>
+			<useProjectAttachments>true</useProjectAttachments>
+			<useTransitiveDependencies>true</useTransitiveDependencies>
+			<useTransitiveFiltering>true</useTransitiveFiltering>
+		</dependencySet>
+
+		<dependencySet>
+			<useProjectArtifact>false</useProjectArtifact>
 			<outputDirectory>product/lib/optional/jdbc</outputDirectory>
 			<includes>
-				<include>com.h2database:h2</include>
 				<include>org.hsqldb:hsqldb</include>
 			</includes>
 		</dependencySet>

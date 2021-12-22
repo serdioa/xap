@@ -119,12 +119,7 @@ public abstract class AbstractQueryPacket extends AbstractEntryPacket implements
 
     @Override
     public Object getID() {
-        int index = getIdentifierFieldIndex();
-        return (index >= 0 ? getFieldValue(index) : null);
-    }
-
-    protected int getIdentifierFieldIndex() {
-        return (_typeDesc != null ? _typeDesc.getIdentifierPropertyId() : -1);
+        return _typeDesc != null ? getIdImpl() : null;
     }
 
     public boolean isFifo() {

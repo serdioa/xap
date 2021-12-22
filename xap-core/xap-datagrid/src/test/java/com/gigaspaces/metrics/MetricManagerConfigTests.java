@@ -17,7 +17,6 @@
 package com.gigaspaces.metrics;
 
 import com.gigaspaces.metrics.reporters.ConsoleReporterFactory;
-
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -72,7 +71,7 @@ public class MetricManagerConfigTests {
         MetricManagerConfig config = MetricManagerConfig.loadFromXml(fileName);
         Assert.assertEquals(2, config.getReportersFactories().size());
 
-        MetricReporterFactory console = config.getReportersFactories().get("console");
+        MetricReporterFactory console = config.getReportersFactories().get(MetricManagerConfig.CONSOLE);
         Assert.assertTrue(console instanceof ConsoleReporterFactory);
 
         MetricReporterFactory foo = config.getReportersFactories().get("foo");

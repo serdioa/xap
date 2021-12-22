@@ -58,14 +58,15 @@ public class ConstructorPropertiesHelper {
             propertyToConstructorIndex[i] = -1;
         boolean[] excludedConstructorIndexes = new boolean[parameterNames.length];
 
+        SpacePropertyInfo autoGenIdProperty = typeInfo.getIdAutoGenerate() ? typeInfo.getIdProperties().get(0) : null;
         for (int constructorIndex = 0; constructorIndex < parameterNames.length; constructorIndex++) {
             String parameterName = parameterNames[constructorIndex];
             SpacePropertyInfo property = typeInfo.getProperty(parameterName);
             int indexOfProperty = typeInfo.indexOf(property);
             if (indexOfProperty >= 0) {
                 propertyToConstructorIndex[indexOfProperty] = constructorIndex;
-                if (property == typeInfo.getIdProperty())
-                    result.setIdPropertyConstructorIndex(constructorIndex);
+                if (property == autoGenIdProperty)
+                    result.setAutoGenIdPropertyConstructorIndex(constructorIndex);
             } else if (property != null) {
                 boolean excluded = true;
                 if (property == typeInfo.getVersionProperty()) {

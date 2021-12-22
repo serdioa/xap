@@ -1,6 +1,12 @@
 package com.gigaspaces.entry;
 
-import java.io.Serializable;
+import com.gigaspaces.internal.io.IOUtils;
+import com.gigaspaces.internal.utils.GsEnv;
+import com.gigaspaces.serialization.SmartExternalizable;
+
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import java.util.Arrays;
 
 /**
@@ -23,23 +29,36 @@ import java.util.Arrays;
  *   setValue(0, fieldKey1);
  * }
  *
- * todo: should this be externelizable?
- * todo: consult David about this decumentation
- *
  * Author: Ayelet Morris
  * Since 15.5.0
  */
-public class CompoundSpaceId implements Serializable {
+public class CompoundSpaceId implements SmartExternalizable {
 
     private static final long serialVersionUID = 1L;
+    private static final String SEPARATOR = GsEnv.property("com.gs.compound-id-separator").get("|");
+
     private Object[] values;
 
-    public CompoundSpaceId(Object... values) {
+    /**
+     * Required for Externalizable
+     */
+    public CompoundSpaceId() {
+    }
+
+    public CompoundSpaceId(Object[] values) {
         this.values = values;
     }
 
     public CompoundSpaceId(int numOfValues) {
-        this.values = new Object[numOfValues];
+        this(new Object[numOfValues]);
+    }
+
+    public static CompoundSpaceId from(Object ... values) {
+        return new CompoundSpaceId(values);
+    }
+
+    public int length() {
+        return values.length;
     }
 
     public Object getValue(int index) {
@@ -52,13 +71,23 @@ public class CompoundSpaceId implements Serializable {
 
     @Override
     public String toString() {
-        return Arrays.toString(values);
+        if (values.length == 0)
+            return "";
+        if (values.length == 1)
+            return values[0].toString();
+        StringBuilder sb = new StringBuilder();
+        sb.append(values[0]);
+        for (int i = 1; i < values.length; i++)
+            sb.append(SEPARATOR).append(values[i]);
+        return sb.toString();
     }
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (!(o instanceof CompoundSpaceId))
+            return false;
         CompoundSpaceId that = (CompoundSpaceId) o;
         return Arrays.equals(that.values,this.values);
     }
@@ -68,4 +97,13 @@ public class CompoundSpaceId implements Serializable {
         return Arrays.hashCode(values);
     }
 
+    @Override
+    public void writeExternal(ObjectOutput out) throws IOException {
+        IOUtils.writeObjectArray(out, values);
+    }
+
+    @Override
+    public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        values = IOUtils.readObjectArray(in);
+    }
 }

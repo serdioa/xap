@@ -81,11 +81,12 @@ public class MongoQueryFactory {
 
         DBObject q = qResult.get();
 
-        if (q.containsField(typeDescriptor.getIdPropertyName())) {
+        String idPropertyName = typeDescriptor.getIdPropertyName();
+        if (q.containsField(idPropertyName)) {
 
-            Object value = q.get(typeDescriptor.getIdPropertyName());
+            Object value = q.get(idPropertyName);
 
-            q.removeField(typeDescriptor.getIdPropertyName());
+            q.removeField(idPropertyName);
 
             q.put(Constants.ID_PROPERTY, value);
 

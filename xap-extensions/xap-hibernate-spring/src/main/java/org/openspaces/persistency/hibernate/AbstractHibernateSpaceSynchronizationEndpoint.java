@@ -104,8 +104,11 @@ public abstract class AbstractHibernateSpaceSynchronizationEndpoint extends Mana
             i++;
         }
 
-        updateQueryBuilder.append(" where ").append(typeDescriptor.getIdPropertyName())
-                .append("=:id_").append(typeDescriptor.getIdPropertyName());
+        List<String> idPropertiesNames = typeDescriptor.getIdPropertiesNames();
+        for (int j = 0; j < idPropertiesNames.size(); j++) {
+            updateQueryBuilder.append(j == 0 ? " where " : " and ");
+            updateQueryBuilder.append(idPropertiesNames.get(j)).append("=:id_").append(idPropertiesNames.get(j));
+        }
         String hql = updateQueryBuilder.toString();
         if (logger.isTraceEnabled()) {
             logger.trace("Partial Update HQL [" + hql + ']');

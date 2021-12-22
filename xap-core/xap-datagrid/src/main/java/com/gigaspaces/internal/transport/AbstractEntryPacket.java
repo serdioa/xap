@@ -19,10 +19,7 @@ package com.gigaspaces.internal.transport;
 import com.gigaspaces.internal.client.QueryResultTypeInternal;
 import com.gigaspaces.internal.client.StorageTypeDeserialization;
 import com.gigaspaces.internal.io.IOUtils;
-import com.gigaspaces.internal.metadata.EntryType;
-import com.gigaspaces.internal.metadata.ITypeDesc;
-import com.gigaspaces.internal.metadata.ITypeIntrospector;
-import com.gigaspaces.internal.metadata.PropertyInfo;
+import com.gigaspaces.internal.metadata.*;
 import com.gigaspaces.internal.serialization.AbstractExternalizable;
 import com.gigaspaces.internal.server.space.SpaceUidFactory;
 import com.gigaspaces.internal.utils.Textualizable;
@@ -192,16 +189,19 @@ public abstract class AbstractEntryPacket extends AbstractExternalizable impleme
     }
 
     public Object getID() {
-        final ITypeDesc typeDesc = getTypeDescriptor();
-        final int identifierPropertyId = typeDesc.getIdentifierPropertyId();
-        Object value = null;
-        if (identifierPropertyId != -1)
-            value = getFieldValue(identifierPropertyId);
-
+        Object value = getIdImpl();
         if (value == null)
             value = getUID();
 
         return value;
+    }
+
+    protected Object getIdImpl() {
+        ITypeDesc typeDesc = getTypeDescriptor();
+        int[] idPropertiesIndexes = typeDesc.getIdentifierPropertiesId();
+        if (idPropertiesIndexes.length == 0)
+            return null;
+        return TypeDescriptorUtils.toSpaceId(idPropertiesIndexes, this::getFieldValue);
     }
 
     @Override

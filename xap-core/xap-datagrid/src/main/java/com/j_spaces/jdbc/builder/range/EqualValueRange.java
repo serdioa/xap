@@ -56,9 +56,6 @@ public class EqualValueRange extends SingleValueRange {
 	 */
     @Override
     public void toEntryPacket(QueryTemplatePacket e, int index) {
-        // check for UID
-        ITypeDesc typeDesc = e.getTypeDescriptor();
-        String idPropertyName = typeDesc.getIdPropertyName();
         e.setFieldValue(index, getValue());
         //noinspection deprecation
         e.setExtendedMatchCode(index, TemplateMatchCodes.EQ);

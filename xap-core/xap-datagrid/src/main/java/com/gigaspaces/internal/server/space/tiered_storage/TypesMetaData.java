@@ -36,14 +36,14 @@ public class TypesMetaData {
         return counter;
     }
 
-    private LongCounter getRamCounterFromCounterMap(String type){
+    private LongCounter getRamCounterFromCounterMap(String type) {
         LongCounter counter = ramCounterMap.get(type);
-        if(!ramCounterMap.containsKey(type)){
+        if (counter == null) {
             counter = new LongCounter();
-             LongCounter result = ramCounterMap.putIfAbsent(type, counter);
-             if(result != null){
-                 counter = result;
-             }
+            LongCounter result = ramCounterMap.putIfAbsent(type, counter);
+            if(result != null){
+                counter = result;
+            }
         }
         return counter;
     }

@@ -5,7 +5,7 @@
     <parent>
         <artifactId>xap</artifactId>
         <groupId>org.gigaspaces</groupId>
-        <version>16.1.0-SNAPSHOT</version>
+        <version>16.2.0-SNAPSHOT</version>
         <relativePath>../../</relativePath>
     </parent>
 
@@ -41,6 +41,12 @@
         <dependency>
             <groupId>org.gigaspaces</groupId>
             <artifactId>xap-openspaces</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.jetbrains</groupId>
+            <artifactId>annotations</artifactId>
+            <version>13.0</version>
             <scope>test</scope>
         </dependency>
     </dependencies>

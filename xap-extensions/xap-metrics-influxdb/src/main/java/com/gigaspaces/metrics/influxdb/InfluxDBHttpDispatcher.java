@@ -16,16 +16,13 @@
 
 package com.gigaspaces.metrics.influxdb;
 
-import com.gigaspaces.internal.utils.StringUtils;
 import com.gigaspaces.metrics.HttpUtils;
-
-import java.io.IOException;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.util.concurrent.TimeUnit;
-
+import com.gigaspaces.metrics.reporters.MetricsReportersUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.net.URL;
 
 /**
  * @author Niv Ingberg
@@ -35,12 +32,12 @@ public class InfluxDBHttpDispatcher extends InfluxDBDispatcher {
     private static final Logger logger = LoggerFactory.getLogger(InfluxDBHttpDispatcher.class.getName());
     private static final String CONTENT_TYPE = System.getProperty("com.gigaspaces.metrics.influxdb.http.content_type", "text/plain");
     private static final int TIMEOUT = Integer.getInteger("com.gigaspaces.metrics.influxdb.http.timeout", 30000);
+
     private final URL url;
 
     public InfluxDBHttpDispatcher(InfluxDBReporterFactory factory) {
         this.url = toUrl("write", factory);
-        if (logger.isDebugEnabled())
-            logger.debug("InfluxDBHttpDispatcher created [url=" + url + "]");
+        logger.debug("InfluxDBHttpDispatcher created [url=" + url + "]");
     }
 
     public URL getUrl() {
@@ -54,56 +51,7 @@ public class InfluxDBHttpDispatcher extends InfluxDBDispatcher {
             throw new IOException("Failed to post [HTTP Code=" + httpCode + ", url=" + url.toString() + "]");
     }
 
-    private static URL toUrl(String operationName,  InfluxDBReporterFactory factory) {
-        return toUrl( operationName, null, factory );
-    }
-
-    public static URL toUrl(String operationName, String encodedQuery, InfluxDBReporterFactory factory) {
-        // See https://influxdb.com/docs/v0.9/guides/writing_data.html
-        // "http://localhost:8086/write?db=db1");
-        try {
-            if (!StringUtils.hasLength(factory.getHost()))
-                throw new IllegalArgumentException("Mandatory property not provided - host");
-            if (!StringUtils.hasLength(factory.getDatabase()))
-                throw new IllegalArgumentException("Mandatory property not provided - database");
-            String suffix = "/" + operationName + "?db=" + factory.getDatabase();
-            suffix = append(suffix, "rp", factory.getRetentionPolicy());
-            suffix = append(suffix, "u", factory.getUsername());
-            suffix = append(suffix, "p", factory.getPassword());
-            suffix = append(suffix, "precision", toString(factory.getTimePrecision()));
-            suffix = append(suffix, "consistency", factory.getConsistency());
-
-            if( encodedQuery != null ){
-                //Returns epoch timestamps
-                suffix = append(suffix, "epoch", "ms");
-                suffix = append(suffix, "q", encodedQuery);
-            }
-            return new URL("http", factory.getHost(), factory.getPort(), suffix);
-        } catch (MalformedURLException e) {
-            throw new RuntimeException("Failed to create InfluxDB HTTP url", e);
-        }
-    }
-
-    private static String toString(TimeUnit timeUnit) {
-        // https://influxdb.com/docs/v0.9/write_protocols/write_syntax.html#http
-        if (timeUnit == null)
-            return null;
-        if (timeUnit == TimeUnit.NANOSECONDS)
-            return "n";
-        if (timeUnit == TimeUnit.MICROSECONDS)
-            return "u";
-        if (timeUnit == TimeUnit.MILLISECONDS)
-            return "ms";
-        if (timeUnit == TimeUnit.SECONDS)
-            return "s";
-        if (timeUnit == TimeUnit.MINUTES)
-            return "m";
-        if (timeUnit == TimeUnit.HOURS)
-            return "h";
-        throw new IllegalArgumentException("Unsupported time precision: " + timeUnit);
-    }
-
-    private static String append(String prefix, String name, String value) {
-        return StringUtils.hasLength(value) ? prefix + '&' + name + '=' + value : prefix;
+    private static URL toUrl(String operationName, InfluxDBReporterFactory factory) {
+        return MetricsReportersUtils.toInfluxDbUrl(operationName, null, factory);
     }
 }

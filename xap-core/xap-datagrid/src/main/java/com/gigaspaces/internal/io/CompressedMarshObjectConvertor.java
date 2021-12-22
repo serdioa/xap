@@ -16,6 +16,8 @@
 
 package com.gigaspaces.internal.io;
 
+import com.gigaspaces.internal.jvm.JavaUtils;
+import com.gigaspaces.internal.jvm.burningwave.BurningWave;
 import com.gigaspaces.internal.utils.ReflectionUtils;
 import com.gigaspaces.internal.utils.pool.IMemoryAwareResourceFactory;
 import com.gigaspaces.internal.utils.pool.IMemoryAwareResourcePool;
@@ -29,6 +31,7 @@ import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
+import java.lang.reflect.Field;
 import java.util.HashSet;
 
 import org.slf4j.Logger;
@@ -231,9 +234,23 @@ public class CompressedMarshObjectConvertor extends Resource implements MarshObj
     private static class IdempotentZipOutputStream extends ZipOutputStream {
         private IdempotentZipOutputStream(OutputStream out) {
             super(out);
+            Field names = null;
             try {
-                ReflectionUtils.setField(this, "names", new DummyHashSet<>());
-            } catch (IllegalAccessException e) {
+                names = ReflectionUtils.getDeclaredFieldIncludeSuperTypes(this.getClass(), "names");
+                ReflectionUtils.makeAccessible(names);
+            } catch (Exception e){
+                if(JavaUtils.greaterOrEquals(17) && BurningWave.enabled()){
+                    BurningWave.exportPackageToAllUnnamed("java.base", "java.util.zip");
+                    names = BurningWave.findOneFieldAndMakeItAccessible(this.getClass(), "names");
+                }
+            }
+            if(names != null){
+                try {
+                    names.set(this, new DummyHashSet<>());
+                } catch (IllegalAccessException e) {
+                    throw new IllegalStateException("Failed to create idempotent zip output stream");
+                }
+            } else {
                 throw new IllegalStateException("Failed to create idempotent zip output stream");
             }
         }

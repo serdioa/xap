@@ -28,14 +28,12 @@ import com.j_spaces.core.client.EntrySnapshot;
 import com.j_spaces.core.client.ExternalEntry;
 import com.j_spaces.core.client.SQLQuery;
 
-import net.jini.core.entry.Entry;
-
 /**
  * @author Niv Ingberg
  * @since 8.0
  */
 public enum ObjectType {
-    NULL, POJO, ENTRY, METADATA_ENTRY, EXTERNAL_ENTRY, DOCUMENT, SQL, ENTRY_SNAPSHOT, ENTRY_PACKET, TEMPLATE_PACKET, SPACE_TASK, ID_QUERY, IDS_QUERY;
+    NULL, POJO, EXTERNAL_ENTRY, DOCUMENT, SQL, ENTRY_SNAPSHOT, ENTRY_PACKET, TEMPLATE_PACKET, SPACE_TASK, ID_QUERY, IDS_QUERY;
 
     public static ObjectType fromObject(Object object) {
         return fromObject(object, false);
@@ -68,16 +66,13 @@ public enum ObjectType {
             throw new IllegalArgumentException("Unsupported ISpaceQuery class: " + object.getClass().getName());
         }
 
-        if (object instanceof Entry) {
-            if (object instanceof ExternalEntry)
-                return ObjectType.EXTERNAL_ENTRY;
-            return ObjectType.ENTRY;
-        }
+        if (object instanceof ExternalEntry)
+            return ObjectType.EXTERNAL_ENTRY;
 
         return ObjectType.POJO;
     }
 
     public boolean isConcrete() {
-        return this == POJO || this == ENTRY;
+        return this == POJO;
     }
 }

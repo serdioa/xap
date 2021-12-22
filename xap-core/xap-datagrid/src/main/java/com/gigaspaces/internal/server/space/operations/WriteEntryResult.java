@@ -96,7 +96,7 @@ public class WriteEntryResult implements SmartExternalizable, Textualizable {
     }
 
     public void removeRedundantData(ITypeDesc typeDesc, int modifiers) {
-        if (_version > 1 || (StringUtils.hasLength(typeDesc.getIdPropertyName()) && !typeDesc.isAutoGenerateId()))
+        if (_version > 1 || (!typeDesc.getIdPropertiesNames().isEmpty() && !typeDesc.isAutoGenerateId()))
             _uid = null;
         // TODO: previous entry packet construction can be skipped if this condition is moved to the correct location.
         if (ReturnPrevOnUpdate) {

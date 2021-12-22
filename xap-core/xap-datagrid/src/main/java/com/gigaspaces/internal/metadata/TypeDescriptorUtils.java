@@ -16,12 +16,16 @@
 
 package com.gigaspaces.internal.metadata;
 
+import com.gigaspaces.entry.CompoundSpaceId;
+
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
+import java.util.function.IntFunction;
 import java.util.regex.Pattern;
 
 /**
@@ -121,4 +125,23 @@ public class TypeDescriptorUtils {
                 + propertyName +"\\..*|"+ propertyName +"\\[.*");
         return indexNames.stream().anyMatch(key -> pattern.matcher(key).matches());
     }
+
+    public static <T> Object toSpaceId(List<T> properties, Function<T, Object> valueMapper) {
+        if (properties.size() == 1)
+            return valueMapper.apply(properties.get(0));
+        Object[] values = new Object[properties.size()];
+        for (int i = 0; i < values.length; i++)
+            values[i] = valueMapper.apply(properties.get(i));
+        return new CompoundSpaceId(values);
+    }
+
+    public static Object toSpaceId(int[] positions, IntFunction<Object> valueMapper) {
+        if (positions.length == 1)
+            return valueMapper.apply(positions[0]);
+        Object[] values = new Object[positions.length];
+        for (int i = 0; i < values.length; i++)
+            values[i] = valueMapper.apply(positions[i]);
+        return new CompoundSpaceId(values);
+    }
+
 }

@@ -126,21 +126,6 @@ Licensed under the Apache License, Version 2.0 (the "License"); you may not use 
 
 Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" basis, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
 
-## Optional - JMS integration dependencies
-
-xap-jms extension provides JMS integration. Located at GS_HOME/lib/optional/jms
-
-###	JMS (under Sun Public License Version 1.0)
-
-    http://java.sun.com/products/jms/
-    http://www.opensource.org/licenses/sunpublic.php
-
-The source code of the JMS software is available under the terms Sun Public License Version 1.0 http://www.opensource.org/licenses/sunpublic.php.
-
-Notice: the GigaSpaces license agreement does not attempt to limit or alter the recipient's
-rights in the JMS's source code version from the rights set forth in the Sun Public License Version 1.0. Any terms in the Sun Public License Version 1.0 which differ from the Sun Public License Version 1.0 are offered by GigaSpaces alone, not by the initial
-developer or any contributor of the JMS software.
-
 ## Optional - JDBC integration dependencies
 
 Located at GS_HOME/lib/optional/jdbc

@@ -33,6 +33,7 @@ import net.jini.core.lease.Lease;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
@@ -51,7 +52,8 @@ public class PojoIntrospector<T> extends AbstractTypeIntrospector<T> {
     private SpaceTypeInfo _typeInfo;
     private transient IConstructor<T> _constructor;
     private transient IParamsConstructor<T> _paramsConstructor;
-    private transient SpacePropertyInfo _idProperty;
+    private transient List<SpacePropertyInfo> _idProperties;
+    private transient SpacePropertyInfo _autoPkGenProperty;
     private transient SpacePropertyInfo _versionProperty;
     private transient SpacePropertyInfo _timeToLiveProperty;
     private transient SpacePropertyInfo _transientProperty;
@@ -252,7 +254,7 @@ public class PojoIntrospector<T> extends AbstractTypeIntrospector<T> {
             for (int i = 0; i < values.length; i++) {
                 SpacePropertyInfo property = _typeInfo.getProperty(i);
 
-                if (_isAutoPkGen && property == _idProperty)
+                if (_isAutoPkGen && property == _autoPkGenProperty)
                     values[i] = null;
                 else
                     values[i] = property.convertToNullIfNeeded(values[i]);
@@ -345,7 +347,7 @@ public class PojoIntrospector<T> extends AbstractTypeIntrospector<T> {
                 throw new SpaceMetadataValidationException(_pojoClass, "Must be a public static class and have a default constructor.");
         }
 
-        _idProperty = typeInfo.getIdProperty();
+        _idProperties = typeInfo.getIdProperties();
         _versionProperty = typeInfo.getVersionProperty();
         _timeToLiveProperty = typeInfo.getLeaseExpirationProperty();
         _transientProperty = typeInfo.getPersistProperty();
@@ -353,20 +355,22 @@ public class PojoIntrospector<T> extends AbstractTypeIntrospector<T> {
 
         _isAutoPkGen = typeInfo.getIdAutoGenerate();
         _transient = !typeInfo.isPersist();
+
+        // Auto generated id is always a single property
+        _autoPkGenProperty = _isAutoPkGen && !_idProperties.isEmpty() ? _idProperties.get(0) : null;
     }
 
     public String getUID(T target, boolean isTemplate, boolean ignoreIdIfNotExists) {
         // If no SpaceId property:
-        if (_idProperty == null) {
+        if (_idProperties.isEmpty()) {
             if (ignoreIdIfNotExists)
                 return null;
             throw new SpaceMetadataException("Cannot get uid - SpaceId property is not defined.");
         }
 
-        final Object id = getValue(target, _idProperty);
-
         // If SpaceId(autoGenerate=true):
         if (_isAutoPkGen) {
+            final Object id = getValue(target, _autoPkGenProperty);
             if (id != null)
                 return id.toString();
             if (ignoreIdIfNotExists)
@@ -381,16 +385,19 @@ public class PojoIntrospector<T> extends AbstractTypeIntrospector<T> {
             return null;
 
         // generate the uid from the id property and the type's name:
-        if (id != null)
-            return SpaceUidFactory.createUidFromTypeAndId(getTypeDesc(), id);
-
-        throw new SpaceMetadataException("SpaceId(autoGenerate=false) property value cannot be null.");
+        Object id = TypeDescriptorUtils.toSpaceId(_idProperties, p -> {
+            Object value = getValue(target, p);
+            if (value == null)
+                throw new SpaceMetadataException("SpaceId(autoGenerate=false) property " + p.getName() + " value cannot be null.");
+            return value;
+        });
+        return SpaceUidFactory.createUidFromTypeAndId(getTypeDesc(), id);
     }
 
     public boolean setUID(T target, String uid) {
         try {
             // If no id property cannot set uid:
-            if (_idProperty == null)
+            if (_idProperties.isEmpty())
                 return false;
 
             // If id property is autoGenerate false cannot set uid:
@@ -398,12 +405,12 @@ public class PojoIntrospector<T> extends AbstractTypeIntrospector<T> {
                 return false;
 
             // if id is already set do not override it:
-            String fieldValue = (String) getValue(target, _idProperty);
+            String fieldValue = (String) getValue(target, _autoPkGenProperty);
             if (fieldValue != null && fieldValue.length() != 0)
                 return false;
 
             // Set uid:
-            setValue(target, _idProperty, uid);
+            setValue(target, _autoPkGenProperty, uid);
             return true;
         } catch (Exception e) {
             throw new SpaceMetadataException("Failed to set uid for type " + getType().getName(), e);
@@ -424,7 +431,7 @@ public class PojoIntrospector<T> extends AbstractTypeIntrospector<T> {
     }
 
     public boolean hasUID(T target) {
-        return _idProperty != null && _isAutoPkGen && getValue(target, _idProperty) != null;
+        return _autoPkGenProperty != null && getValue(target, _autoPkGenProperty) != null;
     }
 
     public boolean hasVersionProperty(T target) {

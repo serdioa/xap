@@ -133,6 +133,8 @@ public class ReplicationPacketDataProducer
                 return new DataTypeIntroducePacketData((ITypeDesc) operationData, entireContext.isFromGateway());
             case DATA_TYPE_ADD_INDEX:
                 return new DataTypeAddIndexPacketData((AddTypeIndexesRequestInfo) operationData, entireContext.isFromGateway());
+            case DATA_TYPE_DROP:
+                return new DataTypeDropPacketData((String)operationData, entireContext.isFromGateway());
             default:
                 throw new UnsupportedOperationException("Unknown replication operation type "
                         + operationType);

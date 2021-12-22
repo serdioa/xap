@@ -96,7 +96,7 @@ public class DataSourceIdQueryImpl
 
     @Override
     public boolean supportsTemplateAsObject() {
-        return _typeDescriptor.getIdentifierPropertyId() != -1;
+        return !_typeDescriptor.getIdPropertiesNames().isEmpty();
     }
 
     @Override

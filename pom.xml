@@ -4,26 +4,26 @@
     <groupId>org.gigaspaces</groupId>
     <artifactId>xap</artifactId>
     <packaging>pom</packaging>
-    <version>16.1.0-SNAPSHOT</version>
+    <version>16.2.0-SNAPSHOT</version>
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <oshi.version>5.5.0</oshi.version>
         <slf4j.version>1.7.26</slf4j.version>
         <jna.version>5.6.0</jna.version>
-        <spring.version>5.3.7</spring.version>
-        <spring.security.version>5.5.0</spring.security.version>
+        <spring.version>5.3.13</spring.version>
+        <spring.security.version>5.6.0</spring.security.version>
         <junit.version>4.12</junit.version>
-        <jetty.version>9.4.43.v20210629</jetty.version>
-        <jetty.mortbay.jasper.version>8.5.54</jetty.mortbay.jasper.version>
-        <gs.build-name>16.1.0-m1-ci-0</gs.build-name>
+        <jetty.version>9.4.44.v20210927</jetty.version>
+        <jetty.mortbay.jasper.version>9.0.52</jetty.mortbay.jasper.version>
+        <gs.build-name>16.2.0-m1-ci-0</gs.build-name>
         <gs.git-tag>Unspecified</gs.git-tag>
         <gs.git-sha.xap>unspecified</gs.git-sha.xap>
         <xap.git.branch>master</xap.git.branch>
         <xap.release.arguments />
         <javadoc.jar.name>xap-open</javadoc.jar.name>
         <javadoc.phase>none</javadoc.phase>
-        <jackson.version>2.9.9</jackson.version>
-        <jackson-databind.version>2.9.9.3</jackson-databind.version>
+        <jackson.version>2.10.5</jackson.version>
+        <jackson-databind.version>2.10.5.1</jackson-databind.version>
         <jaxb.version>2.3.0</jaxb.version>
         <javax.annotation.version>1.3.1</javax.annotation.version>
         <javax.activation.version>1.2.0</javax.activation.version>
@@ -47,8 +47,6 @@
         <module>xap-core/xap-openspaces</module>
         <module>xap-examples/hello-world</module>
         <module>xap-examples/hola-mundo</module>
-        <module>xap-extensions/xap-scala</module>
-        <module>xap-extensions/xap-jms</module>
         <module>xap-extensions/xap-rest</module>
         <module>xap-extensions/xap-rest-spring</module>
         <module>xap-extensions/xap-jetty</module>
@@ -60,7 +58,6 @@
         <module>xap-extensions/xap-mongodb</module>
         <module>xap-extensions/xap-blueprints</module>
         <module>xap-extensions/xap-cassandra</module>
-        <module>xap-extensions/xap-mule</module>
         <module>xap-extensions/xap-metrics-influxdb</module>
         <module>xap-extensions/xap-metrics-hsqldb</module>
         <module>xap-extensions/xap-groovy</module>
@@ -126,18 +123,6 @@
             <dependency>
                 <groupId>org.gigaspaces</groupId>
                 <artifactId>xap-asm</artifactId>
-                <version>${project.version}</version>
-                <scope>${xap.dep.scope}</scope>
-            </dependency>
-            <dependency>
-                <groupId>org.gigaspaces</groupId>
-                <artifactId>xap-scala-core</artifactId>
-                <version>${project.version}</version>
-                <scope>${xap.dep.scope}</scope>
-            </dependency>
-            <dependency>
-                <groupId>org.gigaspaces</groupId>
-                <artifactId>xap-jms</artifactId>
                 <version>${project.version}</version>
                 <scope>${xap.dep.scope}</scope>
             </dependency>
@@ -258,12 +243,6 @@
             <dependency>
                 <groupId>org.gigaspaces</groupId>
                 <artifactId>xap-kafka</artifactId>
-                <version>${project.version}</version>
-                <scope>${xap.dep.scope}</scope>
-            </dependency>
-            <dependency>
-                <groupId>org.gigaspaces</groupId>
-                <artifactId>xap-mule</artifactId>
                 <version>${project.version}</version>
                 <scope>${xap.dep.scope}</scope>
             </dependency>

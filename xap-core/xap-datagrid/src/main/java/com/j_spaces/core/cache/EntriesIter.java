@@ -311,13 +311,22 @@ public class EntriesIter extends SAIterBase implements ISAdapterIterator<IEntryH
         _currentEntryHolder = null;
         while (_nextUidPos < _uids.length)
         {
-            //NOTE: get by uids is irrelevant for DB located entries
             String uid = _uids[_nextUidPos++];
             IEntryCacheInfo pEntry = null;
             IEntryHolder  eh = null;
-            pEntry = _cacheManager.getPEntryByUid(uid);
-            if (pEntry == null || invalidEntryCacheInfo(pEntry))
+            pEntry = _cacheManager.getPEntryByUid(uid); //first search in RAM
+            if (pEntry == null || invalidEntryCacheInfo(pEntry)) {
+                if (_cacheManager.isTieredStorage() && !_memoryOnly) { // then search in Disk
+                    eh = _cacheManager.getEngine().getTieredStorageManager().getInternalStorage().getEntryByUID(_context,
+                            _typeDesc.getTypeName(), uid, _templateHolder);
+                    if (eh == null || !match(eh)) {
+                        continue; // continue to the next uid
+                    }
+                    _currentEntryHolder = eh;
+                    return _currentEntryHolder;
+                } // else - no SA, continue to the next uid
                 continue;
+            }
             if (isBringCacheInfoOnly()) {
                 eh = ((IBlobStoreRefCacheInfo) pEntry).getEntryHolderIfInMemory();
                 if (eh != null && !match(eh))

@@ -2055,14 +2055,6 @@ public interface GigaSpace {
     <T> LeaseContext<T>[] writeMultiple(T[] entries, long[] leases, long timeout, WriteModifiers modifiers) throws DataAccessException;
 
     /**
-     * Returns an iterator builder allowing to configure and create a {@link
-     * com.j_spaces.core.client.GSIterator} over the Space.
-     * @deprecated since 14.0 - use {@link #iterator(Object)} or one of its overloads instead.
-     */
-    @Deprecated
-    IteratorBuilder iterator();
-
-    /**
      * Returns an iterator over the entries in the space which match the specified template.
      *
      * @param template The template used for matching. Matching is done against the template with

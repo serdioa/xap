@@ -21,28 +21,18 @@ import com.gigaspaces.annotation.pojo.FifoSupport;
 import com.gigaspaces.api.ExperimentalApi;
 import com.gigaspaces.client.storage_adapters.PropertyStorageAdapter;
 import com.gigaspaces.client.storage_adapters.class_storage_adapters.ClassBinaryStorageAdapter;
-import com.gigaspaces.client.storage_adapters.class_storage_adapters.SequentialClassBinaryStorageAdapter;
 import com.gigaspaces.document.SpaceDocument;
 import com.gigaspaces.internal.metadata.*;
 import com.gigaspaces.internal.utils.ObjectUtils;
-import com.gigaspaces.metadata.index.ISpaceIndex;
-import com.gigaspaces.metadata.index.SpaceIndex;
-import com.gigaspaces.metadata.index.SpaceIndexFactory;
-import com.gigaspaces.metadata.index.SpaceIndexType;
-import com.gigaspaces.metadata.index.SpacePropertyIndex;
+import com.gigaspaces.metadata.index.*;
 import com.gigaspaces.query.extension.SpaceQueryExtension;
 import com.gigaspaces.query.extension.metadata.QueryExtensionPathInfo;
 import com.gigaspaces.query.extension.metadata.impl.TypeQueryExtensionsImpl;
 import com.j_spaces.core.client.ExternalEntry;
 
 import java.lang.annotation.Annotation;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.Set;
-import java.util.SortedMap;
-import java.util.TreeMap;
 
 /**
  * A builder class for creating {@link SpaceTypeDescriptor} instances.
@@ -69,7 +59,7 @@ public class SpaceTypeDescriptorBuilder {
     private FifoSupport _fifoSupport;
     private Boolean _replicable;
     private Boolean _systemType;
-    private String _idPropertyName;
+    private List<String> _idPropertiesNames = Collections.emptyList();
     private boolean _idAutoGenerate;
     private String _routingPropertyName;
     private String _fifoGroupingPropertyPath;
@@ -135,8 +125,6 @@ public class SpaceTypeDescriptorBuilder {
             throw new IllegalArgumentException("Creating SpaceTypeDescriptor for enumerations is not supported.");
         if (type.isPrimitive())
             throw new IllegalArgumentException("Creating SpaceTypeDescriptor for primitive types is not supported.");
-        if (net.jini.core.entry.Entry.class.isAssignableFrom(type))
-            throw new IllegalArgumentException("Creating SpaceTypeDescriptor for types implementing 'net.jini.core.entry.Entry' is not supported.");
 
         Class<?> superType = type.getSuperclass();
         if (superType != null && superType.getName().equals(ROOT_TYPE_NAME))
@@ -176,7 +164,7 @@ public class SpaceTypeDescriptorBuilder {
         _replicable = typeInfo.isReplicate();
         _supportsDynamicProperties = typeInfo.getDynamicPropertiesProperty() != null;
         _supportsOptimisticLocking = typeInfo.getVersionProperty() != null;
-        _idPropertyName = typeInfo.getIdProperty() != null ? typeInfo.getIdProperty().getName() : null;
+        _idPropertiesNames = typeInfo.getIdPropertiesNames();
         _idAutoGenerate = typeInfo.getIdAutoGenerate();
         _routingPropertyName = typeInfo.getRoutingProperty() != null ? typeInfo.getRoutingProperty().getName() : null;
         _blobstoreEnabled = typeInfo.isBlobstoreEnabled();
@@ -455,12 +443,48 @@ public class SpaceTypeDescriptorBuilder {
      */
     public SpaceTypeDescriptorBuilder idProperty(String idPropertyName, boolean autoGenerateId, SpaceIndexType indexType) {
         // Validate id not already set:
-        if (_idPropertyName != null)
-            throw new IllegalStateException("Cannot set id property to '" + idPropertyName + "' - it was already set to '" + _idPropertyName + "'.");
+        if (!_idPropertiesNames.isEmpty())
+            throw new IllegalStateException("Cannot set id property to '" + idPropertyName + "' - it was already set to '" + String.join(", ", _idPropertiesNames) + "'.");
 
-        this._idPropertyName = assertNotNull(idPropertyName, "idPropertyName");
+        this._idPropertiesNames = Collections.singletonList(assertNotNull(idPropertyName, "idPropertyName"));
         this._idAutoGenerate = autoGenerateId;
         addIndexIfNotExists(idPropertyName, assertNotNull(indexType, "indexType"));
+        return this;
+    }
+
+    /**
+     * Sets the ID properties
+     * @param idPropertiesNames Names of ID properties
+     * @since 16.2
+     */
+    public SpaceTypeDescriptorBuilder idProperty(List<String> idPropertiesNames) {
+        return idProperty(idPropertiesNames, SpaceIndexType.EQUAL);
+    }
+
+    /**
+     *
+     * Sets the ID properties
+     * @param idPropertiesNames Names of ID properties
+     * @param indexType Type of compound index to create (EQUAL or NONE)
+     * @since 16.2
+     */
+    public SpaceTypeDescriptorBuilder idProperty(List<String> idPropertiesNames, SpaceIndexType indexType) {
+        // Validate id not already set:
+        if (!_idPropertiesNames.isEmpty())
+            throw new IllegalStateException("Cannot set id property to '" + String.join(", ", idPropertiesNames) + "' - it was already set to '" + String.join(", ", _idPropertiesNames) + "'.");
+        if (idPropertiesNames.isEmpty())
+            throw new IllegalArgumentException("idPropertiesNames cannot be empty");
+        if (idPropertiesNames.size() == 1)
+            return idProperty(idPropertiesNames.get(0), false, indexType);
+
+        this._idPropertiesNames = idPropertiesNames;
+        this._idAutoGenerate = false;
+        if (indexType != SpaceIndexType.NONE) {
+            if (indexType == SpaceIndexType.EQUAL || indexType == SpaceIndexType.DEFAULT)
+                addCompoundIndex(idPropertiesNames.toArray(new String[0]), true);
+            else
+                throw new IllegalArgumentException("Unsupported index type: " + indexType);
+        }
         return this;
     }
 
@@ -702,6 +726,36 @@ public class SpaceTypeDescriptorBuilder {
         return this;
     }
 
+    /**
+     * Adds an id property to the fixed properties set.
+     * Default is java.lang.Object or java.lang.String for AutoGenerated=true
+     *
+     * @param idPropertyName Name of property.
+     * @param idPropertyType Type of property.
+     * @since 16.2
+     */
+    public SpaceTypeDescriptorBuilder addIdPropertyType(String idPropertyName, Class<?> idPropertyType) {
+        if (_idPropertiesNames.isEmpty() || !_idPropertiesNames.contains(idPropertyName))
+            throw new IllegalStateException("Cannot set id type to '" + idPropertyType + "' - " +
+                    "'" + idPropertyName + "' id property is not initialized yet");
+        return addFixedProperty(property(idPropertyName, idPropertyType));
+    }
+
+    /**
+     * Adds a routing property to the fixed properties set.
+     * Default is java.lang.Object
+     *
+     * @param routingPropertyName Name of property.
+     * @param routingPropertyType Type of property.
+     * @since 16.2
+     */
+    public SpaceTypeDescriptorBuilder addRoutingPropertyType(String routingPropertyName, Class<?> routingPropertyType) {
+        if (_routingPropertyName == null || !_routingPropertyName.equals(routingPropertyName))
+            throw new IllegalStateException("Cannot set routing type to '" + routingPropertyType + "' - " +
+                    "'" + routingPropertyName + "' routing property is not initialized yet");
+        return addFixedProperty(property(routingPropertyName, routingPropertyType));
+    }
+
     private void createQueryExtensionInfoIfNeeded() {
         if (_queryExtensionsInfo == null)
             _queryExtensionsInfo = new TypeQueryExtensionsImpl();
@@ -716,13 +770,14 @@ public class SpaceTypeDescriptorBuilder {
         boolean binaryClassStorage = binaryStorageAdapterClass != null;
         final String[] superTypesNames = getSuperTypesNames(_typeName, _superTypeDescriptor);
         final PropertyInfo[] fixedProperties = initFixedProperties(_fixedProperties, _superTypeDescriptor, _storageType, binaryClassStorage, _indexes.keySet());
-        final Map<String, SpaceIndex> indexes = initIndexes(_indexes, fixedProperties, _idPropertyName, _superTypeDescriptor);
+        final Map<String, SpaceIndex> indexes = initIndexes(_indexes, fixedProperties, _idPropertiesNames, _superTypeDescriptor);
         final String codeBase = null;                            // TODO: What about pojo?
         final EntryType entryType = _objectClass == null ? EntryType.DOCUMENT_JAVA : EntryType.OBJECT_JAVA;
 
         // If dynamic properties are not supported, validate id and routing properties are defined:
         if (!_supportsDynamicProperties) {
-            validatePropertyExists(_idPropertyName, fixedProperties);
+            for (String idProperty : _idPropertiesNames)
+                validatePropertyExists(idProperty, fixedProperties);
             validatePropertyExists(_routingPropertyName, fixedProperties);
         }
 
@@ -736,7 +791,7 @@ public class SpaceTypeDescriptorBuilder {
                 fixedProperties,
                 _supportsDynamicProperties,
                 indexes,
-                _idPropertyName,
+                _idPropertiesNames,
                 _idAutoGenerate,
                 null /*defaultPropertyId*/,
                 _routingPropertyName,
@@ -817,24 +872,26 @@ public class SpaceTypeDescriptorBuilder {
         }
 
 
-        if (_idPropertyName == null) {
+        if (_idPropertiesNames.isEmpty()) {
             if (_superTypeDescriptor != null) {
-                _idPropertyName = _superTypeDescriptor.getIdPropertyName();
+                _idPropertiesNames = _superTypeDescriptor.getIdPropertiesNames();
                 _idAutoGenerate = getInternalTypeDesc(_superTypeDescriptor).isAutoGenerateId();
             }
 
             // Add autogenerated id property for virtual types if needed:
-            if (_idPropertyName == null && _objectClass == null) {
-                _idPropertyName = DEFAULT_ID_PROPERTY_NAME;
+            if (_idPropertiesNames.isEmpty() && _objectClass == null) {
+                _idPropertiesNames = Collections.singletonList(DEFAULT_ID_PROPERTY_NAME);
                 _idAutoGenerate = true;
             }
         }
 
-        if (_idPropertyName != null && !isFixedProperty(_idPropertyName)) {
-            if (_idAutoGenerate) {
-                addFixedProperty(_idPropertyName, String.class);
-            } else {
-                addFixedProperty(_idPropertyName, Object.class);
+        for (String property : _idPropertiesNames) {
+            if (!isFixedProperty(property)) {
+                if (_idAutoGenerate) {
+                    addFixedProperty(property, String.class);
+                } else {
+                    addFixedProperty(property, Object.class);
+                }
             }
         }
 
@@ -896,7 +953,7 @@ public class SpaceTypeDescriptorBuilder {
     }
 
     private void validateBroadcast() {
-        if(_routingPropertyName != null && !_routingPropertyName.equals(_idPropertyName))
+        if(_routingPropertyName != null && !_idPropertiesNames.isEmpty() && !_routingPropertyName.equals(_idPropertiesNames.get(0)))
             throw new IllegalArgumentException("Routing property and broadcast table cannot be used together.");
         if(_idAutoGenerate)
             throw new IllegalArgumentException("Auto generated id and broadcast table cannot be used together.");
@@ -956,9 +1013,10 @@ public class SpaceTypeDescriptorBuilder {
     }
 
     private static Map<String, SpaceIndex> initIndexes(Map<String, SpaceIndex> indexes,
-                                                       PropertyInfo[] fixedProperties, String idPropertyName, SpaceTypeDescriptor superTypeDescriptor) {
+                                                       PropertyInfo[] fixedProperties, List<String> idPropertiesNames, SpaceTypeDescriptor superTypeDescriptor) {
         Map<String, SpaceIndex> result = new HashMap<String, SpaceIndex>(indexes.size());
 
+        String idPropertyName = idPropertiesNames.size() == 1 ? idPropertiesNames.get(0) : null;
         // Transform indexes to property indexes where possible:
         for (SpaceIndex index : indexes.values()) {
             final int position = getPositionOf(index.getName(), fixedProperties);

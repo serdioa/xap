@@ -31,7 +31,6 @@ import com.j_spaces.core.UnknownTypeException;
 import com.j_spaces.core.client.ExternalEntry;
 import com.j_spaces.core.client.SQLQuery;
 import com.j_spaces.kernel.ClassLoaderHelper;
-import net.jini.core.entry.Entry;
 import org.jini.rio.boot.CodeChangeClassLoader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -236,9 +235,6 @@ public class ClientTypeDescRepository {
                     case POJO:
                         typeDesc = loadPojoTypeDesc(type, codebase);
                         break;
-                    case ENTRY:
-                        typeDesc = _typeDescFactory.createEntryTypeDesc((Entry) object, type.getName(), codebase, type);
-                        break;
                     default:
                         throw new UnsupportedOperationException("This operation is not supported for ObjectType " + objectType);
                 }
@@ -413,8 +409,6 @@ public class ClientTypeDescRepository {
                 if (_logger.isDebugEnabled())
                     _logger.debug("Java class '" + typeName + "' was found, creating space type descriptor.");
 
-                if (Entry.class.isAssignableFrom(realClass))
-                    return _typeDescFactory.createEntryTypeDesc(null, typeName, codebase, realClass);
                 return loadPojoTypeDesc(realClass, codebase);
             }
 

@@ -280,8 +280,6 @@ public class JProperties {
                     resolvedPropertyValue = getPropertyFromSystem(propValue, SystemProperties.JINI_LUS_LOCATORS_DEFAULT);
                 } else if (propValue.equalsIgnoreCase("${" + SystemProperties.SYSTEM_TIME_PROVIDER + "}")) {
                     resolvedPropertyValue = getPropertyFromSystem(propValue);
-                } else if (propValue.equalsIgnoreCase("${" + SystemProperties.JMS_LOOKUP_ENABLED + "}")) {
-                    resolvedPropertyValue = getPropertyFromSystem(propValue, Constants.LookupManager.LOOKUP_JMS_ENABLED_DEFAULT);
                 } else if (propValue.equalsIgnoreCase("${" + SystemProperties.GS_PROTOCOL + "}")) {
                     resolvedPropertyValue = getPropertyFromSystem(propValue, SystemProperties.GS_PROTOCOL_DEFAULT);
                 }

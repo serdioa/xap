@@ -19,7 +19,6 @@
  */
 package com.j_spaces.core;
 
-import com.gigaspaces.internal.jms.JmsFactory;
 import com.j_spaces.kernel.log.JProperties;
 
 import net.jini.core.discovery.LookupLocator;
@@ -28,7 +27,6 @@ import net.jini.lease.LeaseListener;
 import net.jini.lease.LeaseRenewalEvent;
 import net.jini.lookup.ServiceIDListener;
 
-import java.io.Closeable;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.rmi.RemoteException;
@@ -44,12 +42,6 @@ import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
 
-import static com.j_spaces.core.Constants.LookupManager.LOOKUP_JMS_ENABLED_DEFAULT;
-import static com.j_spaces.core.Constants.LookupManager.LOOKUP_JMS_ENABLED_PROP;
-import static com.j_spaces.core.Constants.LookupManager.LOOKUP_JMS_EXT_ENABLED_DEFAULT;
-import static com.j_spaces.core.Constants.LookupManager.LOOKUP_JMS_EXT_ENABLED_PROP;
-import static com.j_spaces.core.Constants.LookupManager.LOOKUP_JMS_INTERNAL_ENABLED_DEFAULT;
-import static com.j_spaces.core.Constants.LookupManager.LOOKUP_JMS_INTERNAL_ENABLED_PROP;
 import static com.j_spaces.core.Constants.LookupManager.LOOKUP_JNDI_ENABLED_DEFAULT;
 import static com.j_spaces.core.Constants.LookupManager.LOOKUP_JNDI_ENABLED_PROP;
 import static com.j_spaces.core.Constants.LookupManager.LOOKUP_JNDI_URL_DEFAULT;
@@ -59,8 +51,7 @@ import static com.j_spaces.core.Constants.LookupManager.LOOKUP_JNDI_URL_PROP;
  * This class <code>LookupManager</code> provides : <ul> <li> Registration forever of JSpaces and
  * JSpace containers with all discovered Lookup Services using <code>registerForever()</code>
  * method. <li> Registering container and JSpaces with rmiregistry. <li> Registering JSpace and
- * JSpace containers with exists ServiceID. <li> Registering JMS Administrated Objects with
- * rmiregistry. <li> LeaseRenewManager that renews each lease as necessary to achieve a desired
+ * JSpace containers with exists ServiceID. <li> LeaseRenewManager that renews each lease as necessary to achieve a desired
  * expiration time. <li> Dynamic registration of all JSpaces and JSpace container with all
  * discovered Lookup Services. <li> Notification of LookupEvents. <li> Clean up LookupManager. <li>
  * Logger messages. </ul>
@@ -105,41 +96,17 @@ public class LookupManager implements ServiceIDListener, LeaseListener {
 
     private final String m_ContainerName;
     private final Hashtable<String, IJSpace> _registeredSpaces;
-    private final boolean m_jndiFlag;
     private final Context m_jndiContext;
-    /**
-     * If true we register JMS services
-     */
-    private final boolean m_jmsFlag;
-    private Closeable m_jmsLookupManager;
-    /**
-     * if true then we register jms objects on the internal gigaspaces rmi jndi registry
-     * implementation, in that case we use the existing rmi reg details.
-     */
-    private final boolean m_isInternalJmsJndi;
-    /**
-     * if true then we register jms objects on an external jndi registry implementation
-     */
-    private final boolean m_isExternalJmsJndi;
 
     public LookupManager(String containerName) throws NamingException, IOException {
         m_ContainerName = containerName;
         _registeredSpaces = new Hashtable<String, IJSpace>();
 
         // check if container will work versus rmiregistry
-        m_jndiFlag = Boolean.parseBoolean(JProperties.getContainerProperty(containerName, LOOKUP_JNDI_ENABLED_PROP,
+        boolean jndiFlag = Boolean.parseBoolean(JProperties.getContainerProperty(containerName, LOOKUP_JNDI_ENABLED_PROP,
                 LOOKUP_JNDI_ENABLED_DEFAULT));
 
-        //	check if container will work with JMS services via rmiregistry
-        m_jmsFlag = Boolean.parseBoolean(JProperties.getContainerProperty(containerName, LOOKUP_JMS_ENABLED_PROP,
-                LOOKUP_JMS_ENABLED_DEFAULT));
-
-        m_isInternalJmsJndi = Boolean.parseBoolean(JProperties.getContainerProperty(containerName,
-                LOOKUP_JMS_INTERNAL_ENABLED_PROP, LOOKUP_JMS_INTERNAL_ENABLED_DEFAULT));
-        m_isExternalJmsJndi = Boolean.parseBoolean(JProperties.getContainerProperty(containerName,
-                LOOKUP_JMS_EXT_ENABLED_PROP, LOOKUP_JMS_EXT_ENABLED_DEFAULT));
-
-        m_jndiContext = m_jndiFlag ? createInternalContext(containerName) : null;
+        m_jndiContext = jndiFlag ? createInternalContext(containerName) : null;
     }
 
     /**
@@ -218,38 +185,10 @@ public class LookupManager implements ServiceIDListener, LeaseListener {
 
         // Deposit space-proxy to <code>m_jspaceDepot</code> HashTable
         _registeredSpaces.put(spaceName, spaceProxy);
-
-        try {
-            if (m_jmsFlag && m_jndiFlag) {
-                Context internalContext = m_jndiContext != null && m_isInternalJmsJndi ? m_jndiContext : null;
-                Context externalContext = m_isExternalJmsJndi ? createExternalContext(spaceName) : null;
-                m_jmsLookupManager = JmsFactory.getInstance().createLookupManager(containerName, spaceProxy, internalContext, externalContext);
-            }
-
-            //if jms enabled BUT the JNDI service disabled
-            if (m_jmsFlag && !m_jndiFlag && !m_isExternalJmsJndi) {
-                if (_logger.isWarnEnabled()) {
-                    _logger.warn("The JMS Service must have an enabled JNDI Lookup service." +
-                            " \nPlease enable Internal or External JNDI service (under <jms_services> tag) and restart the container.");
-                }
-            }
-        } catch (Exception ex) {
-            String cause = "";
-            if (_logger.isWarnEnabled()) {
-                if (ex instanceof NamingException) {
-                    Throwable rootException = ((NamingException) ex).getRootCause();
-                    if (rootException != null)
-                        cause = rootException.toString();
-                    _logger.warn("\n\nDirectory Service: Failed registering space <" + spaceProxy + "> : " + cause);
-                } else
-                    _logger.warn("\n\nDirectory Service: Failed registering space <" + spaceProxy + "> : ", ex);
-            }
-        }
     }
 
     /**
-     * Unregistering appropriate Space from all Lookup Services that this space was registered. We
-     * also unregister all jms administered objects.
+     * Unregistering appropriate Space from all Lookup Services that this space was registered.
      *
      * @param spaceName JSpace name.
      *
@@ -257,14 +196,6 @@ public class LookupManager implements ServiceIDListener, LeaseListener {
      *                  expires or has been canceled.
      **/
     public void unregister(String spaceName) {
-        try {
-            if (m_jmsLookupManager != null)
-                m_jmsLookupManager.close();
-        } catch (Exception e) {
-            if (_logger.isWarnEnabled())
-                _logger.warn("\n\nDirectory Service: Failed to unregister space " + spaceName + " : " + e.toString(), e);
-        }
-
         _registeredSpaces.remove(spaceName);
     }
 
@@ -285,24 +216,5 @@ public class LookupManager implements ServiceIDListener, LeaseListener {
         env.put(Context.INITIAL_CONTEXT_FACTORY, "com.sun.jndi.rmi.registry.RegistryContextFactory");
         env.put(Context.PROVIDER_URL, "rmi://" + JProperties.getContainerProperty(containerName, LOOKUP_JNDI_URL_PROP, LOOKUP_JNDI_URL_DEFAULT));
         return new InitialContext(env);
-    }
-
-    private static Context createExternalContext(String spaceName) {
-        try {
-            //using the jndi.properties which is located in the classpath
-            //,and use its Context details in order to connect to other InitialContext
-            return new InitialContext();
-        } catch (Exception ex) {
-            if (_logger.isErrorEnabled()) {
-                if (ex instanceof NamingException) {
-                    String cause = ((NamingException) ex).getRootCause().toString();
-                    _logger.error("Failed to create InitialContext and register JMS Admin Objects on space " +
-                            "<" + spaceName + "> using the external JNDI lookup service | " + cause, ex);
-                } else
-                    _logger.error("Failed to create InitialContext and register JMS Admin Objects on space " +
-                            "<" + spaceName + "> using the external JNDI lookup service | " + ex.toString(), ex);
-            }
-            return null;
-        }
     }
 }

@@ -31,9 +31,6 @@ import java.rmi.RemoteException;
 import static com.j_spaces.core.Constants.Container.CONTAINER_NAME_PROP;
 import static com.j_spaces.core.Constants.LookupManager.LOOKUP_ENABLED_PROP;
 import static com.j_spaces.core.Constants.LookupManager.LOOKUP_GROUP_PROP;
-import static com.j_spaces.core.Constants.LookupManager.LOOKUP_JMS_ENABLED_PROP;
-import static com.j_spaces.core.Constants.LookupManager.LOOKUP_JMS_EXT_ENABLED_PROP;
-import static com.j_spaces.core.Constants.LookupManager.LOOKUP_JMS_INTERNAL_ENABLED_PROP;
 import static com.j_spaces.core.Constants.LookupManager.LOOKUP_JNDI_ENABLED_PROP;
 import static com.j_spaces.core.Constants.LookupManager.LOOKUP_JNDI_URL_PROP;
 import static com.j_spaces.core.Constants.LookupManager.LOOKUP_UNICAST_ENABLED_PROP;
@@ -152,11 +149,6 @@ public class ContainerConfigFactory {
 
         if (config.unicastURL != null)
             containerFile.xmlReplace(LOOKUP_UNICAST_URL_PROP, config.unicastURL);
-
-        // JMS settings
-        containerFile.xmlReplace(LOOKUP_JMS_ENABLED_PROP, String.valueOf(config.jmsEnabled));
-        containerFile.xmlReplace(LOOKUP_JMS_INTERNAL_ENABLED_PROP, String.valueOf(config.jmsInternalJndiEnabled));
-        containerFile.xmlReplace(LOOKUP_JMS_EXT_ENABLED_PROP, String.valueOf(config.jmsExtJndiEnabled));
 
         // save and close config xml file
         containerFile.close();

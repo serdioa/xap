@@ -137,8 +137,8 @@ public class GsCommandFactory {
         command.classpathWithJars(locations().libOptional("oshi"));
     }
 
-    protected void appendMetricToolsClassPath() {
-        appendOshiClassPath();
+    protected void appendBurningwaveClassPath() {
+        command.classpathWithJars(locations().libOptional("burningwave"));
     }
 
     protected void appendXapOptions() {

@@ -4,7 +4,6 @@
 	<cluster-config>
 		<xsl:copy-of select="cluster-config/cluster-name"/>
 		<xsl:copy-of select="cluster-config/dist-cache"/>
-		<xsl:copy-of select="cluster-config/jms"/>
 		<description>This topology replicates data in a synchronous manner between source and target spaces. Provides the highest level of coherency but impacts the client performance.</description>
 		<notify-recovery>true</notify-recovery>
 		<cache-loader>

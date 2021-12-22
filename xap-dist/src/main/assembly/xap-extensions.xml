@@ -54,16 +54,6 @@
 
         <dependencySet>
             <useProjectArtifact>false</useProjectArtifact>
-            <outputDirectory>product/lib/optional/jms</outputDirectory>
-            <includes>
-                <include>org.gigaspaces:xap-jms</include>
-                <include>javax.jms:jms</include>
-            </includes>
-            <outputFileNameMapping>${artifact.artifactId}.${artifact.extension}</outputFileNameMapping>
-        </dependencySet>
-
-        <dependencySet>
-            <useProjectArtifact>false</useProjectArtifact>
             <outputDirectory>product/lib/optional/jruby</outputDirectory>
             <includes>
                 <include>org.gigaspaces:xap-jruby</include>
@@ -97,15 +87,6 @@
             </includes>
             <useTransitiveDependencies/>
             <useTransitiveFiltering/>
-        </dependencySet>
-
-        <dependencySet>
-            <useProjectArtifact>false</useProjectArtifact>
-            <outputDirectory>product/lib/optional/mule</outputDirectory>
-            <includes>
-                <include>org.gigaspaces:xap-mule</include>
-            </includes>
-            <outputFileNameMapping>${artifact.artifactId}.${artifact.extension}</outputFileNameMapping>
         </dependencySet>
 
         <dependencySet>
@@ -267,24 +248,6 @@
                 <exclude>jetty-all-*</exclude>
             </excludes>
         </fileSet>
-
-        <!--scala-->
-        <fileSet>
-            <directory>${project.basedir}/../xap-extensions/xap-scala/xap-scala-core/target</directory>
-            <outputDirectory>product/lib/optional/scala</outputDirectory>
-            <includes>
-                <include>xap-scala.jar</include>
-            </includes>
-        </fileSet>
-        <fileSet>
-            <directory>${project.basedir}/../xap-scala/xap-scala-core</directory>
-            <!--suppress CheckTagEmptyBody -->
-            <outputDirectory>product</outputDirectory>
-            <includes>
-                <include>tools/scala/**</include>
-            </includes>
-        </fileSet>
-
     </fileSets>
 
 </assembly>

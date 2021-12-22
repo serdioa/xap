@@ -94,4 +94,6 @@ public class CommonSystemProperties {
     public final static Boolean JMX_ENABLED_DEFAULT_BOOLEAN_VALUE = Boolean.TRUE;
 
     public final static Boolean JNDI_ENABLED_DEFAULT_BOOLEAN_VALUE = Boolean.TRUE;
+
+    public final static String BURNINGWAVE_ENABLED = "com.gs.burningwave.enabled";
 }

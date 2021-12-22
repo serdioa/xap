@@ -59,6 +59,7 @@ import com.gigaspaces.internal.cluster.node.impl.groups.IReplicationUnreliableOp
 import com.gigaspaces.internal.cluster.node.impl.groups.ISpaceItemGroupsExtractor;
 import com.gigaspaces.internal.cluster.node.impl.groups.NoSuchReplicationGroupExistException;
 import com.gigaspaces.internal.cluster.node.impl.groups.ReplicationNodeGroupsHolder;
+import com.gigaspaces.internal.cluster.node.impl.handlers.SpaceReplicationMetadataEventHandler;
 import com.gigaspaces.internal.cluster.node.impl.packets.ReplicaRequestPacket;
 import com.gigaspaces.internal.cluster.node.impl.processlog.DefaultProcessLogExceptionHandlerBuilder;
 import com.gigaspaces.internal.cluster.node.impl.processlog.IReplicationProcessLogBuilder;
@@ -436,6 +437,19 @@ public class ReplicationNode
 
     }
 
+    public void outDataTypeDrop(IReplicationOutContext context,
+                                String className) {
+        ReplicationOutContext replicationContext = (ReplicationOutContext) context;
+
+        replicationContext.setGroupMapping(GroupMapping.getAllMapping());
+
+        for (IReplicationSourceGroup sourceGroup : _groupsHolder.getSourceGroups())
+            sourceGroup.beforeExecuteGeneric(replicationContext,
+                    className,
+                    ReplicationSingleOperationType.DATA_TYPE_DROP);
+
+    }
+
     public void outDataTypeAddIndex(IReplicationOutContext context,
                                     AddTypeIndexesRequestInfo addIndexesRequest) {
 
@@ -506,6 +520,10 @@ public class ReplicationNode
     @Override
     public void setInDataTypeCreatedHandler(IReplicationInDataTypeCreatedHandler handler) {
         _inFacade.setInDataTypeCreatedHandler(handler);
+    }
+
+    public void setInDataTypeDrop(SpaceReplicationMetadataEventHandler handler) {
+        _inFacade.setInDataTypeDrop(handler);
     }
 
     @Override

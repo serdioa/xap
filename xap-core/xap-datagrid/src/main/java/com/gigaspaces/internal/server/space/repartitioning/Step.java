@@ -5,7 +5,7 @@ public enum Step {
     Quiesce("quiesce"),
     Drain("drain"),
     CREATE_NEW_TOPOLOGY("create-new-topology"),
-    CREATE_INSTANCES("create-instances"),
+    TRIGGER_INSTANCES_INITIATION("trigger-instances-initiation"),
     COPY_CHUNKS("copy-chunks"),
     DELETE_CHUNKS("delete-chunks"),
     SET_NEW_TOPOLOGY("set-new-topology"),
@@ -38,7 +38,7 @@ public enum Step {
             case 3:
                 return CREATE_NEW_TOPOLOGY;
             case 4:
-                return CREATE_INSTANCES;
+                return TRIGGER_INSTANCES_INITIATION;
             case 5:
                 return COPY_CHUNKS;
             case 6:
@@ -71,8 +71,8 @@ public enum Step {
                 return Drain;
             case "create-new-topology":
                 return CREATE_NEW_TOPOLOGY;
-            case "create-instances":
-                return CREATE_INSTANCES;
+            case "trigger-instances-initiation":
+                return TRIGGER_INSTANCES_INITIATION;
             case "copy-chunks":
                 return COPY_CHUNKS;
             case "delete-chunks":

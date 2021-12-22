@@ -122,7 +122,7 @@ public class BulkDataItem extends EntryAdapter implements InternalBulkItem {
 
     public Object getIdPropertyValue() {
         ITypeDesc typeDesc = getTypeDesc();
-        if (typeDesc.getIdPropertyName() != null && typeDesc.isAutoGenerateId())
+        if (!typeDesc.getIdPropertiesNames().isEmpty() && typeDesc.isAutoGenerateId())
             return _entryHolder.getUID();
 
         return _entryHolder.getEntryData().getPropertyValue(getIdPropertyName());
@@ -135,7 +135,7 @@ public class BulkDataItem extends EntryAdapter implements InternalBulkItem {
 
     @Override
     public boolean supportsGetSpaceId() {
-        return StringUtils.hasText(getTypeDesc().getIdPropertyName());
+        return !getTypeDesc().getIdPropertiesNames().isEmpty();
     }
 
     public Map<String, Object> getItemValues() {

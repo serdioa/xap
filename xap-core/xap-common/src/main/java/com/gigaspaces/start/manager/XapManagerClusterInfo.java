@@ -6,6 +6,8 @@ import com.gigaspaces.admin.ManagerClusterType;
 import com.gigaspaces.admin.ManagerInstanceInfo;
 import com.gigaspaces.grid.zookeeper.ZookeeperConfig;
 import com.gigaspaces.internal.io.BootIOUtils;
+import com.gigaspaces.internal.jvm.JavaUtils;
+import com.gigaspaces.internal.jvm.burningwave.BurningWave;
 import com.gigaspaces.internal.utils.GsEnv;
 import com.gigaspaces.logger.Constants;
 import com.gigaspaces.serialization.SmartExternalizable;
@@ -195,6 +197,9 @@ public class XapManagerClusterInfo implements ManagerClusterInfo, SmartExternali
     private static byte[] tryParseIpv6(String s) {
         if (s.startsWith("[") && s.endsWith("]")) {
             s = s.substring(1, s.length()-1);
+        }
+        if(JavaUtils.greaterOrEquals(17) && BurningWave.enabled()){
+            BurningWave.exportPackageToAllUnnamed("java.base", "sun.net.util");
         }
         return IPAddressUtil.textToNumericFormatV6(s);
     }

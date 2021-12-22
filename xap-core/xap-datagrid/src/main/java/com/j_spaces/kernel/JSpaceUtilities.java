@@ -532,7 +532,7 @@ public class JSpaceUtilities {
      * @see <code>com.j_spaces.core.cluster.ClusterXML</code>
      */
     static public Document buildClusterXMLDom(int _totalMembers, int _backupMembers, String _clusterSchemaName
-            , String _clusterName, String _distCacheConfigName, String _jmsConfigName, String _groups)
+            , String _clusterName, String _distCacheConfigName, String _groups)
             throws ParserConfigurationException {
         //Obtaining a org.w3c.dom.Document from XML
         Document rootDoc = XmlUtils.getDocumentBuilder().newDocument();
@@ -549,13 +549,6 @@ public class JSpaceUtilities {
             Element dcacheConfigElem = rootDoc.createElement(ClusterXML.DCACHE_TAG);
             dcacheConfigElem.appendChild(createTextNode(rootDoc, ClusterXML.DCACHE_CONFIG_NAME_TAG, _distCacheConfigName));
             clusterConfigTag.appendChild(dcacheConfigElem);
-        }
-
-        if (!JSpaceUtilities.isEmpty(_jmsConfigName)) {
-            /** Create JMS Section **/
-            Element jmsConfigElem = rootDoc.createElement(ClusterXML.JMS_TAG);
-            jmsConfigElem.appendChild(createTextNode(rootDoc, ClusterXML.JMS_CONFIG_NAME_TAG, _jmsConfigName));
-            clusterConfigTag.appendChild(jmsConfigElem);
         }
 
         Node notifyRecoveryTag = createTextNode(rootDoc, ClusterXML.NOTIFY_RECOVERY_TAG,

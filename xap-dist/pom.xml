@@ -7,7 +7,7 @@
     <parent>
         <artifactId>xap</artifactId>
         <groupId>org.gigaspaces</groupId>
-        <version>16.1.0-SNAPSHOT</version>
+        <version>16.2.0-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
     <artifactId>xap-dist</artifactId>
@@ -47,14 +47,6 @@
         </dependency>
         <dependency>
             <groupId>org.gigaspaces</groupId>
-            <artifactId>xap-jms</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.gigaspaces</groupId>
-            <artifactId>xap-mule</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.gigaspaces</groupId>
             <artifactId>xap-groovy</artifactId>
         </dependency>
         <dependency>
@@ -63,20 +55,12 @@
         </dependency>
         <!--xap-datagrid runtime jars-->
         <dependency>
-            <groupId>org.gigaspaces</groupId>
-            <artifactId>xap-scala-core</artifactId>
-        </dependency>
-        <dependency>
             <groupId>com.h2database</groupId>
             <artifactId>h2</artifactId>
         </dependency>
         <dependency>
             <groupId>org.hsqldb</groupId>
             <artifactId>hsqldb</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>javax.jms</groupId>
-            <artifactId>jms</artifactId>
         </dependency>
         <dependency>
             <groupId>org.gigaspaces</groupId>
@@ -222,11 +206,6 @@
                 <version>${hsqldb.version}</version>
             </dependency>
             <dependency>
-                <groupId>javax.jms</groupId>
-                <artifactId>jms</artifactId>
-                <version>1.1</version>
-            </dependency>
-            <dependency>
                 <groupId>com.fasterxml.jackson.core</groupId>
                 <artifactId>jackson-core</artifactId>
                 <version>${jackson.version}</version>
@@ -244,7 +223,7 @@
             <dependency>
                 <groupId>io.netty</groupId>
                 <artifactId>netty-all</artifactId>
-                <version>4.1.66.Final</version>
+                <version>4.1.68.Final</version>
             </dependency>
 
             <dependency>

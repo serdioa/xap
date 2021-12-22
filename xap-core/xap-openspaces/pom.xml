@@ -6,7 +6,7 @@
     <parent>
         <artifactId>xap</artifactId>
         <groupId>org.gigaspaces</groupId>
-        <version>16.1.0-SNAPSHOT</version>
+        <version>16.2.0-SNAPSHOT</version>
         <relativePath>../../</relativePath>
     </parent>
 
@@ -68,11 +68,6 @@
         <dependency>
             <groupId>org.gigaspaces</groupId>
             <artifactId>xap-datagrid</artifactId>
-            <scope>compile</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.gigaspaces</groupId>
-            <artifactId>xap-jms</artifactId>
             <scope>compile</scope>
         </dependency>
         <dependency>
@@ -154,7 +149,12 @@
             <version>${spring.security.version}</version>
             <scope>compile</scope>
         </dependency>
-
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-crypto</artifactId>
+            <version>${spring.security.version}</version>
+            <scope>compile</scope>
+        </dependency>
         <!-- other spring dependencies are with <scope>provided</scope> as managed by <dependencyManagement> below -->
         <dependency>
             <groupId>org.springframework</groupId>
@@ -171,10 +171,6 @@
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-webmvc</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-jms</artifactId>
         </dependency>
         <dependency>
             <groupId>org.springframework</groupId>
@@ -204,7 +200,7 @@
         <dependency>
             <groupId>io.netty</groupId>
             <artifactId>netty-all</artifactId>
-            <version>4.1.66.Final</version>
+            <version>4.1.68.Final</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
@@ -243,12 +239,6 @@
             <scope>provided</scope>
         </dependency>
         <dependency>
-            <groupId>spy</groupId>
-            <artifactId>spymemcached</artifactId>
-            <version>2.8.1</version>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
             <groupId>com.atomikos</groupId>
             <artifactId>transactions-jta</artifactId>
             <version>3.8.0</version>
@@ -263,7 +253,7 @@
         <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
-            <version>18.0</version>
+            <version>31.0.1-jre</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -454,12 +444,6 @@
             </dependency>
             <dependency>
                 <groupId>org.gigaspaces</groupId>
-                <artifactId>xap-jms</artifactId>
-                <version>${project.version}</version>
-                <scope>provided</scope>
-            </dependency>
-            <dependency>
-                <groupId>org.gigaspaces</groupId>
                 <artifactId>xap-openspaces</artifactId>
                 <version>${project.version}</version>
                 <scope>provided</scope>
@@ -544,12 +528,6 @@
                 <scope>test</scope>
             </dependency>
 
-            <dependency>
-                <groupId>org.springframework</groupId>
-                <artifactId>spring-jms</artifactId>
-                <version>${spring.version}</version>
-                <scope>provided</scope>
-            </dependency>
             <dependency>
                 <groupId>org.springframework</groupId>
                 <artifactId>spring-orm</artifactId>

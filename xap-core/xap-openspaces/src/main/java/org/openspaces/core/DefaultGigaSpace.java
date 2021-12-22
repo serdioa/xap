@@ -1321,11 +1321,6 @@ public class DefaultGigaSpace implements GigaSpace, InternalGigaSpace {
         }
     }
 
-
-    public IteratorBuilder iterator() {
-        return new IteratorBuilder(this);
-    }
-
     @Override
     public <T> SpaceIterator<T> iterator(T template) {
         return iterator(template, new SpaceIteratorConfiguration());

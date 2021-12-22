@@ -75,12 +75,6 @@ public class ClusterPolicy implements SmartExternalizable {
     @Deprecated
     public String m_DCacheConfigName;
 
-    @Deprecated
-    public Properties m_jmsProperties;
-
-    @Deprecated
-    public String m_jmsConfigName;
-
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder("\n\n------------- CLUSTER POLICY RUNTIME CONFIGURATIONS REPORT ----------\n\n");
@@ -90,8 +84,6 @@ public class ClusterPolicy implements SmartExternalizable {
         sb.append("Cluster group member -\t" + m_ClusterGroupMember + "\n");
         sb.append("Is replicated -\t" + m_Replicated + "\n");
         sb.append("DCache config name -\t" + m_DCacheConfigName + "\n");
-        sb.append("JMS config name -\t" + m_jmsConfigName + "\n");
-        sb.append("JMS properties -\n\t" + JSpaceUtilities.getPropertiesPresentation(m_jmsProperties) + "\n");
         sb.append("DCache attributes -\n\t" + JSpaceUtilities.getPropertiesPresentation(m_DCacheAttributes) + "\n");
         sb.append("Cluster members list -\t" + m_AllClusterMemberList + "\n");
         sb.append("Replication groups -\t" + m_ReplicationGroups + "\n");
@@ -189,8 +181,6 @@ public class ClusterPolicy implements SmartExternalizable {
         private static final int ALLCLUSTER_MEMBERLIST = 1 << 4;
         private static final int CLUSTER_MEMBERS_PROPERTIES = 1 << 5;
         private static final int DCACHE_CONFIGNAME = 1 << 6;
-        private static final int JMS_PROPERTIES = 1 << 7;
-        private static final int JMS_CONFIGNAME = 1 << 8;
     }
 
     private int buildFlags() {
@@ -210,10 +200,6 @@ public class ClusterPolicy implements SmartExternalizable {
             flags |= BitMap.CLUSTER_MEMBERS_PROPERTIES;
         if (m_DCacheConfigName != null)
             flags |= BitMap.DCACHE_CONFIGNAME;
-        if (m_jmsProperties != null)
-            flags |= BitMap.JMS_PROPERTIES;
-        if (m_jmsConfigName != null)
-            flags |= BitMap.JMS_CONFIGNAME;
         return flags;
     }
 
@@ -241,10 +227,6 @@ public class ClusterPolicy implements SmartExternalizable {
         out.writeObject(m_DCacheAttributes);
         if (m_DCacheConfigName != null)
             out.writeUTF(m_DCacheConfigName);
-        if (m_jmsProperties != null)
-            out.writeObject(m_jmsProperties);
-        if (m_jmsConfigName != null)
-            out.writeUTF(m_jmsConfigName);
     }
 
     @Override
@@ -275,9 +257,5 @@ public class ClusterPolicy implements SmartExternalizable {
         m_DCacheAttributes = (JSpaceAttributes) in.readObject();
         if ((flags & BitMap.DCACHE_CONFIGNAME) != 0)
             m_DCacheConfigName = in.readUTF();
-        if ((flags & BitMap.JMS_PROPERTIES) != 0)
-            m_jmsProperties = (Properties) in.readObject();
-        if ((flags & BitMap.JMS_CONFIGNAME) != 0)
-            m_jmsConfigName = in.readUTF();
     }
 }

@@ -1,7 +1,7 @@
 package com.gigaspaces.internal.server.space.repartitioning;
 
 import com.gigaspaces.internal.cluster.ClusterTopology;
-import com.gigaspaces.internal.cluster.ClusterTopology;
+import com.gigaspaces.internal.metadata.TypeDescriptorUtils;
 import com.gigaspaces.internal.remoting.routing.partitioned.PartitionedClusterUtils;
 import com.gigaspaces.metadata.SpaceTypeDescriptor;
 import com.gigaspaces.query.aggregators.SpaceEntriesAggregator;
@@ -44,7 +44,7 @@ public class DeleteChunksProducer extends SpaceEntriesAggregator<DeleteChunksRes
         Object routingValue = context.getPathValue(typeDescriptor.getRoutingPropertyName());
         int newPartitionId = PartitionedClusterUtils.getPartitionId(routingValue, newMap) + 1;
         if (newPartitionId != context.getPartitionId() + 1) {
-            Object idValue = context.getPathValue(typeDescriptor.getIdPropertyName());
+            Object idValue = TypeDescriptorUtils.toSpaceId(context.getTypeDescriptor().getIdPropertiesNames(), context::getPathValue);
             String type = typeDescriptor.getTypeName();
 
             if (batchMap.containsKey(type)) {
@@ -56,8 +56,7 @@ public class DeleteChunksProducer extends SpaceEntriesAggregator<DeleteChunksRes
                         batchMap.remove(type);
                     } catch (Exception e) {
                         if (logger.isDebugEnabled()) {
-                            logger.debug("Exception in aggregator while trying to put batch in queue");
-                            e.printStackTrace();
+                            logger.debug("Exception in aggregator while trying to put batch in queue", e);
                         }
                         throw new RuntimeException(e);
                     }
@@ -70,7 +69,6 @@ public class DeleteChunksProducer extends SpaceEntriesAggregator<DeleteChunksRes
             }
         }
     }
-
 
     @Override
     public DeleteChunksResponseInfo getIntermediateResult() {

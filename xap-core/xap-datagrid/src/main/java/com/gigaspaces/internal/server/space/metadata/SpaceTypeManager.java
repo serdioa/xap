@@ -28,7 +28,9 @@ import com.gigaspaces.internal.server.metadata.AddTypeDescResultType;
 import com.gigaspaces.internal.server.metadata.IServerTypeDesc;
 import com.gigaspaces.internal.server.space.SpaceConfigReader;
 import com.gigaspaces.internal.server.space.SpaceInstanceConfig;
-import com.gigaspaces.internal.server.space.tiered_storage.*;
+import com.gigaspaces.internal.server.space.tiered_storage.TieredStorageManager;
+import com.gigaspaces.internal.server.space.tiered_storage.TieredStorageTableConfig;
+import com.gigaspaces.internal.server.space.tiered_storage.TieredStorageUtils;
 import com.gigaspaces.internal.server.space.tiered_storage.error.TieredStorageMetadataException;
 import com.gigaspaces.internal.transport.ITransportPacket;
 import com.gigaspaces.internal.utils.GsEnv;
@@ -47,7 +49,6 @@ import com.j_spaces.core.client.SpaceURL;
 import com.j_spaces.core.exception.internal.DirectoryInternalSpaceException;
 import com.j_spaces.core.sadapter.SAException;
 import com.j_spaces.kernel.SystemProperties;
-import net.jini.core.entry.Entry;
 import net.jini.core.entry.UnusableEntryException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -280,18 +281,10 @@ public class SpaceTypeManager {
                 serverTypeDesc = localTypeMap.get(typeName);
 
                 if (action == AddTypeDescResultType.CREATED) {
-                    serverTypeDesc = createServerTypeDesc(typeDesc, localTypeMap);
                     if(tieredStorageManager != null){
-                        validateTieredStorage(serverTypeDesc.getTypeDesc());
-                        if(!tieredStorageManager.isTransient(typeDesc.getTypeName())){
-                            try {
-                                tieredStorageManager.getInternalStorage().persistType(typeDesc);
-                                tieredStorageManager.getInternalStorage().createTable(typeDesc);
-                            } catch (SAException e) {
-                                throw new RuntimeException(e);
-                            }
-                        }
+                        createTypeForTieredStorage(typeDesc);
                     }
+                    serverTypeDesc = createServerTypeDesc(typeDesc, localTypeMap);
 
                 } else if (action == AddTypeDescResultType.ACTIVATED)
                     activateServerTypeDesc(serverTypeDesc, typeDesc, localTypeMap);
@@ -305,6 +298,27 @@ public class SpaceTypeManager {
             logExit("createOrUpdateServerTypeDesc", "typeName", typeName);
             return new AddTypeDescResult(serverTypeDesc, action);
         }
+    }
+
+    private void createTypeForTieredStorage(ITypeDesc typeDesc) {
+        assert tieredStorageManager!=null;
+        validateTieredStorage(typeDesc);
+        if(!tieredStorageManager.isTransient(typeDesc.getTypeName())){
+            try {
+                tieredStorageManager.getInternalStorage().persistType(typeDesc);
+                tieredStorageManager.getInternalStorage().createTable(typeDesc);
+            } catch (SAException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
+    /**
+     * @param typeDesc type descriptor of entry
+     * @return true if type is marked 'transient' in tiered storage configuration
+     */
+    public boolean isTransientTieredStorageType(ITypeDesc typeDesc) {
+        return tieredStorageManager != null && tieredStorageManager.isTransient(typeDesc.getTypeName());
     }
 
     private void validateTieredStorage(ITypeDesc typeDesc) {
@@ -608,8 +622,6 @@ public class SpaceTypeManager {
         switch (objectType) {
             case POJO:
                 return createPojoTypeDesc(obj.getClass(), null /*codebase*/);
-            case ENTRY:
-                return _typeDescFactory.createEntryTypeDesc((Entry) obj, obj.getClass().getName(), null /*codebase*/, obj.getClass());
             case DOCUMENT:
                 final String typeName = ((SpaceDocument) obj).getTypeName();
                 final Class<?> type = ClientTypeDescRepository.getRealClass(typeName, null /*codebase*/);
