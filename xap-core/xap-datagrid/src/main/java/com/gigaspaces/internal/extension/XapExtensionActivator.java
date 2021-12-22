@@ -121,13 +121,12 @@ public class XapExtensionActivator {
         }
     }
 
-    private static Properties loadManifestEntryAttributes(URL url, String entryName) throws IOException {
+    private static Properties loadManifestEntryAttributes(URL url, String entryName) {
         Properties result = null;
-        InputStream inputStream = null;
-        try {
+//        InputStream inputStream = null;
+        try (InputStream inputStream = url.openStream()){
             if (logger.isTraceEnabled())
                 logger.trace("Loading manifest from " + url);
-            inputStream = url.openStream();
             Manifest manifest = new Manifest(inputStream);
             final Attributes attributes = manifest.getAttributes(entryName);
             if (attributes != null) {
@@ -140,9 +139,8 @@ public class XapExtensionActivator {
                         logger.trace("Found entry " + entry.getKey() + " => " + entry.getValue());
                 }
             }
-        } finally {
-            if (inputStream != null)
-                inputStream.close();
+        } catch (IOException e) {
+            e.printStackTrace();
         }
         return result;
     }
