@@ -193,7 +193,7 @@ public class MetricSampler implements Closeable {
             buffer.add(snapshot);
 
             if (buffer.size() == batchSize) {
-                ExecutorService executor = Executors.newFixedThreadPool(batchSize);
+                ExecutorService executor = Executors.newFixedThreadPool(reporters.size());
                 for (MetricReporter reporter : reporters) {
                     SamplerReporter samplerReporter = new SamplerReporter(buffer, reporter);
                     executor.execute(samplerReporter);
