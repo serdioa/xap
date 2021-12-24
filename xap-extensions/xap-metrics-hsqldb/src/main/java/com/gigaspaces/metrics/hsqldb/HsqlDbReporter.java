@@ -188,6 +188,7 @@ public class HsqlDbReporter extends MetricReporter {
     }
 
     private String getTableName(String key) {
+        if (!systemFilterDisabled) return null;
         SystemMetrics systemMetrics = SystemMetricsManager.getSystemMetric(key);
         if( systemMetrics != null ){
             return systemMetrics.getTableName();
