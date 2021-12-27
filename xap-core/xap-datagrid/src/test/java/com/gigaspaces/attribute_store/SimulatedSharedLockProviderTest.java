@@ -9,7 +9,7 @@ import java.util.concurrent.*;
 public class SimulatedSharedLockProviderTest {
 
     @Test
-    public void testLock() throws Exception {
+    public void testLock() throws InterruptedException, TimeoutException, IOException {
         SharedLockProvider lockProvider = SimulatedSharedLockProvider.getInstance();
         System.out.println("Acquiring lock1");
         try (SharedLock lock1 = lockProvider.acquire("lock1", 1, TimeUnit.MILLISECONDS, false)) {
