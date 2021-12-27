@@ -959,6 +959,11 @@ public interface Constants {
         //TODO: Tiered storage doesn't support dynamic properties yet.
         boolean SUPPORT_DYNAMIC_PROPERTIES = !Boolean.getBoolean(SystemProperties.TIERED_STORAGE_ENABLED);
 
+        //sqlite constant
+        String SQLITE_EXPLAIN_PLAN_PREFIX = "EXPLAIN QUERY PLAN ";
+        String SQLITE_EXPLAIN_DETAILS_COLUMN = "detail";
+        String SQLITE_MATCH_INDEX_SCAN_REGEX = "USING INDEX";
+
         static String getLoggerName(String memberName){
          return TIERED_STORAGE_LOGGER_NAME+"_"+memberName;
         }
