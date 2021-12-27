@@ -82,7 +82,6 @@ import com.gigaspaces.internal.server.space.events.SpaceDataEventManager;
 import com.gigaspaces.internal.server.space.iterator.ServerIteratorInfo;
 import com.gigaspaces.internal.server.space.iterator.ServerIteratorRequestInfo;
 import com.gigaspaces.internal.server.space.iterator.ServerIteratorsManager;
-import com.gigaspaces.internal.server.space.metadata.ServerTypeDesc;
 import com.gigaspaces.internal.server.space.metadata.SpaceTypeManager;
 import com.gigaspaces.internal.server.space.operations.WriteEntriesResult;
 import com.gigaspaces.internal.server.space.operations.WriteEntryResult;
@@ -105,7 +104,7 @@ import com.gigaspaces.lrmi.nio.IResponseContext;
 import com.gigaspaces.lrmi.nio.ResponseContext;
 import com.gigaspaces.management.space.SpaceQueryDetails;
 import com.gigaspaces.metrics.*;
-import com.gigaspaces.query.aggregators.*;
+import com.gigaspaces.query.aggregators.SpaceEntriesAggregator;
 import com.gigaspaces.security.authorities.SpaceAuthority.SpacePrivilege;
 import com.gigaspaces.server.blobstore.BlobStoreException;
 import com.gigaspaces.server.filter.NotifyAcknowledgeFilter;
@@ -892,10 +891,9 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
         try {
             if(tieredStorageManager != null) {
                 String typeName = eHolder.getServerTypeDesc().getTypeName();
-                eHolder.setTransient(false);
                 context.setEntryTieredState(tieredStorageManager.getEntryTieredState(eHolder.getEntryData()));
-                if(tieredStorageManager.getCacheRule(typeName) != null && tieredStorageManager.getCacheRule(typeName).isTransient()) {
-                    eHolder.setTransient(true);
+                if(tieredStorageManager.getCacheRule(typeName) != null) {
+                    eHolder.setTransient(tieredStorageManager.getCacheRule(typeName).isTransient());
                 }
             }
             context.cacheViewEntryDataIfNeeded(eHolder.getEntryData(), entryPacket);
