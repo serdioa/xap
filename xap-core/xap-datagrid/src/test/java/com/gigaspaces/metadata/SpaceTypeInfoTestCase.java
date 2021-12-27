@@ -24,6 +24,8 @@ import com.gigaspaces.internal.query.valuegetter.SpaceEntryPathGetter;
 import com.gigaspaces.metadata.annotated.PojoAttributes;
 import com.gigaspaces.metadata.annotated.PojoAttributesInheritence1;
 import com.gigaspaces.metadata.annotated.PojoAttributesInheritence2;
+import com.gigaspaces.metadata.annotated.PojoBroadcast;
+import com.gigaspaces.metadata.annotated.PojoBroadcastExtendNonBroadcastInvalid;
 import com.gigaspaces.metadata.annotated.PojoCommonProperties;
 import com.gigaspaces.metadata.annotated.PojoCommonPropertiesInheritence;
 import com.gigaspaces.metadata.annotated.PojoCustomIndex;
@@ -83,6 +85,7 @@ import com.gigaspaces.metadata.annotated.PojoInvalid.InvalidVersionWithPersist;
 import com.gigaspaces.metadata.annotated.PojoInvalid.InvalidVersionWithRouting;
 import com.gigaspaces.metadata.annotated.PojoInvalid.InvalidVersionWithSpaceProperty;
 import com.gigaspaces.metadata.annotated.PojoMultipleSpaceIndexes;
+import com.gigaspaces.metadata.annotated.PojoNonBroadcastExtendBroadcastInvalid;
 import com.gigaspaces.metadata.annotated.PojoRoutingIndexExplicit;
 import com.gigaspaces.metadata.annotated.PojoRoutingIndexImplicit;
 import com.gigaspaces.metadata.annotated.PojoSpaceIndex;
@@ -1138,5 +1141,42 @@ public class SpaceTypeInfoTestCase extends TestCase {
 
     }
 
+    ///////////////////////////////////
+    //     Broadcast Table Tests     //
+    ///////////////////////////////////
+
+    public void testBroadcastExtendsNonBroadcastRestriction() {
+        final Class<?> type = PojoBroadcastExtendNonBroadcastInvalid.class;
+
+        // Act:
+        try {
+            SpaceTypeInfoRepository.getTypeInfo(type);
+            Assert.fail("SpaceMetadataValidationException should have been thrown.");
+        } catch (SpaceMetadataValidationException e) {
+            Assert.assertEquals(String.format("Invalid metadata for class [%s]: Broadcast table cannot extend non broadcast table.", type.getName()), e.getMessage());
+        }
+    }
+
+    public void testNonBroadcastExtendsBroadcastRestriction() {
+        final Class<?> type = PojoNonBroadcastExtendBroadcastInvalid.class;
+
+        // Act:
+        try {
+            SpaceTypeInfoRepository.getTypeInfo(type);
+            Assert.fail("SpaceMetadataValidationException should have been thrown.");
+        } catch (SpaceMetadataValidationException e) {
+            Assert.assertEquals(String.format("Invalid metadata for class [%s]: Non broadcast table cannot extend broadcast table.", type.getName()), e.getMessage());
+        }
+    }
+
+    public void testBroadcastExtendsPossibility() {
+        final Class<?> type = PojoBroadcast.class;
+
+        // Act:
+        SpaceTypeInfo typeInfo = SpaceTypeInfoRepository.getTypeInfo(type);
+        Assert.assertTrue("Pojo should be marked as broadcast.", typeInfo.isBroadcast());
+        Assert.assertNotNull("Pojo's super class type info shouldn't be null.", typeInfo.getSuperTypeInfo());
+        Assert.assertTrue("Pojo's super class should be marked as broadcast.", typeInfo.getSuperTypeInfo().isBroadcast());
+    }
 
 }
