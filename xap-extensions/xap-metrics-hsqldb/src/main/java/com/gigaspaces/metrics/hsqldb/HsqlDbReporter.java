@@ -156,6 +156,7 @@ public class HsqlDbReporter extends MetricReporter {
 
         for(PreparedStatement statement : _statementsForBatch){
             try {
+                _logger.debug("Flush statement: {} to hsqldb.", statement.toString());
                 statement.executeBatch();
             }
             catch (SQLTransientConnectionException | SQLNonTransientConnectionException e){
@@ -188,9 +189,9 @@ public class HsqlDbReporter extends MetricReporter {
     }
 
     private String getTableName(String key) {
-        if (!systemFilterDisabled) return null;
         SystemMetrics systemMetrics = SystemMetricsManager.getSystemMetric(key);
         if( systemMetrics != null ){
+            _logger.debug("Get system metric table name: {}, metric name: {}.", systemMetrics.getTableName(), systemMetrics.getMetricName());
             return systemMetrics.getTableName();
         }
         return systemFilterDisabled ? PredefinedSystemMetrics.toTableName(key) : null;
