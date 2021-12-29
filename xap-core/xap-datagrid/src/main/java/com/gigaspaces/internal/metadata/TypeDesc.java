@@ -751,7 +751,7 @@ public class TypeDesc implements ITypeDesc {
         sb.append("systemType=").append(_systemType).append(", ");
         sb.append("replicatable=").append(_replicable).append(", ");
         sb.append("blobstoreEnabled=").append(_blobstoreEnabled).append(", ");
-        sb.append("broadcast").append(_broadcast).append(", ");
+        sb.append("broadcast=").append(_broadcast).append(", ");
         sb.append("storageType=").append(_storageType).append(", ");
         sb.append("fifoSupport=").append(_fifoSupport).append(", ");
         sb.append("idPropertiesNames=").append(String.join(";", _idPropertiesNames)).append(", ");
