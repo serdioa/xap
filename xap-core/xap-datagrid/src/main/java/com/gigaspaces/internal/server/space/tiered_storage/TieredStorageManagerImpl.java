@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class TieredStorageManagerImpl implements TieredStorageManager {
+
     private Logger logger;
     private TieredStorageConfig storageConfig;
     private boolean containsData;
@@ -80,6 +81,11 @@ public class TieredStorageManagerImpl implements TieredStorageManager {
     @Override
     public TieredStorageTableConfig getTableConfig(String typeName) {
         return storageConfig.getTables().get(typeName);
+    }
+
+    @Override
+    public TieredStorageTableConfig addTableConfig(TieredStorageTableConfig config) {
+        return storageConfig.addTable(config);
     }
 
     @Override

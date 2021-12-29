@@ -281,7 +281,7 @@ public class SpaceTypeManager {
                 serverTypeDesc = localTypeMap.get(typeName);
 
                 if (action == AddTypeDescResultType.CREATED) {
-                    if(tieredStorageManager != null){
+                    if (tieredStorageManager != null) {
                         createTypeForTieredStorage(typeDesc);
                     }
                     serverTypeDesc = createServerTypeDesc(typeDesc, localTypeMap);
@@ -301,12 +301,18 @@ public class SpaceTypeManager {
     }
 
     private void createTypeForTieredStorage(ITypeDesc typeDesc) {
-        assert tieredStorageManager!=null;
+        assert tieredStorageManager != null;
+
         validateTieredStorage(typeDesc);
-        if(!tieredStorageManager.isTransient(typeDesc.getTypeName())){
+        if (!tieredStorageManager.isTransient(typeDesc.getTypeName())) {
             try {
                 tieredStorageManager.getInternalStorage().persistType(typeDesc);
                 tieredStorageManager.getInternalStorage().createTable(typeDesc);
+
+                TieredStorageTableConfig config = typeDesc.getTieredStorageTableConfig();
+                if (config != null) {
+                    tieredStorageManager.addTableConfig(config);
+                }
             } catch (SAException e) {
                 throw new RuntimeException(e);
             }

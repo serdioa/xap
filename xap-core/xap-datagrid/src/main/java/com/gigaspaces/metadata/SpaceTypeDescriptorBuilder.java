@@ -23,6 +23,7 @@ import com.gigaspaces.client.storage_adapters.PropertyStorageAdapter;
 import com.gigaspaces.client.storage_adapters.class_storage_adapters.ClassBinaryStorageAdapter;
 import com.gigaspaces.document.SpaceDocument;
 import com.gigaspaces.internal.metadata.*;
+import com.gigaspaces.internal.server.space.tiered_storage.TieredStorageTableConfig;
 import com.gigaspaces.internal.utils.ObjectUtils;
 import com.gigaspaces.metadata.index.*;
 import com.gigaspaces.query.extension.SpaceQueryExtension;
@@ -73,6 +74,7 @@ public class SpaceTypeDescriptorBuilder {
     private boolean _sequenceNumberFromDocumentBuilder;
     private Class<? extends ClassBinaryStorageAdapter> binaryStorageAdapterClass;
     private Boolean _broadcast;
+    private TieredStorageTableConfig _tieredStorageTableConfig;
 
     /**
      * Initialize a type descriptor builder using the specified type name.
@@ -169,6 +171,7 @@ public class SpaceTypeDescriptorBuilder {
         _routingPropertyName = typeInfo.getRoutingProperty() != null ? typeInfo.getRoutingProperty().getName() : null;
         _blobstoreEnabled = typeInfo.isBlobstoreEnabled();
         _broadcast = typeInfo.isBroadcast();
+        _tieredStorageTableConfig = typeInfo.getTieredStorageTableConfig();
     }
 
     /**
@@ -252,6 +255,13 @@ public class SpaceTypeDescriptorBuilder {
         return this;
     }
 
+    /**
+     *
+     * */
+    public SpaceTypeDescriptorBuilder setTieredStorageTableConfig(TieredStorageTableConfig tieredStorageTableConfig) {
+        this._tieredStorageTableConfig = tieredStorageTableConfig;
+        return this;
+    }
 
     /**
      * Sets whether or not this type supports dynamic properties.
@@ -812,7 +822,8 @@ public class SpaceTypeDescriptorBuilder {
                 _sequenceNumberPropertyName,
                 _queryExtensionsInfo,
                 binaryStorageAdapterClass,
-                _broadcast);
+                _broadcast,
+                _tieredStorageTableConfig);
     }
 
     private void applyDefaults() {

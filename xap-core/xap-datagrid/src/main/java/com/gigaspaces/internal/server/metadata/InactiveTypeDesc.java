@@ -21,6 +21,7 @@ import com.gigaspaces.client.storage_adapters.class_storage_adapters.ClassBinary
 import com.gigaspaces.document.SpaceDocument;
 import com.gigaspaces.internal.io.IOUtils;
 import com.gigaspaces.internal.metadata.*;
+import com.gigaspaces.internal.server.space.tiered_storage.TieredStorageTableConfig;
 import com.gigaspaces.internal.utils.StringUtils;
 import com.gigaspaces.metadata.StorageType;
 import com.gigaspaces.metadata.index.SpaceIndex;
@@ -244,6 +245,11 @@ import java.util.Set;
     }
 
     public boolean[] getPropertiesIndexTypes() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public TieredStorageTableConfig getTieredStorageTableConfig() {
         throw new UnsupportedOperationException();
     }
 

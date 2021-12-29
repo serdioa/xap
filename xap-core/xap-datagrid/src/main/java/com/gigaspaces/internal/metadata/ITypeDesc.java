@@ -18,6 +18,7 @@ package com.gigaspaces.internal.metadata;
 
 import com.gigaspaces.client.storage_adapters.class_storage_adapters.ClassBinaryStorageAdapter;
 import com.gigaspaces.internal.server.space.redolog.storage.bytebuffer.ISwapExternalizable;
+import com.gigaspaces.internal.server.space.tiered_storage.TieredStorageTableConfig;
 import com.gigaspaces.metadata.SpaceTypeDescriptor;
 import com.gigaspaces.metadata.index.SpaceIndex;
 import com.gigaspaces.metadata.index.SpaceIndexType;
@@ -127,4 +128,6 @@ public interface ITypeDesc extends SpaceTypeDescriptor, IDotnetTypeDescDetails, 
     int[] getPositionsForScanning();
 
     int[] getPositionsForSplitting();
+
+    TieredStorageTableConfig getTieredStorageTableConfig();
 }

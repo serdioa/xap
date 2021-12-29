@@ -21,6 +21,8 @@ public interface TieredStorageManager {
 
     TieredStorageTableConfig getTableConfig(String typeName);
 
+    TieredStorageTableConfig addTableConfig(TieredStorageTableConfig config);
+
     InternalRDBMSManager getInternalStorage();
 
     TieredState getEntryTieredState(IEntryData entryData);
@@ -40,6 +42,8 @@ public interface TieredStorageManager {
     void initialize(SpaceEngine engine) throws SAException, RemoteException;
 
     boolean RDBMSContainsData();
+
+
 
     // For the future when we would want to support warm layer
     //    CachePredicate getCacheRule(String typeName, String tier);

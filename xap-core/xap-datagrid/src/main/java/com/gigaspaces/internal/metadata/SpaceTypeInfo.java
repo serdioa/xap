@@ -34,6 +34,7 @@ import com.gigaspaces.internal.reflection.IConstructor;
 import com.gigaspaces.internal.reflection.IParamsConstructor;
 import com.gigaspaces.internal.reflection.IProperties;
 import com.gigaspaces.internal.reflection.ReflectionUtil;
+import com.gigaspaces.internal.server.space.tiered_storage.TieredStorageTableConfig;
 import com.gigaspaces.internal.utils.ObjectUtils;
 import com.gigaspaces.internal.utils.ReflectionUtils;
 import com.gigaspaces.internal.version.PlatformLogicalVersion;
@@ -127,6 +128,8 @@ public class SpaceTypeInfo implements SmartExternalizable {
     private String _sequenceNumberPropertyName;
 
     private Boolean _broadcast;
+
+    private TieredStorageTableConfig _tieredStorageTableConfig;
 
     /**
      * Default constructor for externalizable.
@@ -235,6 +238,10 @@ public class SpaceTypeInfo implements SmartExternalizable {
 
     public boolean isBroadcast() {
         return _broadcast;
+    }
+
+    public TieredStorageTableConfig getTieredStorageTableConfig() {
+        return _tieredStorageTableConfig;
     }
 
     public int getNumOfProperties() {
