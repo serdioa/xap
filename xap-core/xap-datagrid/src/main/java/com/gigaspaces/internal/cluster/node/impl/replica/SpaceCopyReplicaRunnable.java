@@ -30,13 +30,12 @@ import com.gigaspaces.internal.utils.concurrent.IAsyncHandlerProvider.CycleResul
 import com.gigaspaces.logger.Constants;
 import com.gigaspaces.time.SystemTime;
 import com.j_spaces.core.cluster.IReplicationFilterEntry;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Collection;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 
 /**
@@ -203,6 +202,9 @@ public class SpaceCopyReplicaRunnable
                 if (_replicationNode.getBlobStoreReplicaConsumeHelper() != null)
                     _replicationNode.getBlobStoreReplicaConsumeHelper().flushBulk();
             }
+            // ADDED FOR DEBUG IN LEUMI
+            _logger.info(_replicationNode.getLogPrefix() + " consumed replica batch size="+copiedData.size()
+                    + " in " + (SystemTime.timeMillis() - _lastIterationTimeStamp) + " ms");
             // Should keep running
             if (_logger.isTraceEnabled())
                 _logger.trace(_replicationNode.getLogPrefix() + "copied replica batch " + copiedData);
