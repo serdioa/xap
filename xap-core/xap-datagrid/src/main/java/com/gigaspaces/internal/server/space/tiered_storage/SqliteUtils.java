@@ -169,7 +169,11 @@ public class SqliteUtils {
         map.put(Short.class.getName(), ResultSet::getShort);
         map.put(Integer.class.getName(), ResultSet::getInt);
         map.put(Long.class.getName(), ResultSet::getLong);
-        map.put(BigInteger.class.getName(), (res,i) -> res.getBigDecimal(i).toBigInteger());
+        map.put(BigInteger.class.getName(), (res,i) -> {
+            BigDecimal bigDecimal = res.getBigDecimal(i);
+            if (bigDecimal == null) return null;
+            return bigDecimal.toBigInteger();
+        });
         map.put(BigDecimal.class.getName(), ResultSet::getBigDecimal);
         map.put(Float.class.getName(), ResultSet::getFloat);
         map.put(Double.class.getName(), ResultSet::getDouble);
