@@ -1403,7 +1403,7 @@ public class CacheManager extends AbstractCacheManager
 
     @Override
     public boolean isTieredStorage() {
-        return _engine.getTieredStorageManager() != null;
+        return _engine.isTieredStorage();
     }
 
 
@@ -1431,18 +1431,18 @@ public class CacheManager extends AbstractCacheManager
             _engine.getTieredStorageManager().getInternalStorage().insertEntry(context, entryHolder, initialLoadOrigin);
         }
 
-        if((isTieredStorage() && context.isRAMEntry()) || !isTieredStorage()) {
-            if(initialLoadOrigin == InitialLoadOrigin.FROM_NON_BLOBSTORE && isTieredStorage()){
-                pE = safeInsertEntryToCache(context, entryHolder, false /* newEntry */, null /*pType*/, false /*pin*/, initialLoadOrigin /*fromInitialLoad*/);
-            }
-            else {
-                pE = insertEntryToCache(context, entryHolder, true /* newEntry */,
-                        typeData, true /*pin*/, InitialLoadOrigin.NON /*fromInitialLoad*/);
-            }
-        } else {//(isTieredStorage() && !context.isRAMEntry())
+        if (isTieredStorage() && context.isRAMEntry() && initialLoadOrigin == InitialLoadOrigin.FROM_NON_BLOBSTORE) {
+            pE = safeInsertEntryToCache(context, entryHolder, false /* newEntry */, null /*pType*/, false /*pin*/,
+                    initialLoadOrigin /*fromInitialLoad*/);
+        } else if (isTieredStorage() && !context.isRAMEntry()) {
+            setContextRecentFifoObject(context, entryHolder, true /* newEntry */ , typeData,
+                    initialLoadOrigin, typeData.isFifoSupport() /* considerFifo */);
             pE = EntryCacheInfoFactory.createEntryCacheInfo(entryHolder);
             //lease in TieredStorage is not supported. result contains persistent entry values.
             context.setWriteResult(new WriteEntryResult(pE.getUID(), pE.getVersion(), pE.getExpirationTime()));
+        } else { // !isTieredStorage() OR (isTieredStorage() && context.isRAMEntry())
+            pE = insertEntryToCache(context, entryHolder, true /* newEntry */,
+                    typeData, true /*pin*/, InitialLoadOrigin.NON /*fromInitialLoad*/);
         }
 
         if (pE == _entryAlreadyInSpaceIndication) {
@@ -3455,37 +3455,10 @@ public class CacheManager extends AbstractCacheManager
         try {
             if (newEntry)
                 entryHolder.setunStable(true);
-            //FIFO++++++++++++++++++++++++++++++++++++++++++++
-            //used to order inserts to the cache and SA
-            final boolean consider_fifo = (newEntry || fromInitialLoad == InitialLoadOrigin.FROM_NON_BLOBSTORE) && typeData.isFifoSupport();
-            final boolean fifo_notification_for_nonfifo = newEntry && !typeData.isFifoSupport() && context.getNotifyNewEntry() != null && _templatesManager.anyNotifyFifoForNonFifoTypePerOperation(entryHolder.getServerTypeDesc(), SpaceOperations.WRITE);
 
-            if (fromInitialLoad == InitialLoadOrigin.NON && (consider_fifo || fifo_notification_for_nonfifo)) {
-                boolean nofify_fifo = fifo_notification_for_nonfifo || (_templatesManager.anyNotifyFifoWriteTemplates() && context.getNotifyNewEntry() != null);
-                if (nofify_fifo)
-                    context.setRecentFifoObject(new FifoBackgroundRequest(
-                            context.getOperationID(),
-                            true/*isNotifyRequest*/,
-                            !fifo_notification_for_nonfifo/*isNonNotifyRequest*/,
-                            entryHolder,
-                            null,
-                            context.isFromReplication(),
-                            SpaceOperations.WRITE,
-                            entryHolder.getXidOriginatedTransaction(),
-                            context.getNotifyNewEntry()));
-                else
-                    context.setRecentFifoObject(new FifoBackgroundRequest(
-                            context.getOperationID(),
-                            false/*isNotifyRequest*/,
-                            true/*isNonNotifyRequest*/,
-                            entryHolder,
-                            null,
-                            context.isFromReplication(),
-                            SpaceOperations.WRITE,
-                            entryHolder.getXidOriginatedTransaction(),
-                            null /*cloneEH*/));
-            }
-            //FIFO--------------------------------------------
+            final boolean consider_fifo = (newEntry || fromInitialLoad == InitialLoadOrigin.FROM_NON_BLOBSTORE) && typeData.isFifoSupport();
+
+            setContextRecentFifoObject(context, entryHolder, newEntry, typeData, fromInitialLoad, consider_fifo);
 
             //FIFO -  order for insert anyway ++++++++++++++++++++++++++++++++++++++++++++
             if (consider_fifo || (entryHolder.isBlobStoreEntry() && newEntry && typeData.getFifoGroupingIndex() != null)) {
@@ -3498,6 +3471,40 @@ public class CacheManager extends AbstractCacheManager
             if (newEntry)
                 entryHolder.setunStable(false);
         }
+    }
+
+    private void setContextRecentFifoObject(Context context, IEntryHolder entryHolder, boolean newEntry,
+                                         TypeData typeData, InitialLoadOrigin fromInitialLoad, boolean considerFifo) {
+        //FIFO++++++++++++++++++++++++++++++++++++++++++++
+        //used to order inserts to the cache and SA
+        final boolean fifo_notification_for_nonfifo = newEntry && !typeData.isFifoSupport() && context.getNotifyNewEntry() != null && _templatesManager.anyNotifyFifoForNonFifoTypePerOperation(entryHolder.getServerTypeDesc(), SpaceOperations.WRITE);
+
+        if (fromInitialLoad == InitialLoadOrigin.NON && (considerFifo || fifo_notification_for_nonfifo)) {
+            boolean nofify_fifo = fifo_notification_for_nonfifo || (_templatesManager.anyNotifyFifoWriteTemplates() && context.getNotifyNewEntry() != null);
+            if (nofify_fifo)
+                context.setRecentFifoObject(new FifoBackgroundRequest(
+                        context.getOperationID(),
+                        true/*isNotifyRequest*/,
+                        !fifo_notification_for_nonfifo/*isNonNotifyRequest*/,
+                        entryHolder,
+                        null,
+                        context.isFromReplication(),
+                        SpaceOperations.WRITE,
+                        entryHolder.getXidOriginatedTransaction(),
+                        context.getNotifyNewEntry()));
+            else
+                context.setRecentFifoObject(new FifoBackgroundRequest(
+                        context.getOperationID(),
+                        false/*isNotifyRequest*/,
+                        true/*isNonNotifyRequest*/,
+                        entryHolder,
+                        null,
+                        context.isFromReplication(),
+                        SpaceOperations.WRITE,
+                        entryHolder.getXidOriginatedTransaction(),
+                        null /*cloneEH*/));
+        }
+        //FIFO--------------------------------------------
     }
 
     /**

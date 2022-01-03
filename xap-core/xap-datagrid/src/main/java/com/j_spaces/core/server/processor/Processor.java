@@ -37,30 +37,14 @@ import com.gigaspaces.lrmi.nio.IResponseContext;
 import com.gigaspaces.lrmi.nio.ReplyPacket;
 import com.gigaspaces.lrmi.nio.ResponseContext;
 import com.gigaspaces.server.blobstore.BlobStoreException;
-import com.j_spaces.core.AnswerHolder;
-import com.j_spaces.core.AnswerPacket;
-import com.j_spaces.core.Constants;
-import com.j_spaces.core.EntryDeletedException;
-import com.j_spaces.core.EntryTakenPacket;
-import com.j_spaces.core.ExtendedAnswerHolder;
-import com.j_spaces.core.FifoEntriesComparator;
-import com.j_spaces.core.FifoException;
-import com.j_spaces.core.NoMatchException;
-import com.j_spaces.core.OperationID;
-import com.j_spaces.core.PendingFifoSearch;
-import com.j_spaces.core.SpaceOperations;
-import com.j_spaces.core.TemplateDeletedException;
-import com.j_spaces.core.TransactionConflictException;
-import com.j_spaces.core.TransactionNotActiveException;
-import com.j_spaces.core.UpdateOrWriteContext;
-import com.j_spaces.core.XtnEntry;
+import com.j_spaces.core.*;
 import com.j_spaces.core.cache.CacheManager;
 import com.j_spaces.core.cache.IEntryCacheInfo;
 import com.j_spaces.core.cache.TerminatingFifoXtnsInfo;
 import com.j_spaces.core.cache.XtnData;
+import com.j_spaces.core.cache.blobStore.IBlobStoreEntryHolder;
 import com.j_spaces.core.cache.blobStore.IBlobStoreRefCacheInfo;
 import com.j_spaces.core.cache.context.Context;
-import com.j_spaces.core.cache.blobStore.IBlobStoreEntryHolder;
 import com.j_spaces.core.cache.context.TieredState;
 import com.j_spaces.core.client.*;
 import com.j_spaces.core.cluster.ReplicationOperationType;
@@ -72,24 +56,17 @@ import com.j_spaces.core.sadapter.SelectType;
 import com.j_spaces.core.transaction.CheckXtnStatusInTmBusPackect;
 import com.j_spaces.kernel.IConsumerObject;
 import com.j_spaces.kernel.locks.ILockObject;
-
 import net.jini.core.entry.UnusableEntryException;
 import net.jini.core.transaction.TransactionException;
 import net.jini.core.transaction.UnknownTransactionException;
 import net.jini.core.transaction.server.ServerTransaction;
 import net.jini.core.transaction.server.TransactionConstants;
 import net.jini.id.Uuid;
-
-import java.rmi.RemoteException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.rmi.RemoteException;
+import java.util.*;
 
 /**
  * Main logic handler inside engine.
