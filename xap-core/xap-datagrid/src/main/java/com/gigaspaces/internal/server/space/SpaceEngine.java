@@ -891,7 +891,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
         try {
             if(tieredStorageManager != null) {
                 String typeName = eHolder.getServerTypeDesc().getTypeName();
-                context.setEntryTieredState(tieredStorageManager.getEntryTieredState(eHolder.getEntryData()));
+                context.setEntryTieredState(tieredStorageManager.getEntryTieredState(eHolder));
                 if(tieredStorageManager.getCacheRule(typeName) != null) {
                     eHolder.setTransient(tieredStorageManager.getCacheRule(typeName).isTransient());
                 }
@@ -4533,8 +4533,8 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
         if(isTieredStorage()){
             if(context.getEntryTieredState() == null){
                 context.setEntryTieredState(ent.isHollowEntry() ?
-                        tieredStorageManager.guessEntryTieredState(ent.getServerTypeDesc().getTypeName()):
-                        tieredStorageManager.getEntryTieredState(ent.getEntryData()));
+                        tieredStorageManager.guessEntryTieredState(ent):
+                        tieredStorageManager.getEntryTieredState(ent));
             }
         }
 
@@ -4643,7 +4643,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
                 if(reRead){
                     entry = _cacheManager.getEntry(context, ent, false /*tryInsertToCache*/, !context.isNonBlockingReadOp() /*lockeEntry*/, tmpl.isMemoryOnlySearch() || ent.isTransient() /*useOnlyCache*/);
                     if(entry != null){
-                        context.setEntryTieredState(getTieredStorageManager().getEntryTieredState(entry.getEntryData()));
+                        context.setEntryTieredState(getTieredStorageManager().getEntryTieredState(entry));
                     }
                 }
             } else {

@@ -4,6 +4,7 @@ import com.gigaspaces.internal.server.space.SpaceEngine;
 import com.gigaspaces.internal.server.space.SpaceImpl;
 import com.gigaspaces.internal.server.space.metadata.SpaceTypeManager;
 import com.gigaspaces.internal.server.storage.IEntryData;
+import com.gigaspaces.internal.server.storage.IEntryHolder;
 import com.gigaspaces.internal.server.storage.ITemplateHolder;
 import com.gigaspaces.metrics.*;
 import com.j_spaces.core.Constants;
@@ -105,12 +106,14 @@ public class TieredStorageManagerImpl implements TieredStorageManager {
     }
 
     @Override
-    public TieredState getEntryTieredState(IEntryData entryData) {
+    public TieredState getEntryTieredState(IEntryHolder entryHolder) {
+        final IEntryData entryData = entryHolder.getEntryData();
         String typeName = entryData.getSpaceTypeDescriptor().getTypeName();
         CachePredicate cacheRule = getCacheRule(typeName);
         if (cacheRule == null) {
-            logger.trace("No cache rule for type {}, EntryTieredState = TIERED_COLD", typeName);
-            return TieredState.TIERED_COLD;
+            TieredState tieredState = entryHolder.isTransient() ? TieredState.TIERED_HOT : TieredState.TIERED_COLD;
+            logger.trace("No cache rule for type {}, EntryTieredState = {}", typeName, tieredState);
+            return tieredState;
         }
 
         if (cacheRule.isTransient()) {
@@ -128,11 +131,13 @@ public class TieredStorageManagerImpl implements TieredStorageManager {
     }
 
     @Override
-    public TieredState guessEntryTieredState(String typeName) {
+    public TieredState guessEntryTieredState(IEntryHolder entryHolder) {
+        final String typeName = entryHolder.getServerTypeDesc().getTypeName();
         CachePredicate cacheRule = getCacheRule(typeName);
         if (cacheRule == null) {
-            logger.trace("No cache rule for type {}, EntryTieredState = TIERED_COLD", typeName);
-            return TieredState.TIERED_COLD;
+            TieredState tieredState = entryHolder.isTransient() ? TieredState.TIERED_HOT : TieredState.TIERED_COLD;
+            logger.trace("No cache rule for type {}, EntryTieredState = {}", typeName, tieredState);
+            return tieredState;
         } else if (cacheRule.isTransient()) {
             logger.trace("Type {} is transient, EntryTieredState = TIERED_HOT", typeName);
             return TieredState.TIERED_HOT;
@@ -208,8 +213,11 @@ public class TieredStorageManagerImpl implements TieredStorageManager {
 
         CachePredicate cacheRule = getCacheRule(typeName);
         if (cacheRule == null) {
-            logger.trace("No cache rule for type {}, TemplateMatchTier = MATCH_COLD", typeName);
-            return templateHolder.isEmptyTemplate() ? TemplateMatchTier.MATCH_HOT_AND_COLD : TemplateMatchTier.MATCH_COLD;
+            TemplateMatchTier templateMatchTier = templateHolder.isTransient() ?
+                    TemplateMatchTier.MATCH_HOT : templateHolder.isEmptyTemplate() ?
+                    TemplateMatchTier.MATCH_HOT_AND_COLD : TemplateMatchTier.MATCH_COLD;
+            logger.trace("No cache rule for type {}, TemplateMatchTier = {}", typeName, templateMatchTier);
+            return templateMatchTier;
         } else {
             if (cacheRule.isTransient()) {
                 logger.trace("Type {} is transient, TemplateMatchTier = MATCH_HOT", typeName);
