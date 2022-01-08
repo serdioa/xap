@@ -355,7 +355,7 @@ public class SpaceTypeManager {
         }
 
         for (SpaceIndex index : typeDesc.getIndexes().values()) {
-            if(((ISpaceIndex) index).isMultiValuePerEntryIndex() || ((ISpaceIndex) index).isCompoundIndex()){
+            if(((ISpaceIndex) index).isMultiValuePerEntryIndex()){
                 throw new TieredStorageMetadataException("Unsupported type " + typeName + ": unsupported index type - " + index.getName() + "]");
             }
         }
