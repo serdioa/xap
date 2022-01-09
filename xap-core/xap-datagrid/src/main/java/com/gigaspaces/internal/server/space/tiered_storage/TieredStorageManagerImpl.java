@@ -68,9 +68,9 @@ public class TieredStorageManagerImpl implements TieredStorageManager {
     @Override
     public CachePredicate getCacheRule(String typeName) {
         if (hasCacheRule(typeName)) {
-            try{
+            try {
                 return hotCacheRules.computeIfAbsent(typeName, typeName1 -> createCacheRule(storageConfig.getTables().get(typeName1), internalDiskStorage.getTypeManager()));
-            } catch (RuntimeException e){
+            } catch (RuntimeException e) {
                 logger.error("failed to compute cache rule", e);
                 throw e;
             }
@@ -108,32 +108,11 @@ public class TieredStorageManagerImpl implements TieredStorageManager {
     @Override
     public TieredState getEntryTieredState(IEntryHolder entryHolder) {
         final IEntryData entryData = entryHolder.getEntryData();
-        String typeName = entryData.getSpaceTypeDescriptor().getTypeName();
+        String typeName = (entryData == null) ?
+                entryHolder.getServerTypeDesc().getTypeName() : entryData.getSpaceTypeDescriptor().getTypeName();
+
         CachePredicate cacheRule = getCacheRule(typeName);
-        if (cacheRule == null) {
-            TieredState tieredState = entryHolder.isTransient() ? TieredState.TIERED_HOT : TieredState.TIERED_COLD;
-            logger.trace("No cache rule for type {}, EntryTieredState = {}", typeName, tieredState);
-            return tieredState;
-        }
 
-        if (cacheRule.isTransient()) {
-            logger.trace("Type {} is transient, EntryTieredState = TIERED_HOT", typeName);
-            return TieredState.TIERED_HOT;
-        }
-
-        if (cacheRule.evaluate(entryData)) {
-            logger.trace("Fits cache rule for type {}, EntryTieredState = TIERED_HOT_AND_COLD", typeName);
-            return TieredState.TIERED_HOT_AND_COLD;
-        }
-
-        logger.trace("Doesn't Fit cache rule for type {}, EntryTieredState = TIERED_COLD", typeName);
-        return TieredState.TIERED_COLD;
-    }
-
-    @Override
-    public TieredState guessEntryTieredState(IEntryHolder entryHolder) {
-        final String typeName = entryHolder.getServerTypeDesc().getTypeName();
-        CachePredicate cacheRule = getCacheRule(typeName);
         if (cacheRule == null) {
             TieredState tieredState = entryHolder.isTransient() ? TieredState.TIERED_HOT : TieredState.TIERED_COLD;
             logger.trace("No cache rule for type {}, EntryTieredState = {}", typeName, tieredState);
@@ -141,19 +120,25 @@ public class TieredStorageManagerImpl implements TieredStorageManager {
         } else if (cacheRule.isTransient()) {
             logger.trace("Type {} is transient, EntryTieredState = TIERED_HOT", typeName);
             return TieredState.TIERED_HOT;
-        } else {
-            logger.trace("Has cache rule for type {}, EntryTieredState = TIERED_HOT_AND_COLD", typeName);
+        } else if (entryData == null) {
+            logger.trace("Received hollow entry with cache rule for type {}, EntryTieredState = TIERED_HOT_AND_COLD", typeName);
             return TieredState.TIERED_HOT_AND_COLD;
+        } else if (cacheRule.evaluate(entryData)) { // entryData != null
+            logger.trace("Fits cache rule for type {}, EntryTieredState = TIERED_HOT_AND_COLD", typeName);
+            return TieredState.TIERED_HOT_AND_COLD;
+        } else {
+            logger.trace("Doesn't Fit cache rule for type {}, EntryTieredState = TIERED_COLD", typeName);
+            return TieredState.TIERED_COLD;
         }
     }
 
-    public void initTieredStorageMetrics(SpaceImpl _spaceImpl, MetricManager metricManager){
-    operationRegistratorInit(_spaceImpl, metricManager);
-    diskSizeRegistratorInit(_spaceImpl, metricManager);
+    public void initTieredStorageMetrics(SpaceImpl _spaceImpl, MetricManager metricManager) {
+        operationRegistratorInit(_spaceImpl, metricManager);
+        diskSizeRegistratorInit(_spaceImpl, metricManager);
     }
 
 
-    private void operationRegistratorInit(SpaceImpl _spaceImpl, MetricManager metricManager){
+    private void operationRegistratorInit(SpaceImpl _spaceImpl, MetricManager metricManager) {
         Map<String, DynamicMetricTag> dynamicTags = new HashMap<>();
         dynamicTags.put("space_active", () -> {
             boolean active;
@@ -167,20 +152,20 @@ public class TieredStorageManagerImpl implements TieredStorageManager {
 
         InternalMetricRegistrator registratorForPrimary = (InternalMetricRegistrator) metricManager.createRegistrator(MetricConstants.SPACE_METRIC_NAME, createTags(_spaceImpl), dynamicTags);
 
-        registratorForPrimary.register( ("tiered-storage-read-tp"), getInternalStorage().getReadDisk());
+        registratorForPrimary.register(("tiered-storage-read-tp"), getInternalStorage().getReadDisk());
         registratorForPrimary.register("tiered-storage-write-tp", getInternalStorage().getWriteDisk());
         this.operationsRegistrator = registratorForPrimary;
     }
 
 
-    private void diskSizeRegistratorInit(SpaceImpl _spaceImpl, MetricManager metricManager){
+    private void diskSizeRegistratorInit(SpaceImpl _spaceImpl, MetricManager metricManager) {
         InternalMetricRegistrator registratorForAll = (InternalMetricRegistrator) metricManager.createRegistrator(MetricConstants.SPACE_METRIC_NAME, createTags(_spaceImpl));
-        registratorForAll.register("disk-size",  new Gauge<Long>() {
+        registratorForAll.register("disk-size", new Gauge<Long>() {
             @Override
-            public Long getValue()  {
+            public Long getValue() {
                 try {
                     return getInternalStorage().getDiskSize();
-                }  catch (SAException | IOException e) {
+                } catch (SAException | IOException e) {
                     logger.warn("failed to get disk size metric with exception: ", e);
                     return null;
                 }
@@ -190,7 +175,7 @@ public class TieredStorageManagerImpl implements TieredStorageManager {
     }
 
 
-    private Map<String, String>  createTags(SpaceImpl _spaceImpl){
+    private Map<String, String> createTags(SpaceImpl _spaceImpl) {
         final String prefix = "metrics.";
         final Map<String, String> tags = new HashMap<>();
         for (Map.Entry<Object, Object> property : _spaceImpl.getCustomProperties().entrySet()) {
@@ -206,7 +191,7 @@ public class TieredStorageManagerImpl implements TieredStorageManager {
     @Override
     public TemplateMatchTier guessTemplateTier(ITemplateHolder templateHolder) { // TODO - tiered storage - return TemplateMatchTier, hot and cold
         String typeName = templateHolder.getServerTypeDesc().getTypeName();
-        if(typeName.equals(Object.class.getTypeName())){
+        if (typeName.equals(Object.class.getTypeName())) {
             logger.trace("Generic type {} = MATCH_HOT_AND_COLD", typeName);
             return TemplateMatchTier.MATCH_HOT_AND_COLD;
         }
@@ -214,8 +199,7 @@ public class TieredStorageManagerImpl implements TieredStorageManager {
         CachePredicate cacheRule = getCacheRule(typeName);
         if (cacheRule == null) {
             TemplateMatchTier templateMatchTier = templateHolder.isTransient() ?
-                    TemplateMatchTier.MATCH_HOT : templateHolder.isEmptyTemplate() ?
-                    TemplateMatchTier.MATCH_HOT_AND_COLD : TemplateMatchTier.MATCH_COLD;
+                    TemplateMatchTier.MATCH_HOT : TemplateMatchTier.MATCH_COLD;
             logger.trace("No cache rule for type {}, TemplateMatchTier = {}", typeName, templateMatchTier);
             return templateMatchTier;
         } else {
@@ -238,7 +222,7 @@ public class TieredStorageManagerImpl implements TieredStorageManager {
         if (diskSizeRegistrator != null) {
             diskSizeRegistrator.clear();
         }
-        if(operationsRegistrator != null) {
+        if (operationsRegistrator != null) {
             operationsRegistrator.clear();
         }
         internalDiskStorage.shutDown();
@@ -285,7 +269,7 @@ public class TieredStorageManagerImpl implements TieredStorageManager {
      * @param typeManager current space typeManager instance
      * @return QueryTemplatePacket representation of the criteria
      */
-    private QueryTemplatePacket getQueryTemplatePacketFromCriteria(TieredStorageTableConfig tableConfig, SpaceTypeManager typeManager) throws RuntimeException{
+    private QueryTemplatePacket getQueryTemplatePacketFromCriteria(TieredStorageTableConfig tableConfig, SpaceTypeManager typeManager) throws RuntimeException {
         ReadQueryParser parser = new ReadQueryParser();
         AbstractDMLQuery sqlQuery;
         try {

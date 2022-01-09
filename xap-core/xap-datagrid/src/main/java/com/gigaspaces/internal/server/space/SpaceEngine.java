@@ -4532,9 +4532,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
 
         if(isTieredStorage()){
             if(context.getEntryTieredState() == null){
-                context.setEntryTieredState(ent.isHollowEntry() ?
-                        tieredStorageManager.guessEntryTieredState(ent):
-                        tieredStorageManager.getEntryTieredState(ent));
+                context.setEntryTieredState(tieredStorageManager.getEntryTieredState(ent));
             }
         }
 

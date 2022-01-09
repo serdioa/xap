@@ -27,8 +27,6 @@ public interface TieredStorageManager {
 
     TieredState getEntryTieredState(IEntryHolder entryHolder);
 
-    TieredState guessEntryTieredState(IEntryHolder entryHolder);
-
     TemplateMatchTier guessTemplateTier(ITemplateHolder templateHolder);
 
     void initTieredStorageMetrics(SpaceImpl _spaceImpl, MetricManager metricManager);
