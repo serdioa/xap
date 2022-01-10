@@ -16,6 +16,7 @@
 
 package com.gigaspaces.metrics.hsqldb;
 
+import com.gigaspaces.internal.utils.GsEnv;
 import com.gigaspaces.metrics.MetricRegistrySnapshot;
 import com.gigaspaces.metrics.MetricReporter;
 import com.gigaspaces.metrics.MetricTagsSnapshot;
@@ -34,7 +35,7 @@ import java.util.*;
 public class HsqlDbReporter extends MetricReporter {
 
     private static final Logger _logger = LoggerFactory.getLogger(HsqlDbReporter.class);
-    private static final boolean systemFilterDisabled = Boolean.getBoolean(SystemProperties.RECORDING_OF_ALL_METRICS_TO_HSQLDB_ENABLED);
+    private static final boolean recordMetricsToHsqldbEnabled = GsEnv.propertyBoolean(SystemProperties.RECORDING_OF_ALL_METRICS_TO_HSQLDB_ENABLED).get(true);
 
     private final SharedJdbcConnectionWrapper connectionWrapper;
     private final String dbTypeString;
@@ -188,11 +189,13 @@ public class HsqlDbReporter extends MetricReporter {
     }
 
     private String getTableName(String key) {
+        if (!recordMetricsToHsqldbEnabled) return null;
         SystemMetrics systemMetrics = SystemMetricsManager.getSystemMetric(key);
         if( systemMetrics != null ){
+            _logger.debug("Get system metric table name: {}, metric name: {}.", systemMetrics.getTableName(), systemMetrics.getMetricName());
             return systemMetrics.getTableName();
         }
-        return systemFilterDisabled ? PredefinedSystemMetrics.toTableName(key) : null;
+        return null;
     }
 
     private void setParameter(PreparedStatement statement, Integer index, Object value, String columnName ) throws SQLException {
