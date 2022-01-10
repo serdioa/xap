@@ -747,6 +747,9 @@ public class SystemProperties extends CommonSystemProperties {
     public static final String CLUSTER_XML_SCHEMA_VALIDATION = "com.gs.xmlschema.validation";
     public static final String CLUSTER_XML_SCHEMA_VALIDATION_DEFAULT = "true";
 
+    public static final String REPLICATION_REPLICA_PROGRESS_TIMEOUT = "com.gs.replication.replicaProgressTimeout";
+    public static final long REPLICATION_REPLICA_PROGRESS_TIMEOUT_DEFAULT = 60000;
+
     public static final String REQUIRED_CONSISTENCY_LEVEL = "com.gs.replication.required_consistency_level";
     public static final int REQUIRED_CONSISTENCY_LEVEL_DEFAULT = 1;
 

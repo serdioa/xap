@@ -95,6 +95,7 @@ import com.gigaspaces.internal.sync.SynchronizationStorageAdapter;
 import com.gigaspaces.internal.sync.hybrid.SyncHybridSAException;
 import com.gigaspaces.internal.sync.hybrid.SyncHybridTransactionException;
 import com.gigaspaces.internal.transport.*;
+import com.gigaspaces.internal.utils.GsEnv;
 import com.gigaspaces.internal.utils.StringUtils;
 import com.gigaspaces.internal.utils.collections.IAddOnlySet;
 import com.gigaspaces.logger.LogLevel;
@@ -166,6 +167,7 @@ import java.util.concurrent.TimeUnit;
 import static com.j_spaces.core.Constants.CacheManager.*;
 import static com.j_spaces.core.Constants.Engine.*;
 import static com.j_spaces.core.Constants.TieredStorage.*;
+import static com.j_spaces.kernel.SystemProperties.REPLICATION_REPLICA_PROGRESS_TIMEOUT;
 
 @com.gigaspaces.api.InternalApi
 public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedListener {
@@ -6818,7 +6820,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
         context.setFetchBatchSize(fetchBatchSize);
         context.setConcurrentConsumers(concurrentConsumers);
         // replication progress timeout should be larger in blobstore mode
-        if (isBlobstore && Long.getLong("com.gs.replication.replicaProgressTimeout") == null) {
+        if (isBlobstore && GsEnv.propertyLong(REPLICATION_REPLICA_PROGRESS_TIMEOUT).get() == null) {
             context.setProgressTimeout(context.getProgressTimeout() * 3);
         }
         //set parameters for the target space

@@ -23,7 +23,6 @@ import com.gigaspaces.internal.cluster.node.replica.ISpaceSynchronizeReplicaStat
 import com.gigaspaces.internal.cluster.node.replica.ISpaceSynchronizeResult;
 import com.gigaspaces.internal.cluster.node.replica.SpaceReplicaStage;
 import com.gigaspaces.time.SystemTime;
-
 import net.jini.space.InternalSpaceException;
 
 import java.util.Collection;
@@ -33,6 +32,8 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+
+import static com.j_spaces.kernel.SystemProperties.REPLICATION_REPLICA_PROGRESS_TIMEOUT;
 
 
 @com.gigaspaces.api.InternalApi
@@ -200,8 +201,12 @@ public class SpaceReplicaState
                 lastProgressTimeStamp = Math.max(_targetGroup.getLastProcessTimeStamp(_replicaSourceLookupName), lastProgressTimeStamp);
 
                 //No progress, fail process
-                if (SystemTime.timeMillis() - lastProgressTimeStamp > _progressTimeout) {
-                    _failureReason = new ReplicaNoProgressException("No progress in synchronize stage for the past " + _progressTimeout + " milliseconds");
+                final long consumptionTime = SystemTime.timeMillis() - lastProgressTimeStamp;
+                if (consumptionTime > _progressTimeout) {
+                    _failureReason = new ReplicaNoProgressException(
+                            "No progress in replica synchronize stage. "
+                            + "Last iteration took [" + consumptionTime + "ms]; "
+                            + "Exceeded the configured timeout: " + REPLICATION_REPLICA_PROGRESS_TIMEOUT + "="+_progressTimeout);
                     break;
                 }
 
