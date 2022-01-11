@@ -18,7 +18,6 @@
 package com.gigaspaces.logger;
 
 import com.gigaspaces.internal.version.PlatformVersion;
-import com.gigaspaces.logger.cef.ESCAPE_SYMBOLS;
 import com.gigaspaces.lrmi.LRMIInvocationContext;
 
 import com.gigaspaces.start.SystemInfo;
@@ -26,15 +25,13 @@ import org.jini.rio.boot.LoggableClassLoader;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.text.MessageFormat;
 import java.util.Date;
 import java.util.logging.*;
 
 import static com.gigaspaces.logger.LogUtils.toSeverity;
-import static com.gigaspaces.logger.cef.ESCAPE_SYMBOLS.quoteSpaces;
+import static com.gigaspaces.logger.cef.ESCAPE_SYMBOLS.encodeSpecialSymbols;
 
 /**
  * Print a brief summary of the LogRecord in a human readable messageFormat. This class is a
@@ -204,8 +201,8 @@ public class GSSimpleFormatter extends Formatter {
     public String setArgsWithRecordExtension(LogRecord record) {
          return " method=" + record.getSourceClassName() + "." + record.getSourceMethodName() + " " +
                 "thread=" + record.getThreadID() + " " +
-                "msg=" + quoteSpaces(formatMessage(record)) + " " +
-                "LRMI=" + quoteSpaces(LRMIInvocationContext.getContextMethodLongDisplayString()) + " ";
+                "msg=" + encodeSpecialSymbols(formatMessage(record)) + " " +
+                "LRMI=" + encodeSpecialSymbols(LRMIInvocationContext.getContextMethodLongDisplayString()) + " ";
     }
 
     private String findContext() {

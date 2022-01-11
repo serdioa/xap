@@ -5,11 +5,13 @@ package com.gigaspaces.logger.cef;
  *  \
  *  |
  *  =
+ *  \n
  */
 public enum ESCAPE_SYMBOLS {
-    BLACKSLASH('\\'),
+    BACKSLASH('\\'),
     PIPE('|'),
-    EQUAL_SIGN('=');
+    EQUAL_SIGN('='),
+    NEW_LINE('\n');
     private final char ch;
 
     ESCAPE_SYMBOLS(char ch) {
@@ -20,12 +22,11 @@ public enum ESCAPE_SYMBOLS {
         return ch;
     }
 
-    public static String quoteSpaces(String value) {
+    public static String encodeSpecialSymbols(String value) {
         for (ESCAPE_SYMBOLS sign : ESCAPE_SYMBOLS.values()) {
             value = value.replace(String.valueOf(sign.ch()), "\\" + sign.ch());
         }
-        value = value.replace("\n", "\\n");
-        return "\"" + value.replace("\"", "\\\"") + "\"";
+        return value;
     }
 
 }
