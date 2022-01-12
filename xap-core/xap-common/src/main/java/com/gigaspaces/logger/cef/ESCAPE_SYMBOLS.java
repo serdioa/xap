@@ -10,8 +10,9 @@ package com.gigaspaces.logger.cef;
 public enum ESCAPE_SYMBOLS {
     BACKSLASH('\\'),
     PIPE('|'),
-    EQUAL_SIGN('='),
-    NEW_LINE('\n');
+    EQUAL_SIGN('=');
+
+    private static String NEW_LINE = "\n";
     private final char ch;
 
     ESCAPE_SYMBOLS(char ch) {
@@ -26,6 +27,7 @@ public enum ESCAPE_SYMBOLS {
         for (ESCAPE_SYMBOLS sign : ESCAPE_SYMBOLS.values()) {
             value = value.replace(String.valueOf(sign.ch()), "\\" + sign.ch());
         }
+        value = value.replace(NEW_LINE, "\\n");
         return value;
     }
 
