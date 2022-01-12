@@ -160,7 +160,7 @@ public class SpaceCopyReplicaRunnable
                 } else {
                     if (_logger.isDebugEnabled())
                         _logger.debug(_replicationNode.getLogPrefix() + (isOldVersion ? "" : " completed current stage [" + stageName + "], ") + "all stages completed.");
-                    _state.signalEntireCopyStageDoneSucessfully();
+                    _state.signalEntireCopyStageDoneSuccessfully();
                 }
             } else {
                 if (result.getResult() instanceof SpaceReplicaBatch) {

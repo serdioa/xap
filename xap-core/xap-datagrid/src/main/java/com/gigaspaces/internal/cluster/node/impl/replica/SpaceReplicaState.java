@@ -251,7 +251,7 @@ public class SpaceReplicaState
         waitForCopyResult(timeout, units);
     }
 
-    public void signalEntireCopyStageDoneSucessfully() {
+    public void signalEntireCopyStageDoneSuccessfully() {
         _lock.lock();
         try {
             _copyStageDone = true;
