@@ -30,13 +30,12 @@ import com.gigaspaces.internal.utils.concurrent.IAsyncHandlerProvider.CycleResul
 import com.gigaspaces.logger.Constants;
 import com.gigaspaces.time.SystemTime;
 import com.j_spaces.core.cluster.IReplicationFilterEntry;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Collection;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 
 /**
@@ -98,9 +97,11 @@ public class SpaceCopyReplicaRunnable
             if (_logger.isDebugEnabled())
                 _logger.debug(_replicationNode.getLogPrefix() + " dispatch request for replica batch has an exception", e);
 
-            if (!(e instanceof Exception))
-                e = new ExecutionException(e.getMessage(), e);
-            _state.signalCopyStageFailed((Exception) e);
+            if (!(e instanceof Exception)) {
+                _state.signalCopyStageFailed(new ExecutionException(e));
+            } else {
+                _state.signalCopyStageFailed((Exception) e);
+            }
             return CycleResult.TERMINATE;
         }
     }
@@ -175,9 +176,11 @@ public class SpaceCopyReplicaRunnable
                 }
             }
         } catch (Throwable e) {
-            if (!(e instanceof Exception))
-                e = new ExecutionException(e.getMessage(), e);
-            _state.signalCopyStageFailed((Exception) e);
+            if (!(e instanceof Exception)) {
+                _state.signalCopyStageFailed(new ExecutionException(e));
+            } else {
+                _state.signalCopyStageFailed((Exception) e);
+            }
         }
     }
 
@@ -211,9 +214,11 @@ public class SpaceCopyReplicaRunnable
                 getHandler().resumeNow();
             }
         } catch (Throwable e) {
-            if (!(e instanceof Exception))
-                e = new ExecutionException(e.getMessage(), e);
-            _state.signalCopyStageFailed((Exception) e);
+            if (!(e instanceof Exception)) {
+                _state.signalCopyStageFailed( new ExecutionException(e));
+            } else {
+                _state.signalCopyStageFailed((Exception) e);
+            }
         }
     }
 
