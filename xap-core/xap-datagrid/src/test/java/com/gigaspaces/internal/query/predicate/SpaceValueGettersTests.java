@@ -152,7 +152,8 @@ public class SpaceValueGettersTests {
         return new TypeDesc(className, codeBase, superClasses, properties, supportsDynamicProperties,
                 indexes, identifierPropertyName, idAutoGenerate, defaultPropertyName, routingPropertyName, null, null,
                 isSystemType, fifoMode, replicable, supportsOptimisticLocking, StorageType.OBJECT, entryType,
-                objectClass, ExternalEntry.class, SpaceDocument.class, null, DotNetStorageType.NULL, false, null, null,null, false);
+                objectClass, ExternalEntry.class, SpaceDocument.class, null, DotNetStorageType.NULL,
+                false, null, null,null, false, null);
     }
 
     public static class Name {

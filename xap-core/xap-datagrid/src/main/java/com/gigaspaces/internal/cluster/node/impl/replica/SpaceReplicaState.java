@@ -23,7 +23,6 @@ import com.gigaspaces.internal.cluster.node.replica.ISpaceSynchronizeReplicaStat
 import com.gigaspaces.internal.cluster.node.replica.ISpaceSynchronizeResult;
 import com.gigaspaces.internal.cluster.node.replica.SpaceReplicaStage;
 import com.gigaspaces.time.SystemTime;
-
 import net.jini.space.InternalSpaceException;
 
 import java.util.Collection;
@@ -33,6 +32,8 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+
+import static com.j_spaces.kernel.SystemProperties.REPLICATION_REPLICA_PROGRESS_TIMEOUT;
 
 
 @com.gigaspaces.api.InternalApi
@@ -88,20 +89,25 @@ public class SpaceReplicaState
     //Should be called under lock
     private void waitForCopyResultHelper(long time, TimeUnit unit)
             throws InterruptedException, TimeoutException {
-        long lastActiviteTime = -1;
         long remainingTime = unit.toMillis(time);
+        long lastIterationTimestamp = 0;
         while (!isCopyDone()) {
-            //Get last activity time
-            long lastActiviteTime1 = lastActiviteTime;
-            for (SpaceCopyReplicaRunnable consumer1 : _consumers)
-                lastActiviteTime1 = Math.max(lastActiviteTime1, consumer1.getLastIterationTimeStamp());
-            lastActiviteTime = lastActiviteTime1;
+            boolean hasProgress = false;
+            long maxIterationTimestamp = lastIterationTimestamp;
+            for (SpaceCopyReplicaRunnable consumer : _consumers) {
+                hasProgress = hasProgress || consumer.hasProgress(lastIterationTimestamp);
+                maxIterationTimestamp = Math.max(maxIterationTimestamp, consumer.getLastIterationTimeStamp());
+            }
+            lastIterationTimestamp = maxIterationTimestamp;
 
-            //No progress, fail process
-            if (SystemTime.timeMillis() - lastActiviteTime > _progressTimeout) {
-                for (SpaceCopyReplicaRunnable consumer : _consumers)
+            if (!hasProgress) {
+                for (SpaceCopyReplicaRunnable consumer : _consumers) {
                     consumer.abort();
-                _failureReason = new ReplicaNoProgressException("No progress in replica stage for the past " + _progressTimeout + " milliseconds");
+                }
+                _failureReason = new ReplicaNoProgressException(
+                        "No progress in replica copy stage. "
+                        + "Last iteration took [" + (SystemTime.timeMillis() - lastIterationTimestamp) + " ms]; "
+                        + "Exceeds the configured timeout: " + REPLICATION_REPLICA_PROGRESS_TIMEOUT + "="+_progressTimeout);
                 break;
             }
 
@@ -200,8 +206,12 @@ public class SpaceReplicaState
                 lastProgressTimeStamp = Math.max(_targetGroup.getLastProcessTimeStamp(_replicaSourceLookupName), lastProgressTimeStamp);
 
                 //No progress, fail process
-                if (SystemTime.timeMillis() - lastProgressTimeStamp > _progressTimeout) {
-                    _failureReason = new ReplicaNoProgressException("No progress in synchronize stage for the past " + _progressTimeout + " milliseconds");
+                final long consumptionTime = SystemTime.timeMillis() - lastProgressTimeStamp;
+                if (consumptionTime > _progressTimeout) {
+                    _failureReason = new ReplicaNoProgressException(
+                            "No progress in replica synchronize stage. "
+                            + "Last iteration took [" + consumptionTime + "ms]; "
+                            + "Exceeded the configured timeout: " + REPLICATION_REPLICA_PROGRESS_TIMEOUT + "="+_progressTimeout);
                     break;
                 }
 
@@ -246,7 +256,7 @@ public class SpaceReplicaState
         waitForCopyResult(timeout, units);
     }
 
-    public void signalEntireCopyStageDoneSucessfully() {
+    public void signalEntireCopyStageDoneSuccessfully() {
         _lock.lock();
         try {
             _copyStageDone = true;

@@ -26,11 +26,21 @@ public class ServiceConfig {
     private String kafkaTopic;
     private String kafkaMessageCommandClass;
     private String kafkaMessageValidateClass;
+    private String kafkaMaxPollRecords;
+    private String kafkaReceiveBufferConfig;
 
     public ServiceConfig() {
     }
 
-    public ServiceConfig(String pipelineName, String spaceName, String webPort, String kafkaBootstrapServers, String kafkaTopic, String kafkaMessageCommandClass, String kafkaMessageValidateClass) {
+    public ServiceConfig(String pipelineName,
+                         String spaceName,
+                         String webPort,
+                         String kafkaBootstrapServers,
+                         String kafkaTopic,
+                         String kafkaMessageCommandClass,
+                         String kafkaMessageValidateClass,
+                         String kafkaMaxPollRecords,
+                         String kafkaReceiveBufferConfig) {
         this.pipelineName = pipelineName;
         this.spaceName = spaceName;
         this.webPort = webPort;
@@ -38,6 +48,8 @@ public class ServiceConfig {
         this.kafkaTopic = kafkaTopic;
         this.kafkaMessageCommandClass = kafkaMessageCommandClass;
         this.kafkaMessageValidateClass = kafkaMessageValidateClass;
+        this.kafkaMaxPollRecords = kafkaMaxPollRecords;
+        this.kafkaReceiveBufferConfig = kafkaReceiveBufferConfig;
     }
 
     @Bean(name = "GSConsumerHandler")
@@ -46,8 +58,15 @@ public class ServiceConfig {
     }
 
     public GSKafkaConsumerThread initRunnable() throws IOException {
-        return new GSKafkaConsumerThread(pipelineName, spaceName, kafkaBootstrapServers, kafkaTopic,
-                kafkaMessageCommandClass, kafkaMessageValidateClass, initConverter(), initCleanser(), initAuditor());
+        return new GSKafkaConsumerThread(pipelineName,
+                spaceName,
+                kafkaBootstrapServers,
+                kafkaTopic,
+                kafkaMessageCommandClass,
+                kafkaMessageValidateClass,
+                kafkaMaxPollRecords,
+                kafkaReceiveBufferConfig,
+                initConverter(), initCleanser(), initAuditor());
     }
 
     private GSAuditor initAuditor() {

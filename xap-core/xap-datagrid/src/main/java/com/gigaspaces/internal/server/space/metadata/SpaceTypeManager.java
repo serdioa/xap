@@ -281,7 +281,7 @@ public class SpaceTypeManager {
                 serverTypeDesc = localTypeMap.get(typeName);
 
                 if (action == AddTypeDescResultType.CREATED) {
-                    if(tieredStorageManager != null){
+                    if (tieredStorageManager != null) {
                         createTypeForTieredStorage(typeDesc);
                     }
                     serverTypeDesc = createServerTypeDesc(typeDesc, localTypeMap);
@@ -301,12 +301,18 @@ public class SpaceTypeManager {
     }
 
     private void createTypeForTieredStorage(ITypeDesc typeDesc) {
-        assert tieredStorageManager!=null;
+        assert tieredStorageManager != null;
+
         validateTieredStorage(typeDesc);
-        if(!tieredStorageManager.isTransient(typeDesc.getTypeName())){
+        if (!tieredStorageManager.isTransient(typeDesc.getTypeName())) {
             try {
                 tieredStorageManager.getInternalStorage().persistType(typeDesc);
                 tieredStorageManager.getInternalStorage().createTable(typeDesc);
+
+                TieredStorageTableConfig config = typeDesc.getTieredStorageTableConfig();
+                if (config != null) {
+                    tieredStorageManager.addTableConfig(config);
+                }
             } catch (SAException e) {
                 throw new RuntimeException(e);
             }
@@ -355,7 +361,7 @@ public class SpaceTypeManager {
         }
 
         for (SpaceIndex index : typeDesc.getIndexes().values()) {
-            if(((ISpaceIndex) index).isMultiValuePerEntryIndex() || ((ISpaceIndex) index).isCompoundIndex()){
+            if(((ISpaceIndex) index).isMultiValuePerEntryIndex() || isUnsupportedCompoundIndex(typeDesc, (ISpaceIndex) index)){
                 throw new TieredStorageMetadataException("Unsupported type " + typeName + ": unsupported index type - " + index.getName() + "]");
             }
         }
@@ -365,6 +371,14 @@ public class SpaceTypeManager {
                 throw new TieredStorageMetadataException("Unsupported type " + typeName + ": unsupported property type ['" + propertyInfo.getName() + "': " + propertyInfo.getType().getName() + "]");
             }
         }
+    }
+
+    // in Tiered-Storage, we don't support compound index
+    // but, we do support SpaceId with multiple fields - this is also considered a compound index
+    private boolean isUnsupportedCompoundIndex(ITypeDesc typeDesc, ISpaceIndex index) {
+        return index.isCompoundIndex()
+                //not Space Id with multiple Ids
+                && (!index.isUnique() && typeDesc.getIdPropertiesNames().size() == 1);
     }
 
     private IServerTypeDesc createServerTypeDesc(ITypeDesc typeDesc, Map<String, IServerTypeDesc> localTypeMap) {

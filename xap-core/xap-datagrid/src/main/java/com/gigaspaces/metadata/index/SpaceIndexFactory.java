@@ -138,7 +138,7 @@ public class SpaceIndexFactory {
     }
 
     private static final String COMPOUND_INDEX_DELIMITER = "+";
-    static String createCompoundIndexName(String[] paths) {
+    public static String createCompoundIndexName(String[] paths) {
         return String.join(COMPOUND_INDEX_DELIMITER, paths);
     }
 

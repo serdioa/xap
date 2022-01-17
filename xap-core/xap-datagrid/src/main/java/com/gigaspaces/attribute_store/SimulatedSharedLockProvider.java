@@ -19,7 +19,7 @@ public class SimulatedSharedLockProvider implements SharedLockProvider {
     }
 
     @Override
-    public SharedLock acquire(String key, long timeout, TimeUnit timeunit) throws TimeoutException, InterruptedException {
+    public SharedLock acquire(String key, long timeout, TimeUnit timeunit, boolean isPuLock) throws TimeoutException, InterruptedException {
         return acquire(new SharedLockImpl(key), timeout, timeunit);
     }
 

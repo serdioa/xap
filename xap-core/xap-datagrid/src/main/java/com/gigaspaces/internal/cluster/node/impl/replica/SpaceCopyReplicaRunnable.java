@@ -30,13 +30,12 @@ import com.gigaspaces.internal.utils.concurrent.IAsyncHandlerProvider.CycleResul
 import com.gigaspaces.logger.Constants;
 import com.gigaspaces.time.SystemTime;
 import com.j_spaces.core.cluster.IReplicationFilterEntry;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Collection;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 
 /**
@@ -63,6 +62,7 @@ public class SpaceCopyReplicaRunnable
     private final CyclicAtomicInteger _orderProvider;
     private volatile boolean _aborted;
     private volatile long _lastIterationTimeStamp = SystemTime.timeMillis();
+    private volatile boolean inProgress;
 
     public SpaceCopyReplicaRunnable(ReplicationNode replicationNode, IReplicationMonitoredConnection originConnection,
                                     ISpaceReplicaDataConsumer replicaDataProcessor,
@@ -98,9 +98,11 @@ public class SpaceCopyReplicaRunnable
             if (_logger.isDebugEnabled())
                 _logger.debug(_replicationNode.getLogPrefix() + " dispatch request for replica batch has an exception", e);
 
-            if (!(e instanceof Exception))
-                e = new ExecutionException(e.getMessage(), e);
-            _state.signalCopyStageFailed((Exception) e);
+            if (!(e instanceof Exception)) {
+                _state.signalCopyStageFailed(new ExecutionException(e));
+            } else {
+                _state.signalCopyStageFailed((Exception) e);
+            }
             return CycleResult.TERMINATE;
         }
     }
@@ -159,7 +161,7 @@ public class SpaceCopyReplicaRunnable
                 } else {
                     if (_logger.isDebugEnabled())
                         _logger.debug(_replicationNode.getLogPrefix() + (isOldVersion ? "" : " completed current stage [" + stageName + "], ") + "all stages completed.");
-                    _state.signalEntireCopyStageDoneSucessfully();
+                    _state.signalEntireCopyStageDoneSuccessfully();
                 }
             } else {
                 if (result.getResult() instanceof SpaceReplicaBatch) {
@@ -175,15 +177,32 @@ public class SpaceCopyReplicaRunnable
                 }
             }
         } catch (Throwable e) {
-            if (!(e instanceof Exception))
-                e = new ExecutionException(e.getMessage(), e);
-            _state.signalCopyStageFailed((Exception) e);
+            if (!(e instanceof Exception)) {
+                _state.signalCopyStageFailed(new ExecutionException(e));
+            } else {
+                _state.signalCopyStageFailed((Exception) e);
+            }
         }
+    }
+
+    /**
+     * returns true if progress has been identified since last iteration timestamp.
+     * @param lastIterationTimeStamp last timestamp to compare with
+     * @return true if currently in progress or if last timestamp is GT param.
+     */
+    protected boolean hasProgress(long lastIterationTimeStamp) {
+        return (inProgress || _lastIterationTimeStamp > lastIterationTimeStamp);
     }
 
     protected void processBatch(Collection<ISpaceReplicaData> copiedData, boolean resumeNow) {
         try {
-            _lastIterationTimeStamp = SystemTime.timeMillis();
+            inProgress = true;
+
+            if (_logger.isTraceEnabled()) {
+                _logger.trace(_replicationNode.getLogPrefix() + " process batch: thread-id={}, chunk={}, delta={}",
+                        Thread.currentThread().getId(), copiedData.size(), (SystemTime.timeMillis() - _lastIterationTimeStamp));
+                _lastIterationTimeStamp = SystemTime.timeMillis(); //for logging duration of consumption
+            }
             // Consume data
             if (_replicationNode.getBlobStoreReplicaConsumeHelper() != null && copiedData.size() > 1)
                 _replicationNode.getBlobStoreReplicaConsumeHelper().prepareForBulking();
@@ -204,16 +223,24 @@ public class SpaceCopyReplicaRunnable
                     _replicationNode.getBlobStoreReplicaConsumeHelper().flushBulk();
             }
             // Should keep running
-            if (_logger.isTraceEnabled())
-                _logger.trace(_replicationNode.getLogPrefix() + "copied replica batch " + copiedData);
             if(resumeNow){
                 //resubmit SpaceCopyReplicaRunnable task
                 getHandler().resumeNow();
             }
         } catch (Throwable e) {
-            if (!(e instanceof Exception))
-                e = new ExecutionException(e.getMessage(), e);
-            _state.signalCopyStageFailed((Exception) e);
+            if (!(e instanceof Exception)) {
+                _state.signalCopyStageFailed( new ExecutionException(e));
+            } else {
+                _state.signalCopyStageFailed((Exception) e);
+            }
+        } finally {
+            if (_logger.isTraceEnabled()) {
+                _logger.trace(_replicationNode.getLogPrefix() + " consumed batch: thread-id={}, chunk={}, duration={}",
+                        Thread.currentThread().getId(), copiedData.size(), (SystemTime.timeMillis() - _lastIterationTimeStamp));
+            }
+
+            _lastIterationTimeStamp = SystemTime.timeMillis();
+            inProgress = false;
         }
     }
 

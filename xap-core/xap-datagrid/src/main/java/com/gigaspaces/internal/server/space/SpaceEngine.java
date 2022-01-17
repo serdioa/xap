@@ -82,7 +82,6 @@ import com.gigaspaces.internal.server.space.events.SpaceDataEventManager;
 import com.gigaspaces.internal.server.space.iterator.ServerIteratorInfo;
 import com.gigaspaces.internal.server.space.iterator.ServerIteratorRequestInfo;
 import com.gigaspaces.internal.server.space.iterator.ServerIteratorsManager;
-import com.gigaspaces.internal.server.space.metadata.ServerTypeDesc;
 import com.gigaspaces.internal.server.space.metadata.SpaceTypeManager;
 import com.gigaspaces.internal.server.space.operations.WriteEntriesResult;
 import com.gigaspaces.internal.server.space.operations.WriteEntryResult;
@@ -96,6 +95,7 @@ import com.gigaspaces.internal.sync.SynchronizationStorageAdapter;
 import com.gigaspaces.internal.sync.hybrid.SyncHybridSAException;
 import com.gigaspaces.internal.sync.hybrid.SyncHybridTransactionException;
 import com.gigaspaces.internal.transport.*;
+import com.gigaspaces.internal.utils.GsEnv;
 import com.gigaspaces.internal.utils.StringUtils;
 import com.gigaspaces.internal.utils.collections.IAddOnlySet;
 import com.gigaspaces.logger.LogLevel;
@@ -105,7 +105,7 @@ import com.gigaspaces.lrmi.nio.IResponseContext;
 import com.gigaspaces.lrmi.nio.ResponseContext;
 import com.gigaspaces.management.space.SpaceQueryDetails;
 import com.gigaspaces.metrics.*;
-import com.gigaspaces.query.aggregators.*;
+import com.gigaspaces.query.aggregators.SpaceEntriesAggregator;
 import com.gigaspaces.security.authorities.SpaceAuthority.SpacePrivilege;
 import com.gigaspaces.server.blobstore.BlobStoreException;
 import com.gigaspaces.server.filter.NotifyAcknowledgeFilter;
@@ -167,6 +167,7 @@ import java.util.concurrent.TimeUnit;
 import static com.j_spaces.core.Constants.CacheManager.*;
 import static com.j_spaces.core.Constants.Engine.*;
 import static com.j_spaces.core.Constants.TieredStorage.*;
+import static com.j_spaces.kernel.SystemProperties.REPLICATION_REPLICA_PROGRESS_TIMEOUT;
 
 @com.gigaspaces.api.InternalApi
 public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedListener {
@@ -892,10 +893,9 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
         try {
             if(tieredStorageManager != null) {
                 String typeName = eHolder.getServerTypeDesc().getTypeName();
-                eHolder.setTransient(false);
-                context.setEntryTieredState(tieredStorageManager.getEntryTieredState(eHolder.getEntryData()));
-                if(tieredStorageManager.getCacheRule(typeName) != null && tieredStorageManager.getCacheRule(typeName).isTransient()) {
-                    eHolder.setTransient(true);
+                context.setEntryTieredState(tieredStorageManager.getEntryTieredState(eHolder));
+                if(tieredStorageManager.getCacheRule(typeName) != null) {
+                    eHolder.setTransient(tieredStorageManager.getCacheRule(typeName).isTransient());
                 }
             }
             context.cacheViewEntryDataIfNeeded(eHolder.getEntryData(), entryPacket);
@@ -4534,9 +4534,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
 
         if(isTieredStorage()){
             if(context.getEntryTieredState() == null){
-                context.setEntryTieredState(ent.isHollowEntry() ?
-                        tieredStorageManager.guessEntryTieredState(ent.getServerTypeDesc().getTypeName()):
-                        tieredStorageManager.getEntryTieredState(ent.getEntryData()));
+                context.setEntryTieredState(tieredStorageManager.getEntryTieredState(ent));
             }
         }
 
@@ -4645,7 +4643,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
                 if(reRead){
                     entry = _cacheManager.getEntry(context, ent, false /*tryInsertToCache*/, !context.isNonBlockingReadOp() /*lockeEntry*/, tmpl.isMemoryOnlySearch() || ent.isTransient() /*useOnlyCache*/);
                     if(entry != null){
-                        context.setEntryTieredState(getTieredStorageManager().getEntryTieredState(entry.getEntryData()));
+                        context.setEntryTieredState(getTieredStorageManager().getEntryTieredState(entry));
                     }
                 }
             } else {
@@ -6822,7 +6820,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
         context.setFetchBatchSize(fetchBatchSize);
         context.setConcurrentConsumers(concurrentConsumers);
         // replication progress timeout should be larger in blobstore mode
-        if (isBlobstore && Long.getLong("com.gs.replication.replicaProgressTimeout") == null) {
+        if (isBlobstore && GsEnv.propertyLong(REPLICATION_REPLICA_PROGRESS_TIMEOUT).get() == null) {
             context.setProgressTimeout(context.getProgressTimeout() * 3);
         }
         //set parameters for the target space

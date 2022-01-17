@@ -1,9 +1,6 @@
 package com.gigaspaces.internal.zookeeper;
 
 import com.gigaspaces.api.InternalApi;
-import com.gigaspaces.attribute_store.AttributeStore;
-import com.gigaspaces.internal.server.space.repartitioning.Step;
-import com.gigaspaces.internal.server.space.repartitioning.ZKScaleOutUtils;
 
 /**
  * @author Niv Ingberg
@@ -67,8 +64,6 @@ public class ZNodePathFactory {
 
     public static String consumerUrl(String pipeline){ return path(PIPELINES, pipeline + "/consumer/url");}
     public static String consumerPu(String pipeline){ return path(PIPELINES, pipeline + "/consumer/pu");}
-
-    public static String consumerStatus(String pipeline){ return path(PIPELINES, pipeline + "/consumer/status");}
 
     public static String totalOperation(String pipeline){ return path(PIPELINES, pipeline + "/total_operation");}
 

@@ -18,6 +18,10 @@ package com.gigaspaces.internal.cluster.node.impl.replica;
 
 import com.gigaspaces.internal.cluster.node.replica.ISpaceCopyReplicaParameters;
 import com.gigaspaces.internal.cluster.node.replica.ISpaceCopyReplicaRequestContext;
+import com.gigaspaces.internal.utils.GsEnv;
+
+import static com.j_spaces.kernel.SystemProperties.REPLICATION_REPLICA_PROGRESS_TIMEOUT;
+import static com.j_spaces.kernel.SystemProperties.REPLICATION_REPLICA_PROGRESS_TIMEOUT_DEFAULT;
 
 @SuppressWarnings("deprecation")
 @com.gigaspaces.api.InternalApi
@@ -25,7 +29,7 @@ public class SpaceCopyReplicaRequestContext
         implements ISpaceCopyReplicaRequestContext {
     private static final int DEFAULT_BATCH_SIZE = 500;
     private static final int DEFAULT_CONCURRENT_CONSUMERS = 1;
-    private static final long DEFAULT_PROGRESS_TIMEOUT = Long.getLong("com.gs.replication.replicaProgressTimeout", 60000);
+    private static final long DEFAULT_PROGRESS_TIMEOUT = GsEnv.propertyLong(REPLICATION_REPLICA_PROGRESS_TIMEOUT).get(REPLICATION_REPLICA_PROGRESS_TIMEOUT_DEFAULT);
 
     private int _concurrentConsumers = DEFAULT_CONCURRENT_CONSUMERS;
     private int _fetchBatchSize = DEFAULT_BATCH_SIZE;

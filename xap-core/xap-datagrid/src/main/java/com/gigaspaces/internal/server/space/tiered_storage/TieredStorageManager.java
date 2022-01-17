@@ -2,7 +2,7 @@ package com.gigaspaces.internal.server.space.tiered_storage;
 
 import com.gigaspaces.internal.server.space.SpaceEngine;
 import com.gigaspaces.internal.server.space.SpaceImpl;
-import com.gigaspaces.internal.server.storage.IEntryData;
+import com.gigaspaces.internal.server.storage.IEntryHolder;
 import com.gigaspaces.internal.server.storage.ITemplateHolder;
 import com.gigaspaces.metrics.MetricManager;
 import com.j_spaces.core.cache.context.TemplateMatchTier;
@@ -21,11 +21,11 @@ public interface TieredStorageManager {
 
     TieredStorageTableConfig getTableConfig(String typeName);
 
+    TieredStorageTableConfig addTableConfig(TieredStorageTableConfig config);
+
     InternalRDBMSManager getInternalStorage();
 
-    TieredState getEntryTieredState(IEntryData entryData);
-
-    TieredState guessEntryTieredState(String typeName);
+    TieredState getEntryTieredState(IEntryHolder entryHolder);
 
     TemplateMatchTier guessTemplateTier(ITemplateHolder templateHolder);
 
@@ -40,6 +40,8 @@ public interface TieredStorageManager {
     void initialize(SpaceEngine engine) throws SAException, RemoteException;
 
     boolean RDBMSContainsData();
+
+
 
     // For the future when we would want to support warm layer
     //    CachePredicate getCacheRule(String typeName, String tier);

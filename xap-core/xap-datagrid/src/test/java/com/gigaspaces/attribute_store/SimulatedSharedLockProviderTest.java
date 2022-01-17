@@ -12,18 +12,18 @@ public class SimulatedSharedLockProviderTest {
     public void testLock() throws InterruptedException, TimeoutException, IOException {
         SharedLockProvider lockProvider = SimulatedSharedLockProvider.getInstance();
         System.out.println("Acquiring lock1");
-        try (SharedLock lock1 = lockProvider.acquire("lock1", 1, TimeUnit.MILLISECONDS)) {
+        try (SharedLock lock1 = lockProvider.acquire("lock1", 1, TimeUnit.MILLISECONDS, false)) {
             System.out.println("Acquired lock1");
 
             System.out.println("Acquiring lock2");
-            try (SharedLock lock2 = lockProvider.acquire("lock2", 1, TimeUnit.MILLISECONDS)) {
+            try (SharedLock lock2 = lockProvider.acquire("lock2", 1, TimeUnit.MILLISECONDS, false)) {
                 System.out.println("Acquired lock2");
             }
             System.out.println("Released lock2");
 
             System.out.println("Acquiring lock1 while locked");
             try {
-                lockProvider.acquire("lock1", 1, TimeUnit.MILLISECONDS);
+                lockProvider.acquire("lock1", 1, TimeUnit.MILLISECONDS, false);
                 Assert.fail("Should have failed - already locked");
             } catch (TimeoutException e) {
                 System.out.println("Already locked - Intercepted expected exception: " + e);
@@ -41,7 +41,7 @@ public class SimulatedSharedLockProviderTest {
             System.out.println("Worker about to acquire lock");
             long beforeLock = System.currentTimeMillis();
             worker1Started.countDown();
-            try (SharedLock lock = lockProvider.acquire(lockKey, 5, TimeUnit.SECONDS)) {
+            try (SharedLock lock = lockProvider.acquire(lockKey, 5, TimeUnit.SECONDS, false)) {
                 long elapsed = System.currentTimeMillis() - beforeLock;
                 System.out.println("Worker has acquired lock - duration=" + elapsed + "ms");
                 return elapsed;
@@ -50,7 +50,7 @@ public class SimulatedSharedLockProviderTest {
 
         Future<Long> future;
         long lock1Time = 100;
-        try (SharedLock lock = lockProvider.acquire(lockKey, 1, TimeUnit.MILLISECONDS)) {
+        try (SharedLock lock = lockProvider.acquire(lockKey, 1, TimeUnit.MILLISECONDS, false)) {
             future = Executors.newSingleThreadExecutor().submit(worker);
             worker1Started.await();
             Thread.sleep(lock1Time);

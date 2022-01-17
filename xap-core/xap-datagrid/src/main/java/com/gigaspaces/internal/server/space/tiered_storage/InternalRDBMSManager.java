@@ -53,13 +53,13 @@ public class InternalRDBMSManager {
      * @param initialLoadOrigin
      */
     public void insertEntry(Context context, IEntryHolder entryHolder, CacheManager.InitialLoadOrigin initialLoadOrigin) throws SAException{
-        if(initialLoadOrigin != CacheManager.InitialLoadOrigin.FROM_TIERED_STORAGE && context.isDiskEntry() && entryHolder.getXidOriginatedTransaction() == null) {
+        if(initialLoadOrigin != CacheManager.InitialLoadOrigin.FROM_TIERED_STORAGE && (context.isDiskOnlyEntry() || context.isMemoryAndDiskEntry()) && entryHolder.getXidOriginatedTransaction() == null) {
             internalRDBMS.insertEntry(context, entryHolder);
             writeDisk.inc();
         }
         String type = entryHolder.getServerTypeDesc().getTypeName();
         metaData.increaseCounterMap(type);
-        if(context.isRAMEntry()){
+        if(context.isMemoryOnlyEntry() || context.isMemoryAndDiskEntry()){
             metaData.increaseRamCounterMap(type);
         }
     }
@@ -85,9 +85,9 @@ public class InternalRDBMSManager {
             removed = internalRDBMS.removeEntry(context, entryHolder);
         }
         String type = entryHolder.getServerTypeDesc().getTypeName();
-        if(removed || context.getEntryTieredState() == TieredState.TIERED_HOT){
+        if(removed || context.isMemoryOnlyEntry()){
             metaData.decreaseCounterMap(type);
-            if(context.isRAMEntry()){
+            if(context.isMemoryOnlyEntry() || context.isMemoryAndDiskEntry()){
                 metaData.decreaseRamCounterMap(type);
             }
         }

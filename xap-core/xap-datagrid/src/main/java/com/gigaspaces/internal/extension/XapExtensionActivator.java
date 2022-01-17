@@ -18,22 +18,17 @@ package com.gigaspaces.internal.extension;
 
 import com.gigaspaces.logger.LogUtils;
 import org.jini.rio.boot.LoggableClassLoader;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
-import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Properties;
-import java.util.Set;
+import java.util.*;
 import java.util.jar.Attributes;
 import java.util.jar.JarFile;
 import java.util.jar.Manifest;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 @com.gigaspaces.api.InternalApi
 public class XapExtensionActivator {
@@ -139,6 +134,10 @@ public class XapExtensionActivator {
                     if (logger.isTraceEnabled())
                         logger.trace("Found entry " + entry.getKey() + " => " + entry.getValue());
                 }
+            }
+        } catch(FileNotFoundException e) {
+            if (logger.isWarnEnabled()) {
+                logger.warn("File returned by classloader resource does not exist anymore", e);
             }
         } finally {
             if (inputStream != null)

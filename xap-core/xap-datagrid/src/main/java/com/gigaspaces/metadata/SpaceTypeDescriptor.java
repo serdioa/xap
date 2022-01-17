@@ -19,6 +19,7 @@ package com.gigaspaces.metadata;
 
 import com.gigaspaces.annotation.pojo.FifoSupport;
 import com.gigaspaces.document.SpaceDocument;
+import com.gigaspaces.internal.server.space.tiered_storage.TieredStorageTableConfig;
 import com.gigaspaces.metadata.index.SpaceIndex;
 import com.gigaspaces.query.extension.metadata.TypeQueryExtensions;
 
@@ -208,4 +209,6 @@ public interface SpaceTypeDescriptor {
     String[] getPropertiesTypes();
 
     boolean[] getPropertiesIndexTypes();
+
+    TieredStorageTableConfig getTieredStorageTableConfig();
 }

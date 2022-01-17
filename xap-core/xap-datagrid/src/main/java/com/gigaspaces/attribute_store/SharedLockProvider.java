@@ -9,5 +9,5 @@ import java.util.concurrent.TimeoutException;
  * @since 15.5
  */
 public interface SharedLockProvider {
-    SharedLock acquire(String key, long timeout, TimeUnit timeunit) throws IOException, TimeoutException, InterruptedException;
+    SharedLock acquire(String key, long timeout, TimeUnit timeunit, boolean isPuLock) throws IOException, TimeoutException, InterruptedException;
 }

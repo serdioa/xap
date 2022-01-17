@@ -34,6 +34,7 @@ import com.gigaspaces.internal.reflection.IConstructor;
 import com.gigaspaces.internal.reflection.IParamsConstructor;
 import com.gigaspaces.internal.reflection.IProperties;
 import com.gigaspaces.internal.reflection.ReflectionUtil;
+import com.gigaspaces.internal.server.space.tiered_storage.TieredStorageTableConfig;
 import com.gigaspaces.internal.utils.ObjectUtils;
 import com.gigaspaces.internal.utils.ReflectionUtils;
 import com.gigaspaces.internal.version.PlatformLogicalVersion;
@@ -127,6 +128,8 @@ public class SpaceTypeInfo implements SmartExternalizable {
     private String _sequenceNumberPropertyName;
 
     private Boolean _broadcast;
+
+    private TieredStorageTableConfig _tieredStorageTableConfig;
 
     /**
      * Default constructor for externalizable.
@@ -235,6 +238,10 @@ public class SpaceTypeInfo implements SmartExternalizable {
 
     public boolean isBroadcast() {
         return _broadcast;
+    }
+
+    public TieredStorageTableConfig getTieredStorageTableConfig() {
+        return _tieredStorageTableConfig;
     }
 
     public int getNumOfProperties() {
@@ -1416,8 +1423,12 @@ public class SpaceTypeInfo implements SmartExternalizable {
             validatePropertyCombination(_persistProperty, idProperty, "persist", "id");
         validatePropertyCombination(_persistProperty, _routingProperty, "persist", "routing");
 
-        if(isBroadcast())
+        if(isBroadcast()) {
             validateBroadcastTable();
+        } else {
+            validateNonBroadcastTable();
+        }
+
 
         if (_idAutoGenerate) {
             validateGetterSetter(_idProperties.get(0), "Id", ConstructorPropertyValidation.REQUIERS_SETTER);
@@ -1482,7 +1493,9 @@ public class SpaceTypeInfo implements SmartExternalizable {
     }
 
     private void validateBroadcastTable() {
-        if(_superTypeInfo._superTypeInfo != null && !_superTypeInfo._superTypeInfo.isBroadcast())
+        if(_superTypeInfo != null &&
+                !_superTypeInfo.getType().equals(Object.class) &&
+                !_superTypeInfo.isBroadcast())
             throw new SpaceMetadataValidationException(_type, "Broadcast table cannot extend non broadcast table.");
         if(_routingProperty != null)
             throw new SpaceMetadataValidationException(_type, "Routing property and broadcast table cannot be used together.");
@@ -1490,6 +1503,11 @@ public class SpaceTypeInfo implements SmartExternalizable {
             throw new SpaceMetadataValidationException(_type, "Auto generated id and broadcast table cannot be used together.");
         if(!_persist)
             throw new SpaceMetadataValidationException(_type, "Broadcast table cannot be transient.");
+    }
+
+    private void validateNonBroadcastTable() {
+        if(!this.isBroadcast() && _superTypeInfo != null && _superTypeInfo.isBroadcast())
+            throw new SpaceMetadataValidationException(_type, "Non broadcast table cannot extend broadcast table.");
     }
 
     private void validateGetterSetter(SpacePropertyInfo property, String propertyDesc, ConstructorPropertyValidation validation) {

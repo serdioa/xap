@@ -210,13 +210,21 @@ public class SpaceProxyFactory {
         }
 
         //if tiered storage is enabled using sys prop/ env variable/ space property, and not already configured using configurer
-        if (spaceInstanceConfig != null
-                && !spaceInstanceConfig.getCustomComponents().containsKey(SPACE_CLUSTER_INFO_TIERED_STORAGE_COMPONENT_NAME)
-                && isTieredStoragePropertyEnabled(props)) {
-            TieredStorageConfig config = new TieredStorageConfig();
-            config.setTables(new HashMap<>());
-            spaceInstanceConfig.addCustomComponent(config);
-            props.setProperty(Constants.TieredStorage.AUTO_GENERATE_SLA_PROP, "true");
+        if (isTieredStoragePropertyEnabled(props)) {
+            if (spaceInstanceConfig != null) {
+                    if (spaceInstanceConfig.getCustomComponents().containsKey(SPACE_CLUSTER_INFO_TIERED_STORAGE_COMPONENT_NAME)) {
+                        //only add if does not already exist
+                        if (!props.containsKey(Constants.TieredStorage.AUTO_GENERATE_SLA_PROP)) {
+                            props.setProperty(Constants.TieredStorage.AUTO_GENERATE_SLA_PROP, "true");
+                        } //else skip
+                    } else {
+                        //add  if configuration doesn't exist
+                        TieredStorageConfig config = new TieredStorageConfig();
+                        config.setTables(new HashMap<>());
+                        spaceInstanceConfig.addCustomComponent(config);
+                        props.setProperty(Constants.TieredStorage.AUTO_GENERATE_SLA_PROP, "true");
+                    }
+            }
         }
 
         if (mirrorDistributedTxnConfig != null) {

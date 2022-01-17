@@ -23,6 +23,7 @@ import com.gigaspaces.document.SpaceDocument;
 import com.gigaspaces.internal.io.CustomClassLoaderObjectInputStream;
 import com.gigaspaces.internal.io.IOUtils;
 import com.gigaspaces.internal.server.space.SpaceUidFactory;
+import com.gigaspaces.internal.server.space.tiered_storage.TieredStorageTableConfig;
 import com.gigaspaces.internal.utils.ReflectionUtils;
 import com.gigaspaces.internal.utils.StringUtils;
 import com.gigaspaces.internal.version.PlatformLogicalVersion;
@@ -79,6 +80,7 @@ public class TypeDesc implements ITypeDesc {
     private ClassBinaryStorageAdapter classBinaryStorageAdapter;
     private int[] positionsForScanning;
     private boolean _broadcast;
+    private TieredStorageTableConfig _tieredStorageTableConfig;
 
     private int _sequenceNumberFixedPropertyPos;  //-1  if none
 
@@ -133,7 +135,9 @@ public class TypeDesc implements ITypeDesc {
                     StorageType storageType, EntryType entryType, Class<? extends Object> objectClass,
                     Class<? extends ExternalEntry> externalEntryClass, Class<? extends SpaceDocument> documentWrapperClass,
                     String dotnetDocumentWrapperType, byte dotnetStorageType, boolean blobstoreEnabled, String sequenceNumberPropertyName,
-                    TypeQueryExtensions queryExtensionsInfo, Class<? extends ClassBinaryStorageAdapter> binaryStorageAdapter,boolean broadcast) {
+                    TypeQueryExtensions queryExtensionsInfo, Class<? extends ClassBinaryStorageAdapter> binaryStorageAdapter,boolean broadcast,
+                    TieredStorageTableConfig tieredStorageTableConfig) {
+
         _typeName = typeName;
         _codeBase = codeBase;
         _superTypesNames = superTypesNames;
@@ -170,7 +174,6 @@ public class TypeDesc implements ITypeDesc {
                 _dotnetDocumentWrapperTypeName = _documentWrapperClassName;
         }
 
-
         if(binaryStorageAdapter != null) {
             this.classBinaryStorageAdapter = ClassBinaryStorageAdapterRegistry.getInstance().getOrCreate(binaryStorageAdapter);
         }
@@ -180,6 +183,7 @@ public class TypeDesc implements ITypeDesc {
         initializeV9_0_0();
         addFifoGroupingIndexesIfNeeded(_indexes, _fifoGroupingName, _fifoGroupingIndexes);
         _broadcast = broadcast;
+        _tieredStorageTableConfig = tieredStorageTableConfig;
     }
 
     private void initHybridProperties() {
@@ -553,6 +557,11 @@ public class TypeDesc implements ITypeDesc {
         return indexTypes;
     }
 
+    @Override
+    public TieredStorageTableConfig getTieredStorageTableConfig() {
+        return _tieredStorageTableConfig;
+    }
+
     public int getChecksum() {
         return _checksum;
     }
@@ -742,7 +751,7 @@ public class TypeDesc implements ITypeDesc {
         sb.append("systemType=").append(_systemType).append(", ");
         sb.append("replicatable=").append(_replicable).append(", ");
         sb.append("blobstoreEnabled=").append(_blobstoreEnabled).append(", ");
-        sb.append("broadcast").append(_broadcast).append(", ");
+        sb.append("broadcast=").append(_broadcast).append(", ");
         sb.append("storageType=").append(_storageType).append(", ");
         sb.append("fifoSupport=").append(_fifoSupport).append(", ");
         sb.append("idPropertiesNames=").append(String.join(";", _idPropertiesNames)).append(", ");
@@ -755,7 +764,8 @@ public class TypeDesc implements ITypeDesc {
         sb.append("documentWrapperClass=").append(_documentWrapperClassName).append(", ");
         sb.append("fixedProperties=").append(Arrays.toString(_fixedProperties)).append(", ");
         sb.append("indexes=").append(Arrays.toString(_indexes.values().toArray())).append(", ");
-        sb.append("fifoGroupingIndexes=").append(_fifoGroupingIndexes);
+        sb.append("fifoGroupingIndexes=").append(_fifoGroupingIndexes).append(", ");
+        sb.append("tieredStorageTableConfig=").append(_tieredStorageTableConfig);
         sb.append("]");
         return sb.toString();
     }
@@ -916,8 +926,7 @@ public class TypeDesc implements ITypeDesc {
             }
         }
 
-        readObjectsFromByteArray(in);
-
+        readObjectsFromByteArray(in, version);
 
         // New in 15.8.0: Space class binary storage adapter
         if (version.greaterOrEquals(PlatformLogicalVersion.v15_8_0)) {
@@ -934,19 +943,28 @@ public class TypeDesc implements ITypeDesc {
         initHybridProperties();
     }
 
-    private void writeObjectsAsByteArray(ObjectOutput out) throws IOException {
+    private void writeObjectsAsByteArray(ObjectOutput out, PlatformLogicalVersion version) throws IOException {
         final ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
         ObjectOutputStream ba = new ObjectOutputStream(byteArrayOutputStream);
         ba.writeObject(queryExtensionsInfo);
+
+        if (version.greaterOrEquals(PlatformLogicalVersion.v16_2_0)) {
+            ba.writeObject(_tieredStorageTableConfig);
+        }
+
         IOUtils.writeObject(out, byteArrayOutputStream.toByteArray());
     }
 
-    private void readObjectsFromByteArray(ObjectInput in) throws IOException, ClassNotFoundException {
+    private void readObjectsFromByteArray(ObjectInput in, PlatformLogicalVersion version) throws IOException, ClassNotFoundException {
         byte[] byteArray = IOUtils.readObject(in);
         CustomClassLoaderObjectInputStream objectInputStream = new CustomClassLoaderObjectInputStream(
                 new ByteArrayInputStream(byteArray), Thread.currentThread().getContextClassLoader());
         //noinspection unchecked
         queryExtensionsInfo = (TypeQueryExtensions) objectInputStream.readObject();
+
+        if (version.greaterOrEquals(PlatformLogicalVersion.v16_2_0)) {
+            _tieredStorageTableConfig = (TieredStorageTableConfig) objectInputStream.readObject();
+        }
     }
 
     private void readExternalV10_0(ObjectInput in, PlatformLogicalVersion version) throws IOException, ClassNotFoundException {
@@ -1267,7 +1285,7 @@ public class TypeDesc implements ITypeDesc {
             }
         }
 
-        writeObjectsAsByteArray(out);
+        writeObjectsAsByteArray(out, version);
         // New in 15.8.0: Space class storage adapter
         if (version.greaterOrEquals(PlatformLogicalVersion.v15_8_0)) {
             out.writeBoolean(_broadcast);
