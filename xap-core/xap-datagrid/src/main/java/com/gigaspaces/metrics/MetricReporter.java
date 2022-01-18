@@ -36,9 +36,9 @@ public abstract class MetricReporter implements Closeable {
     }
 
     public void report(List<MetricRegistrySnapshot> snapshots) {
-        for (MetricRegistrySnapshot snapshot : snapshots)
+        for (MetricRegistrySnapshot snapshot : snapshots) {
             report(snapshot);
-
+        }
         flush();
     }
 

@@ -45,6 +45,7 @@ public class MetricSampler implements Closeable {
     private final Collection<MetricReporter> reporters;
     private final String name;
     private ScheduledFuture<?> future;
+    private ExecutorService reporterExecutor;
 
     public MetricSampler(MetricSamplerConfig config, Collection<MetricReporter> reporters) {
         this.lock = new Object();
@@ -55,6 +56,7 @@ public class MetricSampler implements Closeable {
         this.samplingRate = config.getSamplingRate();
         this.batchSize = config.getBatchSize();
         this.reporters = reporters;
+        this.reporterExecutor = Executors.newFixedThreadPool(reporters.size());
         this.executor = Executors.newSingleThreadScheduledExecutor(new GSThreadFactory("metrics-sampler-" + config.getName(), true));
         if (logger.isDebugEnabled())
             logger.debug("Metric sampler created [sampleRate=" + samplingRate + "ms, batchSize=" + batchSize + "]");
@@ -83,6 +85,16 @@ public class MetricSampler implements Closeable {
         /* Uses the shutdown pattern from http://docs.oracle.com/javase/7/docs/api/java/util/concurrent/ExecutorService.html */
 
         // Disable new tasks from being submitted
+        shutdownExecutor(executor);
+        shutdownExecutor(reporterExecutor);
+
+        // Close the reporters:
+        for (MetricReporter reporter : reporters) {
+            reporter.close();
+        }
+    }
+
+    private void shutdownExecutor(ExecutorService executor) {
         executor.shutdown();
         try {
             // Wait a while for existing tasks to terminate
@@ -99,10 +111,6 @@ public class MetricSampler implements Closeable {
             // Preserve interrupt status
             Thread.currentThread().interrupt();
         }
-
-        // Close the reporters:
-        for (MetricReporter reporter : reporters)
-            reporter.close();
     }
 
     public void register(String name, MetricTags tags, Metric metric) {
@@ -193,21 +201,16 @@ public class MetricSampler implements Closeable {
             buffer.add(snapshot);
 
             if (buffer.size() == batchSize) {
-                ExecutorService executor = Executors.newFixedThreadPool(reporters.size());
                 for (MetricReporter reporter : reporters) {
                     SamplerReporter samplerReporter = new SamplerReporter(buffer, reporter);
-                    executor.execute(samplerReporter);
+                    Future future = reporterExecutor.submit(samplerReporter);
+                    try {
+                        future.get(2000, TimeUnit.MILLISECONDS);
+                    } catch (Exception e) {
+                        logger.trace("Exception happened duri");
+                    }
                 }
 
-                executor.shutdown();
-                try {
-                    if (!executor.awaitTermination(8000, TimeUnit.MILLISECONDS)) {
-                        executor.shutdownNow();
-                    }
-                } catch (InterruptedException e) {
-                    executor.shutdownNow();
-                    logger.warn("ExecutorService was shutdown with InterruptedException: " + e.getMessage());
-                }
                 buffer.clear();
             }
 
