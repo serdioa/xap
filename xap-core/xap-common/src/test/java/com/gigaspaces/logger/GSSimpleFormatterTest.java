@@ -36,11 +36,4 @@ public class GSSimpleFormatterTest {
         Assert.assertTrue("Unescape symbol find!", log.contains("Detected a threat.\\n No action needed."));
     }
 
-    @Test
-    public void formatCEFExtensionValueQuote() {
-        LogRecord logRecord = new LogRecord(Level.INFO, "default message");
-        String log = gsSimpleFormatter.format(logRecord);
-        Assert.assertTrue("Unescape symbol find!", log.contains("msg=\"default message\""));
-    }
-
 }
