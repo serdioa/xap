@@ -62,6 +62,13 @@ public class MetricSampler implements Closeable {
             logger.debug("Metric sampler created [sampleRate=" + samplingRate + "ms, batchSize=" + batchSize + "]");
     }
 
+    private ExecutorService getReporterExecutor() {
+        if (reporterExecutor == null) {
+            reporterExecutor = Executors.newFixedThreadPool(this.reporters.size());
+        }
+        return reporterExecutor;
+    }
+
     Collection<MetricReporter> getReporters() {
         return reporters;
     }
@@ -95,6 +102,9 @@ public class MetricSampler implements Closeable {
     }
 
     private void shutdownExecutor(ExecutorService executor) {
+        if (executor == null) {
+            return;
+        }
         executor.shutdown();
         try {
             // Wait a while for existing tasks to terminate
@@ -201,15 +211,19 @@ public class MetricSampler implements Closeable {
             buffer.add(snapshot);
 
             if (buffer.size() == batchSize) {
+                List<Future> futures = new ArrayList<>();
                 for (MetricReporter reporter : reporters) {
                     SamplerReporter samplerReporter = new SamplerReporter(buffer, reporter);
-                    Future future = reporterExecutor.submit(samplerReporter);
-                    try {
-                        future.get(2000, TimeUnit.MILLISECONDS);
-                    } catch (Exception e) {
-                        logger.trace("Exception happened duri");
-                    }
+                    futures.add(getReporterExecutor().submit(samplerReporter));
                 }
+
+                futures.forEach(f -> {
+                    try {
+                        future.get(2, TimeUnit.SECONDS);
+                    } catch (Exception e) {
+                        logger.trace("SamplerReporter job was not finished with exception: " + e.getMessage());
+                    }
+                });
 
                 buffer.clear();
             }
