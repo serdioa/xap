@@ -34,6 +34,7 @@ import com.gigaspaces.internal.query.ICustomQuery;
 import com.gigaspaces.internal.query.IQueryIndexScanner;
 import com.gigaspaces.internal.query.explainplan.*;
 import com.gigaspaces.internal.server.metadata.IServerTypeDesc;
+import com.gigaspaces.internal.server.metadata.TypeCounters;
 import com.gigaspaces.internal.server.space.*;
 import com.gigaspaces.internal.server.space.SpaceEngine.EntryRemoveReasonCodes;
 import com.gigaspaces.internal.server.space.SpaceEngine.TemplateRemoveReasonCodes;
@@ -60,6 +61,7 @@ import com.gigaspaces.metadata.SpaceMetadataException;
 import com.gigaspaces.metadata.index.CompoundIndex;
 import com.gigaspaces.metadata.index.ISpaceCompoundIndexSegment;
 import com.gigaspaces.metrics.Gauge;
+import com.gigaspaces.metrics.LongCounter;
 import com.gigaspaces.metrics.MetricConstants;
 import com.gigaspaces.metrics.MetricRegistrator;
 import com.gigaspaces.query.extension.QueryExtensionProvider;
@@ -4265,12 +4267,13 @@ public class CacheManager extends AbstractCacheManager
             // If type contains a primary key definition, check it first:
             TypeDataIndex<IStoredList<IEntryCacheInfo>> primaryKey = typeData.getIdField();
             if (primaryKey != null && latestIndexToConsider >= primaryKey.getIndexCreationNumber()) {
-                if (typeData.disableIdIndexForEntries(primaryKey))
+                if (typeData.disableIdIndexForEntries(primaryKey)) {
                     return getPEntryByUid(typeData.generateUid(templateValue));
-
+                }
                 IStoredList<IEntryCacheInfo> res = primaryKey.getUniqueEntriesStore().get(templateValue);
-                if (res != null && !res.isMultiObjectCollection())
+                if (res != null && !res.isMultiObjectCollection()) {
                     return res.getObjectFromHead();
+                }
             }
         }
 
@@ -6006,8 +6009,8 @@ public class CacheManager extends AbstractCacheManager
         boolean memoryOnlyIter;
 
         if(isTieredStorage()){
-            entriesInfo = _engine.getTieredStorageManager().getInternalStorage().getMetaData().getCounterMap();
-            ramEntriesInfo = _engine.getTieredStorageManager().getInternalStorage().getMetaData().getRamCounterMap();
+            entriesInfo = null;
+            ramEntriesInfo = null;
         }else {
             ramEntriesInfo = new HashMap<>();
 //             APP-833 (Guy K): 18.12.2006 in order to avoid
@@ -6036,17 +6039,20 @@ public class CacheManager extends AbstractCacheManager
             if (subType.isInactive())
                 continue;
             classes.add(subType.getTypeName());
-            if (entriesInfo == null)
-                entries.add(getNumberOfEntries(subType, false));
-            else {
-                Integer count = entriesInfo.get(subType.getTypeName());
-                entries.add(count != null ? count : 0);
+            TypeCounters typeCounters = subType.getTypeCounters();
+            if (isTieredStorage()) {
+                LongCounter count = typeCounters.getDiskEntriesCounter();
+                entries.add(count != null ? (int) count.getCount() : 0);
+                count = typeCounters.getRamEntriesCounter();
+                ramOnlyEntries.add(count != null ? (int) count.getCount() : 0);
             }
-            if (ramEntriesInfo == null)
-                ramOnlyEntries.add(getNumberOfEntries(subType, false));
             else {
-                Integer count = ramEntriesInfo.get(subType.getTypeName());
-                ramOnlyEntries.add(count != null ? count : 0);
+                if (ramEntriesInfo == null)
+                    ramOnlyEntries.add(getNumberOfEntries(subType, false));
+                else {
+                    LongCounter count = typeCounters.getRamEntriesCounter();
+                    ramOnlyEntries.add(count != null ? (int) count.getCount() : 0);
+                }
             }
             templates.add(getNumberOfNotifyTemplates(subType, false));
         }

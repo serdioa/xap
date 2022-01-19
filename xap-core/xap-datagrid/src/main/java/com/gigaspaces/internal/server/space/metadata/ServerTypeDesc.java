@@ -19,7 +19,7 @@ package com.gigaspaces.internal.server.space.metadata;
 import com.gigaspaces.internal.metadata.ITypeDesc;
 import com.gigaspaces.internal.server.metadata.IServerTypeDesc;
 import com.gigaspaces.internal.server.metadata.InactiveTypeDesc;
-import com.gigaspaces.metrics.LongCounter;
+import com.gigaspaces.internal.server.metadata.TypeCounters;
 
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -44,8 +44,7 @@ public class ServerTypeDesc implements IServerTypeDesc {
     private IServerTypeDesc[] _assignableTypes;
 
     private volatile boolean _maybeOutdated;
-    private LongCounter _readCounter;
-    private LongCounter _ramReadCounter;
+    private TypeCounters _typeCounters;
 
     public ServerTypeDesc(int typeId, String typeName) {
         this(typeId, typeName, null, null);
@@ -60,8 +59,7 @@ public class ServerTypeDesc implements IServerTypeDesc {
         this._typeName = typeName;
         this._isRootType = typeName.equals(ROOT_TYPE_NAME);
         this._superTypes = initSuperTypes(superType);
-        this._readCounter = new LongCounter();
-        this._ramReadCounter = new LongCounter();
+        this._typeCounters = new TypeCounters();
         if (typeDesc == null)
             typeDesc = createInactiveTypeDesc(typeName, _superTypes);
         setTypeDesc(typeDesc);
@@ -152,8 +150,7 @@ public class ServerTypeDesc implements IServerTypeDesc {
         // Create a copy of this type with the new super type:
         ServerTypeDesc copy = new ServerTypeDesc(this._typeId, this._typeName, this._typeDesc, superType, this._serverTypeDescCode);
         copy._inactive = this._inactive;
-        copy._readCounter = this._readCounter;
-        copy._ramReadCounter = this._ramReadCounter;
+        copy._typeCounters = new TypeCounters(this._typeCounters);
         IServerTypeDesc oldServerTypeDesc = _codesRepo.put(this._serverTypeDescCode, copy);
         if(oldServerTypeDesc != null){
             oldServerTypeDesc.setMaybeOutdated();
@@ -255,11 +252,8 @@ public class ServerTypeDesc implements IServerTypeDesc {
     }
 
     @Override
-    public LongCounter getReadCounter() {
-        return _readCounter;
+    public TypeCounters getTypeCounters(){
+        return _typeCounters;
     }
-    @Override
-    public LongCounter getRAMReadCounter() {
-        return _ramReadCounter;
-    }
+
 }

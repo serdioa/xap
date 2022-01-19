@@ -1,6 +1,7 @@
 package com.gigaspaces.internal.server.space.tiered_storage;
 
 import com.gigaspaces.internal.metadata.ITypeDesc;
+import com.gigaspaces.internal.server.metadata.TypeCounters;
 import com.gigaspaces.internal.server.space.SpaceEngine;
 import com.gigaspaces.internal.server.space.metadata.SpaceTypeManager;
 import com.gigaspaces.internal.server.storage.IEntryHolder;
@@ -20,7 +21,6 @@ public class InternalRDBMSManager {
     InternalRDBMS internalRDBMS;
     private final LongCounter readDisk = new LongCounter();
     private final LongCounter writeDisk = new LongCounter();
-    private final TypesMetaData metaData = new TypesMetaData();
 
     public InternalRDBMSManager(InternalRDBMS internalRDBMS) {
         this.internalRDBMS = internalRDBMS;
@@ -42,9 +42,6 @@ public class InternalRDBMSManager {
         internalRDBMS.createTable(typeDesc);
     }
 
-    public TypesMetaData getMetaData(){
-        return metaData;
-    }
 
     /**
      * Inserts a new entry to the internalDiskStorage
@@ -53,14 +50,19 @@ public class InternalRDBMSManager {
      * @param initialLoadOrigin
      */
     public void insertEntry(Context context, IEntryHolder entryHolder, CacheManager.InitialLoadOrigin initialLoadOrigin) throws SAException{
+        TypeCounters typeCounters = null;
         if(initialLoadOrigin != CacheManager.InitialLoadOrigin.FROM_TIERED_STORAGE && (context.isDiskOnlyEntry() || context.isMemoryAndDiskEntry()) && entryHolder.getXidOriginatedTransaction() == null) {
             internalRDBMS.insertEntry(context, entryHolder);
+            typeCounters = entryHolder.getServerTypeDesc().getTypeCounters();
             writeDisk.inc();
+            typeCounters.incDiskModifyCounter();
         }
-        String type = entryHolder.getServerTypeDesc().getTypeName();
-        metaData.increaseCounterMap(type);
-        if(context.isMemoryOnlyEntry() || context.isMemoryAndDiskEntry()){
-            metaData.increaseRamCounterMap(type);
+        if(typeCounters != null) {
+            String type = entryHolder.getServerTypeDesc().getTypeName();
+            typeCounters.incDiskEntriesCounter();
+            if (context.isMemoryOnlyEntry() || context.isMemoryAndDiskEntry()) {
+                typeCounters.incRamEntriesCounter();
+            }
         }
     }
 
@@ -84,11 +86,12 @@ public class InternalRDBMSManager {
         if(context.getEntryTieredState() != TieredState.TIERED_HOT) {
             removed = internalRDBMS.removeEntry(context, entryHolder);
         }
+        TypeCounters typeCounters = entryHolder.getServerTypeDesc().getTypeCounters();
         String type = entryHolder.getServerTypeDesc().getTypeName();
         if(removed || context.isMemoryOnlyEntry()){
-            metaData.decreaseCounterMap(type);
+            typeCounters.decDiskEntriesCounter();
             if(context.isMemoryOnlyEntry() || context.isMemoryAndDiskEntry()){
-                metaData.decreaseRamCounterMap(type);
+                typeCounters.decRamEntriesCounter();
             }
         }
         return removed;
@@ -97,12 +100,13 @@ public class InternalRDBMSManager {
 
 
     public void updateRamCounterAfterUpdate(String type, boolean isUpdatedEntryHot, boolean isOriginEntryHot){
+        TypeCounters typeCounters = getTypeManager().getServerTypeDesc(type).getTypeCounters();
         if(isOriginEntryHot != isUpdatedEntryHot){
             if(isUpdatedEntryHot){
-                metaData.increaseRamCounterMap(type);
+                typeCounters.incRamEntriesCounter();
             }
             else{
-                metaData.decreaseRamCounterMap(type);
+                typeCounters.decRamEntriesCounter();
             }
         }
     }
@@ -110,8 +114,9 @@ public class InternalRDBMSManager {
     public IEntryHolder getEntryById(Context context, String typeName, Object id, ITemplateHolder templateHolder) throws SAException{
         IEntryHolder entryById = internalRDBMS.getEntryById(context, typeName, id);
 
-        if (templateHolder != null && templateHolder.isReadOperation()){
+        if (entryById != null && templateHolder != null && templateHolder.isReadOperation()){
             readDisk.inc();
+            entryById.getServerTypeDesc().getTypeCounters().incDiskReadCounter();
         }
 
         return entryById;
@@ -120,18 +125,15 @@ public class InternalRDBMSManager {
     public IEntryHolder getEntryByUID(Context context, String typeName, String uid, ITemplateHolder templateHolder) throws SAException{
         IEntryHolder entryByUID = internalRDBMS.getEntryByUID(context, typeName, uid);
 
-        if (templateHolder != null && templateHolder.isReadOperation()){
+        if (entryByUID != null && templateHolder != null && templateHolder.isReadOperation()){
             readDisk.inc();
+            entryByUID.getServerTypeDesc().getTypeCounters().incDiskReadCounter();
         }
         return entryByUID;
     }
 
     public ISAdapterIterator<IEntryHolder> makeEntriesIter(Context context, String typeName, ITemplateHolder templateHolder) throws SAException{
         ISAdapterIterator<IEntryHolder> iEntryHolderISAdapterIterator = internalRDBMS.makeEntriesIter(context, typeName, templateHolder);
-
-        if (templateHolder != null && templateHolder.isReadOperation() && !context.isDisableTieredStorageMetric()){
-            readDisk.inc();
-        }
 
         return iEntryHolderISAdapterIterator;
     }

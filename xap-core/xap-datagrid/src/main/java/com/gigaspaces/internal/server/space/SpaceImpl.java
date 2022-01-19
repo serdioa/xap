@@ -2469,7 +2469,7 @@ public class SpaceImpl extends AbstractService implements IRemoteSpace, IInterna
             ah = _engine.readMultiple(template, txn, timeout, isIfExist,
                  take, sc, returnOnlyUid, modifiers, operationContext, null /*aggregatorContext*/, null);
 
-            if( !take && ah != null) {
+            if( !take && ah != null ) {
                 _engine.updateObjectTypeReadCounts(ah.getServerTypeDesc(), template);
             }
 

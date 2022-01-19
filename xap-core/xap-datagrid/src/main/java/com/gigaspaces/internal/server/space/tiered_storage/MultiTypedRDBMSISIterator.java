@@ -36,6 +36,10 @@ public class MultiTypedRDBMSISIterator implements ISAdapterIterator<IEntryHolder
             if (currentTypeIterator == null) {
                 finished = true;
                 return null;
+            } else{
+                if (templateHolder != null && templateHolder.isReadOperation() && !context.isDisableTieredStorageMetric()){
+                    templateHolder.getServerTypeDesc().getTypeCounters().incDiskReadCounter();
+                }
             }
         }
 

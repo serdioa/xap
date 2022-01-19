@@ -17,7 +17,6 @@
 package com.gigaspaces.internal.server.metadata;
 
 import com.gigaspaces.internal.metadata.ITypeDesc;
-import com.gigaspaces.metrics.LongCounter;
 
 /**
  * @author Niv Ingberg
@@ -63,7 +62,5 @@ public interface IServerTypeDesc {
 
     void setMaybeOutdated();
 
-    LongCounter getReadCounter();
-
-    LongCounter getRAMReadCounter();
+    public TypeCounters getTypeCounters();
 }
