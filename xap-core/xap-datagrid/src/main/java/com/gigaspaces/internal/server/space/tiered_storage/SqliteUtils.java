@@ -47,9 +47,9 @@ public class SqliteUtils {
         map.put(Timestamp.class.getName(), Timestamp::from);
         map.put(Long.class.getName(), Instant::toEpochMilli);
         map.put(long.class.getName(), Instant::toEpochMilli);
-        map.put(java.util.Date.class.getName(),(instant)-> new java.util.Date(instant.toEpochMilli()));
-        map.put(LocalDateTime.class.getName(), (instant)-> LocalDateTime.ofInstant(instant, ZoneId.of("UTC")));
-        map.put(java.sql.Date.class.getName(), java.sql.Date::from);
+        map.put(java.util.Date.class.getName(), java.util.Date::from);
+        map.put(LocalDateTime.class.getName(), (instant) -> LocalDateTime.ofInstant(instant, ZoneId.of("UTC")));
+        map.put(java.sql.Date.class.getName(), (instant) -> new java.sql.Date(instant.toEpochMilli()));
         return map;
     }
 
