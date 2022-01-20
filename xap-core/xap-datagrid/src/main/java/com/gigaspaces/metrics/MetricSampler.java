@@ -220,8 +220,13 @@ public class MetricSampler implements Closeable {
                 futures.forEach(f -> {
                     try {
                         future.get(2, TimeUnit.SECONDS);
-                    } catch (Exception e) {
+                    } catch (TimeoutException e) {
+                        future.cancel(true);
                         logger.trace("SamplerReporter job was not finished with exception: " + e.getMessage());
+                    } catch (ExecutionException e) {
+
+                    } catch (InterruptedException e) {
+
                     }
                 });
 
