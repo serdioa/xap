@@ -27,6 +27,7 @@ import com.gigaspaces.security.service.SecurityInterceptor;
 import com.j_spaces.core.IJSpace;
 import com.j_spaces.core.client.Modifiers;
 import com.j_spaces.jdbc.driver.GConnection;
+import com.j_spaces.jdbc.driver.GPreparedStatement;
 import com.j_spaces.jdbc.parser.grammar.SqlParser;
 import com.j_spaces.jdbc.request.SetAutoCommitRequest;
 import com.j_spaces.jdbc.request.SetTransaction;
@@ -42,6 +43,13 @@ import java.io.StringReader;
 import java.lang.reflect.InvocationTargetException;
 import java.rmi.RemoteException;
 import java.sql.SQLException;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Optional;
+import java.util.stream.Stream;
+
+import static com.j_spaces.jdbc.RequestPacket.Type.PREPARED_STATEMENT;
+import static com.j_spaces.jdbc.RequestPacket.Type.PREPARED_VALUES_BATCH;
 
 /**
  * QueryHandler executes the JDBC  statements set by the {@link GConnection}. For each statement the
@@ -153,10 +161,23 @@ public class QueryHandler {
         switch (request.getType()) {
             case STATEMENT:
             case PREPARED_WITH_VALUES:
+            case PREPARED_STATEMENT:
+            case PREPARED_VALUES_BATCH:
                 try {
+                    Object[] preparedValues;
+                    if (PREPARED_VALUES_BATCH.equals(request.getType()) || PREPARED_STATEMENT.equals(request.getType())) {
+                        preparedValues = Optional.of(request)
+                                .map(RequestPacket::getPreparedValuesCollection)
+                                .map(GPreparedStatement.PreparedValuesCollection::getBatchValues)
+                                .orElse(Collections.emptyList()).stream()
+                                .flatMap(Arrays::stream)
+                                .toArray();
+                    } else {
+                        preparedValues = request.getPreparedValues();
+                    }
                     Class<?> clazz = Class.forName("com.gigaspaces.jdbc.QueryHandler");
                     Object newQueryHandler = clazz.newInstance();
-                    response = (ResponsePacket) clazz.getDeclaredMethod("handle", String.class, IJSpace.class, Object[].class).invoke(newQueryHandler, request.getStatement(), space, request.getPreparedValues());
+                    response = (ResponsePacket) clazz.getDeclaredMethod("handle", String.class, IJSpace.class, Object[].class).invoke(newQueryHandler, request.getStatement(), space, preparedValues);
                 } catch (InvocationTargetException e) {
                     if (_logger.isDebugEnabled()) {
                         //if debug is enabled, show exception with full trace
@@ -171,9 +192,6 @@ public class QueryHandler {
                     throw new SQLException("Unable to execute query", e);
                 }
                 break;
-            case PREPARED_STATEMENT:
-            case PREPARED_VALUES_BATCH:
-                throw new UnsupportedOperationException("Unsupported");
             default:
                 throw new SQLException("Unknown execution type [" + request.getType() + "]", "GSP", -117);
         }
