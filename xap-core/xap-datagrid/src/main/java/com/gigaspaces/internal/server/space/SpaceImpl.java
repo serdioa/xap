@@ -1710,7 +1710,9 @@ public class SpaceImpl extends AbstractService implements IRemoteSpace, IInterna
                     leaderSelectorHandler = new LusBasedSelectorHandler(createSecuredProxy());
                     leaderSelectorHandler.initialize(leaderSelectorHandlerConfig);
                 } else {
-                    waitForLeaderIfNeeded();
+                    if (this._engine.isTieredStorage()) {
+                        waitForLeaderIfNeededWhenUsingTieredStorage();
+                    }
                     leaderSelectorHandler = createZooKeeperLeaderSelector();
                     leaderSelectorHandler.initialize(leaderSelectorHandlerConfig);
                 }
@@ -1742,10 +1744,7 @@ public class SpaceImpl extends AbstractService implements IRemoteSpace, IInterna
         return leaderSelectorHandler;
     }
 
-    private void waitForLeaderIfNeeded() throws IOException, InterruptedException {
-        if(!this._engine.isTieredStorage()){
-            return;
-        }
+    private void waitForLeaderIfNeededWhenUsingTieredStorage() throws IOException, InterruptedException {
         String lastPrimary = attributeStore.get(ZookeeperLastPrimaryHandler.toPath(_spaceName, String.valueOf(getPartitionIdOneBased())));
         int i = 0;
         if (differentLastPrimaryExist(lastPrimary)) {
@@ -1781,7 +1780,6 @@ public class SpaceImpl extends AbstractService implements IRemoteSpace, IInterna
             return null;
         }
     }
-
 
     private boolean isPrimary(String memberName, boolean printLog) throws RemoteException {
         long start = System.currentTimeMillis();

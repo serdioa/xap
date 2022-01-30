@@ -18,10 +18,9 @@ package com.gigaspaces.cluster.activeelection;
 
 import com.gigaspaces.internal.server.space.SpaceImpl;
 import com.gigaspaces.internal.server.space.recovery.direct_persistency.DirectPersistencyRecoveryException;
+import com.gigaspaces.logger.ConsolidatedLogger;
 import com.gigaspaces.lrmi.LRMIUtilities;
 import com.j_spaces.core.cluster.ReplicationPolicy;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.rmi.RemoteException;
 import java.util.Iterator;
@@ -39,7 +38,7 @@ import java.util.concurrent.Executors;
  * @since 6.0
  */
 public abstract class LeaderSelectorHandler implements LeaderSelector {
-    protected Logger _logger;
+    protected ConsolidatedLogger _logger;
 
     protected String _spaceMember;
     protected SpaceImpl _space;
@@ -59,7 +58,7 @@ public abstract class LeaderSelectorHandler implements LeaderSelector {
     }
 
     public void initialize(LeaderSelectorHandlerConfig config) throws Exception {
-        _logger = LoggerFactory.getLogger(com.gigaspaces.logger.Constants.LOGGER_CLUSTER_ACTIVE_ELECTION + "." + config.getSpace().getNodeName());
+        _logger = ConsolidatedLogger.getLogger(com.gigaspaces.logger.Constants.LOGGER_CLUSTER_ACTIVE_ELECTION + "." + config.getSpace().getNodeName());
         if (config.getSpace().getClusterPolicy().m_FailOverPolicy == null)
             throw new IllegalArgumentException("Failed to initialize LeaderElectorHandler. FailoverPolicy is <null>");
 
