@@ -6047,6 +6047,12 @@ public class CacheManager extends AbstractCacheManager
                 ramOnlyEntries.add(count != null ? (int) count.getCount() : 0);
             }
             else {
+                if (entriesInfo == null)
+                    entries.add(getNumberOfEntries(subType, false));
+                else {
+                    Integer count = entriesInfo.get(subType.getTypeName());
+                    entries.add(count != null ? count : 0);
+                }
                 if (ramEntriesInfo == null)
                     ramOnlyEntries.add(getNumberOfEntries(subType, false));
                 else {
