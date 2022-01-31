@@ -157,43 +157,41 @@ public class QueryHandler {
 
         //see RequestPacket documentation for types
         ISpaceProxy space = getSpace(session.isUseRegularSpace());
-
+        Object[] preparedValues;
         switch (request.getType()) {
             case STATEMENT:
             case PREPARED_WITH_VALUES:
+                preparedValues = request.getPreparedValues();
+                break;
             case PREPARED_STATEMENT:
             case PREPARED_VALUES_BATCH:
-                try {
-                    Object[] preparedValues;
-                    if (PREPARED_VALUES_BATCH.equals(request.getType()) || PREPARED_STATEMENT.equals(request.getType())) {
-                        preparedValues = Optional.of(request)
-                                .map(RequestPacket::getPreparedValuesCollection)
-                                .map(GPreparedStatement.PreparedValuesCollection::getBatchValues)
-                                .orElse(Collections.emptyList()).stream()
-                                .flatMap(Arrays::stream)
-                                .toArray();
-                    } else {
-                        preparedValues = request.getPreparedValues();
-                    }
-                    Class<?> clazz = Class.forName("com.gigaspaces.jdbc.QueryHandler");
-                    Object newQueryHandler = clazz.newInstance();
-                    response = (ResponsePacket) clazz.getDeclaredMethod("handle", String.class, IJSpace.class, Object[].class).invoke(newQueryHandler, request.getStatement(), space, preparedValues);
-                } catch (InvocationTargetException e) {
-                    if (_logger.isDebugEnabled()) {
-                        //if debug is enabled, show exception with full trace
-                        _logger.error("Invocation exception while handling request", e);
-                    }
-                    final Throwable cause = e.getCause();
-                    if (cause instanceof SQLException) {
-                        throw ((SQLException) e.getCause());
-                    }
-                    throw new SQLException("Unable to execute query: " + e, cause == null ? e : cause);
-                } catch (InstantiationException | IllegalAccessException | NoSuchMethodException | ClassNotFoundException e) {
-                    throw new SQLException("Unable to execute query", e);
-                }
+                preparedValues = Optional.of(request)
+                        .map(RequestPacket::getPreparedValuesCollection)
+                        .map(GPreparedStatement.PreparedValuesCollection::getBatchValues)
+                        .orElse(Collections.emptyList()).stream()
+                        .flatMap(Arrays::stream)
+                        .toArray();
                 break;
             default:
                 throw new SQLException("Unknown execution type [" + request.getType() + "]", "GSP", -117);
+        }
+
+        try {
+            Class<?> clazz = Class.forName("com.gigaspaces.jdbc.QueryHandler");
+            Object newQueryHandler = clazz.newInstance();
+            response = (ResponsePacket) clazz.getDeclaredMethod("handle", String.class, IJSpace.class, Object[].class).invoke(newQueryHandler, request.getStatement(), space, preparedValues);
+        } catch (InvocationTargetException e) {
+            if (_logger.isDebugEnabled()) {
+                //if debug is enabled, show exception with full trace
+                _logger.error("Invocation exception while handling request", e);
+            }
+            final Throwable cause = e.getCause();
+            if (cause instanceof SQLException) {
+                throw ((SQLException) e.getCause());
+            }
+            throw new SQLException("Unable to execute query: " + e, cause == null ? e : cause);
+        } catch (InstantiationException | IllegalAccessException | NoSuchMethodException | ClassNotFoundException e) {
+            throw new SQLException("Unable to execute query", e);
         }
         return response;
     }
