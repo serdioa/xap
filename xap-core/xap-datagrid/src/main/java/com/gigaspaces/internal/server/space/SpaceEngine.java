@@ -1943,26 +1943,6 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
         }
     }
 
-    public void updateTieredDiskReadCount(IServerTypeDesc serverTypeDesc, TemplateMatchTier templateTieredState) {
-        if (templateTieredState == null){
-            return;
-        }
-
-        if(!this.getMetricManager().getMetricFlagsState().isTieredRamReadCountDataTypesMetricEnabled()){
-            return;
-        }
-
-        if( serverTypeDesc == null ){
-            //serverTypeDesc is null when read returns empty result
-            return;
-        }
-
-        if (serverTypeDesc.getTypeName() != null) {
-            if (!templateTieredState.equals(TemplateMatchTier.MATCH_HOT)) {
-                serverTypeDesc.getTypeCounters().incDiskReadCounter();
-            }
-        }
-    }
 
     /**
      * call write for each EP in value, update value with the result

@@ -6,7 +6,6 @@ import com.gigaspaces.internal.server.space.SpaceEngine;
 import com.gigaspaces.internal.server.space.metadata.SpaceTypeManager;
 import com.gigaspaces.internal.server.storage.IEntryHolder;
 import com.gigaspaces.internal.server.storage.ITemplateHolder;
-import com.gigaspaces.metrics.LongCounter;
 import com.j_spaces.core.cache.CacheManager;
 import com.j_spaces.core.cache.InitialLoadInfo;
 import com.j_spaces.core.cache.context.Context;
@@ -19,8 +18,6 @@ import java.io.IOException;
 public class InternalRDBMSManager {
 
     InternalRDBMS internalRDBMS;
-    private final LongCounter readDisk = new LongCounter();
-    private final LongCounter writeDisk = new LongCounter();
 
     public InternalRDBMSManager(InternalRDBMS internalRDBMS) {
         this.internalRDBMS = internalRDBMS;
@@ -50,19 +47,14 @@ public class InternalRDBMSManager {
      * @param initialLoadOrigin
      */
     public void insertEntry(Context context, IEntryHolder entryHolder, CacheManager.InitialLoadOrigin initialLoadOrigin) throws SAException{
-        TypeCounters typeCounters = null;
+        TypeCounters typeCounters = entryHolder.getServerTypeDesc().getTypeCounters();
         if(initialLoadOrigin != CacheManager.InitialLoadOrigin.FROM_TIERED_STORAGE && (context.isDiskOnlyEntry() || context.isMemoryAndDiskEntry()) && entryHolder.getXidOriginatedTransaction() == null) {
             internalRDBMS.insertEntry(context, entryHolder);
-            typeCounters = entryHolder.getServerTypeDesc().getTypeCounters();
-            writeDisk.inc();
             typeCounters.incDiskModifyCounter();
-        }
-        if(typeCounters != null) {
-            String type = entryHolder.getServerTypeDesc().getTypeName();
             typeCounters.incDiskEntriesCounter();
-            if (context.isMemoryOnlyEntry() || context.isMemoryAndDiskEntry()) {
-                typeCounters.incRamEntriesCounter();
-            }
+        }
+        if (context.isMemoryOnlyEntry() || context.isMemoryAndDiskEntry()) {
+            typeCounters.incRamEntriesCounter();
         }
     }
 
@@ -114,8 +106,7 @@ public class InternalRDBMSManager {
     public IEntryHolder getEntryById(Context context, String typeName, Object id, ITemplateHolder templateHolder) throws SAException{
         IEntryHolder entryById = internalRDBMS.getEntryById(context, typeName, id);
 
-        if (entryById != null && templateHolder != null && templateHolder.isReadOperation()){
-            readDisk.inc();
+        if (templateHolder != null && templateHolder.isReadOperation()){
             entryById.getServerTypeDesc().getTypeCounters().incDiskReadCounter();
         }
 
@@ -125,8 +116,7 @@ public class InternalRDBMSManager {
     public IEntryHolder getEntryByUID(Context context, String typeName, String uid, ITemplateHolder templateHolder) throws SAException{
         IEntryHolder entryByUID = internalRDBMS.getEntryByUID(context, typeName, uid);
 
-        if (entryByUID != null && templateHolder != null && templateHolder.isReadOperation()){
-            readDisk.inc();
+        if (templateHolder != null && templateHolder.isReadOperation()){
             entryByUID.getServerTypeDesc().getTypeCounters().incDiskReadCounter();
         }
         return entryByUID;
@@ -134,6 +124,11 @@ public class InternalRDBMSManager {
 
     public ISAdapterIterator<IEntryHolder> makeEntriesIter(Context context, String typeName, ITemplateHolder templateHolder) throws SAException{
         ISAdapterIterator<IEntryHolder> iEntryHolderISAdapterIterator = internalRDBMS.makeEntriesIter(context, typeName, templateHolder);
+
+        if (templateHolder != null && templateHolder.isReadOperation() && !context.isDisableTieredStorageMetric()){
+            templateHolder.getServerTypeDesc().getTypeCounters().incDiskReadCounter();
+        }
+
 
         return iEntryHolderISAdapterIterator;
     }
@@ -144,14 +139,6 @@ public class InternalRDBMSManager {
 
     public void shutDown(){
         internalRDBMS.shutDown();
-    }
-
-    public LongCounter getReadDisk() {
-        return readDisk;
-    }
-
-    public LongCounter getWriteDisk() {
-        return writeDisk;
     }
 
     public void deleteData() throws SAException {

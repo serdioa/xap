@@ -3,6 +3,7 @@ package com.gigaspaces.internal.server.metadata;
 import com.gigaspaces.metrics.LongCounter;
 
 public class TypeCounters {
+    //todo: consider removing total read counter
     private final LongCounter totalReadCounter;
     private final LongCounter ramReadAccessCounter;
     private final LongCounter diskReadAccessCounter;

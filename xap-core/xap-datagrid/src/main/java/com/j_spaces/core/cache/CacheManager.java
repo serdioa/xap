@@ -6008,21 +6008,17 @@ public class CacheManager extends AbstractCacheManager
         Map<String, Integer> ramEntriesInfo;
         boolean memoryOnlyIter;
 
-        if(isTieredStorage()){
-            entriesInfo = null;
-            ramEntriesInfo = null;
-        }else {
-            ramEntriesInfo = new HashMap<>();
+        ramEntriesInfo = new HashMap<>();
 //             APP-833 (Guy K): 18.12.2006 in order to avoid
 //             Searching the DB when using all in cache/externalDB
-            memoryOnlyIter = isCacheExternalDB() || isResidentEntriesCachePolicy();
-            if (memoryOnlyIter && !useRecentDeletes())
-                entriesInfo = null;
-            else {
-                boolean loadPersistent = !(isMemorySpace() || isResidentEntriesCachePolicy()) && !memoryOnlyIter;
-                entriesInfo = countEntries(serverTypeDesc, loadPersistent, true);
-            }
+        memoryOnlyIter = isCacheExternalDB() || isResidentEntriesCachePolicy();
+        if (memoryOnlyIter && !useRecentDeletes())
+            entriesInfo = null;
+        else {
+            boolean loadPersistent = !(isMemorySpace() || isResidentEntriesCachePolicy()) && !memoryOnlyIter;
+            entriesInfo = countEntries(serverTypeDesc, loadPersistent, true);
         }
+
 
         return getRuntimeInfo(serverTypeDesc, entriesInfo, ramEntriesInfo);
     }
@@ -6041,7 +6037,12 @@ public class CacheManager extends AbstractCacheManager
             classes.add(subType.getTypeName());
             TypeCounters typeCounters = subType.getTypeCounters();
             if (isTieredStorage()) {
-                LongCounter count = typeCounters.getDiskEntriesCounter();
+                LongCounter count;
+                if (getEngine().getTieredStorageManager().isTransient(subType.getTypeName())){
+                    count = typeCounters.getRamEntriesCounter();
+                } else{
+                    count = typeCounters.getDiskEntriesCounter();
+                }
                 entries.add(count != null ? (int) count.getCount() : 0);
                 count = typeCounters.getRamEntriesCounter();
                 ramOnlyEntries.add(count != null ? (int) count.getCount() : 0);

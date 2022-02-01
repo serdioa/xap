@@ -59,12 +59,12 @@ public class SpaceMetricsRegistrationUtils {
         }
 
         //Temporarily all tiered storage metrics are enabled
-        String prefix = "tiered-storage-";
-        spaceEngine.getDataTypeMetricRegistrar(typeName).register(prefix + "disk-entries-"  + typeName, typeCounters.getDiskEntriesCounter());
-        spaceEngine.getDataTypeMetricRegistrar(typeName).register(prefix + "disk-read-access-"  + typeName, typeCounters.getDiskReadAccessCounter());
-        spaceEngine.getDataTypeMetricRegistrar(typeName).register(prefix + "disk-modify-access-" + typeName, typeCounters.getDiskModifyCounter());
-        spaceEngine.getDataTypeMetricRegistrar(typeName).register(prefix + "ram-read-access-" + typeName, typeCounters.getRamReadAccessCounter());
-        spaceEngine.getDataTypeMetricRegistrar(typeName).register(prefix + "ram-entries-" + typeName, typeCounters.getRamEntriesCounter());
+        String tieredStoragePrefix = "tiered-storage-";
+        spaceEngine.getDataTypeMetricRegistrar(typeName).register(tieredStoragePrefix + "disk-entries-"  + typeName, typeCounters.getDiskEntriesCounter());
+        spaceEngine.getDataTypeMetricRegistrar(typeName).register(tieredStoragePrefix + "disk-read-access-"  + typeName, typeCounters.getDiskReadAccessCounter());
+        spaceEngine.getDataTypeMetricRegistrar(typeName).register(tieredStoragePrefix + "disk-modify-access-" + typeName, typeCounters.getDiskModifyCounter());
+        spaceEngine.getDataTypeMetricRegistrar(typeName).register(tieredStoragePrefix + "ram-read-access-" + typeName, typeCounters.getRamReadAccessCounter());
+        spaceEngine.getDataTypeMetricRegistrar(typeName).register(tieredStoragePrefix + "ram-entries-" + typeName, typeCounters.getRamEntriesCounter());
 
         // register data-types
         if( metricFlagsState.isDataTypesMetricEnabled() ) {
