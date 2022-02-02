@@ -1572,4 +1572,8 @@ public class JSpaceUtilities {
         String jdbcDriver = GsEnv.property(SystemProperties.JDBC_DRIVER).get( SystemProperties.JDBC_V3_DRIVER );
         return jdbcDriver.equals(SystemProperties.JDBC_V3_DRIVER);
     }
+
+    public static String createContainerId(String hostName, long pid){
+        return hostName + "~" + pid;
+    }
 }

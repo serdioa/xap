@@ -801,10 +801,6 @@ public class SystemProperties extends CommonSystemProperties {
 
     public static final String MANAGER_ZOOKEEPER_DISCOVERY_PORT = "com.gs.manager.zookeeper.discovery.port";
     public static final String MANAGER_ZOOKEEPER_LEADER_ELECTION_PORT = "com.gs.manager.zookeeper.leader-election.port";
-    public static final String MANAGER_GLOBAL_COUNTER_RETRY_POLICY_MAX_RETRIES = "com.gs.manager.zookeeper.global-counter-max-retries";
-    public static final int MANAGER_GLOBAL_COUNTER_RETRY_POLICY_MAX_RETRIES_DEFAULT = 3;
-    public static final String MANAGER_GLOBAL_COUNTER_RETRY_POLICY_INTERVAL_MS_BETWEEN_RETRIES = "com.gs.manager.zookeeper.interval-between-retries";
-    public static final int MANAGER_GLOBAL_COUNTER_RETRY_POLICY_INTERVAL_MS_BETWEEN_RETRIES_DEFAULT = 500;
 
     public static final String MANAGER_ADMIN_WITH_STATISTICS_HISTORY = "com.gs.admin.with-stats-history";
     public static final String MANAGER_ADMIN_DISCOVER_UN_MANAGED_SPACES = "com.gs.admin.discover-un-managed-spaces";
