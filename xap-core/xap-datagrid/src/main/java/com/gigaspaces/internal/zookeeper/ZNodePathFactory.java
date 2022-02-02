@@ -13,6 +13,14 @@ public class ZNodePathFactory {
     private static final String LOCKS = "locks";
     private static final String SPACES = "spaces";
     private static final String PIPELINES = "pipelines";
+    private static final String REQUESTS = "requests";
+    //without agent id info, requests that put by RequestManager
+    private static final String PRE_CREATE_CONTAINER = "pre-create-container";
+    //including agent id info
+    private static final String ON_CREATE_CONTAINER = "on-create-container";
+    private static final String DELETE_CONTAINER = "delete-container";
+    private static final String DEPLOY_PROCESSING_UNIT = "deploy-processing-unit";
+    private static final String UNDEPLOY_PROCESSING_UNIT = "undeploy-processing-unit";
 
     public static String path(String ... elements) {
         return XAP_PREFIX + String.join("/", elements);
@@ -47,7 +55,7 @@ public class ZNodePathFactory {
     public static String processingUnit(String puName, String component) {
         return path(PUS, puName, component);
     }
-    
+
     public static String pipeline(String pipeline) {
         return path(PIPELINES, pipeline);
     }
@@ -90,7 +98,31 @@ public class ZNodePathFactory {
         return path(SPACES, spaceName, component, partitionId, elements);
     }
 
-    public static String space(String spaceName, String componenet) {
-        return path(SPACES, spaceName+"/"+componenet);
+    public static String space(String spaceName, String component) {
+        return path(SPACES, spaceName+"/"+component);
+    }
+
+    public static String createPreContainerRequest(String machineId, String uuid ) {
+        return path( new String[] { REQUESTS, PRE_CREATE_CONTAINER, machineId, uuid } );
+    }
+
+    public static String createPreContainerRequest(String machineId ) {
+        return path( REQUESTS, PRE_CREATE_CONTAINER, machineId );
+    }
+
+    public static String createOnContainerRequest(String machineId, int agentId ) {
+        return path( new String[] { REQUESTS, ON_CREATE_CONTAINER, machineId, String.valueOf( agentId ) } );
+    }
+
+    public static String deleteContainer( String containerId ) {
+        return path(REQUESTS, DELETE_CONTAINER, containerId );
+    }
+
+    public static String deployProcessingUnitRequest( String puName ) {
+        return path(REQUESTS, DEPLOY_PROCESSING_UNIT, puName );
+    }
+
+    public static String undeployProcessingUnitRequest( String puName ) {
+        return path(REQUESTS, UNDEPLOY_PROCESSING_UNIT, puName );
     }
 }
