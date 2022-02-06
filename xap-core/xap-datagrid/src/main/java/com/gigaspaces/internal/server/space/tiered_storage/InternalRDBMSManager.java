@@ -39,6 +39,9 @@ public class InternalRDBMSManager {
         internalRDBMS.createTable(typeDesc);
     }
 
+    public void dropTable(ITypeDesc typeDesc) throws SAException{
+        internalRDBMS.dropTable(typeDesc);
+    }
 
     /**
      * Inserts a new entry to the internalDiskStorage
@@ -149,6 +152,10 @@ public class InternalRDBMSManager {
 
     public void persistType(ITypeDesc typeDesc) throws SAException {
         internalRDBMS.persistType(typeDesc);
+    }
+
+    public void unpersistType(ITypeDesc typeDesc) throws SAException {
+        internalRDBMS.unpersistType(typeDesc);
     }
 
     public void initialLoad(Context context, SpaceEngine engine, InitialLoadInfo initialLoadInfo) throws SAException {

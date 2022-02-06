@@ -36,6 +36,8 @@ public interface InternalRDBMS {
 
     void createTable(ITypeDesc typeDesc) throws SAException;
 
+    void dropTable(ITypeDesc typeDesc) throws SAException;
+
     /**
      * Inserts a new entry to the internalDiskStorage
      *
@@ -70,6 +72,8 @@ public interface InternalRDBMS {
     void deleteData() throws SAException;
 
     void persistType(ITypeDesc typeDesc) throws SAException;
+
+    void unpersistType(ITypeDesc typeDesc) throws SAException;
 
     void initialLoad(Context context, SpaceEngine engine, InitialLoadInfo initialLoadInfo) throws SAException;
 

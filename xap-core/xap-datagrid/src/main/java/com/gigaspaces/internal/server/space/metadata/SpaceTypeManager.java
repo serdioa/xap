@@ -319,6 +319,21 @@ public class SpaceTypeManager {
         }
     }
 
+    private void dropTypeForTieredStorage(ITypeDesc typeDesc) {
+        assert tieredStorageManager != null;
+        final String typeName = typeDesc.getTypeName();
+        if (!tieredStorageManager.isTransient(typeName)) {
+            try {
+                tieredStorageManager.getInternalStorage().unpersistType(typeDesc);
+                tieredStorageManager.getInternalStorage().dropTable(typeDesc);
+            } catch (SAException e) {
+                throw new RuntimeException(e);
+            }
+        }
+        tieredStorageManager.removeTableConfig(typeDesc.getTypeName());
+        tieredStorageManager.removeCacheRule(typeDesc.getTypeName());
+    }
+
     /**
      * @param typeDesc type descriptor of entry
      * @return true if type is marked 'transient' in tiered storage configuration
@@ -509,6 +524,10 @@ public class SpaceTypeManager {
 
             for (IServerTypeDescListener listener : _typeDescListeners)
                 listener.onTypeDeactivated(typeDesc);
+
+            if (tieredStorageManager != null) {
+                dropTypeForTieredStorage(typeDesc.getTypeDesc());
+            }
 
             if (DELETE_ON_DROP) {
                 typeMapCopy.remove(typeDesc.getTypeName());
