@@ -2372,7 +2372,7 @@ public class SpaceImpl extends AbstractService implements IRemoteSpace, IInterna
                 applyEntryPacketOutFilter(answerPacket.m_EntryPacket, modifiers, template.getProjectionTemplate());
 
             if( !take && answerHolder != null) {
-                _engine.updateObjectTypeReadCounts(answerHolder.getServerTypeDesc(), template);
+                _engine.updateObjectTypeReadCounts(answerHolder.getServerTypeDesc());
             }
 
             return answerHolder;
@@ -2469,8 +2469,8 @@ public class SpaceImpl extends AbstractService implements IRemoteSpace, IInterna
             ah = _engine.readMultiple(template, txn, timeout, isIfExist,
                  take, sc, returnOnlyUid, modifiers, operationContext, null /*aggregatorContext*/, null);
 
-            if( !take && ah != null) {
-                _engine.updateObjectTypeReadCounts(ah.getServerTypeDesc(), template);
+            if( !take && ah != null ) {
+                _engine.updateObjectTypeReadCounts(ah.getServerTypeDesc());
             }
 
             if (ah == null)

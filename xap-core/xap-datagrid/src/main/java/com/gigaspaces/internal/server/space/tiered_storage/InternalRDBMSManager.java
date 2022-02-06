@@ -1,11 +1,11 @@
 package com.gigaspaces.internal.server.space.tiered_storage;
 
 import com.gigaspaces.internal.metadata.ITypeDesc;
+import com.gigaspaces.internal.server.metadata.TypeCounters;
 import com.gigaspaces.internal.server.space.SpaceEngine;
 import com.gigaspaces.internal.server.space.metadata.SpaceTypeManager;
 import com.gigaspaces.internal.server.storage.IEntryHolder;
 import com.gigaspaces.internal.server.storage.ITemplateHolder;
-import com.gigaspaces.metrics.LongCounter;
 import com.j_spaces.core.cache.CacheManager;
 import com.j_spaces.core.cache.InitialLoadInfo;
 import com.j_spaces.core.cache.context.Context;
@@ -18,9 +18,6 @@ import java.io.IOException;
 public class InternalRDBMSManager {
 
     InternalRDBMS internalRDBMS;
-    private final LongCounter readDisk = new LongCounter();
-    private final LongCounter writeDisk = new LongCounter();
-    private final TypesMetaData metaData = new TypesMetaData();
 
     public InternalRDBMSManager(InternalRDBMS internalRDBMS) {
         this.internalRDBMS = internalRDBMS;
@@ -42,9 +39,6 @@ public class InternalRDBMSManager {
         internalRDBMS.createTable(typeDesc);
     }
 
-    public TypesMetaData getMetaData(){
-        return metaData;
-    }
 
     /**
      * Inserts a new entry to the internalDiskStorage
@@ -53,14 +47,14 @@ public class InternalRDBMSManager {
      * @param initialLoadOrigin
      */
     public void insertEntry(Context context, IEntryHolder entryHolder, CacheManager.InitialLoadOrigin initialLoadOrigin) throws SAException{
+        TypeCounters typeCounters = entryHolder.getServerTypeDesc().getTypeCounters();
         if(initialLoadOrigin != CacheManager.InitialLoadOrigin.FROM_TIERED_STORAGE && (context.isDiskOnlyEntry() || context.isMemoryAndDiskEntry()) && entryHolder.getXidOriginatedTransaction() == null) {
             internalRDBMS.insertEntry(context, entryHolder);
-            writeDisk.inc();
+            typeCounters.incDiskModifyCounter();
+            typeCounters.incDiskEntriesCounter();
         }
-        String type = entryHolder.getServerTypeDesc().getTypeName();
-        metaData.increaseCounterMap(type);
-        if(context.isMemoryOnlyEntry() || context.isMemoryAndDiskEntry()){
-            metaData.increaseRamCounterMap(type);
+        if (context.isMemoryOnlyEntry() || context.isMemoryAndDiskEntry()) {
+            typeCounters.incRamEntriesCounter();
         }
     }
 
@@ -84,11 +78,12 @@ public class InternalRDBMSManager {
         if(context.getEntryTieredState() != TieredState.TIERED_HOT) {
             removed = internalRDBMS.removeEntry(context, entryHolder);
         }
+        TypeCounters typeCounters = entryHolder.getServerTypeDesc().getTypeCounters();
         String type = entryHolder.getServerTypeDesc().getTypeName();
         if(removed || context.isMemoryOnlyEntry()){
-            metaData.decreaseCounterMap(type);
+            typeCounters.decDiskEntriesCounter();
             if(context.isMemoryOnlyEntry() || context.isMemoryAndDiskEntry()){
-                metaData.decreaseRamCounterMap(type);
+                typeCounters.decRamEntriesCounter();
             }
         }
         return removed;
@@ -96,13 +91,16 @@ public class InternalRDBMSManager {
 
 
 
-    public void updateRamCounterAfterUpdate(String type, boolean isUpdatedEntryHot, boolean isOriginEntryHot){
-        if(isOriginEntryHot != isUpdatedEntryHot){
-            if(isUpdatedEntryHot){
-                metaData.increaseRamCounterMap(type);
+    public void updateRamEntriesCounterAfterTierChange(String type, boolean isUpdatedEntryInHotTier, boolean isOriginEntryInHotTier){
+        TypeCounters typeCounters = getTypeManager().getServerTypeDesc(type).getTypeCounters();
+        //check if the tier of the entry changed due to the update operation
+        if(isOriginEntryInHotTier != isUpdatedEntryInHotTier){
+            //updated enrty moved to HOT - increase ram entries counter
+            if(isUpdatedEntryInHotTier){
+                typeCounters.incRamEntriesCounter();
             }
-            else{
-                metaData.decreaseRamCounterMap(type);
+            else{ //updated entry moved to COLD - decrease ram entries counter
+                typeCounters.decRamEntriesCounter();
             }
         }
     }
@@ -111,7 +109,7 @@ public class InternalRDBMSManager {
         IEntryHolder entryById = internalRDBMS.getEntryById(context, typeName, id);
 
         if (templateHolder != null && templateHolder.isReadOperation()){
-            readDisk.inc();
+            templateHolder.getServerTypeDesc().getTypeCounters().incDiskReadCounter();
         }
 
         return entryById;
@@ -121,7 +119,7 @@ public class InternalRDBMSManager {
         IEntryHolder entryByUID = internalRDBMS.getEntryByUID(context, typeName, uid);
 
         if (templateHolder != null && templateHolder.isReadOperation()){
-            readDisk.inc();
+            templateHolder.getServerTypeDesc().getTypeCounters().incDiskReadCounter();
         }
         return entryByUID;
     }
@@ -130,8 +128,9 @@ public class InternalRDBMSManager {
         ISAdapterIterator<IEntryHolder> iEntryHolderISAdapterIterator = internalRDBMS.makeEntriesIter(context, typeName, templateHolder);
 
         if (templateHolder != null && templateHolder.isReadOperation() && !context.isDisableTieredStorageMetric()){
-            readDisk.inc();
+            templateHolder.getServerTypeDesc().getTypeCounters().incDiskReadCounter();
         }
+
 
         return iEntryHolderISAdapterIterator;
     }
@@ -142,14 +141,6 @@ public class InternalRDBMSManager {
 
     public void shutDown(){
         internalRDBMS.shutDown();
-    }
-
-    public LongCounter getReadDisk() {
-        return readDisk;
-    }
-
-    public LongCounter getWriteDisk() {
-        return writeDisk;
     }
 
     public void deleteData() throws SAException {

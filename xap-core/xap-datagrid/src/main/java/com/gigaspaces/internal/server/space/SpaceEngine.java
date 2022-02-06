@@ -1331,8 +1331,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
         else
             _coreProcessor.handleDirectReadOrTakeSA(context, tHolder, fromReplication, origin);
 
-
-        updateTieredRAMObjectTypeReadCounts(tHolder.getServerTypeDesc() ,context.getTemplateTieredState());
+        updateTieredRAMObjectTypeReadCounts(tHolder.getServerTypeDesc(), context.getTemplateTieredState());
 
         if (context.getReplicationContext() != null) {
             tHolder.getAnswerHolder().setSyncRelplicationLevel(context.getReplicationContext().getCompleted());
@@ -1906,21 +1905,17 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
         return tHolder.getAnswerHolder();
     }
 
-    public void updateObjectTypeReadCounts( IServerTypeDesc serverTypeDesc, ITemplatePacket template) {
+    public void updateObjectTypeReadCounts( IServerTypeDesc serverTypeDesc) {
 
         if(!this.getMetricManager().getMetricFlagsState().isDataReadCountsMetricEnabled()){
             return;
         }
 
         if( serverTypeDesc == null ){
-            //serverTypeDesc is null when read returns empty result
             return;
         }
 
-        String typeName = template.getTypeName();
-        if (typeName != null) {
-            serverTypeDesc.getReadCounter().inc(1);
-        }
+        serverTypeDesc.getTypeCounters().incTotalReadCounter();
     }
 
     public void updateTieredRAMObjectTypeReadCounts(IServerTypeDesc serverTypeDesc, TemplateMatchTier templateTieredState) {
@@ -1933,16 +1928,16 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
         }
 
         if( serverTypeDesc == null ){
-            //serverTypeDesc is null when read returns empty result
             return;
         }
 
-        if (serverTypeDesc.getTypeName() != null) {
-            if (templateTieredState == TemplateMatchTier.MATCH_HOT){
-                serverTypeDesc.getRAMReadCounter().inc(1);
-            }
+
+        if (!templateTieredState.equals(TemplateMatchTier.MATCH_COLD)) {
+            serverTypeDesc.getTypeCounters().incRamReadAccessCounter();
         }
+
     }
+
 
     /**
      * call write for each EP in value, update value with the result
@@ -2191,7 +2186,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
             _cacheManager.freeCacheContext(context);
         }
 
-        updateObjectTypeReadCounts(typeDesc, template);
+        updateObjectTypeReadCounts(typeDesc);
         updateTieredRAMObjectTypeReadCounts(typeDesc, templateTieredState);
 
         if (tHolder.getExplainPlan() != null) {
@@ -3972,7 +3967,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
         }
 
         // match should be done against all fields even when uid is provided gs-4091
-        if ( ( !template.isMatchByID() || template.isChangeQuery() /*fix for GS-13604*/ ) && !entry.isHollowEntry()
+        if ((!template.isMatchByID() || template.isChangeQuery() /*fix for GS-13604*/) && !entry.isHollowEntry()
                 && !_templateScanner.match(context, entry, template))
             return null;
 
@@ -4093,7 +4088,6 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
                 context.getExplainPlanContext().getSingleExplainPlan().addTiersInfo(template.getServerTypeDesc().getTypeName(), TieredStorageUtils.getTiersAsList(context.getTemplateTieredState()));
             }
            updateTieredRAMObjectTypeReadCounts(template.getServerTypeDesc(), context.getTemplateTieredState());
-
         }
 
         // If template is a multiple uids template:

@@ -1,5 +1,6 @@
 package com.gigaspaces.internal.server.space.tiered_storage;
 
+import com.gigaspaces.internal.server.metadata.IServerTypeDesc;
 import com.gigaspaces.internal.server.space.SpaceEngine;
 import com.gigaspaces.internal.server.space.SpaceImpl;
 import com.gigaspaces.internal.server.space.metadata.SpaceTypeManager;
@@ -152,8 +153,28 @@ public class TieredStorageManagerImpl implements TieredStorageManager {
 
         InternalMetricRegistrator registratorForPrimary = (InternalMetricRegistrator) metricManager.createRegistrator(MetricConstants.SPACE_METRIC_NAME, createTags(_spaceImpl), dynamicTags);
 
-        registratorForPrimary.register(("tiered-storage-read-tp"), getInternalStorage().getReadDisk());
-        registratorForPrimary.register("tiered-storage-write-tp", getInternalStorage().getWriteDisk());
+
+        registratorForPrimary.register(("tiered-storage-read-tp"), new LongCounter(){
+            @Override
+            public long getCount(){
+                long sum = 0;
+                for (IServerTypeDesc desc : internalDiskStorage.getTypeManager().getSafeTypeTable().values()){
+                    sum += desc.getTypeCounters().getDiskReadAccessCounter().getCount();
+                }
+                return sum;
+            }
+        });
+        registratorForPrimary.register("tiered-storage-write-tp", new LongCounter(){
+            @Override
+            public long getCount(){
+                long sum = 0;
+                for (IServerTypeDesc desc : internalDiskStorage.getTypeManager().getSafeTypeTable().values()){
+                    sum += desc.getTypeCounters().getDiskModifyCounter().getCount();
+                }
+                return sum;
+            }
+        });
+
         this.operationsRegistrator = registratorForPrimary;
     }
 

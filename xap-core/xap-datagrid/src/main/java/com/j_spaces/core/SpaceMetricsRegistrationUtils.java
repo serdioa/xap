@@ -16,6 +16,7 @@
 package com.j_spaces.core;
 
 import com.gigaspaces.internal.server.metadata.IServerTypeDesc;
+import com.gigaspaces.internal.server.metadata.TypeCounters;
 import com.gigaspaces.internal.server.space.SpaceEngine;
 import com.gigaspaces.internal.server.space.SpaceImpl;
 import com.gigaspaces.metadata.index.SpaceIndex;
@@ -46,14 +47,24 @@ public class SpaceMetricsRegistrationUtils {
     public void registerSpaceDataTypeMetrics(IServerTypeDesc serverTypeDesc, TypeData typeData, MetricManager.MetricFlagsState metricFlagsState) {
 
         final String typeName = serverTypeDesc.getTypeName();
+        final TypeCounters typeCounters = serverTypeDesc.getTypeCounters();
 
         // register read-count
         if( metricFlagsState.isDataReadCountsMetricEnabled() ) {
-            spaceEngine.getDataTypeMetricRegistrar(typeName).register("read-count", wrapPrimaryOnly(serverTypeDesc.getReadCounter()));
+            spaceEngine.getDataTypeMetricRegistrar(typeName).register("total-read-count", wrapPrimaryOnly(typeCounters.getTotalReadCounter()));
         }
 
         if( metricFlagsState.isTieredRamReadCountDataTypesMetricEnabled() ) {
-            spaceEngine.getDataTypeMetricRegistrar(typeName).register("read-count-ram", wrapPrimaryOnly(serverTypeDesc.getRAMReadCounter()));
+            spaceEngine.getDataTypeMetricRegistrar(typeName).register("ram-read-count", wrapPrimaryOnly(typeCounters.getRamReadAccessCounter()));
+        }
+
+        if (spaceEngine.isTieredStorage()) {
+            String tieredStoragePrefix = "tiered-storage-";
+            spaceEngine.getDataTypeMetricRegistrar(typeName).register(tieredStoragePrefix + "disk-entries-" + typeName, typeCounters.getDiskEntriesCounter());
+            spaceEngine.getDataTypeMetricRegistrar(typeName).register(tieredStoragePrefix + "disk-read-access-" + typeName, typeCounters.getDiskReadAccessCounter());
+            spaceEngine.getDataTypeMetricRegistrar(typeName).register(tieredStoragePrefix + "disk-modify-access-" + typeName, typeCounters.getDiskModifyCounter());
+            spaceEngine.getDataTypeMetricRegistrar(typeName).register(tieredStoragePrefix + "ram-read-access-" + typeName, typeCounters.getRamReadAccessCounter());
+            spaceEngine.getDataTypeMetricRegistrar(typeName).register(tieredStoragePrefix + "ram-entries-" + typeName, typeCounters.getRamEntriesCounter());
         }
 
         // register data-types
