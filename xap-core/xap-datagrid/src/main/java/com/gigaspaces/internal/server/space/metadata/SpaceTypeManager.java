@@ -330,8 +330,8 @@ public class SpaceTypeManager {
                 throw new RuntimeException(e);
             }
         }
-        tieredStorageManager.removeTableConfig(typeDesc.getTypeName());
-        tieredStorageManager.removeCacheRule(typeDesc.getTypeName());
+        tieredStorageManager.removeTableConfig(typeName);
+        tieredStorageManager.removeCacheRule(typeName);
     }
 
     /**
