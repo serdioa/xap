@@ -62,5 +62,5 @@ public interface IServerTypeDesc {
 
     void setMaybeOutdated();
 
-    public TypeCounters getTypeCounters();
+    TypeCounters getTypeCounters();
 }

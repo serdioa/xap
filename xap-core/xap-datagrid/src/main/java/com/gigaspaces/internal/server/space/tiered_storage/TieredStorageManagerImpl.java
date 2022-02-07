@@ -33,7 +33,6 @@ public class TieredStorageManagerImpl implements TieredStorageManager {
     private Logger logger;
     private TieredStorageConfig storageConfig;
     private boolean containsData;
-    private ConcurrentHashMap<String, TimePredicate> retentionRules = new ConcurrentHashMap<>(); //TODO - tiered storage - lazy init retention rules
     private ConcurrentHashMap<String, CachePredicate> hotCacheRules = new ConcurrentHashMap<>();
 
     private InternalRDBMSManager internalDiskStorage;
@@ -86,19 +85,24 @@ public class TieredStorageManagerImpl implements TieredStorageManager {
     }
 
     @Override
-    public TieredStorageTableConfig addTableConfig(TieredStorageTableConfig config) {
-        return storageConfig.addTable(config);
+    public void addTableConfig(TieredStorageTableConfig config) {
+        storageConfig.addTable(config);
     }
 
     @Override
-    public TimePredicate getRetentionRule(String typeName) {
-        return retentionRules.get(typeName);
+    public void removeTableConfig(String typeName) {
+        storageConfig.removeTable(typeName);
+        hotCacheRules.remove(typeName);
     }
 
     @Override
     public void setCacheRule(String typeName, CachePredicate newRule) {
-        hotCacheRules.put(typeName, newRule);
-        //TODO - handle update (shuffle / evict)
+        hotCacheRules.put(typeName, newRule); //TODO - handle update (shuffle / evict)
+    }
+
+    @Override
+    public void removeCacheRule(String typeName) {
+        hotCacheRules.remove(typeName); //called on drop type
     }
 
     @Override

@@ -39,6 +39,10 @@ public class TieredStorageConfig extends SpaceCustomComponent implements SmartEx
         return tables.putIfAbsent(config.getName(), config);
     }
 
+    public void removeTable(String typeName) {
+        tables.remove(typeName);
+    }
+
     public boolean hasCacheRule(String type){
         return getTables().get(type) != null;
     }

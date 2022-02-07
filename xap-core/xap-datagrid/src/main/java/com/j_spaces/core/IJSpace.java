@@ -22,7 +22,6 @@ import com.gigaspaces.client.IPojoSpace;
 import com.gigaspaces.internal.client.spaceproxy.IDirectSpaceProxy;
 import com.j_spaces.core.client.SpaceFinder;
 import com.j_spaces.core.client.SpaceURL;
-
 import net.jini.core.transaction.Transaction;
 import net.jini.id.Uuid;
 
@@ -178,24 +177,20 @@ public interface IJSpace extends IPojoSpace {
     void ping() throws java.rmi.RemoteException;
 
     /**
-     * Drops all Class's entries and all its templates from the space. Calling this method will
-     * remove all internal meta data related to this class stored in the space. When using
+     * Drops all Class's entries and all its templates from this Space instance. Calling this method will
+     * remove all internal metadata related to this class stored in the Space. When using
      * persistent spaced the relevant RDBMS table will be dropped. It is the caller responsibility
      * to ensure that no entries from this class are written to the space while this method is
-     * called.
-     *
-     * <pre><code>
-     * Message message = new Message("Hello");
-     * Lease lease = space.write(message, null, Lease.FOREVER);
-     *
-     * serverAdmin.dropClass( Message.class.getName());
-     * </code></pre>
+     * called. This is not a clustered operation. If you want only to delete the entries, use clear operation.
      *
      * @param className name of class to delete.
      * @throws DropClassException Failed to drop desired class.
      * @throws RemoteException    if a communication error occurs
      * @see com.gigaspaces.client.IPojoSpace#clear(Object, Transaction)
-     **/
+     *
+     * @deprecated Since 16.2 - Use {@link org.openspaces.core.GigaSpaceTypeManager} instead.
+     */
+    @Deprecated
     public void dropClass(String className) throws java.rmi.RemoteException, DropClassException;
 
     public String getCacheTypeName();

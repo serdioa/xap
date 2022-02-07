@@ -24,7 +24,6 @@ import com.gigaspaces.metadata.SpaceTypeDescriptor;
 import com.gigaspaces.metadata.index.AddTypeIndexesResult;
 import com.gigaspaces.metadata.index.ISpaceIndex;
 import com.gigaspaces.metadata.index.SpaceIndex;
-
 import org.openspaces.core.exception.ExceptionTranslator;
 
 /**
@@ -82,8 +81,7 @@ public class DefaultGigaSpaceTypeManager implements GigaSpaceTypeManager {
         }
     }
 
-    // This API is experimental and should not be used in production.
-    //@Override
+    @Override
     public void unregisterTypeDescriptor(String typeName) {
         try {
             // Validate:
