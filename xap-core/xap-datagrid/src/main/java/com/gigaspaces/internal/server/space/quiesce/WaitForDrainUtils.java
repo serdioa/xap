@@ -19,14 +19,14 @@ public class WaitForDrainUtils {
         long start = System.currentTimeMillis();
         long remainingTime = timeoutMs;
 
-        loggerToUse.info("[{}]: Starting 'waitForDrain' process, start = {}, timeout = {}",containerName, start, timeoutMs);
+        loggerToUse.info("[{}]: Starting 'waitForDrain' process, start = {}, timeout = {}", containerName, start, timeoutMs);
 
         try {
-            loggerToUse.info("[{}]: Waiting for lease manager cycle to drain",containerName);
+            loggerToUse.info("[{}]: Waiting for lease manager cycle to drain", containerName);
             remainingTime = tryWithinTimeout("Timed out while waiting for drain - lease manager cycle timeout",
                     remainingTime, innerTimeout -> spaceImpl.getEngine().getLeaseManager().waitForNoCycleOnQuiesce(innerTimeout));
 
-            loggerToUse.info("[{}]: Waiting for transactions to drain",containerName);
+            loggerToUse.info("[{}]: Waiting for transactions to drain", containerName);
             remainingTime = tryWithinTimeout("Timed out while waiting for transactions to drain", remainingTime,
                     innerTimeout -> {
                         long startTxn = System.currentTimeMillis();
@@ -39,16 +39,16 @@ public class WaitForDrainUtils {
                             Thread.currentThread().interrupt();
                         }
                         if(!result){
-                            loggerToUse.warn("[{}]: Timeout elapsed while waiting for transactions to drain, remaining transactions: {} ",containerName, handler.getXtnTable().size());
+                            loggerToUse.warn("[{}]: Timeout elapsed while waiting for transactions to drain, remaining transactions: {}", containerName, handler.getXtnTable().size());
                             if(loggerToUse.isTraceEnabled()){
                                 StringBuilder builder = new StringBuilder("Not done waiting for transactions:");
                                 for (Map.Entry<ServerTransaction, Long> entry : handler.getTimedXtns().entrySet()) {
-                                    builder.append("\n[ txn id ").append(entry.getKey().getMetaData().getTransactionUniqueId()).append(" timeout in ").append(System.currentTimeMillis() - entry.getValue()).append(" ms ]");
+                                    builder.append("\n[ txn id ").append(entry.getKey().getMetaData().getTransactionUniqueId()).append(" timeout in ").append(System.currentTimeMillis() - entry.getValue()).append(" ms]");
                                 }
                                 loggerToUse.trace(builder.toString());
                             }
                         } else {
-                            loggerToUse.info("[{}]: All transactions were drained, duration: "+ (System.currentTimeMillis() - startTxn) +" ms",containerName);
+                            loggerToUse.info("[{}]: All transactions were drained, duration: {} ms", containerName, (System.currentTimeMillis() - startTxn));
                         }
                         return result;
                     }
@@ -58,7 +58,7 @@ public class WaitForDrainUtils {
             long currentDuration = System.currentTimeMillis() - start;
             if (currentDuration < minTimeToWait) {
                 long timeToSleep = minTimeToWait - currentDuration;
-                loggerToUse.info("[{}]: Sleeping for [" + timeToSleep + "ms] to satisfy " + minTimeToWait,containerName);
+                loggerToUse.info("[{}]: Sleeping for {} ms to satisfy {} ms", containerName, timeToSleep, minTimeToWait);
                 try {
                     Thread.sleep(timeToSleep);
                 } catch (InterruptedException e) {
@@ -68,13 +68,13 @@ public class WaitForDrainUtils {
             }
 
             if(hasReplication(spaceImpl)) {
-                loggerToUse.info("[{}]: Waiting for " + (isBackupOnly ? "backup" : "all targets ") + " replication to drain", containerName);
+                loggerToUse.info("[{}]: Waiting for {} replication to drain", containerName, (isBackupOnly ? "backup" : "all targets "));
                 long startReplication = System.currentTimeMillis();
                 repetitiveTryWithinTimeout(isBackupOnly ? "Backup is not synced" : "Some targets are not synced", remainingTime, () -> isBackupOnly ? isBackupSynced(spaceImpl) : isAllTargetSync(spaceImpl, loggerToUse));
-                loggerToUse.info("[{}]: Replication drained, duration: " + (System.currentTimeMillis() - startReplication) + " ms", containerName);
+                loggerToUse.info("[{}]: Replication drained, duration: {} ms", containerName, (System.currentTimeMillis() - startReplication));
             }
         } catch (Exception e){
-            loggerToUse.warn("[{}]: Caught Exception while waiting for "+spaceImpl.getContainerName()+" to drain",e);
+            loggerToUse.warn("[{}]: Caught Exception while waiting for drain to complete", containerName, e);
             throw e;
         }
     }
@@ -88,12 +88,12 @@ public class WaitForDrainUtils {
         ReplicationStatistics.OutgoingReplication outGoingReplication = spaceImpl.getEngine().getReplicationNode().getAdmin().getStatistics().getOutgoingReplication();
         long lastKeyInRedoLog = outGoingReplication.getLastKeyInRedoLog();
         if(loggerToUse.isDebugEnabled()){
-            loggerToUse.debug("[{}]: last key in redolog = {}",spaceImpl.getContainerName(),lastKeyInRedoLog);
+            loggerToUse.debug("[{}]: last key in redo-log = {}", spaceImpl.getContainerName(), lastKeyInRedoLog);
         }
         boolean allSynced = true;
         for (ReplicationStatistics.OutgoingChannel channel : outGoingReplication.getChannels()) {
             if(loggerToUse.isDebugEnabled()){
-                loggerToUse.debug("[{}]: channel "+channel.getTargetMemberName()+" last confirmed key = "+channel.getLastConfirmedKeyFromTarget());
+                loggerToUse.debug("[{}]: channel = {} last confirmed key = {}", spaceImpl.getContainerName(), channel.getTargetMemberName(), channel.getLastConfirmedKeyFromTarget());
             }
             allSynced = allSynced && channel.getLastConfirmedKeyFromTarget() == lastKeyInRedoLog;
         }
@@ -125,8 +125,7 @@ public class WaitForDrainUtils {
 
     private static void repetitiveTryWithinTimeout(String msg, long timeoutMs, ConditionProvider f) throws TimeoutException {
         long deadline = System.currentTimeMillis() + timeoutMs;
-        long currTime;
-        while ((currTime = System.currentTimeMillis()) < deadline) {
+        while (System.currentTimeMillis() < deadline) {
             if (f.test()) return;
             try {
                 Thread.sleep(100);
