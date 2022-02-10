@@ -731,7 +731,7 @@ public class SystemProperties extends CommonSystemProperties {
 
     public static final boolean ENABLE_DYNAMIC_LOCATORS_DEFAULT = false;
     public static final String DYNAMIC_LOCATORS_MAX_INIT_DELAY = "com.gs.jini_lus.locators.dynamic.max_delay_before_discovery";
-    public static final long DYNAMIC_LOCATORS_MAX_INIT_DELAY_DEFAULT = 10000l;
+    public static final long DYNAMIC_LOCATORS_MAX_INIT_DELAY_DEFAULT = 10000L;
 
     public static final String JCONSOLE_INTERVAL = "com.gs.jconsole.interval";
 
@@ -795,7 +795,6 @@ public class SystemProperties extends CommonSystemProperties {
     public static final String MANAGER_REST_REQUESTS_MAX_RUNNING = "com.gs.manager.rest.max-running-requests";
     public static final String MANAGER_REST_REQUESTS_MAX_COMPLETED = "com.gs.manager.rest.max-completed-requests";
     public static final String MANAGER_REST_PLUGINS_PATH = "com.gs.manager.rest.plugins.path";
-    public static final String MANAGER_REST_REQUESTS_GLOBAL_COUNTER_DISABLED = "com.gs.manager.rest.disable-global-counter";
 
     public static final String SPARK_REST_REQUEST_TIMEOUT = "com.gs.manager.rest.spark.request-timeout";
     public static final String SPARK_REST_REQUEST_TIMEOUT_DEFAULT = "10000";

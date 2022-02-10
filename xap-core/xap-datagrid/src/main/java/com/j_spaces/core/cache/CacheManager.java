@@ -34,6 +34,7 @@ import com.gigaspaces.internal.query.ICustomQuery;
 import com.gigaspaces.internal.query.IQueryIndexScanner;
 import com.gigaspaces.internal.query.explainplan.*;
 import com.gigaspaces.internal.server.metadata.IServerTypeDesc;
+import com.gigaspaces.internal.server.metadata.TypeCounters;
 import com.gigaspaces.internal.server.space.*;
 import com.gigaspaces.internal.server.space.SpaceEngine.EntryRemoveReasonCodes;
 import com.gigaspaces.internal.server.space.SpaceEngine.TemplateRemoveReasonCodes;
@@ -1551,7 +1552,7 @@ public class CacheManager extends AbstractCacheManager
                 context.setEntryTieredState(updatedTieredState);
 
                 final boolean isNewEntryHot = context.isMemoryOnlyEntry() || context.isMemoryAndDiskEntry();
-                tieredStorageManager.getInternalStorage().updateRamCounterAfterUpdate(typeName,isNewEntryHot,isOriginalEntryHot);
+                tieredStorageManager.getInternalStorage().updateRamEntriesCounterAfterTierChange(typeName,isNewEntryHot,isOriginalEntryHot);
 
                 if(pEntry != null){ //old is hot or transient
                     if(isNewEntryHot){
@@ -4265,12 +4266,13 @@ public class CacheManager extends AbstractCacheManager
             // If type contains a primary key definition, check it first:
             TypeDataIndex<IStoredList<IEntryCacheInfo>> primaryKey = typeData.getIdField();
             if (primaryKey != null && latestIndexToConsider >= primaryKey.getIndexCreationNumber()) {
-                if (typeData.disableIdIndexForEntries(primaryKey))
+                if (typeData.disableIdIndexForEntries(primaryKey)) {
                     return getPEntryByUid(typeData.generateUid(templateValue));
-
+                }
                 IStoredList<IEntryCacheInfo> res = primaryKey.getUniqueEntriesStore().get(templateValue);
-                if (res != null && !res.isMultiObjectCollection())
+                if (res != null && !res.isMultiObjectCollection()) {
                     return res.getObjectFromHead();
+                }
             }
         }
 
@@ -6005,21 +6007,17 @@ public class CacheManager extends AbstractCacheManager
         Map<String, Integer> ramEntriesInfo;
         boolean memoryOnlyIter;
 
-        if(isTieredStorage()){
-            entriesInfo = _engine.getTieredStorageManager().getInternalStorage().getMetaData().getCounterMap();
-            ramEntriesInfo = _engine.getTieredStorageManager().getInternalStorage().getMetaData().getRamCounterMap();
-        }else {
-            ramEntriesInfo = new HashMap<>();
+        ramEntriesInfo = new HashMap<>();
 //             APP-833 (Guy K): 18.12.2006 in order to avoid
 //             Searching the DB when using all in cache/externalDB
-            memoryOnlyIter = isCacheExternalDB() || isResidentEntriesCachePolicy();
-            if (memoryOnlyIter && !useRecentDeletes())
-                entriesInfo = null;
-            else {
-                boolean loadPersistent = !(isMemorySpace() || isResidentEntriesCachePolicy()) && !memoryOnlyIter;
-                entriesInfo = countEntries(serverTypeDesc, loadPersistent, true);
-            }
+        memoryOnlyIter = isCacheExternalDB() || isResidentEntriesCachePolicy();
+        if (memoryOnlyIter && !useRecentDeletes())
+            entriesInfo = null;
+        else {
+            boolean loadPersistent = !(isMemorySpace() || isResidentEntriesCachePolicy()) && !memoryOnlyIter;
+            entriesInfo = countEntries(serverTypeDesc, loadPersistent, true);
         }
+
 
         return getRuntimeInfo(serverTypeDesc, entriesInfo, ramEntriesInfo);
     }
@@ -6036,17 +6034,29 @@ public class CacheManager extends AbstractCacheManager
             if (subType.isInactive())
                 continue;
             classes.add(subType.getTypeName());
-            if (entriesInfo == null)
-                entries.add(getNumberOfEntries(subType, false));
-            else {
-                Integer count = entriesInfo.get(subType.getTypeName());
-                entries.add(count != null ? count : 0);
+            TypeCounters typeCounters = subType.getTypeCounters();
+            if (isTieredStorage()) {
+
+                if (getEngine().getTieredStorageManager().isTransient(subType.getTypeName())){
+                    entries.add((int)typeCounters.getRamEntriesCounter().getCount());
+                } else{
+                    entries.add((int)typeCounters.getDiskEntriesCounter().getCount());
+                }
+                ramOnlyEntries.add((int) typeCounters.getRamEntriesCounter().getCount());
             }
-            if (ramEntriesInfo == null)
-                ramOnlyEntries.add(getNumberOfEntries(subType, false));
             else {
-                Integer count = ramEntriesInfo.get(subType.getTypeName());
-                ramOnlyEntries.add(count != null ? count : 0);
+                if (entriesInfo == null)
+                    entries.add(getNumberOfEntries(subType, false));
+                else {
+                    Integer count = entriesInfo.get(subType.getTypeName());
+                    entries.add(count != null ? count : 0);
+                }
+                if (ramEntriesInfo == null) {
+                    ramOnlyEntries.add(getNumberOfEntries(subType, false));
+                }
+                else {
+                    ramOnlyEntries.add((int)typeCounters.getRamEntriesCounter().getCount());
+                }
             }
             templates.add(getNumberOfNotifyTemplates(subType, false));
         }

@@ -1,5 +1,6 @@
 package com.gigaspaces.internal.server.space.tiered_storage;
 
+import com.gigaspaces.internal.server.metadata.IServerTypeDesc;
 import com.gigaspaces.internal.server.space.SpaceEngine;
 import com.gigaspaces.internal.server.space.SpaceImpl;
 import com.gigaspaces.internal.server.space.metadata.SpaceTypeManager;
@@ -32,7 +33,6 @@ public class TieredStorageManagerImpl implements TieredStorageManager {
     private Logger logger;
     private TieredStorageConfig storageConfig;
     private boolean containsData;
-    private ConcurrentHashMap<String, TimePredicate> retentionRules = new ConcurrentHashMap<>(); //TODO - tiered storage - lazy init retention rules
     private ConcurrentHashMap<String, CachePredicate> hotCacheRules = new ConcurrentHashMap<>();
 
     private InternalRDBMSManager internalDiskStorage;
@@ -85,19 +85,24 @@ public class TieredStorageManagerImpl implements TieredStorageManager {
     }
 
     @Override
-    public TieredStorageTableConfig addTableConfig(TieredStorageTableConfig config) {
-        return storageConfig.addTable(config);
+    public void addTableConfig(TieredStorageTableConfig config) {
+        storageConfig.addTable(config);
     }
 
     @Override
-    public TimePredicate getRetentionRule(String typeName) {
-        return retentionRules.get(typeName);
+    public void removeTableConfig(String typeName) {
+        storageConfig.removeTable(typeName);
+        hotCacheRules.remove(typeName);
     }
 
     @Override
     public void setCacheRule(String typeName, CachePredicate newRule) {
-        hotCacheRules.put(typeName, newRule);
-        //TODO - handle update (shuffle / evict)
+        hotCacheRules.put(typeName, newRule); //TODO - handle update (shuffle / evict)
+    }
+
+    @Override
+    public void removeCacheRule(String typeName) {
+        hotCacheRules.remove(typeName); //called on drop type
     }
 
     @Override
@@ -152,8 +157,28 @@ public class TieredStorageManagerImpl implements TieredStorageManager {
 
         InternalMetricRegistrator registratorForPrimary = (InternalMetricRegistrator) metricManager.createRegistrator(MetricConstants.SPACE_METRIC_NAME, createTags(_spaceImpl), dynamicTags);
 
-        registratorForPrimary.register(("tiered-storage-read-tp"), getInternalStorage().getReadDisk());
-        registratorForPrimary.register("tiered-storage-write-tp", getInternalStorage().getWriteDisk());
+
+        registratorForPrimary.register(("tiered-storage-read-tp"), new LongCounter(){
+            @Override
+            public long getCount(){
+                long sum = 0;
+                for (IServerTypeDesc desc : internalDiskStorage.getTypeManager().getSafeTypeTable().values()){
+                    sum += desc.getTypeCounters().getDiskReadAccessCounter().getCount();
+                }
+                return sum;
+            }
+        });
+        registratorForPrimary.register("tiered-storage-write-tp", new LongCounter(){
+            @Override
+            public long getCount(){
+                long sum = 0;
+                for (IServerTypeDesc desc : internalDiskStorage.getTypeManager().getSafeTypeTable().values()){
+                    sum += desc.getTypeCounters().getDiskModifyCounter().getCount();
+                }
+                return sum;
+            }
+        });
+
         this.operationsRegistrator = registratorForPrimary;
     }
 
