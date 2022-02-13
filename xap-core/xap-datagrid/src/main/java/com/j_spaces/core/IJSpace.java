@@ -188,7 +188,7 @@ public interface IJSpace extends IPojoSpace {
      * @throws RemoteException    if a communication error occurs
      * @see com.gigaspaces.client.IPojoSpace#clear(Object, Transaction)
      *
-     * @deprecated Since 16.2 - Use {@link org.openspaces.core.GigaSpaceTypeManager} instead.
+     * @deprecated Since 16.2 - use GigaSpaceTypeManager#unregisterTypeDescriptor method instead
      */
     @Deprecated
     public void dropClass(String className) throws java.rmi.RemoteException, DropClassException;

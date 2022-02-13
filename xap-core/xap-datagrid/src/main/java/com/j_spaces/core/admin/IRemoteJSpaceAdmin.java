@@ -236,7 +236,9 @@ public interface IRemoteJSpaceAdmin extends Remote {
      * @param className name of class to delete.
      * @throws DropClassException Failed to drop desired class.
      * @throws RemoteException    if a communication error occurs
+     * @deprecated Since 16.2 - use GigaSpaceTypeManager#unregisterTypeDescriptor method instead
      **/
+    @Deprecated
     public void dropClass(String className, SpaceContext sc) throws RemoteException, DropClassException;
 
     /**

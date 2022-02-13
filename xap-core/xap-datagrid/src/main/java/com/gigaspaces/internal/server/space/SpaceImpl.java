@@ -18,10 +18,7 @@ package com.gigaspaces.internal.server.space;
 
 import com.gigaspaces.admin.ManagerClusterType;
 import com.gigaspaces.admin.demote.DemoteFailedException;
-import com.gigaspaces.admin.quiesce.DefaultQuiesceToken;
-import com.gigaspaces.admin.quiesce.QuiesceException;
-import com.gigaspaces.admin.quiesce.QuiesceState;
-import com.gigaspaces.admin.quiesce.QuiesceStateChangedEvent;
+import com.gigaspaces.admin.quiesce.*;
 import com.gigaspaces.annotation.SupportCodeChange;
 import com.gigaspaces.attribute_store.AttributeStore;
 import com.gigaspaces.attribute_store.SharedLock;
@@ -1996,6 +1993,16 @@ public class SpaceImpl extends AbstractService implements IRemoteSpace, IInterna
         // get iterator of backup's sync list which is used in direct persistency sync list memory recovery
         DirectPersistencyBackupSyncIteratorHandler directPersistencyBackupSyncIteratorHandler = getEngine().getReplicationManager().getReplicationNode().getDirectPersistencyBackupSyncIteratorHandler();
         return directPersistencyBackupSyncIteratorHandler.getNextBatch();
+    }
+
+    @Override
+    public void quiesce(String description, QuiesceToken token) throws RemoteException {
+        getQuiesceHandler().quiesce(description, token);
+    }
+
+    @Override
+    public void unquiesce() throws RemoteException {
+        getQuiesceHandler().unquiesce();
     }
 
     @Override

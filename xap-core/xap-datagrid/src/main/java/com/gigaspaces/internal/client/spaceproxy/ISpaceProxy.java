@@ -35,11 +35,13 @@ import com.gigaspaces.query.aggregators.AggregationResult;
 import com.gigaspaces.query.aggregators.AggregationSet;
 import com.gigaspaces.security.service.SecuredService;
 import com.gigaspaces.serialization.pbs.IDotnetProxyAssociated;
-import com.j_spaces.core.*;
+import com.j_spaces.core.IJSpace;
+import com.j_spaces.core.LeaseContext;
+import com.j_spaces.core.OperationID;
+import com.j_spaces.core.SpaceHealthStatus;
 import com.j_spaces.core.client.ActionListener;
 import com.j_spaces.core.client.ActionMaker;
 import com.j_spaces.core.client.ReadModifiers;
-
 import net.jini.core.entry.UnusableEntryException;
 import net.jini.core.transaction.Transaction;
 import net.jini.core.transaction.TransactionException;
@@ -223,6 +225,8 @@ public interface ISpaceProxy extends IJSpace, ActionMaker, SecuredService, IDotn
 
     ITypeDesc registerTypeDescriptor(Class<?> type) throws RemoteException;
 
+    void unregisterTypeDescriptor(String typeName) throws RemoteException;
+
     AsyncFuture<AddTypeIndexesResult> asyncAddIndexes(String typeName, SpaceIndex[] indexes, AsyncFutureListener<AddTypeIndexesResult> listener) throws RemoteException;
 
     /**
@@ -263,6 +267,4 @@ public interface ISpaceProxy extends IJSpace, ActionMaker, SecuredService, IDotn
     <T> Future<ChangeResult<T>> asyncChange(Object template, ChangeSet changeSet, Transaction txn, long timeout, ChangeModifiers modifiers, AsyncFutureListener<ChangeResult<T>> listener) throws RemoteException;
 
     AggregationResult aggregate(Object template, AggregationSet aggregationSet, Transaction txn, int readModifiers) throws RemoteException, TransactionException, InterruptedException;
-
-    void unregisterTypeDescriptor(String typeName) throws RemoteException;
 }

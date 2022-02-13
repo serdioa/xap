@@ -20,6 +20,8 @@
 
 package com.gigaspaces.internal.lrmi.stubs;
 
+import com.gigaspaces.admin.demote.DemoteFailedException;
+import com.gigaspaces.admin.quiesce.QuiesceToken;
 import com.gigaspaces.cluster.activeelection.ISpaceModeListener;
 import com.gigaspaces.cluster.activeelection.SpaceMode;
 import com.gigaspaces.grid.zone.GridZoneProvider;
@@ -39,7 +41,6 @@ import com.gigaspaces.internal.os.OSStatistics;
 import com.gigaspaces.internal.remoting.RemoteOperationRequest;
 import com.gigaspaces.internal.remoting.RemoteOperationResult;
 import com.gigaspaces.internal.server.space.IRemoteSpace;
-import com.gigaspaces.admin.demote.DemoteFailedException;
 import com.gigaspaces.internal.server.space.suspend.SuspendTypeChangedInternalListener;
 import com.gigaspaces.internal.space.transport.xnio.XNioChannel;
 import com.gigaspaces.internal.space.transport.xnio.XNioSettings;
@@ -58,11 +59,7 @@ import com.gigaspaces.management.space.LocalViewDetails;
 import com.gigaspaces.management.transport.ITransportConnection;
 import com.gigaspaces.security.service.RemoteSecuredService;
 import com.gigaspaces.server.space.suspend.SuspendType;
-import com.j_spaces.core.DropClassException;
-import com.j_spaces.core.IJSpace;
-import com.j_spaces.core.SpaceContext;
-import com.j_spaces.core.SpaceCopyStatus;
-import com.j_spaces.core.SpaceHealthStatus;
+import com.j_spaces.core.*;
 import com.j_spaces.core.admin.*;
 import com.j_spaces.core.client.BasicTypeInfo;
 import com.j_spaces.core.client.SpaceSettings;
@@ -71,7 +68,6 @@ import com.j_spaces.core.client.UnderTxnLockedObject;
 import com.j_spaces.core.cluster.ClusterPolicy;
 import com.j_spaces.core.service.Service;
 import com.j_spaces.jdbc.IQueryProcessor;
-
 import net.jini.core.entry.UnusableEntryException;
 import net.jini.core.lease.LeaseDeniedException;
 import net.jini.core.lease.UnknownLeaseException;
@@ -79,7 +75,6 @@ import net.jini.core.transaction.Transaction;
 import net.jini.core.transaction.UnknownTransactionException;
 import net.jini.core.transaction.server.TransactionManager;
 import net.jini.id.Uuid;
-
 import org.jini.rio.boot.SpaceInstanceRemoteClassLoaderInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -221,6 +216,16 @@ public class LRMISpaceImpl extends RemoteStub<IRemoteSpace>
     @Override
     public DirectPersistencySyncListBatch getSynchronizationListBatch() throws RemoteException {
         return getProxy().getSynchronizationListBatch();
+    }
+
+    @Override
+    public void quiesce(String description, QuiesceToken token) throws RemoteException {
+        getProxy().quiesce(description, token);
+    }
+
+    @Override
+    public void unquiesce() throws RemoteException {
+        getProxy().unquiesce();
     }
 
     @Override

@@ -41,7 +41,6 @@ import com.gigaspaces.internal.metadata.ITypeDesc;
 import com.gigaspaces.internal.server.space.IClusterInfoChangedListener;
 import com.gigaspaces.internal.server.space.IRemoteSpace;
 import com.gigaspaces.internal.server.space.SpaceImpl;
-import com.gigaspaces.internal.server.space.ZookeeperTopologyHandler;
 import com.gigaspaces.internal.server.space.tiered_storage.error.TieredStorageMetadataException;
 import com.gigaspaces.internal.server.space.tiered_storage.error.TieredStorageOperationException;
 import com.gigaspaces.internal.transport.ITemplatePacket;

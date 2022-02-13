@@ -16,20 +16,20 @@
 
 package com.gigaspaces.internal.server.space;
 
+import com.gigaspaces.admin.demote.DemoteFailedException;
+import com.gigaspaces.admin.quiesce.QuiesceToken;
 import com.gigaspaces.annotation.lrmi.LivenessPriority;
 import com.gigaspaces.internal.client.spaceproxy.operations.SpaceConnectRequest;
 import com.gigaspaces.internal.client.spaceproxy.operations.SpaceConnectResult;
 import com.gigaspaces.internal.cluster.node.impl.directPersistency.DirectPersistencySyncListBatch;
 import com.gigaspaces.internal.cluster.node.impl.router.spacefinder.IReplicationConnectionProxy;
 import com.gigaspaces.internal.remoting.RemoteOperationsExecutor;
-import com.gigaspaces.admin.demote.DemoteFailedException;
 import com.gigaspaces.internal.transport.ITemplatePacket;
 import com.gigaspaces.security.service.RemoteSecuredService;
 import com.j_spaces.core.SpaceContext;
 import com.j_spaces.core.SpaceHealthStatus;
 import com.j_spaces.jdbc.IQueryProcessor;
 import com.sun.jini.start.ServiceProxyAccessor;
-
 import net.jini.core.entry.UnusableEntryException;
 import net.jini.core.lease.LeaseDeniedException;
 import net.jini.core.lease.UnknownLeaseException;
@@ -163,4 +163,10 @@ public interface IRemoteSpace
     SpaceConnectResult connect(SpaceConnectRequest request) throws RemoteException;
 
     DirectPersistencySyncListBatch getSynchronizationListBatch() throws RemoteException;
+
+    ////////////////////////////////////////
+    // Quiesce Operations (since 16.2)
+    ////////////////////////////////////////
+    void quiesce(String description, QuiesceToken token) throws RemoteException;
+    void unquiesce() throws RemoteException;
 }
