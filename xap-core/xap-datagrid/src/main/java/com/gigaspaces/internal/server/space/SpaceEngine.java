@@ -18,6 +18,7 @@ package com.gigaspaces.internal.server.space;
 
 import com.gigaspaces.client.ClearByIdsException;
 import com.gigaspaces.client.ReadTakeByIdsException;
+import com.gigaspaces.client.WriteModifiers;
 import com.gigaspaces.client.WriteMultipleException;
 import com.gigaspaces.client.mutators.SpaceEntryMutator;
 import com.gigaspaces.client.protective.ProtectiveMode;
@@ -126,6 +127,7 @@ import com.j_spaces.core.cache.blobStore.storage.bulks.BlobStoreBulkInfo;
 import com.j_spaces.core.cache.blobStore.storage.preFetch.BlobStorePreFetchIteratorBasedHandler;
 import com.j_spaces.core.cache.context.Context;
 import com.j_spaces.core.cache.context.TemplateMatchTier;
+import com.j_spaces.core.cache.context.TieredState;
 import com.j_spaces.core.client.*;
 import com.j_spaces.core.cluster.*;
 import com.j_spaces.core.exception.internal.EngineInternalSpaceException;
@@ -896,6 +898,12 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
                 context.setEntryTieredState(tieredStorageManager.getEntryTieredState(eHolder));
                 if(tieredStorageManager.getCacheRule(typeName) != null) {
                     eHolder.setTransient(tieredStorageManager.getCacheRule(typeName).isTransient());
+                }
+                // When trying to update a cold entry with MEMORY_ONLY_SEARCH we can get stuck in the following infinite loop:
+                // 1. Attempt to write to disk since the entry is cold and get EntryAlreadyInSpaceException
+                // 2. read from memory, and see that the entry isn't there, goes back to write attempt
+                if (Modifiers.contains(modifiers, WriteModifiers.MEMORY_ONLY_SEARCH.getCode()) && context.getEntryTieredState().equals(TieredState.TIERED_COLD)){
+                    throw new EngineInternalSpaceException("Failed to write entry. Entry state is COLD while using MEMORY_ONLY_SEARCH");
                 }
             }
             context.cacheViewEntryDataIfNeeded(eHolder.getEntryData(), entryPacket);

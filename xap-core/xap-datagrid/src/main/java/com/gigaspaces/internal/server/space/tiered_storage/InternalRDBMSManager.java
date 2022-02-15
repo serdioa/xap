@@ -68,7 +68,7 @@ public class InternalRDBMSManager {
      */
     public void updateEntry(Context context, IEntryHolder updatedEntry) throws SAException{
         internalRDBMS.updateEntry(context, updatedEntry);
-
+        updatedEntry.getServerTypeDesc().getTypeCounters().incDiskModifyCounter();
     }
 
     /**
