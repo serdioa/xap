@@ -18,6 +18,8 @@
 package org.openspaces.core.cluster;
 
 import com.gigaspaces.cluster.DynamicPartitionInfo;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 import java.io.Serializable;
 
@@ -45,6 +47,8 @@ import java.io.Serializable;
  * @author kimchy
  */
 public class ClusterInfo implements Cloneable, Serializable {
+
+    private static final Log logger = LogFactory.getLog(ClusterInfo.class);
 
     private static final long serialVersionUID = -128705742407213814L;
 
@@ -82,6 +86,9 @@ public class ClusterInfo implements Cloneable, Serializable {
         this.backupId = backupId;
         this.numberOfInstances = numberOfInstances;
         this.numberOfBackups = numberOfBackups;
+
+        logger.error("<<<<<<<ClusterInfo constructor: instanceId=" + instanceId + ", backupId=" + backupId
+        + "numberOfInstances=" + numberOfInstances + ", numberOfBackups=" + numberOfBackups);
     }
 
     protected ClusterInfo(ClusterInfoBuilder builder) {
@@ -91,6 +98,9 @@ public class ClusterInfo implements Cloneable, Serializable {
         this.numberOfBackups = builder.getNumberOfBackups();
         this.instanceId = builder.getInstanceId();
         this.backupId = builder.getBackupId();
+
+        logger.error("<<<<<<<ClusterInfo constructor: instanceId=" + instanceId + ", backupId=" + backupId
+                + "numberOfInstances=" + numberOfInstances + ", numberOfBackups=" + numberOfBackups);
     }
 
     protected ClusterInfo(ClusterInfo other) {
@@ -100,6 +110,9 @@ public class ClusterInfo implements Cloneable, Serializable {
         this.numberOfBackups = other.getNumberOfBackups();
         this.instanceId = other.getInstanceId();
         this.backupId = other.getBackupId();
+
+        logger.error("<<<<<<<ClusterInfo constructor: instanceId=" + instanceId + ", backupId=" + backupId
+                + "numberOfInstances=" + numberOfInstances + ", numberOfBackups=" + numberOfBackups);
     }
 
     /**
@@ -265,7 +278,7 @@ public class ClusterInfo implements Cloneable, Serializable {
      */
     public String getSuffix() {
         boolean hasBackups = getNumberOfBackups() != null && getNumberOfBackups() != 0;
-        int instanceId = getInstanceId() != null ? getInstanceId() : 0;
+        int instanceId = getInstanceId() != null ? getInstanceId() : 0;//
         int backupId = getBackupId() != null ? getBackupId() + 1 : 1;
         return hasBackups ? instanceId + "_" + backupId : String.valueOf(instanceId);
     }
