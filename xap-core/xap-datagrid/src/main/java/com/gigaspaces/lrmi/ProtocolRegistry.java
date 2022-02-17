@@ -61,7 +61,8 @@ public class ProtocolRegistry
     }
 
     public int getPort(ITransportConfig config) {
-        return get(config.getProtocolName()).getPort();
+        ProtocolAdapter<?> protocolAdapter = get(config.getProtocolName());
+        return protocolAdapter != null ? protocolAdapter.getPort() : -1;
     }
 
     public LRMIMonitoringDetails getMonitoringDetails(ITransportConfig config) {
