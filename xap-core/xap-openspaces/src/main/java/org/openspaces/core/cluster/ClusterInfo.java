@@ -88,7 +88,7 @@ public class ClusterInfo implements Cloneable, Serializable {
         this.numberOfBackups = numberOfBackups;
 
         logger.error("<<<<<<<ClusterInfo constructor: instanceId=" + instanceId + ", backupId=" + backupId
-        + "numberOfInstances=" + numberOfInstances + ", numberOfBackups=" + numberOfBackups);
+        + " numberOfInstances=" + numberOfInstances + ", numberOfBackups=" + numberOfBackups);
     }
 
     protected ClusterInfo(ClusterInfoBuilder builder) {
@@ -100,7 +100,7 @@ public class ClusterInfo implements Cloneable, Serializable {
         this.backupId = builder.getBackupId();
 
         logger.error("<<<<<<<ClusterInfo constructor: instanceId=" + instanceId + ", backupId=" + backupId
-                + "numberOfInstances=" + numberOfInstances + ", numberOfBackups=" + numberOfBackups);
+                + " numberOfInstances=" + numberOfInstances + ", numberOfBackups=" + numberOfBackups);
     }
 
     protected ClusterInfo(ClusterInfo other) {
@@ -112,7 +112,7 @@ public class ClusterInfo implements Cloneable, Serializable {
         this.backupId = other.getBackupId();
 
         logger.error("<<<<<<<ClusterInfo constructor: instanceId=" + instanceId + ", backupId=" + backupId
-                + "numberOfInstances=" + numberOfInstances + ", numberOfBackups=" + numberOfBackups);
+                + " numberOfInstances=" + numberOfInstances + ", numberOfBackups=" + numberOfBackups);
     }
 
     /**
@@ -278,8 +278,10 @@ public class ClusterInfo implements Cloneable, Serializable {
      */
     public String getSuffix() {
         boolean hasBackups = getNumberOfBackups() != null && getNumberOfBackups() != 0;
-        int instanceId = getInstanceId() != null ? getInstanceId() : 0;//
+        int instanceId = getInstanceId() != null ? getInstanceId() : 0;
         int backupId = getBackupId() != null ? getBackupId() + 1 : 1;
+
+
         return hasBackups ? instanceId + "_" + backupId : String.valueOf(instanceId);
     }
 
