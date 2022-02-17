@@ -296,6 +296,18 @@ public class MetricManager implements Closeable {
         }
     }
 
+    public Map<String, Object> getSnapshotsByPrefixAndMatchingTags(Collection<String> prefixes, MetricTags tags) {
+        synchronized (lock) {
+            Map<String, Object> resultsMap = new HashMap<>();
+            for (String prefix : prefixes) {
+                for (MetricSampler sampler : samplers.values()) {
+                    resultsMap.putAll(sampler.getSnapshotsByPrefixAndMatchingTags(prefix, tags));
+                }
+            }
+            return resultsMap;
+        }
+    }
+
     public Map<String,Object> getSnapshotsByPrefix( Collection<String> prefixes ) {
         synchronized (lock) {
             Map<String, Object> resultsMap = new HashMap<>();

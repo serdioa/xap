@@ -21,9 +21,7 @@ import com.gigaspaces.logger.Constants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -117,6 +115,51 @@ public class MetricRegistry {
                     groups.remove(tags);
             }
         }
+    }
+
+
+    /**
+     * @param prefix - prefixes of the wanted metrics
+     * @param tags - the tags that need to be matched
+     * @return map of metrics and their values
+     */
+    public Map<String, Object> getSnapshotByPrefixAndMatchingTags(String prefix, MetricTags tags) {
+        synchronized (groups) {
+            Map<String,Object> metricsSnapshot = new HashMap<>();
+            List<MetricGroup> groupsWithTags= getGroupsByMatchingTags(tags);
+            for (MetricGroup group : groupsWithTags) {
+                if (group != null) {
+                    for (Map.Entry<String, Metric> entry : group.getByPrefix(prefix).entrySet()) {
+                        try {
+                            Object metricSnapshotValue = getMetricSnapshot(entry.getValue());
+                            //value can be null when metric should not be recorded to db ( for example dataTypeIndexHit metric of backup space )
+                            if (metricSnapshotValue != null) {
+                                metricsSnapshot.put(entry.getKey(), metricSnapshotValue);
+                            }
+                        } catch (Exception e) {
+                            if (logger.isDebugEnabled()) {
+                                logger.debug(e.toString(), e);
+                            }
+                        }
+                    }
+                }
+            }
+            return metricsSnapshot;
+        }
+    }
+
+    /**
+     * @param tags - the tags that need to be matched
+     * @return - all metric groups that contain all of the wanted tags
+     */
+    private List<MetricGroup> getGroupsByMatchingTags(MetricTags tags){
+        List<MetricGroup> groupsWithTag= new ArrayList<>();
+        for (MetricTags metricTags : groups.keySet()) {
+            if (metricTags.getTags().entrySet().containsAll( tags.getTags().entrySet())){
+                groupsWithTag.add(groups.get(metricTags));
+            }
+        }
+        return groupsWithTag;
     }
 
     public Map<String, Object> getSnapshotsByPrefix(String prefix) {
