@@ -611,10 +611,18 @@ public class CacheManager extends AbstractCacheManager
 
 
         if(isTieredStorage()){
-            loadDataFromDB = _engine.getSpaceImpl().isPrimary() &&  (_engine.getTieredStorageManager().RDBMSContainsData() || getStorageAdapter() != null);
-            if(!loadDataFromDB && _engine.getSpaceImpl().isPrimary()) {
-                ConsistencyFile consistency = new ConsistencyFile(_engine.getSpaceName(), _engine.getFullSpaceName());
-                consistency.setStorageState(StorageConsistencyModes.Consistent);
+            //TODO: @sagiv right now we load the data from backup disk too - !!assuming data is intact!!
+            loadDataFromDB = _engine.getTieredStorageManager().RDBMSContainsData() || getStorageAdapter() != null;
+            if (_engine.getSpaceImpl().isPrimary()) {
+                if(!loadDataFromDB) {
+                    ConsistencyFile consistency = new ConsistencyFile(_engine.getSpaceName(), _engine.getFullSpaceName());
+                    consistency.setStorageState(StorageConsistencyModes.Consistent);
+                }
+            }
+            if (_engine.getSpaceImpl().isBackup()) {
+                if (_engine.isTieredStorageFullMemoryRecoveryEnable()) {
+                    loadDataFromDB = false;
+                }
             }
         }
 
