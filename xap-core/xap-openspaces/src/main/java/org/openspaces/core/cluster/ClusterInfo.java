@@ -54,7 +54,7 @@ public class ClusterInfo implements Cloneable, Serializable {
 
     private String schema;
 
-    private Integer instanceId;
+    private Integer instanceId;// this value is wrong!!!!!
 
     private Integer backupId;
 
@@ -87,7 +87,7 @@ public class ClusterInfo implements Cloneable, Serializable {
         this.numberOfInstances = numberOfInstances;
         this.numberOfBackups = numberOfBackups;
 
-        logger.error("<<<<<<<ClusterInfo constructor: instanceId=" + instanceId + ", backupId=" + backupId
+        logger.error("<<<<<<<ClusterInfo constructor params: instanceId=" + instanceId + ", backupId=" + backupId
         + " numberOfInstances=" + numberOfInstances + ", numberOfBackups=" + numberOfBackups);
     }
 
@@ -99,7 +99,7 @@ public class ClusterInfo implements Cloneable, Serializable {
         this.instanceId = builder.getInstanceId();
         this.backupId = builder.getBackupId();
 
-        logger.error("<<<<<<<ClusterInfo constructor: instanceId=" + instanceId + ", backupId=" + backupId
+        logger.error("<<<<<<<ClusterInfo constructor from builder: instanceId=" + instanceId + ", backupId=" + backupId
                 + " numberOfInstances=" + numberOfInstances + ", numberOfBackups=" + numberOfBackups);
     }
 
@@ -111,7 +111,7 @@ public class ClusterInfo implements Cloneable, Serializable {
         this.instanceId = other.getInstanceId();
         this.backupId = other.getBackupId();
 
-        logger.error("<<<<<<<ClusterInfo constructor: instanceId=" + instanceId + ", backupId=" + backupId
+        logger.error("<<<<<<<ClusterInfo constructor copy: instanceId=" + instanceId + ", backupId=" + backupId
                 + " numberOfInstances=" + numberOfInstances + ", numberOfBackups=" + numberOfBackups);
     }
 
