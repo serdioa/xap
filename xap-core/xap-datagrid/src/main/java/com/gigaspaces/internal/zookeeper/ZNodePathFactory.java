@@ -110,6 +110,11 @@ public class ZNodePathFactory {
         return path( REQUESTS, PRE_CREATE_CONTAINER, machineId );
     }
 
+    //used during removing attribute
+    public static String createOnContainerRequest(String machineId) {
+        return path( REQUESTS, ON_CREATE_CONTAINER, machineId );
+    }
+
     public static String createOnContainerRequest(String machineId, int agentId ) {
         return path( new String[] { REQUESTS, ON_CREATE_CONTAINER, machineId, String.valueOf( agentId ) } );
     }
