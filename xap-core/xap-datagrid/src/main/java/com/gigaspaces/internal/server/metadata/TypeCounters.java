@@ -13,6 +13,7 @@ public class TypeCounters {
     private final LongCounter diskModifyCounter;
     private final LongCounter diskEntriesCounter;
     private final LongCounter ramEntriesCounter;
+    private boolean disabled;
 
     public TypeCounters() {
         totalReadCounter = new LongCounter();
@@ -21,6 +22,7 @@ public class TypeCounters {
         diskModifyCounter = new LongCounter();
         diskEntriesCounter = new LongCounter();
         ramEntriesCounter = new LongCounter();
+        disabled = false;
     }
 
     public TypeCounters(TypeCounters other) {
@@ -36,57 +38,81 @@ public class TypeCounters {
         return totalReadCounter;
     }
 
-    public void incTotalReadCounter(){
-        totalReadCounter.inc();
+    public void incTotalReadCounter() {
+        if(!disabled){
+            totalReadCounter.inc();
+        }
     }
 
     public LongCounter getRamReadAccessCounter() {
         return ramReadAccessCounter;
     }
 
-    public void incRamReadAccessCounter(){
-        ramReadAccessCounter.inc();
+    public void incRamReadAccessCounter() {
+        if(!disabled){
+            ramReadAccessCounter.inc();
+        }
     }
 
     public LongCounter getDiskReadAccessCounter() {
         return diskReadAccessCounter;
     }
 
-    public void incDiskReadCounter(){
-        diskReadAccessCounter.inc();
+    public void incDiskReadCounter() {
+        if(!disabled){
+            diskReadAccessCounter.inc();
+        }
     }
 
     public LongCounter getDiskModifyCounter() {
         return diskModifyCounter;
     }
 
-    public void incDiskModifyCounter(){
-        diskModifyCounter.inc();
+    public void incDiskModifyCounter() {
+        if(!disabled) {
+            diskModifyCounter.inc();
+        }
     }
 
     public LongCounter getDiskEntriesCounter() {
         return diskEntriesCounter;
     }
 
-    public void incDiskEntriesCounter(){
-        diskEntriesCounter.inc();
+    public void incDiskEntriesCounter() {
+        if(!disabled) {
+            diskEntriesCounter.inc();
+        }
     }
 
     public void decDiskEntriesCounter() {
-        diskEntriesCounter.dec();
+        if(!disabled){
+            diskEntriesCounter.dec();
+        }
     }
 
-    public void setDiskEntriesCounter(int count){ diskEntriesCounter.inc(count);}
+    public void setDiskEntriesCounter(int count) {
+        if (!disabled) {
+            diskEntriesCounter.inc(count);
+        }
+    }
 
     public LongCounter getRamEntriesCounter() {
         return ramEntriesCounter;
     }
 
-    public void incRamEntriesCounter(){
-        ramEntriesCounter.inc();
+    public void incRamEntriesCounter() {
+        if (!disabled) {
+            ramEntriesCounter.inc();
+        }
     }
 
     public void decRamEntriesCounter() {
-        ramEntriesCounter.dec();
+        if (!disabled) {
+            ramEntriesCounter.dec();
+        }
+    }
+
+    public void disable() {
+        disabled = true;
     }
 }

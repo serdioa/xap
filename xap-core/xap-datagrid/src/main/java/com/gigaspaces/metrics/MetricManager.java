@@ -444,6 +444,7 @@ public class MetricManager implements Closeable {
         private final boolean dataReadCountsMetricEnabled = isEnabled("space", "data", "read-count");
         private final boolean dataTypesMetricEnabled = isEnabled("space", "data", "data-types");
         private final boolean tieredRamReadCountDataTypesMetricEnabled = isEnabled("space", "data", "read-count-ram");
+        private final boolean tieredStorageMetricEnabled = isEnabled("space", "data", "tiered-storage");
 
         public boolean isDataIndexHitsMetricEnabled() {
             return dataIndexHitsMetricEnabled;
@@ -459,6 +460,10 @@ public class MetricManager implements Closeable {
 
         public boolean isDataReadCountsMetricEnabled() {
             return dataReadCountsMetricEnabled;
+        }
+
+        public boolean isTieredStorageMetricEnabled() {
+            return tieredStorageMetricEnabled;
         }
     }
 }
