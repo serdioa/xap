@@ -86,9 +86,6 @@ public class ClusterInfo implements Cloneable, Serializable {
         this.backupId = backupId;
         this.numberOfInstances = numberOfInstances;
         this.numberOfBackups = numberOfBackups;
-
-        logger.error("<<<<<<<ClusterInfo constructor params: instanceId=" + instanceId + ", backupId=" + backupId
-        + " numberOfInstances=" + numberOfInstances + ", numberOfBackups=" + numberOfBackups);
     }
 
     protected ClusterInfo(ClusterInfoBuilder builder) {
@@ -98,9 +95,6 @@ public class ClusterInfo implements Cloneable, Serializable {
         this.numberOfBackups = builder.getNumberOfBackups();
         this.instanceId = builder.getInstanceId();
         this.backupId = builder.getBackupId();
-
-        logger.error("<<<<<<<ClusterInfo constructor from builder: instanceId=" + instanceId + ", backupId=" + backupId
-                + " numberOfInstances=" + numberOfInstances + ", numberOfBackups=" + numberOfBackups);
     }
 
     protected ClusterInfo(ClusterInfo other) {
@@ -110,9 +104,6 @@ public class ClusterInfo implements Cloneable, Serializable {
         this.numberOfBackups = other.getNumberOfBackups();
         this.instanceId = other.getInstanceId();
         this.backupId = other.getBackupId();
-
-        logger.error("<<<<<<<ClusterInfo constructor copy: instanceId=" + instanceId + ", backupId=" + backupId
-                + " numberOfInstances=" + numberOfInstances + ", numberOfBackups=" + numberOfBackups);
     }
 
     /**
@@ -239,13 +230,14 @@ public class ClusterInfo implements Cloneable, Serializable {
     /**
      * Returns a "running" number represented by the cluster info. Some examples:
      * <p>
-     * 1. NumberOfInstances=2, numberOfBackups=0, instanceId=1: 0. 2. NumberOfInstances=2,
-     * numberOfBackups=0, instanceId=2: 1. 3. NumberOfInstances=2, numberOfBackups=1, instanceId=1,
-     * backupId=0: 0. 4. NumberOfInstances=2, numberOfBackups=1, instanceId=1, backupId=1: 1. 5.
-     * NumberOfInstances=2, numberOfBackups=1, instanceId=2, backupId=0: 2. 6. NumberOfInstances=2,
-     * numberOfBackups=1, instanceId=2, backupId=1: 3.
+     * 1. NumberOfInstances=2, numberOfBackups=0, instanceId=1: 0.
+     * 2. NumberOfInstances=2, numberOfBackups=0, instanceId=2: 1.
+     * 3. NumberOfInstances=2, numberOfBackups=1, instanceId=1,backupId=0: 0.
+     * 4. NumberOfInstances=2, numberOfBackups=1, instanceId=1, backupId=1: 1.
+     * 5. NumberOfInstances=2, numberOfBackups=1, instanceId=2, backupId=0: 2.
+     * 6. NumberOfInstances=2,numberOfBackups=1, instanceId=2, backupId=1: 3.
      */
-    public int getRunningNumber() {
+    public int getRunningNumber() {// here
         //Can have null value which means that it was not set and should not be taken into account.
         if (getNumberOfInstances() == null) {
             return 0;
