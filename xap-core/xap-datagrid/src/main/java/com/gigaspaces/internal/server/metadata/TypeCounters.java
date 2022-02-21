@@ -8,12 +8,14 @@ public class TypeCounters {
     can't be disk only, since disk doesn't include transient
     ram+disk includes duplicates of read from both */
     private final LongCounter totalReadCounter;
+
+    //Tiered Storage Counters
     private final LongCounter ramReadAccessCounter;
     private final LongCounter diskReadAccessCounter;
     private final LongCounter diskModifyCounter;
     private final LongCounter diskEntriesCounter;
     private final LongCounter ramEntriesCounter;
-    private boolean disabled;
+    private boolean enabledTieredStorageMetrics;
 
     public TypeCounters() {
         totalReadCounter = new LongCounter();
@@ -22,7 +24,7 @@ public class TypeCounters {
         diskModifyCounter = new LongCounter();
         diskEntriesCounter = new LongCounter();
         ramEntriesCounter = new LongCounter();
-        disabled = false;
+        enabledTieredStorageMetrics = true;
     }
 
     public TypeCounters(TypeCounters other) {
@@ -39,9 +41,7 @@ public class TypeCounters {
     }
 
     public void incTotalReadCounter() {
-        if(!disabled){
-            totalReadCounter.inc();
-        }
+        totalReadCounter.inc();
     }
 
     public LongCounter getRamReadAccessCounter() {
@@ -49,7 +49,7 @@ public class TypeCounters {
     }
 
     public void incRamReadAccessCounter() {
-        if(!disabled){
+        if(enabledTieredStorageMetrics){
             ramReadAccessCounter.inc();
         }
     }
@@ -59,7 +59,7 @@ public class TypeCounters {
     }
 
     public void incDiskReadCounter() {
-        if(!disabled){
+        if(enabledTieredStorageMetrics){
             diskReadAccessCounter.inc();
         }
     }
@@ -69,7 +69,7 @@ public class TypeCounters {
     }
 
     public void incDiskModifyCounter() {
-        if(!disabled) {
+        if(enabledTieredStorageMetrics) {
             diskModifyCounter.inc();
         }
     }
@@ -79,19 +79,19 @@ public class TypeCounters {
     }
 
     public void incDiskEntriesCounter() {
-        if(!disabled) {
+        if(enabledTieredStorageMetrics) {
             diskEntriesCounter.inc();
         }
     }
 
     public void decDiskEntriesCounter() {
-        if(!disabled){
+        if(enabledTieredStorageMetrics){
             diskEntriesCounter.dec();
         }
     }
 
     public void setDiskEntriesCounter(int count) {
-        if (!disabled) {
+        if (enabledTieredStorageMetrics) {
             diskEntriesCounter.inc(count);
         }
     }
@@ -101,18 +101,18 @@ public class TypeCounters {
     }
 
     public void incRamEntriesCounter() {
-        if (!disabled) {
+        if (enabledTieredStorageMetrics) {
             ramEntriesCounter.inc();
         }
     }
 
     public void decRamEntriesCounter() {
-        if (!disabled) {
+        if (enabledTieredStorageMetrics) {
             ramEntriesCounter.dec();
         }
     }
 
-    public void disable() {
-        disabled = true;
+    public void disableTieredStorageMetrics() {
+        enabledTieredStorageMetrics = false;
     }
 }
