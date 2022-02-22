@@ -15,7 +15,9 @@ public class TypeCounters {
     private final LongCounter diskModifyCounter;
     private final LongCounter diskEntriesCounter;
     private final LongCounter ramEntriesCounter;
-    private boolean enabledTieredStorageMetrics;
+
+    //true by default - false when tiered storage metrics are disabled
+    private boolean enabledTieredStorageMetrics = true;
 
     public TypeCounters() {
         totalReadCounter = new LongCounter();
@@ -24,7 +26,6 @@ public class TypeCounters {
         diskModifyCounter = new LongCounter();
         diskEntriesCounter = new LongCounter();
         ramEntriesCounter = new LongCounter();
-        enabledTieredStorageMetrics = true;
     }
 
     public TypeCounters(TypeCounters other) {
@@ -34,6 +35,7 @@ public class TypeCounters {
         diskModifyCounter = other.diskModifyCounter;
         diskEntriesCounter = other.diskEntriesCounter;
         ramEntriesCounter = other.ramEntriesCounter;
+        enabledTieredStorageMetrics = other.enabledTieredStorageMetrics;
     }
 
     public LongCounter getTotalReadCounter() {
@@ -115,4 +117,9 @@ public class TypeCounters {
     public void disableTieredStorageMetrics() {
         enabledTieredStorageMetrics = false;
     }
+
+    public boolean isEnabledTieredStorageMetrics(){
+        return enabledTieredStorageMetrics;
+    }
+
 }
