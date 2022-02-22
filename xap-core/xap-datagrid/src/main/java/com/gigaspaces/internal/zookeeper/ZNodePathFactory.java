@@ -119,7 +119,7 @@ public class ZNodePathFactory {
         return path( new String[] { REQUESTS, ON_CREATE_CONTAINER, machineId, String.valueOf( agentId ) } );
     }
 
-    public static String deleteContainer( String containerId ) {
+    public static String deleteContainerRequest( String containerId ) {
         return path(REQUESTS, DELETE_CONTAINER, containerId );
     }
 
