@@ -3125,6 +3125,9 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
 
         getReplicationNode().outDataTypeDrop(context, className);
         getReplicationNode().execute(context);
+
+        //clean task proxy
+        _spaceImpl.directDropCLassForAllProxies(className);
     }
 
     /*----------------- Admin API : end -----------------*/
