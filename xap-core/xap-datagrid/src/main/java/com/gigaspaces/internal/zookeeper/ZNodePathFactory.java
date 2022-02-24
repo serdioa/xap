@@ -16,6 +16,7 @@ public class ZNodePathFactory {
     private static final String REQUESTS = "requests";
     //without agent id info, requests that put by RequestManager
     private static final String PRE_CREATE_CONTAINER = "pre-create-container";
+    private static final String RESTART_CONTAINER = "restart-container";
     //including agent id info
     private static final String ON_CREATE_CONTAINER = "on-create-container";
     private static final String DELETE_CONTAINER = "delete-container";
@@ -106,6 +107,10 @@ public class ZNodePathFactory {
         return path( new String[] { REQUESTS, PRE_CREATE_CONTAINER, machineId, uuid } );
     }
 
+    public static String createRequestsPath() {
+        return path( REQUESTS );
+    }
+
     public static String createPreContainerRequest(String machineId ) {
         return path( REQUESTS, PRE_CREATE_CONTAINER, machineId );
     }
@@ -113,6 +118,14 @@ public class ZNodePathFactory {
     //used during removing attribute
     public static String createOnContainerRequest(String machineId) {
         return path( REQUESTS, ON_CREATE_CONTAINER, machineId );
+    }
+
+    public static String createRestartContainerRequest(String machineId) {
+        return path( REQUESTS, RESTART_CONTAINER, machineId );
+    }
+
+    public static String createRestartContainerRequest(String machineId, String uuid ) {
+        return path( new String[] { REQUESTS, RESTART_CONTAINER, machineId, uuid } );
     }
 
     public static String createOnContainerRequest(String machineId, int agentId ) {
