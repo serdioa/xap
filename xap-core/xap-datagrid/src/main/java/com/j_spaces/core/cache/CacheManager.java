@@ -950,7 +950,7 @@ public class CacheManager extends AbstractCacheManager
             if(isTieredStorage() && _engine.getTieredStorageManager().RDBMSContainsData()) {
                 _engine.getTieredStorageManager().getInternalStorage().initialLoad(context, _engine, initialLoadInfo);
                 if (_logger.isInfoEnabled()) {
-                    _logger.info("Data source recovery:\n " +
+                    _logger.info("Tiered-Storage Data source recovery:\n " +
                             "\tEntries found in warm tier: " + initialLoadInfo.getFoundInDatabase() + ".\n" +
                             "\tEntries inserted to hot tier: " + initialLoadInfo.getInsertedToHotTier() + ".\n" +
                             "\tTotal Time: " + JSpaceUtilities.formatMillis(SystemTime.timeMillis() - initialLoadInfo.getRecoveryStartTime()) + ".");
@@ -982,7 +982,7 @@ public class CacheManager extends AbstractCacheManager
         if (_logger.isInfoEnabled()) {
             String formattedErrors = format(initialLoadInfo.getInitialLoadErrors());
             if(isTieredStorage()){
-                _logger.info("Data source recovery:\n " +
+                _logger.info("Tiered-Storage Data source recovery:\n " +
                         "\tEntries found in data source: " + initialLoadInfo.getFoundInDatabase() + ".\n" +
                         "\tEntries inserted to space: " + initialLoadInfo.getInsertedToCache() + ".\n" +
                         "\tEntries inserted to hot tier: " + initialLoadInfo.getInsertedToHotTier() + ".\n" +
