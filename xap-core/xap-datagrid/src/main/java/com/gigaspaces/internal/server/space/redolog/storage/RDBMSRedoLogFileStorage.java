@@ -77,13 +77,13 @@ public class RDBMSRedoLogFileStorage<T extends IReplicationOrderedPacket> implem
                 " ( 'redo_key' INTEGER, 'type' VARCHAR, 'operation_type' VARCHAR, 'uuid' VARCHAR, 'packet' BLOB," +
                 " PRIMARY KEY (redo_key) );";
         try {
-            executeInsert(query);
+            executeCreateTable(query);
         } catch (SQLException e) {
             throw new SAException("failed to create table " + TABLE_NAME, e);
         }
     }
 
-    private int executeInsert(String sqlQuery) throws SQLException {
+    private void executeCreateTable(String sqlQuery) throws SQLException {
         try (Statement statement = connection.createStatement()) {
             try {
                 modifierLock.lock();
@@ -91,7 +91,6 @@ public class RDBMSRedoLogFileStorage<T extends IReplicationOrderedPacket> implem
                 if (logger.isTraceEnabled()) {
                     logger.trace("executeUpdate: {}, manipulated {} rows", sqlQuery, rowsAffected);
                 }
-                return rowsAffected;
             } finally {
                 modifierLock.unlock();
             }
@@ -195,74 +194,14 @@ public class RDBMSRedoLogFileStorage<T extends IReplicationOrderedPacket> implem
 //        String selectQuery = "SELECT * FROM " + TABLE_NAME + " ORDER BY redo_key LIMIT " + batchCapacity + ";";
 //        String deleteQuery = "DELETE FROM " + TABLE_NAME + " ORDER BY redo_key LIMIT " + batchCapacity + ";";
         String whereClause = " WHERE redo_key >= " + oldestKey + " AND redo_key < " + (oldestKey + batchCapacity) + ";";
-        String selectQuery ="SELECT * FROM " + TABLE_NAME + whereClause;
+        String selectQuery = "SELECT * FROM " + TABLE_NAME + whereClause;
         String deleteQuery = "DELETE FROM " + TABLE_NAME + whereClause;
         try (ResultSet resultSet = executeQuery(selectQuery)) {
             while (resultSet.next()) {
                 final long redoKey = resultSet.getLong(1);
                 final Object object = resultSet.getObject(5);
 //                final Object object = resultSet.getBlob(5);// TODO: or blob?
-                batch.addToBatch((T) new IReplicationOrderedPacket() { // todo right now mock
-                    @Override
-                    public void writeExternal(ObjectOutput out) throws IOException {
-
-                    }
-
-                    @Override
-                    public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-
-                    }
-
-                    @Override
-                    public IReplicationPacketData<?> getData() {
-                        return null;
-                    }
-
-                    @Override
-                    public long getKey() {
-                        return redoKey;
-                    }
-
-                    @Override
-                    public long getEndKey() {
-                        return 0;
-                    }
-
-                    @Override
-                    public boolean isDataPacket() {
-                        return false;
-                    }
-
-                    @Override
-                    public boolean isDiscardedPacket() {
-                        return false;
-                    }
-
-                    @Override
-                    public IReplicationOrderedPacket clone() {
-                        return null;
-                    }
-
-                    @Override
-                    public IReplicationOrderedPacket cloneWithNewData(IReplicationPacketData<?> newData) {
-                        return null;
-                    }
-
-                    @Override
-                    public int getWeight() {
-                        return 0;
-                    }
-
-                    @Override
-                    public void writeToSwap(ObjectOutput out) throws IOException {
-
-                    }
-
-                    @Override
-                    public void readFromSwap(ObjectInput in) throws IOException, ClassNotFoundException {
-
-                    }
-                });
+                batch.addToBatch((T) new MockPacket(redoKey));
             }
         } catch (SQLException e) {
             throw new StorageException("failed to select rows table " + TABLE_NAME, e);
@@ -299,17 +238,27 @@ public class RDBMSRedoLogFileStorage<T extends IReplicationOrderedPacket> implem
 
     @Override
     public void deleteOldestPackets(long packetsCount) throws StorageException {
-
+        removeFirstBatch((int) packetsCount, -1);
     }
 
     @Override
     public StorageReadOnlyIterator<T> readOnlyIterator() throws StorageException {
-        return null;
+        String query = "SELECT * FROM " + TABLE_NAME + " ORDER BY redo_key;";
+        try (final ResultSet resultSet = executeQuery(query)) {
+            return new RDBMSRedoLogIterator(resultSet);
+        } catch (SQLException e) {
+            throw new StorageException("Failed to create readOnlyIterator", e);
+        }
     }
 
     @Override
     public StorageReadOnlyIterator<T> readOnlyIterator(long fromIndex) throws StorageException {
-        return null;
+        String query = "SELECT * FROM " + TABLE_NAME + " ORDER BY redo_key OFFSET " + fromIndex + ";";
+        try (final ResultSet resultSet = executeQuery(query)) {
+            return new RDBMSRedoLogIterator(resultSet);
+        } catch (SQLException e) {
+            throw new StorageException("Failed to create readOnlyIterator", e);
+        }
     }
 
     @Override
@@ -324,7 +273,33 @@ public class RDBMSRedoLogFileStorage<T extends IReplicationOrderedPacket> implem
 
     @Override
     public void close() {
+        try {
+            dropTable();
+            if (connection != null) {
+                connection.close();
+            }
+            storageSize = 0;
+            oldestKey = 1;
 
+        } catch (SQLException e) {
+            throw new IllegalStateException(new StorageException("Fail to close storage", e));
+        }
+    }
+
+    private void dropTable() throws SQLException {
+        String query = "DROP TABLE '" + TABLE_NAME + "';";
+        try (Statement statement = connection.createStatement()) {
+            try {
+                modifierLock.lock();
+                final int rowsAffected = statement.executeUpdate(query);
+                if (logger.isTraceEnabled()) {
+                    logger.trace("executeUpdate: {}, manipulated {} rows", query, rowsAffected);
+                }
+            } finally {
+                modifierLock.unlock();
+
+            }
+        }
     }
 
     @Override
@@ -354,7 +329,7 @@ public class RDBMSRedoLogFileStorage<T extends IReplicationOrderedPacket> implem
 
     @Override
     public long getExternalPacketsCount() {
-        return 0;
+        return storageSize;
     }
 
     @Override
@@ -370,5 +345,110 @@ public class RDBMSRedoLogFileStorage<T extends IReplicationOrderedPacket> implem
     @Override
     public long getExternalStoragePacketsWeight() {
         return 0;
+    }
+
+    private class RDBMSRedoLogIterator implements StorageReadOnlyIterator<T> {
+
+        private final ResultSet resultSet;
+
+        public RDBMSRedoLogIterator(ResultSet resultSet) {
+            this.resultSet = resultSet;
+        }
+
+        @Override
+        public boolean hasNext() throws StorageException {
+            try {
+                return resultSet.next();
+            } catch (SQLException e) {
+                throw new StorageException(e);
+            }
+        }
+
+        @Override
+        public T next() throws StorageException {
+            try {
+//                return (T) resultSet.getObject(5);
+                return (T) new MockPacket(resultSet.getLong(1));
+            } catch (SQLException e) {
+                throw new StorageException(e);
+            }
+        }
+
+        @Override
+        public void close() throws StorageException {
+            try {
+                resultSet.close();
+            } catch (SQLException e) {
+                throw new StorageException(e);
+            }
+        }
+    }
+
+    private class MockPacket implements IReplicationOrderedPacket {
+        private final long key;
+
+        public MockPacket(long key) {
+            this.key = key;
+        }
+
+        @Override
+        public void writeToSwap(ObjectOutput out) throws IOException {
+
+        }
+
+        @Override
+        public void readFromSwap(ObjectInput in) throws IOException, ClassNotFoundException {
+
+        }
+
+        @Override
+        public IReplicationPacketData<?> getData() {
+            return null;
+        }
+
+        @Override
+        public long getKey() {
+            return key;
+        }
+
+        @Override
+        public long getEndKey() {
+            return 0;
+        }
+
+        @Override
+        public boolean isDataPacket() {
+            return false;
+        }
+
+        @Override
+        public boolean isDiscardedPacket() {
+            return false;
+        }
+
+        @Override
+        public IReplicationOrderedPacket clone() {
+            return null;
+        }
+
+        @Override
+        public IReplicationOrderedPacket cloneWithNewData(IReplicationPacketData<?> newData) {
+            return null;
+        }
+
+        @Override
+        public int getWeight() {
+            return 0;
+        }
+
+        @Override
+        public void writeExternal(ObjectOutput out) throws IOException {
+
+        }
+
+        @Override
+        public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+
+        }
     }
 }

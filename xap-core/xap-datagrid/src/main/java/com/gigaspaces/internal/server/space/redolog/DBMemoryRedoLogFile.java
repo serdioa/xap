@@ -158,13 +158,12 @@ public class DBMemoryRedoLogFile<T extends IReplicationOrderedPacket> implements
 
             @Override
             public boolean hasNext() {
-                next = _redoFile.get(currentIndex);
+                next = _redoFile.get(currentIndex++);
                 return next != null;
             }
 
             @Override
             public T next() {
-                currentIndex++;
                 return next;
             }
         };
