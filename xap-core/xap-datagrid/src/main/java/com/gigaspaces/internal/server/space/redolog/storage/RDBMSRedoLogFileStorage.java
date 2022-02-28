@@ -1,20 +1,21 @@
 package com.gigaspaces.internal.server.space.redolog.storage;
 
 import com.gigaspaces.internal.cluster.node.impl.packets.IReplicationOrderedPacket;
+import com.gigaspaces.internal.cluster.node.impl.packets.data.IReplicationPacketData;
+import com.gigaspaces.internal.cluster.node.impl.packets.data.IReplicationPacketEntryData;
 import com.gigaspaces.internal.server.space.metadata.SpaceTypeManager;
 import com.gigaspaces.internal.server.space.redolog.RedoLogFileCompromisedException;
 import com.gigaspaces.internal.server.space.redolog.storage.bytebuffer.WeightedBatch;
+import com.gigaspaces.logger.Constants;
 import com.gigaspaces.start.SystemLocations;
 import com.j_spaces.core.cluster.startup.CompactionResult;
 import com.j_spaces.core.sadapter.SAException;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.sqlite.SQLiteConfig;
 
 import java.nio.file.Path;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.SQLException;
-import java.sql.Statement;
+import java.sql.*;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Properties;
@@ -31,7 +32,7 @@ public class RDBMSRedoLogFileStorage<T extends IReplicationOrderedPacket> implem
     private static final String SQLITE_MATCH_INDEX_SCAN_REGEX = "USING INDEX";
     private static final String TABLE_NAME = "REDO_LOGS";
 
-    private Logger logger;
+    private static Logger logger = LoggerFactory.getLogger(Constants.LOGGER_REPLICATION_BACKLOG + ".sqlite");
     private Path path;
     private String dbName;
     private String spaceName;
@@ -40,6 +41,7 @@ public class RDBMSRedoLogFileStorage<T extends IReplicationOrderedPacket> implem
     private final ReentrantLock modifierLock = new ReentrantLock();
     private SpaceTypeManager typeManager;
     private Set<String> knownTypes = new HashSet<>();
+    private long storageSize;
 
 
     public RDBMSRedoLogFileStorage(String spaceName, String fullMemberName) throws SAException {
@@ -67,7 +69,9 @@ public class RDBMSRedoLogFileStorage<T extends IReplicationOrderedPacket> implem
     }
 
     private void createTable() throws SAException {
-        String query = "CREATE TABLE " + TABLE_NAME + " (PRIMARY KEY (redo_key), 'redo_key' INTEGER, 'type' VARCHAR, 'operation_type' INTEGER, 'uuid' VARCHAR, 'packet' BLOB);";
+        String query = "CREATE TABLE " + TABLE_NAME +
+                " ( 'redo_key' INTEGER, 'type' VARCHAR, 'operation_type' VARCHAR, 'uuid' VARCHAR, 'packet' BLOB," +
+                " PRIMARY KEY (redo_key) );";
         try {
             executeUpdate(query);
         } catch (SQLException e) {
@@ -104,17 +108,119 @@ public class RDBMSRedoLogFileStorage<T extends IReplicationOrderedPacket> implem
 
     @Override
     public void appendBatch(List<T> replicationPackets) throws StorageException, StorageFullException {
-
+        String query = "INSERT INTO " + TABLE_NAME + " (redo_key, type, operation_type, uuid, packet) VALUES ";
+        Object[] values = new Object[replicationPackets.size() * 5];
+        for (int i = 0; i < replicationPackets.size(); i++) {
+            //TODO: validate what happen in tnx and if  getSingleEntryData == null (data.getSingleEntryData())
+            final T replicationPacket = replicationPackets.get(i);
+            final IReplicationPacketData<?> data = replicationPacket.getData();
+            final IReplicationPacketEntryData iReplicationPacketEntryData = data != null ? data.getSingleEntryData() : null;
+            values[(i * 5)] = replicationPacket.getKey();
+            values[(i * 5) + 1] = "type?!?!?!!";
+            values[(i * 5) + 2] = iReplicationPacketEntryData == null ? "null" : iReplicationPacketEntryData.getOperationType().name();
+            values[(i * 5) + 3] = iReplicationPacketEntryData == null ? "null" : iReplicationPacketEntryData.getUid();
+            values[(i * 5) + 4] = replicationPacket;
+            query += "(?, ?, ?, ?, ?), ";
+        }
+        query = query.substring(0, query.length() - 2) + ";";
+        try {
+            executeUpdate(query, values);
+        } catch (SQLException e) {
+            throw new StorageException("failed to insert values to table " + TABLE_NAME, e);
+        }
     }
+
+    private void executeUpdate(String sqlQuery, Object[] values) throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement(sqlQuery)) {
+            for (int i = 0; i < values.length; i++) {
+                setPropertyValue(true, statement, i, i + 1, values[i]);
+            }
+            try {
+                modifierLock.lock();
+                final int rowsAffected = statement.executeUpdate();
+                if (sqlQuery.startsWith("INSERT INTO")) {
+                    storageSize += rowsAffected;
+                }
+                if (sqlQuery.startsWith("DELETE")) { //todo use boolean
+                    storageSize -= rowsAffected;
+                }
+                if (logger.isTraceEnabled()) {
+                    logger.trace("executeUpdate: {}, values: {} , manipulated {} rows", sqlQuery, values, rowsAffected);
+                }
+            } finally {
+                modifierLock.unlock();
+            }
+        }
+    }
+
+    public void setPropertyValue(boolean isUpdate, PreparedStatement statement, int columnIndex, int index,
+                                 Object value) throws SQLException {
+        if (value == null) {
+            if (isUpdate) {
+                statement.setObject(index, null);
+            } else {
+                statement.setString(index, "Null");
+            }
+        } else {
+            switch (columnIndex % 5) {
+                case 0: //redo_key
+                    statement.setLong(index, (Long) value);
+                    break;
+                case 1: //type
+                    statement.setString(index, (String) value);
+                    break;
+                case 2: //operation_type
+                    statement.setString(index, (String) value);
+                    break;
+                case 3: //uuid
+                    statement.setString(index, (String) value);
+                    break;
+                case 4: //packet
+                    statement.setObject(index, value);
+//                    statement.setBlob(index, value); //TODO???
+                    break;
+            }
+        }
+    }
+
 
     @Override
     public long size() throws StorageException {
-        return 0;
+        return storageSize;
     }
 
     @Override
-    public WeightedBatch<T> removeFirstBatch(int batchCapacity, long lastCompactionRangeEndKey) throws StorageException {
-        return null;
+    public WeightedBatch<T> removeFirstBatch(int batchCapacity, long lastCompactionRangeEndKey) throws
+            StorageException {
+        WeightedBatch<T> batch = new WeightedBatch<T>(lastCompactionRangeEndKey);
+        String selectQuery = "SELECT * FROM " + TABLE_NAME + " ORDER BY redo_key LIMIT " + batchCapacity + ";";
+        String deleteQuery = "DELETE FROM " + TABLE_NAME + " ORDER BY redo_key LIMIT " + batchCapacity + ";";
+        try (ResultSet resultSet = executeQuery(selectQuery)) {
+            while (resultSet.next()) {
+                final Object object = resultSet.getObject(4);// TODO: or blobl?
+                batch.addToBatch((T) object);
+            }
+        } catch (SQLException e) {
+            throw new StorageException("failed to select rows table " + TABLE_NAME, e);
+        }
+
+        try {
+            executeUpdate(deleteQuery, new Object[0]);
+        } catch (SQLException e) {
+            throw new StorageException("failed to delete values table " + TABLE_NAME, e);
+        }
+        return batch;
+    }
+
+    private ResultSet executeQuery(String sqlQuery) throws SQLException {
+        try (Statement statement = connection.createStatement()) {
+            try {
+                modifierLock.lock();
+                return statement.executeQuery(sqlQuery);
+            } finally {
+                modifierLock.unlock();
+            }
+        }
     }
 
     @Override
@@ -134,7 +240,7 @@ public class RDBMSRedoLogFileStorage<T extends IReplicationOrderedPacket> implem
 
     @Override
     public boolean isEmpty() throws StorageException {
-        return false;
+        return storageSize == 0;
     }
 
     @Override

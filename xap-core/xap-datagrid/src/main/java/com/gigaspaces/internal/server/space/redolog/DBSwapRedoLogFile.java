@@ -2,7 +2,7 @@ package com.gigaspaces.internal.server.space.redolog;
 
 import com.gigaspaces.internal.cluster.node.impl.backlog.AbstractSingleFileGroupBacklog;
 import com.gigaspaces.internal.cluster.node.impl.packets.IReplicationOrderedPacket;
-import com.gigaspaces.internal.server.space.redolog.storage.INonBatchRedoLogFileStorage;
+import com.gigaspaces.internal.server.space.redolog.storage.IRedoLogFileStorage;
 import com.gigaspaces.internal.server.space.redolog.storage.StorageException;
 import com.gigaspaces.internal.server.space.redolog.storage.bytebuffer.WeightedBatch;
 import com.gigaspaces.internal.utils.collections.ReadOnlyIterator;
@@ -27,7 +27,7 @@ public class DBSwapRedoLogFile<T extends IReplicationOrderedPacket> implements I
     private LinkedList<T> externalFirstBatch; //todo: maybe remove
 
     private final DBMemoryRedoLogFile<T> _memoryRedoLogFile;
-    private final INonBatchRedoLogFileStorage<T> _externalRedoLogStorage;
+    private final IRedoLogFileStorage<T> _externalRedoLogStorage;
     private final String _name;
     private final AbstractSingleFileGroupBacklog _groupBacklog;
     //Not volatile because this is not a thread safe structure, assume flushing of thread cache

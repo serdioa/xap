@@ -17,7 +17,7 @@
 package com.gigaspaces.internal.server.space.redolog;
 
 import com.gigaspaces.internal.cluster.node.impl.packets.IReplicationOrderedPacket;
-import com.gigaspaces.internal.server.space.redolog.storage.INonBatchRedoLogFileStorage;
+import com.gigaspaces.internal.server.space.redolog.storage.IRedoLogFileStorage;
 
 /**
  * Configures a {@link DBSwapRedoLogFileConfig}
@@ -29,11 +29,11 @@ import com.gigaspaces.internal.server.space.redolog.storage.INonBatchRedoLogFile
 public class DBSwapRedoLogFileConfig<T extends IReplicationOrderedPacket> {
     private final int _memoryPacketCapacity;
     private final int _diskPacketCapacity;
-    private final INonBatchRedoLogFileStorage<T> _redoLogFileStorage;
+    private final IRedoLogFileStorage<T> _redoLogFileStorage;
     private final int _flushPacketSize;
 
     public DBSwapRedoLogFileConfig(int memoryPacketCapacity,
-                                   int diskPacketCapacity, INonBatchRedoLogFileStorage<T> redoLogFileStorage) {
+                                   int diskPacketCapacity, IRedoLogFileStorage<T> redoLogFileStorage) {
         this._diskPacketCapacity = diskPacketCapacity;
         this._memoryPacketCapacity = memoryPacketCapacity;
         this._flushPacketSize = memoryPacketCapacity / 4;
@@ -45,7 +45,7 @@ public class DBSwapRedoLogFileConfig<T extends IReplicationOrderedPacket> {
         return _memoryPacketCapacity;
     }
 
-    public INonBatchRedoLogFileStorage<T> getRedoLogFileStorage() {
+    public IRedoLogFileStorage<T> getRedoLogFileStorage() {
         return _redoLogFileStorage;
     }
 
