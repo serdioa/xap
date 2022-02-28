@@ -84,12 +84,12 @@ public class DBSwapRedoLogFile<T extends IReplicationOrderedPacket> implements I
                     rpToFlush.add(oldest);
                 }
             }
-        }
-        try {
-            _externalRedoLogStorage.appendBatch(rpToFlush);
-            lastMemoryRedoKey += rpToFlush.size(); //todo: maybe use flushPacketSize
-        } catch (StorageException e) {
-             throw new IllegalArgumentException(e);
+            try {
+                _externalRedoLogStorage.appendBatch(rpToFlush);
+                lastMemoryRedoKey += rpToFlush.size(); //todo: maybe use flushPacketSize
+            } catch (StorageException e) {
+                throw new IllegalArgumentException(e);
+            }
         }
     //        if (RedoLogCompactionUtil.isCompactable(replicationPacket)) {
     //            _lastSeenTransientPacketKey = replicationPacket.getKey();
