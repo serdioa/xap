@@ -24,7 +24,7 @@ public class DBSwapRedoLogFile<T extends IReplicationOrderedPacket> implements I
     private final int _diskPacketCapacity;
     private final int _flushPacketSize;
     private long lastMemoryRedoKey;
-    private LinkedList<T> externalFirstBatch; //todo: maybe remove
+    private LinkedList<T> externalFirstBatch = new LinkedList<>(); //todo: maybe remove
 
     private final DBMemoryRedoLogFile<T> _memoryRedoLogFile;
     private final IRedoLogFileStorage<T> _externalRedoLogStorage;

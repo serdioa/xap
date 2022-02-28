@@ -14,6 +14,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.sqlite.SQLiteConfig;
 
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import java.nio.file.Path;
 import java.sql.*;
 import java.util.HashSet;
@@ -42,6 +45,7 @@ public class RDBMSRedoLogFileStorage<T extends IReplicationOrderedPacket> implem
     private SpaceTypeManager typeManager;
     private Set<String> knownTypes = new HashSet<>();
     private long storageSize;
+    private long oldestKey = 1;
 
 
     public RDBMSRedoLogFileStorage(String spaceName, String fullMemberName) throws SAException {
@@ -73,13 +77,13 @@ public class RDBMSRedoLogFileStorage<T extends IReplicationOrderedPacket> implem
                 " ( 'redo_key' INTEGER, 'type' VARCHAR, 'operation_type' VARCHAR, 'uuid' VARCHAR, 'packet' BLOB," +
                 " PRIMARY KEY (redo_key) );";
         try {
-            executeUpdate(query);
+            executeInsert(query);
         } catch (SQLException e) {
             throw new SAException("failed to create table " + TABLE_NAME, e);
         }
     }
 
-    private int executeUpdate(String sqlQuery) throws SQLException {
+    private int executeInsert(String sqlQuery) throws SQLException {
         try (Statement statement = connection.createStatement()) {
             try {
                 modifierLock.lock();
@@ -124,13 +128,13 @@ public class RDBMSRedoLogFileStorage<T extends IReplicationOrderedPacket> implem
         }
         query = query.substring(0, query.length() - 2) + ";";
         try {
-            executeUpdate(query, values);
+            executeInsert(query, values);
         } catch (SQLException e) {
             throw new StorageException("failed to insert values to table " + TABLE_NAME, e);
         }
     }
 
-    private void executeUpdate(String sqlQuery, Object[] values) throws SQLException {
+    private void executeInsert(String sqlQuery, Object[] values) throws SQLException {
         try (PreparedStatement statement = connection.prepareStatement(sqlQuery)) {
             for (int i = 0; i < values.length; i++) {
                 setPropertyValue(true, statement, i, i + 1, values[i]);
@@ -138,12 +142,7 @@ public class RDBMSRedoLogFileStorage<T extends IReplicationOrderedPacket> implem
             try {
                 modifierLock.lock();
                 final int rowsAffected = statement.executeUpdate();
-                if (sqlQuery.startsWith("INSERT INTO")) {
-                    storageSize += rowsAffected;
-                }
-                if (sqlQuery.startsWith("DELETE")) { //todo use boolean
-                    storageSize -= rowsAffected;
-                }
+                storageSize += rowsAffected;
                 if (logger.isTraceEnabled()) {
                     logger.trace("executeUpdate: {}, values: {} , manipulated {} rows", sqlQuery, values, rowsAffected);
                 }
@@ -177,7 +176,7 @@ public class RDBMSRedoLogFileStorage<T extends IReplicationOrderedPacket> implem
                     break;
                 case 4: //packet
                     statement.setObject(index, value);
-//                    statement.setBlob(index, value); //TODO???
+//                    statement.setBlob(index, value); // use blob???
                     break;
             }
         }
@@ -193,19 +192,84 @@ public class RDBMSRedoLogFileStorage<T extends IReplicationOrderedPacket> implem
     public WeightedBatch<T> removeFirstBatch(int batchCapacity, long lastCompactionRangeEndKey) throws
             StorageException {
         WeightedBatch<T> batch = new WeightedBatch<T>(lastCompactionRangeEndKey);
-        String selectQuery = "SELECT * FROM " + TABLE_NAME + " ORDER BY redo_key LIMIT " + batchCapacity + ";";
-        String deleteQuery = "DELETE FROM " + TABLE_NAME + " ORDER BY redo_key LIMIT " + batchCapacity + ";";
+//        String selectQuery = "SELECT * FROM " + TABLE_NAME + " ORDER BY redo_key LIMIT " + batchCapacity + ";";
+//        String deleteQuery = "DELETE FROM " + TABLE_NAME + " ORDER BY redo_key LIMIT " + batchCapacity + ";";
+        String whereClause = " WHERE redo_key >= " + oldestKey + " AND redo_key < " + (oldestKey + batchCapacity) + ";";
+        String selectQuery ="SELECT * FROM " + TABLE_NAME + whereClause;
+        String deleteQuery = "DELETE FROM " + TABLE_NAME + whereClause;
         try (ResultSet resultSet = executeQuery(selectQuery)) {
             while (resultSet.next()) {
-                final Object object = resultSet.getObject(4);// TODO: or blobl?
-                batch.addToBatch((T) object);
+                final long redoKey = resultSet.getLong(1);
+                final Object object = resultSet.getObject(5);
+//                final Object object = resultSet.getBlob(5);// TODO: or blob?
+                batch.addToBatch((T) new IReplicationOrderedPacket() { // todo right now mock
+                    @Override
+                    public void writeExternal(ObjectOutput out) throws IOException {
+
+                    }
+
+                    @Override
+                    public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+
+                    }
+
+                    @Override
+                    public IReplicationPacketData<?> getData() {
+                        return null;
+                    }
+
+                    @Override
+                    public long getKey() {
+                        return redoKey;
+                    }
+
+                    @Override
+                    public long getEndKey() {
+                        return 0;
+                    }
+
+                    @Override
+                    public boolean isDataPacket() {
+                        return false;
+                    }
+
+                    @Override
+                    public boolean isDiscardedPacket() {
+                        return false;
+                    }
+
+                    @Override
+                    public IReplicationOrderedPacket clone() {
+                        return null;
+                    }
+
+                    @Override
+                    public IReplicationOrderedPacket cloneWithNewData(IReplicationPacketData<?> newData) {
+                        return null;
+                    }
+
+                    @Override
+                    public int getWeight() {
+                        return 0;
+                    }
+
+                    @Override
+                    public void writeToSwap(ObjectOutput out) throws IOException {
+
+                    }
+
+                    @Override
+                    public void readFromSwap(ObjectInput in) throws IOException, ClassNotFoundException {
+
+                    }
+                });
             }
         } catch (SQLException e) {
             throw new StorageException("failed to select rows table " + TABLE_NAME, e);
         }
 
         try {
-            executeUpdate(deleteQuery, new Object[0]);
+            executeDelete(deleteQuery);
         } catch (SQLException e) {
             throw new StorageException("failed to delete values table " + TABLE_NAME, e);
         }
@@ -213,13 +277,23 @@ public class RDBMSRedoLogFileStorage<T extends IReplicationOrderedPacket> implem
     }
 
     private ResultSet executeQuery(String sqlQuery) throws SQLException {
-        try (Statement statement = connection.createStatement()) {
-            try {
-                modifierLock.lock();
-                return statement.executeQuery(sqlQuery);
-            } finally {
-                modifierLock.unlock();
-            }
+        try {
+            modifierLock.lock();
+            return connection.createStatement().executeQuery(sqlQuery);
+        } finally {
+            modifierLock.unlock();
+        }
+
+    }
+
+    private void executeDelete(String sqlQuery) throws SQLException {
+        try {
+            modifierLock.lock();
+            final int rowsAffected = connection.createStatement().executeUpdate(sqlQuery);
+            storageSize -= rowsAffected;
+            oldestKey += rowsAffected;
+        } finally {
+            modifierLock.unlock();
         }
     }
 
