@@ -269,14 +269,19 @@ public class DBSwapRedoLogFile<T extends IReplicationOrderedPacket> implements I
         }
 
         public DBSwapIterator(long fromKey) throws StorageException {
-            this.memoryIter = _memoryRedoLogFile.readOnlyIterator();
-            this.storageIter = _externalRedoLogStorage.readOnlyIterator(fromKey);
+            if (_memoryRedoLogFile.getOldestPacketInMemory() <= fromKey) {
+                this.memoryIter = _memoryRedoLogFile.readOnlyIterator(fromKey);
+                this.storageIter = null;
+            } else{
+                this.memoryIter = _memoryRedoLogFile.readOnlyIterator();
+                this.storageIter = _externalRedoLogStorage.readOnlyIterator(fromKey);
+            }
         }
 
         @Override
         public boolean hasNext() {
             try {
-                if (storageIter.hasNext()) {
+                if (storageIter != null && storageIter.hasNext()) {
                     fromDisk = true;
                     fromMemory = false;
                     return true;
