@@ -136,6 +136,10 @@ public class DBMemoryRedoLogFile<T extends IReplicationOrderedPacket> implements
         return null;
     }
 
+    public long getOldestPacketInMemory() {
+        return oldestPacketInMemory;
+    }
+
     @Override
     public ReadOnlyIterator<T> readOnlyIterator() {
         return new ReadOnlyIteratorAdapter<>(iterator());
