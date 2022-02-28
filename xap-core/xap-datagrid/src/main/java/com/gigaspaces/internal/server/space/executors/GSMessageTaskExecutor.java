@@ -1,10 +1,7 @@
 package com.gigaspaces.internal.server.space.executors;
 
 import com.gigaspaces.client.WriteModifiers;
-import com.gigaspaces.dih.consumer.CDCInfo;
-import com.gigaspaces.dih.consumer.FailedToCommitException;
-import com.gigaspaces.dih.consumer.NonRetriableMessageExecutionException;
-import com.gigaspaces.dih.consumer.RetriableMessageExecutionException;
+import com.gigaspaces.dih.consumer.*;
 import com.gigaspaces.document.SpaceDocument;
 import com.gigaspaces.internal.client.spaceproxy.IDirectSpaceProxy;
 import com.gigaspaces.internal.server.space.SpaceImpl;
@@ -12,6 +9,7 @@ import com.gigaspaces.internal.server.space.executors.GSMessageTask.OperationTyp
 import com.gigaspaces.internal.space.requests.GSMessageRequestInfo;
 import com.gigaspaces.internal.space.requests.SpaceRequestInfo;
 import com.gigaspaces.internal.space.responses.SpaceResponseInfo;
+import com.gigaspaces.metadata.SpaceMetadataException;
 import com.j_spaces.core.client.EntryAlreadyInSpaceException;
 import com.j_spaces.core.client.EntryNotInSpaceException;
 import net.jini.core.entry.UnusableEntryException;
@@ -36,7 +34,7 @@ public class GSMessageTaskExecutor extends SpaceActionExecutor {
             } else {
                 handleTieredStorage(space, requestInfo);
             }
-        } catch (NonRetriableMessageExecutionException | RetriableMessageExecutionException e) {
+        } catch (SkippedMessageExecutionException | NonRetriableMessageExecutionException | RetriableMessageExecutionException e) {
             throw e;
         } catch (EntryAlreadyInSpaceException | EntryNotInSpaceException e) {
             throw new NonRetriableMessageExecutionException(e);
@@ -84,6 +82,8 @@ public class GSMessageTaskExecutor extends SpaceActionExecutor {
                         }
                         // on a long full sync there might be a failover and therefore retry, so we ignore exceptions like this
                         logger.debug("received same message again, ignoring write entry of type: " + entry.getTypeName() + ", for message id: " + cdcInfo.getMessageID());
+                    } catch (SpaceMetadataException e) {
+                        throw new SkippedMessageExecutionException(e);
                     }
                     break;
                 case UPDATE:
@@ -95,13 +95,16 @@ public class GSMessageTaskExecutor extends SpaceActionExecutor {
                             throw new NonRetriableMessageExecutionException("failed to update entry: " + entry.getTypeName() + ", message id: " + cdcInfo.getMessageID() + " due to EntryNotInSpaceException", e);
                         }
                         throw e;
+                    } catch (SpaceMetadataException e) {
+                        throw new SkippedMessageExecutionException(e);
                     }
                     break;
                 case DELETE:
                     logger.debug("deleting message: " + entry);
                     if (singleProxy.take(entry, transaction, 0) == null) {
-                        logger.error("failed to delete entry: " + entry.getTypeName() + ", message id: " + cdcInfo.getMessageID());
-                        throw new NonRetriableMessageExecutionException("failed to delete entry: " + entry.getTypeName() + ", message id: " + cdcInfo.getMessageID());
+                        String errorMsg = "failed to delete entry: " + entry.getTypeName() + ", message id: " + cdcInfo.getMessageID();
+                        logger.error(errorMsg);
+                        throw new SkippedMessageExecutionException(errorMsg);
                     }
                     break;
             }
@@ -148,6 +151,8 @@ public class GSMessageTaskExecutor extends SpaceActionExecutor {
                             throw e; //might be the first time writing this to space
                         }
                         logger.debug("received same message again, ignoring write entry of type: " + entry.getTypeName() + ", for message id: " + cdcInfo.getMessageID());
+                    } catch (SpaceMetadataException e) {
+                        throw new SkippedMessageExecutionException(e);
                     }
                     break;
                 case UPDATE:
@@ -159,14 +164,17 @@ public class GSMessageTaskExecutor extends SpaceActionExecutor {
                             throw new NonRetriableMessageExecutionException("failed to update entry: " + entry.getTypeName() + ", message id: " + cdcInfo.getMessageID() + " due to EntryNotInSpaceException", e);
                         }
                         throw e;
+                    } catch (SpaceMetadataException e) {
+                        throw new SkippedMessageExecutionException(e);
                     }
                     break;
                 case DELETE:
                     logger.debug("deleting message: " + entry);
                     if (singleProxy.take(entry, null, 0) == null) {
                         if (!cdcInfo.getMessageID().equals(lastMsgID)) {
-                            logger.error("failed to delete entry: " + entry.getTypeName() + ", message id: " + cdcInfo.getMessageID());
-                            throw new NonRetriableMessageExecutionException("failed to delete entry: " + entry.getTypeName() + ", message id: " + cdcInfo.getMessageID());
+                            String errorMsg = "failed to delete entry: " + entry.getTypeName() + ", message id: " + cdcInfo.getMessageID();
+                            logger.error(errorMsg);
+                            throw new SkippedMessageExecutionException(errorMsg);
                         }
                         logger.debug("received same message again, ignoring delete entry: " + entry.getTypeName() + ", message id: " + cdcInfo.getMessageID());
                     }
