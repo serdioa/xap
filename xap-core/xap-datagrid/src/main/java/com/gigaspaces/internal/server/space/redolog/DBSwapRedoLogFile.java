@@ -15,7 +15,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.LinkedList;
 
 public class DBSwapRedoLogFile<T extends IReplicationOrderedPacket> implements IRedoLogFile<T> {
 
@@ -25,7 +24,6 @@ public class DBSwapRedoLogFile<T extends IReplicationOrderedPacket> implements I
     private final int _diskPacketCapacity;
     private final int _flushPacketSize;
     private long lastMemoryRedoKey;
-    private LinkedList<T> externalFirstBatch = new LinkedList<>(); //todo: maybe remove
 
     private final DBMemoryRedoLogFile<T> _memoryRedoLogFile;
     private final IRedoLogFileStorage<T> _externalRedoLogStorage;
@@ -100,16 +98,12 @@ public class DBSwapRedoLogFile<T extends IReplicationOrderedPacket> implements I
     @Override
     public T removeOldest() {
         try {
-            if (_externalRedoLogStorage.isEmpty() && externalFirstBatch.isEmpty()) {
+            if (_externalRedoLogStorage.isEmpty()) {
                 T oldest = _memoryRedoLogFile.removeOldest();
                 return oldest == null ? removeOldest() : oldest; //todo limited retry attempts
             }
-            if (!externalFirstBatch.isEmpty()) {
-                return externalFirstBatch.removeFirst();
-            }
             WeightedBatch<T> tWeightedBatch = _externalRedoLogStorage.removeFirstBatch(1, _lastCompactionRangeEndKey);//todo : check _lastCompactionRangeEndKey
-            externalFirstBatch.addAll(tWeightedBatch.getBatch());
-            return externalFirstBatch.removeFirst();
+            return tWeightedBatch.getBatch().get(0);
         } catch (StorageException e) {
             throw new IllegalArgumentException(e);
         }
@@ -118,18 +112,11 @@ public class DBSwapRedoLogFile<T extends IReplicationOrderedPacket> implements I
     @Override
     public T getOldest() {
         try {
-            if (_externalRedoLogStorage.isEmpty() && externalFirstBatch.isEmpty()) {
+            if (_externalRedoLogStorage.isEmpty()) {
                 T oldest = _memoryRedoLogFile.getOldest();
                 return oldest == null ? getOldest() : oldest; //todo limited retry attempts
             }
-            if (!externalFirstBatch.isEmpty()) {
-                return externalFirstBatch.getFirst();
-            }
-
-            //todo: maybe use readOnlyItereator
-            WeightedBatch<T> tWeightedBatch = _externalRedoLogStorage.removeFirstBatch(1, _lastCompactionRangeEndKey);//todo : check _lastCompactionRangeEndKey
-            externalFirstBatch.addAll(tWeightedBatch.getBatch());
-            return externalFirstBatch.getFirst();
+            return _externalRedoLogStorage.getOldest();
         } catch (StorageException e) {
             throw new IllegalArgumentException(e);
         }
@@ -164,8 +151,18 @@ public class DBSwapRedoLogFile<T extends IReplicationOrderedPacket> implements I
 
     @Override
     public void deleteOldestPackets(long packetsCount) {
-        for (int i = 0; i < packetsCount; i++) {
-            removeOldest();
+        try {
+            if (_externalRedoLogStorage.isEmpty()) {
+                _memoryRedoLogFile.deleteOldestPackets(packetsCount);
+                return;
+            }
+            WeightedBatch<T> tWeightedBatch = _externalRedoLogStorage.removeFirstBatch((int) packetsCount, _lastCompactionRangeEndKey);//todo : check _lastCompactionRangeEndKey
+            long packetsRemaining = packetsCount - tWeightedBatch.size();
+            if (packetsRemaining > 0) {
+                _memoryRedoLogFile.deleteOldestPackets(packetsRemaining);
+            }
+        } catch (StorageException e) {
+            throw new IllegalArgumentException(e);
         }
     }
 
@@ -230,7 +227,7 @@ public class DBSwapRedoLogFile<T extends IReplicationOrderedPacket> implements I
     @Override
     public ReadOnlyIterator<T> readOnlyIterator() {
         try {
-            if (_externalRedoLogStorage.isEmpty() && externalFirstBatch.isEmpty()) {
+            if (_externalRedoLogStorage.isEmpty()) {
                 return _memoryRedoLogFile.readOnlyIterator();
             }
             return new DBSwapIterator();
@@ -242,7 +239,8 @@ public class DBSwapRedoLogFile<T extends IReplicationOrderedPacket> implements I
     @Override
     public ReadOnlyIterator<T> readOnlyIterator(long fromKey) {
         try {
-            if (_externalRedoLogStorage.isEmpty() && externalFirstBatch.isEmpty()) {
+            if ((_memoryRedoLogFile.getOldest().getKey() <= fromKey)
+                    || (_externalRedoLogStorage.isEmpty())) {
                 return _memoryRedoLogFile.readOnlyIterator(fromKey);
             }
             return new DBSwapIterator(fromKey);
@@ -269,13 +267,8 @@ public class DBSwapRedoLogFile<T extends IReplicationOrderedPacket> implements I
         }
 
         public DBSwapIterator(long fromKey) throws StorageException {
-            if (_memoryRedoLogFile.getOldestPacketInMemory() <= fromKey) {
-                this.memoryIter = _memoryRedoLogFile.readOnlyIterator(fromKey);
-                this.storageIter = null;
-            } else{
-                this.memoryIter = _memoryRedoLogFile.readOnlyIterator();
-                this.storageIter = _externalRedoLogStorage.readOnlyIterator(fromKey);
-            }
+            this.memoryIter = _memoryRedoLogFile.readOnlyIterator();
+            this.storageIter = _externalRedoLogStorage.readOnlyIterator(fromKey);
         }
 
         @Override

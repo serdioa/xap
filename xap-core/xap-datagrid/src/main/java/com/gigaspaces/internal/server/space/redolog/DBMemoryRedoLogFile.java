@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Iterator;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 
 import static com.gigaspaces.logger.Constants.LOGGER_REPLICATION_BACKLOG;
 
@@ -22,7 +23,7 @@ public class DBMemoryRedoLogFile<T extends IReplicationOrderedPacket> implements
     private long _weight;
     private long _discardedPacketCount;
     private final Logger _logger;
-    private volatile long oldestPacketInMemory;
+    private volatile AtomicLong oldestPacketInMemory = new AtomicLong(-1);
 
     public DBMemoryRedoLogFile(String name, AbstractSingleFileGroupBacklog groupBacklog) {
         _name = name;
@@ -60,27 +61,33 @@ public class DBMemoryRedoLogFile<T extends IReplicationOrderedPacket> implements
 
     @Override
     public T removeOldest() {
-        return _redoFile.remove(oldestPacketInMemory++);
+        if (oldestPacketInMemory.get() == -1) {
+            oldestPacketInMemory.set(_redoFile.keySet().stream().min(Long::compare).orElse(0L));
+        }
+        return _redoFile.remove(oldestPacketInMemory.getAndIncrement());
     }
 
     @Override
     public T getOldest() {
-        return _redoFile.get(oldestPacketInMemory);
+        if (oldestPacketInMemory.get() == -1) {
+            oldestPacketInMemory.set(_redoFile.keySet().stream().min(Long::compare).orElse(0L));
+        }
+        return _redoFile.get(oldestPacketInMemory.get());
     }
 
     @Override
     public void add(T replicationPacket) {
-        boolean isEmpty = isEmpty();
         _redoFile.put(replicationPacket.getKey(), replicationPacket);
-        if (isEmpty){
-            oldestPacketInMemory = _redoFile.keySet().stream().min(Long::compare).get();
-        }
+//        boolean isEmpty = isEmpty();
+//        if (isEmpty){
+//            oldestPacketInMemory = _redoFile.keySet().stream().min(Long::compare).get();
+//        }
         //todo : increase weight
     }
 
     @Override
     public long size() {
-        return _redoFile.size();
+        return _redoFile.size(); // todo its use loop
     }
 
     @Override
@@ -90,7 +97,7 @@ public class DBMemoryRedoLogFile<T extends IReplicationOrderedPacket> implements
 
     @Override
     public boolean isEmpty() {
-        return _redoFile.isEmpty();
+        return _redoFile.isEmpty();  // todo its use loop
     }
 
     @Override
@@ -101,8 +108,7 @@ public class DBMemoryRedoLogFile<T extends IReplicationOrderedPacket> implements
             _discardedPacketCount = 0;
         } else {
             for (long i = 0; i < packetsCount; ++i) {
-                T first = _redoFile.remove(oldestPacketInMemory);
-                oldestPacketInMemory++;
+                T first = _redoFile.remove(oldestPacketInMemory.getAndIncrement());
 //                decreaseWeight(first);
             }
         }
@@ -118,6 +124,7 @@ public class DBMemoryRedoLogFile<T extends IReplicationOrderedPacket> implements
         _redoFile.clear();
         _weight = 0;
         _discardedPacketCount = 0;
+        oldestPacketInMemory.set(0);
     }
 
     @Override
@@ -137,7 +144,7 @@ public class DBMemoryRedoLogFile<T extends IReplicationOrderedPacket> implements
     }
 
     public long getOldestPacketInMemory() {
-        return oldestPacketInMemory;
+        return oldestPacketInMemory.get();
     }
 
     @Override
@@ -152,7 +159,7 @@ public class DBMemoryRedoLogFile<T extends IReplicationOrderedPacket> implements
 
     @Override
     public Iterator<T> iterator() {
-        return iterator(oldestPacketInMemory);
+        return iterator(oldestPacketInMemory.get());
     }
 
     public Iterator<T> iterator(long startingIndex) {

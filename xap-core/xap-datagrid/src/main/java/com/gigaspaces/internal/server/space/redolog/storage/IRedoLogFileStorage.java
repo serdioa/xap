@@ -101,4 +101,8 @@ public interface IRedoLogFileStorage<T extends IReplicationOrderedPacket> extend
     CompactionResult performCompaction(long from, long to);
 
     long getCacheWeight();
+
+    default T getOldest() throws StorageException {
+        throw new StorageException("Unsupported");
+    }
 }
