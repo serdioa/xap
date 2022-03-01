@@ -164,11 +164,15 @@ public class DBMemoryRedoLogFile<T extends IReplicationOrderedPacket> implements
 
     public Iterator<T> iterator(long startingIndex) {
         return new Iterator<T>() {
+            private final long lastIndex = _redoFile.size() + startingIndex;
             long currentIndex = startingIndex;
             T next = null;
 
             @Override
             public boolean hasNext() {
+                if (currentIndex > lastIndex) {
+                    return false;
+                }
                 next = _redoFile.get(currentIndex++);
                 return next != null;
             }
