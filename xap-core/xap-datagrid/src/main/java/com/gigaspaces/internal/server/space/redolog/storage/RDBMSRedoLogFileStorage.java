@@ -19,13 +19,10 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.nio.file.Path;
 import java.sql.*;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Properties;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.locks.ReentrantLock;
 
-public class RDBMSRedoLogFileStorage<T extends IReplicationOrderedPacket> implements IRedoLogFileStorage<T> {
+public class RDBMSRedoLogFileStorage<T extends IReplicationOrderedPacket> implements INonBatchRedoLogFileStorage<T> {
 
     private static final String JDBC_DRIVER = "org.sqlite.JDBC";
     private static final String USER = "gs";
@@ -107,6 +104,14 @@ public class RDBMSRedoLogFileStorage<T extends IReplicationOrderedPacket> implem
         properties.setProperty("password", password);
         conn = DriverManager.getConnection(dbUrl, properties);
         return conn;
+    }
+
+    @Override
+    public void append(T replicationPacket) throws StorageException, StorageFullException {
+        //TODO implement without array
+        ArrayList<T> ts = new ArrayList<>(1);
+        ts.add(replicationPacket);
+        appendBatch(ts);
     }
 
     @Override
