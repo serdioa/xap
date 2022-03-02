@@ -124,7 +124,7 @@ public class DBMemoryRedoLogFile<T extends IReplicationOrderedPacket> implements
         _redoFile.clear();
         _weight = 0;
         _discardedPacketCount = 0;
-        oldestPacketInMemory.set(0);
+        oldestPacketInMemory.set(-1);
     }
 
     @Override

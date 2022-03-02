@@ -36,7 +36,8 @@ public class DBSwapRedoLogFileConfig<T extends IReplicationOrderedPacket> {
                                    int diskPacketCapacity, IRedoLogFileStorage<T> redoLogFileStorage) {
         this._diskPacketCapacity = diskPacketCapacity;
         this._memoryPacketCapacity = memoryPacketCapacity;
-        this._flushPacketSize = memoryPacketCapacity / 4;
+//        this._flushPacketSize = memoryPacketCapacity / 4;
+        this._flushPacketSize = 10_000;
         this._redoLogFileStorage = redoLogFileStorage;
 
     }

@@ -43,6 +43,7 @@ public class RDBMSRedoLogFileStorage<T extends IReplicationOrderedPacket> implem
     private Set<String> knownTypes = new HashSet<>();
     private long storageSize;
     private long oldestKey = 1;
+    private ArrayList<T> buffered = new ArrayList<>(20_000);
 
 
     public RDBMSRedoLogFileStorage(String spaceName, String fullMemberName) throws SAException {
@@ -109,9 +110,11 @@ public class RDBMSRedoLogFileStorage<T extends IReplicationOrderedPacket> implem
     @Override
     public void append(T replicationPacket) throws StorageException, StorageFullException {
         //TODO implement without array
-        ArrayList<T> ts = new ArrayList<>(1);
-        ts.add(replicationPacket);
-        appendBatch(ts);
+        buffered.add(replicationPacket);
+        if (buffered.size() == 20_000) {
+            appendBatch(buffered);
+            buffered.clear();
+        }
     }
 
     @Override
@@ -207,6 +210,10 @@ public class RDBMSRedoLogFileStorage<T extends IReplicationOrderedPacket> implem
         String whereClause = " WHERE redo_key >= " + oldestKey + " AND redo_key < " + (oldestKey + batchCapacity) + ";";
         String selectQuery = "SELECT * FROM " + TABLE_NAME + whereClause;
         String deleteQuery = "DELETE FROM " + TABLE_NAME + whereClause;
+        if (isEmpty() && !buffered.isEmpty()) {
+            appendBatch(buffered);
+            buffered.clear();
+        }
         try (ResultSet resultSet = executeQuery(selectQuery)) {
             while (resultSet.next()) {
                 final long redoKey = resultSet.getLong(1);
@@ -255,6 +262,10 @@ public class RDBMSRedoLogFileStorage<T extends IReplicationOrderedPacket> implem
     @Override
     public StorageReadOnlyIterator<T> readOnlyIterator() throws StorageException {
         String query = "SELECT * FROM " + TABLE_NAME + " ORDER BY redo_key;";
+        if (isEmpty() && !buffered.isEmpty()) {
+            appendBatch(buffered);
+            buffered.clear();
+        }
         try (final ResultSet resultSet = executeQuery(query)) {
             return new RDBMSRedoLogIterator(resultSet);
         } catch (SQLException e) {
@@ -265,6 +276,10 @@ public class RDBMSRedoLogFileStorage<T extends IReplicationOrderedPacket> implem
     @Override
     public StorageReadOnlyIterator<T> readOnlyIterator(long fromIndex) throws StorageException {
         String query = "SELECT * FROM " + TABLE_NAME + " WHERE redo_key >= " + fromIndex + " ORDER BY redo_key;";
+        if (isEmpty() && !buffered.isEmpty()) {
+            appendBatch(buffered);
+            buffered.clear();
+        }
         try {
             final ResultSet resultSet = executeQuery(query);
             return new RDBMSRedoLogIterator(resultSet);
@@ -287,6 +302,10 @@ public class RDBMSRedoLogFileStorage<T extends IReplicationOrderedPacket> implem
     public T getOldest() throws StorageException {
         //TODO: considering using cache to keep more
         String query = "SELECT * FROM " + TABLE_NAME + " WHERE redo_key = " + oldestKey + ";";
+        if (isEmpty() && !buffered.isEmpty()) {
+            appendBatch(buffered);
+            buffered.clear();
+        }
         try (final ResultSet resultSet = executeQuery(query)) {
             if (resultSet.next()) {
 //                return resultSet.getObject(5);
