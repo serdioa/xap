@@ -21,9 +21,7 @@ import com.gigaspaces.internal.server.space.SpaceImpl;
 import com.gigaspaces.internal.server.space.recovery.strategy.*;
 import com.j_spaces.core.SpaceRecoveryException;
 
-import static com.j_spaces.core.Constants.CacheManager.CACHE_POLICY_ALL_IN_CACHE;
-import static com.j_spaces.core.Constants.CacheManager.CACHE_POLICY_LRU;
-import static com.j_spaces.core.Constants.CacheManager.CACHE_POLICY_PROP;
+import static com.j_spaces.core.Constants.CacheManager.*;
 
 /**
  * RecoveryManager is responsible for the memory recovery of the space
@@ -58,10 +56,9 @@ public class RecoveryManager {
                 CACHE_POLICY_PROP,
                 _space.getJspaceAttr().isPersistent() ? String.valueOf(CACHE_POLICY_LRU) : String.valueOf(CACHE_POLICY_ALL_IN_CACHE))));
         if (isCentralDB || _space.getEngine().getCacheManager().isBlobStoreCachePolicy()) {
-            if (cachePolicy == com.j_spaces.core.Constants.CacheManager.CACHE_POLICY_ALL_IN_CACHE ||
-                    cachePolicy == com.j_spaces.core.Constants.CacheManager.CACHE_POLICY_BLOB_STORE)
+            if (cachePolicy == CACHE_POLICY_ALL_IN_CACHE || cachePolicy == CACHE_POLICY_BLOB_STORE) {
                 return new AllInCacheCentralDBBackupSpaceRecovery(_space);
-
+            }
             return new LRUCentralDBBackupSpaceRecovery(_space);
         }
         return new NonCentralDBBackupSpaceRecovery(_space);

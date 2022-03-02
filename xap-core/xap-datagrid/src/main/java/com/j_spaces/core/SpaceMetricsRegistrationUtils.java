@@ -59,12 +59,16 @@ public class SpaceMetricsRegistrationUtils {
         }
 
         if (spaceEngine.isTieredStorage()) {
-            String tieredStoragePrefix = "tiered-storage-";
-            spaceEngine.getDataTypeMetricRegistrar(typeName).register(tieredStoragePrefix + "disk-entries-" + typeName, typeCounters.getDiskEntriesCounter());
-            spaceEngine.getDataTypeMetricRegistrar(typeName).register(tieredStoragePrefix + "disk-read-access-" + typeName, typeCounters.getDiskReadAccessCounter());
-            spaceEngine.getDataTypeMetricRegistrar(typeName).register(tieredStoragePrefix + "disk-modify-access-" + typeName, typeCounters.getDiskModifyCounter());
-            spaceEngine.getDataTypeMetricRegistrar(typeName).register(tieredStoragePrefix + "ram-read-access-" + typeName, typeCounters.getRamReadAccessCounter());
-            spaceEngine.getDataTypeMetricRegistrar(typeName).register(tieredStoragePrefix + "ram-entries-" + typeName, typeCounters.getRamEntriesCounter());
+            if (metricFlagsState.isTieredStorageMetricEnabled()){
+                String tieredStoragePrefix = "tiered-storage-";
+                spaceEngine.getDataTypeMetricRegistrar(typeName).register(tieredStoragePrefix + "disk-entries", typeCounters.getDiskEntriesCounter());
+                spaceEngine.getDataTypeMetricRegistrar(typeName).register(tieredStoragePrefix + "disk-read-access", typeCounters.getDiskReadAccessCounter());
+                spaceEngine.getDataTypeMetricRegistrar(typeName).register(tieredStoragePrefix + "disk-modify-access", typeCounters.getDiskModifyCounter());
+                spaceEngine.getDataTypeMetricRegistrar(typeName).register(tieredStoragePrefix + "ram-read-access", typeCounters.getRamReadAccessCounter());
+                spaceEngine.getDataTypeMetricRegistrar(typeName).register(tieredStoragePrefix + "ram-entries", typeCounters.getRamEntriesCounter());
+            } else{
+                typeCounters.disableTieredStorageMetrics();
+            }
         }
 
         // register data-types

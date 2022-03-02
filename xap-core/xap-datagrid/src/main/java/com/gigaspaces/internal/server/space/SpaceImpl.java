@@ -3665,16 +3665,23 @@ public class SpaceImpl extends AbstractService implements IRemoteSpace, IInterna
         _engine.dropClass(className);
 
         //handle cleanings in proxies
-        if (_embeddedProxy != null)
-            _embeddedProxy.directDropClass(className);
-
-        if (_clusteredProxy != null)
-            _clusteredProxy.directDropClass(className);
-
-        if (_taskProxy != null)
-            _taskProxy.directDropClass(className);
+        directDropCLassForAllProxies(className);
 
         LRMIClassLoadersHolder.dropClass(className);
+    }
+
+    public void directDropCLassForAllProxies(String className) {
+        if (_embeddedProxy != null) {
+            _embeddedProxy.directDropClass(className);
+        }
+
+        if (_clusteredProxy != null) {
+            _clusteredProxy.directDropClass(className);
+        }
+
+        if (_taskProxy != null) {
+            _taskProxy.directDropClass(className);
+        }
     }
 
     @Override

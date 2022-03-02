@@ -48,10 +48,8 @@ public class TieredStoragePrimarySpaceRecovery
         if (clusterPolicy == null)
             return;
 
-        if(!spaceMode.equals(SpaceMode.PRIMARY)){
-            if (clusterPolicy.m_FailOverPolicy != null)
-                _recoveryGroup.add(new FailoverGroupRecovery(_space));
-        }
+        if (clusterPolicy.m_FailOverPolicy != null)
+            _recoveryGroup.add(new FailoverGroupRecovery(_space));
 
         if (clusterPolicy.m_ReplicationPolicy != null)
             _recoveryGroup.add(new ReplicationGroupRecovery(_space));

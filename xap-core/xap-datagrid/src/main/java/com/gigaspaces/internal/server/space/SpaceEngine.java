@@ -3125,6 +3125,9 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
 
         getReplicationNode().outDataTypeDrop(context, className);
         getReplicationNode().execute(context);
+
+        //clean task proxy
+        _spaceImpl.directDropCLassForAllProxies(className);
     }
 
     /*----------------- Admin API : end -----------------*/
@@ -3683,6 +3686,9 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
         return tieredStorageManager != null;
     }
 
+    public boolean isTieredStorageFullMemoryRecoveryEnable() {
+        return GsEnv.propertyBoolean(SystemProperties.TIERED_STORAGE_FULL_MEMORY_RECOVERY).get(true);
+    }
 
     /**
      * Searches the engine for a matching entry using the BFS tree of the specified template. If a
@@ -6686,7 +6692,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
         sourceRemoteUrl.setProperty(SpaceURL.TIMEOUT,
                 String.valueOf(findTimeout));
 
-        //if relevant mark the backup as inconsistent utill all data is recovered
+        //if relevant mark the backup as inconsistent untill all data is recovered
         if (getCacheManager().isEmptyAfterInitialLoadStage() && getSpaceImpl().isBackup() && getSpaceImpl().getDirectPersistencyRecoveryHelper() != null) {
             if (_logger.isInfoEnabled()) {
                 _logger.info("[" + getFullSpaceName() + "] setting storage state of backup to Inconsistent before recovery from primary");
@@ -6703,8 +6709,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
                 directPersistencySyncListFetcher = new DirectPersistencySyncListFetcher(_spaceImpl.getSpaceStub());
                 Iterator<String> entriesForRecovery = getReplicationNode().getDirectPesistencySyncHandler().getEntriesForRecovery();
                 DirectPersistencyBackupSyncIteratorHandler directPersistencyBackupSyncIteratorHandler = new DirectPersistencyBackupSyncIteratorHandler(entriesForRecovery);
-                getReplicationNode().setDirectPersistencyBackupSyncIteratorHandler(
-                        new DirectPersistencyBackupSyncIteratorHandler(entriesForRecovery));
+                getReplicationNode().setDirectPersistencyBackupSyncIteratorHandler(directPersistencyBackupSyncIteratorHandler);
                 if (_logger.isInfoEnabled()) {
                     _logger.info(getSpaceName() + " performing direct persistency sync list recovery, batch size is: "
                             + directPersistencyBackupSyncIteratorHandler.getBatchSize());

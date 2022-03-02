@@ -296,6 +296,18 @@ public class MetricManager implements Closeable {
         }
     }
 
+    public Map<String, Object> getSnapshotsByPrefixAndMatchingTags(Collection<String> prefixes, MetricTags tags) {
+        synchronized (lock) {
+            Map<String, Object> resultsMap = new HashMap<>();
+            for (String prefix : prefixes) {
+                for (MetricSampler sampler : samplers.values()) {
+                    resultsMap.putAll(sampler.getSnapshotsByPrefixAndMatchingTags(prefix, tags));
+                }
+            }
+            return resultsMap;
+        }
+    }
+
     public Map<String,Object> getSnapshotsByPrefix( Collection<String> prefixes ) {
         synchronized (lock) {
             Map<String, Object> resultsMap = new HashMap<>();
@@ -432,6 +444,7 @@ public class MetricManager implements Closeable {
         private final boolean dataReadCountsMetricEnabled = isEnabled("space", "data", "read-count");
         private final boolean dataTypesMetricEnabled = isEnabled("space", "data", "data-types");
         private final boolean tieredRamReadCountDataTypesMetricEnabled = isEnabled("space", "data", "read-count-ram");
+        private final boolean tieredStorageMetricEnabled = isEnabled("space", "data", "tiered-storage");
 
         public boolean isDataIndexHitsMetricEnabled() {
             return dataIndexHitsMetricEnabled;
@@ -447,6 +460,10 @@ public class MetricManager implements Closeable {
 
         public boolean isDataReadCountsMetricEnabled() {
             return dataReadCountsMetricEnabled;
+        }
+
+        public boolean isTieredStorageMetricEnabled() {
+            return tieredStorageMetricEnabled;
         }
     }
 }

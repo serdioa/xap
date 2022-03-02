@@ -61,7 +61,11 @@ public class ProtocolRegistry
     }
 
     public int getPort(ITransportConfig config) {
-        return get(config.getProtocolName()).getPort();
+        ProtocolAdapter<?> protocolAdapter = get(config.getProtocolName());
+        if( protocolAdapter == null ){
+            throw new IllegalArgumentException("Unable to continue, [" + config.getProtocolName() + "] protocol adapter cannot be null.");
+        }
+        return protocolAdapter.getPort();
     }
 
     public LRMIMonitoringDetails getMonitoringDetails(ITransportConfig config) {

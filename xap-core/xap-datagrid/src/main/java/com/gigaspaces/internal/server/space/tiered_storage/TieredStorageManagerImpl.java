@@ -144,6 +144,9 @@ public class TieredStorageManagerImpl implements TieredStorageManager {
 
 
     private void operationRegistratorInit(SpaceImpl _spaceImpl, MetricManager metricManager) {
+        if (!metricManager.getMetricFlagsState().isTieredStorageMetricEnabled()){
+            return;
+        }
         Map<String, DynamicMetricTag> dynamicTags = new HashMap<>();
         dynamicTags.put("space_active", () -> {
             boolean active;
@@ -184,6 +187,9 @@ public class TieredStorageManagerImpl implements TieredStorageManager {
 
 
     private void diskSizeRegistratorInit(SpaceImpl _spaceImpl, MetricManager metricManager) {
+        if (!metricManager.getMetricFlagsState().isTieredStorageMetricEnabled()){
+            return;
+        }
         InternalMetricRegistrator registratorForAll = (InternalMetricRegistrator) metricManager.createRegistrator(MetricConstants.SPACE_METRIC_NAME, createTags(_spaceImpl));
         registratorForAll.register("disk-size", new Gauge<Long>() {
             @Override

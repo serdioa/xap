@@ -153,6 +153,10 @@ public class MetricSampler implements Closeable {
         }
     }
 
+    public Map<String, Object> getSnapshotsByPrefixAndMatchingTags(String prefix, MetricTags tags) {
+        return registry.getSnapshotByPrefixAndMatchingTags(prefix, tags);
+    }
+
     public Map<String,Object> getSnapshotsByPrefix(String prefix) {
         return registry.getSnapshotsByPrefix(prefix);
     }
