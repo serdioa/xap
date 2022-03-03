@@ -3,7 +3,6 @@ package com.gigaspaces.internal.server.space.redolog.storage;
 import com.gigaspaces.internal.cluster.node.impl.packets.IReplicationOrderedPacket;
 import com.gigaspaces.internal.cluster.node.impl.packets.data.IReplicationPacketData;
 import com.gigaspaces.internal.cluster.node.impl.packets.data.IReplicationPacketEntryData;
-import com.gigaspaces.internal.server.space.metadata.SpaceTypeManager;
 import com.gigaspaces.internal.server.space.redolog.RedoLogFileCompromisedException;
 import com.gigaspaces.internal.server.space.redolog.storage.bytebuffer.WeightedBatch;
 import com.gigaspaces.internal.utils.ByteUtils;
@@ -16,11 +15,11 @@ import org.slf4j.LoggerFactory;
 import org.sqlite.SQLiteConfig;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.ObjectInputStream;
 import java.nio.file.Path;
 import java.sql.*;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Properties;
 import java.util.concurrent.locks.ReentrantLock;
 
 public class RDBMSRedoLogFileStorage<T extends IReplicationOrderedPacket> implements INonBatchRedoLogFileStorage<T> {
@@ -28,23 +27,18 @@ public class RDBMSRedoLogFileStorage<T extends IReplicationOrderedPacket> implem
     private static final String JDBC_DRIVER = "org.sqlite.JDBC";
     private static final String USER = "gs";
     private static final String PASS = "gigaspaces";
-    private static final String SQLITE_EXPLAIN_PLAN_PREFIX = "EXPLAIN QUERY PLAN ";
-    private static final String SQLITE_EXPLAIN_DETAILS_COLUMN = "detail";
-    private static final String SQLITE_MATCH_INDEX_SCAN_REGEX = "USING INDEX";
     private static final String TABLE_NAME = "REDO_LOGS";
 
-    private static Logger logger = LoggerFactory.getLogger(Constants.LOGGER_REPLICATION_BACKLOG + ".sqlite");
-    private Path path;
-    private String dbName;
-    private String spaceName;
-    private String fullMemberName;
-    private Connection connection;
+    private static final Logger logger = LoggerFactory.getLogger(Constants.LOGGER_REPLICATION_BACKLOG + ".sqlite");
+    private final Path path;
+    private final String dbName;
+    private final String spaceName;
+    private final String fullMemberName;
+    private final Connection connection;
     private final ReentrantLock modifierLock = new ReentrantLock();
-    private SpaceTypeManager typeManager;
-    private Set<String> knownTypes = new HashSet<>();
     private long storageSize;
     private long oldestKey = 1;
-    private ArrayList<T> buffered = new ArrayList<>(20_000);
+    private final ArrayList<T> buffered = new ArrayList<>(20_000);
 
 
     public RDBMSRedoLogFileStorage(String spaceName, String fullMemberName) throws SAException {
@@ -196,47 +190,25 @@ public class RDBMSRedoLogFileStorage<T extends IReplicationOrderedPacket> implem
     }
 
     private byte[] packetToBytes(T packet) {
-//        try {
-//            byte[] writtenBytes;
-//            ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-//            ObjectOutputStream objectOutputStream = new ObjectOutputStream(byteArrayOutputStream);
-//            objectOutputStream.writeObject(packet);
-//            writtenBytes = byteArrayOutputStream.toByteArray();
-//            return writtenBytes;
-//        } catch (IOException e) {
-//            throw new IllegalStateException("Can't create byte from Object", e);
-//        }
         try {
             return ByteUtils.objectToBytes(packet);
         } catch (IOException e) {
-            throw new IllegalStateException("Can't create byte from Object", e);
+            if (logger.isWarnEnabled()) {
+                logger.warn("Failed to create bytes from packet [" + packet + "]", e);
+            }
         }
+        return new byte[0];
     }
 
     private T bytesToPacket(byte[] bytes) {
-//        try {
-//            ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(bytes);
-//            ObjectInputStream objectInputStream = new ObjectInputStream(byteArrayInputStream);
-//            Object readObject = objectInputStream.readObject();
-//            return (T) readObject;
-//        } catch (IOException | ClassNotFoundException e) {
-//            throw new IllegalStateException("Can't create byte from Object", e);
-//        }
         try {
             return (T) ByteUtils.bytesToObject(bytes);
         } catch (IOException | ClassNotFoundException e) {
-            throw new IllegalStateException("Can't create byte from Object", e);
+            if (logger.isWarnEnabled()) {
+                logger.warn("Failed to create packet from bytes", e);
+            }
         }
-    }
-
-    private T inputStreamToPacket(InputStream inputStream) {
-        try {
-            ObjectInputStream objectInputStream = new ObjectInputStream(inputStream);
-            Object readObject = objectInputStream.readObject();
-            return (T) readObject;
-        } catch (IOException | ClassNotFoundException e) {
-            throw new IllegalStateException("Can't create byte from Object", e);
-        }
+        return null;
     }
 
     @Override
@@ -258,8 +230,14 @@ public class RDBMSRedoLogFileStorage<T extends IReplicationOrderedPacket> implem
         }
         try (ResultSet resultSet = executeQuery(selectQuery)) {
             while (resultSet.next()) {
-                final T object = bytesToPacket(resultSet.getBytes(5));
-                batch.addToBatch(object);
+                final T packet = bytesToPacket(resultSet.getBytes(5));
+                if (packet == null) {
+                    if (logger.isWarnEnabled()) {
+                        logger.warn("Failed to read packet from RDBMS, packetId=" + resultSet.getLong(1));
+                    }
+                } else {
+                    batch.addToBatch(packet);
+                }
             }
         } catch (SQLException e) {
             throw new StorageException("failed to select rows table " + TABLE_NAME, e);
@@ -348,7 +326,14 @@ public class RDBMSRedoLogFileStorage<T extends IReplicationOrderedPacket> implem
         }
         try (final ResultSet resultSet = executeQuery(query)) {
             if (resultSet.next()) {
-                return bytesToPacket(resultSet.getBytes(5));
+                final T packet = bytesToPacket(resultSet.getBytes(5));
+                if (packet == null) {
+                    if (logger.isWarnEnabled()) {
+                        logger.warn("Failed to read packet from RDBMS, packetId=" + resultSet.getLong(1));
+                    }
+                } else {
+                    return packet;
+                }
             }
         } catch (SQLException e) {
             throw new StorageException("Fail to get oldest", e);
@@ -452,7 +437,13 @@ public class RDBMSRedoLogFileStorage<T extends IReplicationOrderedPacket> implem
         @Override
         public T next() throws StorageException {
             try {
-                return bytesToPacket(resultSet.getBytes(5));
+                final T packet = bytesToPacket(resultSet.getBytes(5));
+                if (packet == null) {
+                    if (logger.isWarnEnabled()) {
+                        logger.warn("Failed to read packet from RDBMS, packetId=" + resultSet.getLong(1));
+                    }
+                }
+                return packet;
             } catch (SQLException e) {
                 throw new StorageException(e);
             }
