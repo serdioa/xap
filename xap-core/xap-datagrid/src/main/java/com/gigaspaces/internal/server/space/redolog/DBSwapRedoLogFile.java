@@ -25,13 +25,10 @@ public class DBSwapRedoLogFile<T extends IReplicationOrderedPacket> implements I
     private final int _flushPacketSize;
     private long lastMemoryRedoKey;
 
-    private final DBMemoryRedoLogFile<T> _memoryRedoLogFile;
-    private final IRedoLogFileStorage<T> _externalRedoLogStorage;
+    private final IRedoLogFile<T> _memoryRedoLogFile;
+    private final IRedoLogFileStorage<T> _externalStorageRedoLog;
     private final String _name;
     private final AbstractSingleFileGroupBacklog _groupBacklog;
-    //Not volatile because this is not a thread safe structure, assume flushing of thread cache
-    //changes because lock is held at upper layer
-    private boolean _insertToExternal = false;
     private long _lastCompactionRangeEndKey = -1;
     private long _lastSeenTransientPacketKey = -1;
 
@@ -39,15 +36,15 @@ public class DBSwapRedoLogFile<T extends IReplicationOrderedPacket> implements I
         _memoryPacketCapacity = config.getMemoryPacketCapacity();
         _diskPacketCapacity = config.getDiskPacketCapacity();
         _flushPacketSize = config.getFlushPacketSize();
-        _memoryRedoLogFile = new DBMemoryRedoLogFile<T>(name, groupBacklog);
-        _externalRedoLogStorage = config.getRedoLogFileStorage();
+        _memoryRedoLogFile = config.getMemoryRedoLogFile();
+        _externalStorageRedoLog = config.getExternalStorageRedoLogFile();
         _name = name;
         _groupBacklog = groupBacklog;
     }
 
     @Override
     public long getExternalStorageSpaceUsed() {
-        return _externalRedoLogStorage.getSpaceUsed();
+        return _externalStorageRedoLog.getSpaceUsed();
     }
 
     @Override
@@ -57,7 +54,7 @@ public class DBSwapRedoLogFile<T extends IReplicationOrderedPacket> implements I
 
     @Override
     public long getExternalStoragePacketsCount() {
-        return _externalRedoLogStorage.getExternalPacketsCount();
+        return _externalStorageRedoLog.getExternalPacketsCount();
     }
 
     @Override
@@ -67,7 +64,7 @@ public class DBSwapRedoLogFile<T extends IReplicationOrderedPacket> implements I
 
     @Override
     public long getExternalStoragePacketsWeight() {
-        return _externalRedoLogStorage.getExternalStoragePacketsWeight();
+        return _externalStorageRedoLog.getExternalStoragePacketsWeight();
     }
 
 
@@ -84,7 +81,7 @@ public class DBSwapRedoLogFile<T extends IReplicationOrderedPacket> implements I
                 }
             }
             try {
-                _externalRedoLogStorage.appendBatch(rpToFlush);
+                _externalStorageRedoLog.appendBatch(rpToFlush);
                 lastMemoryRedoKey += rpToFlush.size(); //todo: maybe use flushPacketSize
             } catch (StorageException e) {
                 throw new IllegalArgumentException(e);
@@ -98,11 +95,11 @@ public class DBSwapRedoLogFile<T extends IReplicationOrderedPacket> implements I
     @Override
     public T removeOldest() {
         try {
-            if (_externalRedoLogStorage.isEmpty()) {
+            if (_externalStorageRedoLog.isEmpty()) {
                 T oldest = _memoryRedoLogFile.removeOldest();
                 return oldest == null ? removeOldest() : oldest; //todo limited retry attempts
             }
-            WeightedBatch<T> tWeightedBatch = _externalRedoLogStorage.removeFirstBatch(1, _lastCompactionRangeEndKey);//todo : check _lastCompactionRangeEndKey
+            WeightedBatch<T> tWeightedBatch = _externalStorageRedoLog.removeFirstBatch(1, _lastCompactionRangeEndKey);//todo : check _lastCompactionRangeEndKey
             return tWeightedBatch.getBatch().get(0);
         } catch (StorageException e) {
             throw new IllegalArgumentException(e);
@@ -112,11 +109,11 @@ public class DBSwapRedoLogFile<T extends IReplicationOrderedPacket> implements I
     @Override
     public T getOldest() {
         try {
-            if (_externalRedoLogStorage.isEmpty()) {
+            if (_externalStorageRedoLog.isEmpty()) {
                 T oldest = _memoryRedoLogFile.getOldest();
                 return oldest == null ? getOldest() : oldest; //todo limited retry attempts
             }
-            return _externalRedoLogStorage.getOldest();
+            return _externalStorageRedoLog.getOldest();
         } catch (StorageException e) {
             throw new IllegalArgumentException(e);
         }
@@ -125,7 +122,7 @@ public class DBSwapRedoLogFile<T extends IReplicationOrderedPacket> implements I
     @Override
     public long size() {
         try {
-            return _externalRedoLogStorage.size() + _memoryRedoLogFile.size();
+            return _externalStorageRedoLog.size() + _memoryRedoLogFile.size();
         } catch (StorageException e) {
             throw new IllegalArgumentException(e);
         }
@@ -134,7 +131,7 @@ public class DBSwapRedoLogFile<T extends IReplicationOrderedPacket> implements I
     @Override
     public long getApproximateSize() {
         try {
-            return _externalRedoLogStorage.size() + _memoryRedoLogFile.size();
+            return _externalStorageRedoLog.size() + _memoryRedoLogFile.size();
         } catch (StorageException e) {
             throw new IllegalArgumentException(e);
         }
@@ -143,7 +140,7 @@ public class DBSwapRedoLogFile<T extends IReplicationOrderedPacket> implements I
     @Override
     public boolean isEmpty() {
         try {
-            return _externalRedoLogStorage.isEmpty() && _memoryRedoLogFile.isEmpty();
+            return _externalStorageRedoLog.isEmpty() && _memoryRedoLogFile.isEmpty();
         } catch (StorageException e) {
             throw new IllegalArgumentException(e);
         }
@@ -152,11 +149,11 @@ public class DBSwapRedoLogFile<T extends IReplicationOrderedPacket> implements I
     @Override
     public void deleteOldestPackets(long packetsCount) {
         try {
-            if (_externalRedoLogStorage.isEmpty()) {
+            if (_externalStorageRedoLog.isEmpty()) {
                 _memoryRedoLogFile.deleteOldestPackets(packetsCount);
                 return;
             }
-            WeightedBatch<T> tWeightedBatch = _externalRedoLogStorage.removeFirstBatch((int) packetsCount, _lastCompactionRangeEndKey);//todo : check _lastCompactionRangeEndKey
+            WeightedBatch<T> tWeightedBatch = _externalStorageRedoLog.removeFirstBatch((int) packetsCount, _lastCompactionRangeEndKey);//todo : check _lastCompactionRangeEndKey
             long packetsRemaining = packetsCount - tWeightedBatch.size();
             if (packetsRemaining > 0) {
                 _memoryRedoLogFile.deleteOldestPackets(packetsRemaining);
@@ -169,23 +166,23 @@ public class DBSwapRedoLogFile<T extends IReplicationOrderedPacket> implements I
     @Override
     public void validateIntegrity() throws RedoLogFileCompromisedException {
         _memoryRedoLogFile.validateIntegrity();
-        _externalRedoLogStorage.validateIntegrity();
+        _externalStorageRedoLog.validateIntegrity();
     }
 
     @Override
     public void close() {
         _memoryRedoLogFile.close();
-        _externalRedoLogStorage.close();
+        _externalStorageRedoLog.close();
     }
 
     @Override
     public long getWeight() {
-        return _externalRedoLogStorage.getWeight() + _memoryRedoLogFile.getWeight();
+        return _externalStorageRedoLog.getWeight() + _memoryRedoLogFile.getWeight();
     }
 
     @Override
     public long getDiscardedPacketsCount() {
-        return _externalRedoLogStorage.getDiscardedPacketsCount() + _memoryRedoLogFile.getDiscardedPacketsCount();
+        return _externalStorageRedoLog.getDiscardedPacketsCount() + _memoryRedoLogFile.getDiscardedPacketsCount();
     }
 
     @Override
@@ -213,7 +210,7 @@ public class DBSwapRedoLogFile<T extends IReplicationOrderedPacket> implements I
         }
 
         result.appendResult(_memoryRedoLogFile.performCompaction(from, to));
-        result.appendResult(_externalRedoLogStorage.performCompaction(from, to));
+        result.appendResult(_externalStorageRedoLog.performCompaction(from, to));
 
         if (_logger.isDebugEnabled()) {
             _logger.debug("[" + _name + "]: Discarded of " + result.getDiscardedCount() + " packets and deleted " + result.getDeletedFromTxn() + " transient packets from transactions during compaction process");
@@ -227,7 +224,7 @@ public class DBSwapRedoLogFile<T extends IReplicationOrderedPacket> implements I
     @Override
     public ReadOnlyIterator<T> readOnlyIterator() {
         try {
-            if (_externalRedoLogStorage.isEmpty()) {
+            if (_externalStorageRedoLog.isEmpty()) {
                 return _memoryRedoLogFile.readOnlyIterator();
             }
             return new DBSwapIterator();
@@ -240,7 +237,7 @@ public class DBSwapRedoLogFile<T extends IReplicationOrderedPacket> implements I
     public ReadOnlyIterator<T> readOnlyIterator(long fromKey) {
         try {
             if ((_memoryRedoLogFile.getOldest().getKey() <= fromKey)
-                    || (_externalRedoLogStorage.isEmpty())) {
+                    || (_externalStorageRedoLog.isEmpty())) {
                 return _memoryRedoLogFile.readOnlyIterator(fromKey);
             }
             return new DBSwapIterator(fromKey);
@@ -263,12 +260,12 @@ public class DBSwapRedoLogFile<T extends IReplicationOrderedPacket> implements I
 
         public DBSwapIterator() throws StorageException {
             this.memoryIter = _memoryRedoLogFile.readOnlyIterator();
-            this.storageIter = _externalRedoLogStorage.readOnlyIterator();
+            this.storageIter = _externalStorageRedoLog.readOnlyIterator();
         }
 
         public DBSwapIterator(long fromKey) throws StorageException {
             this.memoryIter = _memoryRedoLogFile.readOnlyIterator();
-            this.storageIter = _externalRedoLogStorage.readOnlyIterator(fromKey);
+            this.storageIter = _externalStorageRedoLog.readOnlyIterator(fromKey);
         }
 
         @Override

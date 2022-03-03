@@ -29,16 +29,18 @@ import com.gigaspaces.internal.server.space.redolog.storage.IRedoLogFileStorage;
 public class DBSwapRedoLogFileConfig<T extends IReplicationOrderedPacket> {
     private final int _memoryPacketCapacity;
     private final int _diskPacketCapacity;
-    private final IRedoLogFileStorage<T> _redoLogFileStorage;
+    private final IRedoLogFileStorage<T> _externalStorageRedoLogFile;
+    private final IRedoLogFile<T> _memoryRedoLogFile;
     private final int _flushPacketSize;
 
-    public DBSwapRedoLogFileConfig(int memoryPacketCapacity,
-                                   int diskPacketCapacity, IRedoLogFileStorage<T> redoLogFileStorage) {
+    public DBSwapRedoLogFileConfig(int memoryPacketCapacity, int diskPacketCapacity,
+                                   IRedoLogFileStorage<T> externalStorageRedoLogFile, IRedoLogFile<T> memoryRedoLogFile) {
         this._diskPacketCapacity = diskPacketCapacity;
         this._memoryPacketCapacity = memoryPacketCapacity;
 //        this._flushPacketSize = memoryPacketCapacity / 4;
-        this._flushPacketSize = 10_000;
-        this._redoLogFileStorage = redoLogFileStorage;
+        this._flushPacketSize = 10_000; //TODO: move to configuration
+        this._externalStorageRedoLogFile = externalStorageRedoLogFile;
+        this._memoryRedoLogFile = memoryRedoLogFile;
 
     }
 
@@ -46,8 +48,12 @@ public class DBSwapRedoLogFileConfig<T extends IReplicationOrderedPacket> {
         return _memoryPacketCapacity;
     }
 
-    public IRedoLogFileStorage<T> getRedoLogFileStorage() {
-        return _redoLogFileStorage;
+    public IRedoLogFileStorage<T> getExternalStorageRedoLogFile() {
+        return _externalStorageRedoLogFile;
+    }
+
+    public IRedoLogFile<T> getMemoryRedoLogFile() {
+        return _memoryRedoLogFile;
     }
 
     public int getDiskPacketCapacity() {
