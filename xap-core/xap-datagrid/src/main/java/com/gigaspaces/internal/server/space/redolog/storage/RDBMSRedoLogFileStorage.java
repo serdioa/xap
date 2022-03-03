@@ -6,6 +6,7 @@ import com.gigaspaces.internal.cluster.node.impl.packets.data.IReplicationPacket
 import com.gigaspaces.internal.server.space.metadata.SpaceTypeManager;
 import com.gigaspaces.internal.server.space.redolog.RedoLogFileCompromisedException;
 import com.gigaspaces.internal.server.space.redolog.storage.bytebuffer.WeightedBatch;
+import com.gigaspaces.internal.utils.ByteUtils;
 import com.gigaspaces.logger.Constants;
 import com.gigaspaces.start.SystemLocations;
 import com.j_spaces.core.cluster.startup.CompactionResult;
@@ -15,8 +16,8 @@ import org.slf4j.LoggerFactory;
 import org.sqlite.SQLiteConfig;
 
 import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
+import java.io.InputStream;
+import java.io.ObjectInputStream;
 import java.nio.file.Path;
 import java.sql.*;
 import java.util.*;
@@ -165,8 +166,8 @@ public class RDBMSRedoLogFileStorage<T extends IReplicationOrderedPacket> implem
         }
     }
 
-    public void setPropertyValue(boolean isUpdate, PreparedStatement statement, int columnIndex, int index,
-                                 Object value) throws SQLException {
+    private void setPropertyValue(boolean isUpdate, PreparedStatement statement, int columnIndex, int index,
+                                  Object value) throws SQLException {
         if (value == null) {
             if (isUpdate) {
                 statement.setObject(index, null);
@@ -188,13 +189,55 @@ public class RDBMSRedoLogFileStorage<T extends IReplicationOrderedPacket> implem
                     statement.setString(index, (String) value);
                     break;
                 case 4: //packet
-                    statement.setObject(index, value);
-//                    statement.setBlob(index, value); // use blob???
+                    statement.setBytes(index, packetToBytes((T) value));
                     break;
             }
         }
     }
 
+    private byte[] packetToBytes(T packet) {
+//        try {
+//            byte[] writtenBytes;
+//            ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+//            ObjectOutputStream objectOutputStream = new ObjectOutputStream(byteArrayOutputStream);
+//            objectOutputStream.writeObject(packet);
+//            writtenBytes = byteArrayOutputStream.toByteArray();
+//            return writtenBytes;
+//        } catch (IOException e) {
+//            throw new IllegalStateException("Can't create byte from Object", e);
+//        }
+        try {
+            return ByteUtils.objectToBytes(packet);
+        } catch (IOException e) {
+            throw new IllegalStateException("Can't create byte from Object", e);
+        }
+    }
+
+    private T bytesToPacket(byte[] bytes) {
+//        try {
+//            ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(bytes);
+//            ObjectInputStream objectInputStream = new ObjectInputStream(byteArrayInputStream);
+//            Object readObject = objectInputStream.readObject();
+//            return (T) readObject;
+//        } catch (IOException | ClassNotFoundException e) {
+//            throw new IllegalStateException("Can't create byte from Object", e);
+//        }
+        try {
+            return (T) ByteUtils.bytesToObject(bytes);
+        } catch (IOException | ClassNotFoundException e) {
+            throw new IllegalStateException("Can't create byte from Object", e);
+        }
+    }
+
+    private T inputStreamToPacket(InputStream inputStream) {
+        try {
+            ObjectInputStream objectInputStream = new ObjectInputStream(inputStream);
+            Object readObject = objectInputStream.readObject();
+            return (T) readObject;
+        } catch (IOException | ClassNotFoundException e) {
+            throw new IllegalStateException("Can't create byte from Object", e);
+        }
+    }
 
     @Override
     public long size() throws StorageException {
@@ -205,8 +248,7 @@ public class RDBMSRedoLogFileStorage<T extends IReplicationOrderedPacket> implem
     public WeightedBatch<T> removeFirstBatch(int batchCapacity, long lastCompactionRangeEndKey) throws
             StorageException {
         WeightedBatch<T> batch = new WeightedBatch<T>(lastCompactionRangeEndKey);
-//        String selectQuery = "SELECT * FROM " + TABLE_NAME + " ORDER BY redo_key LIMIT " + batchCapacity + ";";
-//        String deleteQuery = "DELETE FROM " + TABLE_NAME + " ORDER BY redo_key LIMIT " + batchCapacity + ";";
+
         String whereClause = " WHERE redo_key >= " + oldestKey + " AND redo_key < " + (oldestKey + batchCapacity) + ";";
         String selectQuery = "SELECT * FROM " + TABLE_NAME + whereClause;
         String deleteQuery = "DELETE FROM " + TABLE_NAME + whereClause;
@@ -216,10 +258,8 @@ public class RDBMSRedoLogFileStorage<T extends IReplicationOrderedPacket> implem
         }
         try (ResultSet resultSet = executeQuery(selectQuery)) {
             while (resultSet.next()) {
-                final long redoKey = resultSet.getLong(1);
-                final Object object = resultSet.getObject(5);
-//                final Object object = resultSet.getBlob(5);// TODO: or blob?
-                batch.addToBatch((T) new MockPacket(redoKey));
+                final T object = bytesToPacket(resultSet.getBytes(5));
+                batch.addToBatch(object);
             }
         } catch (SQLException e) {
             throw new StorageException("failed to select rows table " + TABLE_NAME, e);
@@ -308,8 +348,7 @@ public class RDBMSRedoLogFileStorage<T extends IReplicationOrderedPacket> implem
         }
         try (final ResultSet resultSet = executeQuery(query)) {
             if (resultSet.next()) {
-//                return resultSet.getObject(5);
-                return (T) new MockPacket(resultSet.getLong(1));
+                return bytesToPacket(resultSet.getBytes(5));
             }
         } catch (SQLException e) {
             throw new StorageException("Fail to get oldest", e);
@@ -413,8 +452,7 @@ public class RDBMSRedoLogFileStorage<T extends IReplicationOrderedPacket> implem
         @Override
         public T next() throws StorageException {
             try {
-//                return (T) resultSet.getObject(5);
-                return (T) new MockPacket(resultSet.getLong(1));
+                return bytesToPacket(resultSet.getBytes(5));
             } catch (SQLException e) {
                 throw new StorageException(e);
             }
@@ -427,74 +465,6 @@ public class RDBMSRedoLogFileStorage<T extends IReplicationOrderedPacket> implem
             } catch (SQLException e) {
                 throw new StorageException(e);
             }
-        }
-    }
-
-    private class MockPacket implements IReplicationOrderedPacket {
-        private final long key;
-
-        public MockPacket(long key) {
-            this.key = key;
-        }
-
-        @Override
-        public void writeToSwap(ObjectOutput out) throws IOException {
-
-        }
-
-        @Override
-        public void readFromSwap(ObjectInput in) throws IOException, ClassNotFoundException {
-
-        }
-
-        @Override
-        public IReplicationPacketData<?> getData() {
-            return null;
-        }
-
-        @Override
-        public long getKey() {
-            return key;
-        }
-
-        @Override
-        public long getEndKey() {
-            return 0;
-        }
-
-        @Override
-        public boolean isDataPacket() {
-            return false;
-        }
-
-        @Override
-        public boolean isDiscardedPacket() {
-            return false;
-        }
-
-        @Override
-        public IReplicationOrderedPacket clone() {
-            return null;
-        }
-
-        @Override
-        public IReplicationOrderedPacket cloneWithNewData(IReplicationPacketData<?> newData) {
-            return null;
-        }
-
-        @Override
-        public int getWeight() {
-            return 0;
-        }
-
-        @Override
-        public void writeExternal(ObjectOutput out) throws IOException {
-
-        }
-
-        @Override
-        public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-
         }
     }
 }
