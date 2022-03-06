@@ -210,7 +210,8 @@ public class DBSwapRedoLogFile<T extends IReplicationOrderedPacket> implements I
         }
 
         result.appendResult(_memoryRedoLogFile.performCompaction(from, to));
-        result.appendResult(_externalStorageRedoLog.performCompaction(from, to));
+        //TODO: @sagiv currently we not support it
+//        result.appendResult(_externalStorageRedoLog.performCompaction(from, to));
 
         if (_logger.isDebugEnabled()) {
             _logger.debug("[" + _name + "]: Discarded of " + result.getDiscardedCount() + " packets and deleted " + result.getDeletedFromTxn() + " transient packets from transactions during compaction process");

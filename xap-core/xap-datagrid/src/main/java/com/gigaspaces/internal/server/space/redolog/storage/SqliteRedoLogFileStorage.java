@@ -200,7 +200,8 @@ public class SqliteRedoLogFileStorage<T extends IReplicationOrderedPacket> exten
 
     @Override
     public CompactionResult performCompaction(long from, long to) {
-        return null;
+        //TODO: @sagiv currently we not support it
+        throw new UnsupportedOperationException("performCompaction is not support in RDBMS layer");
     }
 
     @Override

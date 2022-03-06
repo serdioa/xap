@@ -56,7 +56,7 @@ public interface IRedoLogFileStorage<T extends IReplicationOrderedPacket> extend
      * Removes a batch from the start of the list
      *
      * @param batchCapacity WeightToRemove to remove
-     * @param lastCompactionRangeEndKey packets with keys larger then this cannot be discarded
+     * @param lastCompactionRangeEndKey packets with keys larger than this cannot be discarded
      * @return removed batch
      */
     WeightedBatch<T> removeFirstBatch(int batchCapacity, long lastCompactionRangeEndKey) throws StorageException;
@@ -69,7 +69,7 @@ public interface IRedoLogFileStorage<T extends IReplicationOrderedPacket> extend
     void deleteOldestPackets(long packetsCount) throws StorageException;
 
     /**
-     * @return read only iterator that starts from the begining of the list
+     * @return read only iterator that starts from the beginning of the list
      */
     StorageReadOnlyIterator<T> readOnlyIterator() throws StorageException;
 
