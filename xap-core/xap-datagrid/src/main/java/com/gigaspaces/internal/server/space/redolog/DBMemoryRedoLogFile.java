@@ -10,20 +10,18 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Iterator;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.LinkedList;
 
 import static com.gigaspaces.logger.Constants.LOGGER_REPLICATION_BACKLOG;
 
 public class DBMemoryRedoLogFile<T extends IReplicationOrderedPacket> implements IRedoLogFile<T> {
 
-    final private ConcurrentHashMap<Long, T> _redoFile = new ConcurrentHashMap<>();
+    final private LinkedList<T> _redoFile = new LinkedList<>();
     private final String _name;
     private final AbstractSingleFileGroupBacklog _groupBacklog;
     private long _weight;
     private long _discardedPacketCount;
     private final Logger _logger;
-    private volatile AtomicLong oldestPacketInMemory = new AtomicLong(-1);
 
     public DBMemoryRedoLogFile(String name, AbstractSingleFileGroupBacklog groupBacklog) {
         _name = name;
@@ -61,33 +59,23 @@ public class DBMemoryRedoLogFile<T extends IReplicationOrderedPacket> implements
 
     @Override
     public T removeOldest() {
-        if (oldestPacketInMemory.get() == -1) {
-            oldestPacketInMemory.set(_redoFile.keySet().stream().min(Long::compare).orElse(0L));
-        }
-        return _redoFile.remove(oldestPacketInMemory.getAndIncrement());
+        return _redoFile.removeFirst();
     }
 
     @Override
     public T getOldest() {
-        if (oldestPacketInMemory.get() == -1) {
-            oldestPacketInMemory.set(_redoFile.keySet().stream().min(Long::compare).orElse(0L));
-        }
-        return _redoFile.get(oldestPacketInMemory.get());
+        return _redoFile.getFirst();
     }
 
     @Override
     public void add(T replicationPacket) {
-        _redoFile.put(replicationPacket.getKey(), replicationPacket);
-//        boolean isEmpty = isEmpty();
-//        if (isEmpty){
-//            oldestPacketInMemory = _redoFile.keySet().stream().min(Long::compare).get();
-//        }
+        _redoFile.addLast(replicationPacket);
         //todo : increase weight
     }
 
     @Override
     public long size() {
-        return _redoFile.size(); // todo its use loop
+        return _redoFile.size();
     }
 
     @Override
@@ -97,7 +85,7 @@ public class DBMemoryRedoLogFile<T extends IReplicationOrderedPacket> implements
 
     @Override
     public boolean isEmpty() {
-        return _redoFile.isEmpty();  // todo its use loop
+        return _redoFile.isEmpty();
     }
 
     @Override
@@ -108,8 +96,8 @@ public class DBMemoryRedoLogFile<T extends IReplicationOrderedPacket> implements
             _discardedPacketCount = 0;
         } else {
             for (long i = 0; i < packetsCount; ++i) {
-                T first = _redoFile.remove(oldestPacketInMemory.getAndIncrement());
-//                decreaseWeight(first);
+                removeOldest();
+                // decreaseWeight(first); TODO
             }
         }
     }
@@ -124,7 +112,6 @@ public class DBMemoryRedoLogFile<T extends IReplicationOrderedPacket> implements
         _redoFile.clear();
         _weight = 0;
         _discardedPacketCount = 0;
-        oldestPacketInMemory.set(-1);
     }
 
     @Override
@@ -139,12 +126,11 @@ public class DBMemoryRedoLogFile<T extends IReplicationOrderedPacket> implements
 
     @Override
     public CompactionResult performCompaction(long from, long to) {
-        //TODO
-        return null;
+        return null; //TODO
     }
 
     public long getOldestPacketInMemory() {
-        return oldestPacketInMemory.get();
+        return getOldest().getKey();
     }
 
     @Override
@@ -159,28 +145,25 @@ public class DBMemoryRedoLogFile<T extends IReplicationOrderedPacket> implements
 
     @Override
     public Iterator<T> iterator() {
-        return iterator(oldestPacketInMemory.get());
+        return _redoFile.iterator();
     }
 
-    public Iterator<T> iterator(long startingIndex) {
-        return new Iterator<T>() {
-            private final long lastIndex = _redoFile.size() + startingIndex;
-            long currentIndex = startingIndex;
-            T next = null;
+    public Iterator<T> iterator(long fromKey) {
+        //fromKey = 25, filter: 25 <= k <= newest
+        //oldest->[21, 22, 23, 24, 25, 27, ..., 80]->newest
+        long oldestKey = getOldestPacketInMemory(); //25
+        int fromIndex = (int)(fromKey - oldestKey); // index = (25 - 21) =4
+        return _redoFile.subList(fromIndex, _redoFile.size()).iterator();
 
-            @Override
-            public boolean hasNext() {
-                if (currentIndex > lastIndex) {
-                    return false;
-                }
-                next = _redoFile.get(currentIndex++);
-                return next != null;
-            }
-
-            @Override
-            public T next() {
-                return next;
-            }
-        };
+//TODO the above code assumes that the keys are +1
+// if it turns out not to be the case, we might need to go over and find the first index:
+//        int fromIndex = 0;
+//        for (T t : _redoFile) {
+//            if (t.getKey() == fromKey) {
+//                break;
+//            } else {
+//                ++fromIndex;
+//            }
+//        }
     }
 }
