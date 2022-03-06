@@ -9,6 +9,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.sqlite.SQLiteConfig;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.sql.*;
@@ -42,6 +43,8 @@ public abstract class SqliteStorageLayer<T extends IReplicationOrderedPacket> {
             if (!path.toFile().mkdirs()) {
                 throw new SAException("failed to mkdir " + path);
             }
+        } else {
+            deleteDataFile();
         }
 
         try {
@@ -202,6 +205,22 @@ public abstract class SqliteStorageLayer<T extends IReplicationOrderedPacket> {
 
             }
         }
+    }
+
+    public void deleteDataFile() throws SAException {
+        logger.info("Trying to delete db file {}", dbName);
+        File folder = path.toFile();
+        final File[] files = folder.listFiles((dir, name) -> name.matches(dbName + ".*"));
+        if (files == null) {
+            logger.error("Failed to delete db {} in path {}", dbName, path);
+            throw new SAException("Failed to delete db {} in path {}");
+        }
+        for (final File file : files) {
+            if (!file.delete()) {
+                logger.error("Can't remove " + file.getAbsolutePath());
+            }
+        }
+        logger.info("Successfully deleted db {} in path {}", dbName, path);
     }
 
     protected class RDBMSRedoLogIterator implements StorageReadOnlyIterator<T> {
