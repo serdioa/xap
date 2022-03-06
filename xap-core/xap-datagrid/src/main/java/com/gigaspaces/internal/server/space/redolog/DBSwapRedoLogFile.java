@@ -72,17 +72,18 @@ public class DBSwapRedoLogFile<T extends IReplicationOrderedPacket> implements I
     public void add(T replicationPacket) {
         _memoryRedoLogFile.add(replicationPacket);
         //todo: use weight
-        ArrayList<T> rpToFlush = new ArrayList<>(_flushPacketSize);
+        final int flushPacketSize = (int) Math.min(_memoryRedoLogFile.size(), _flushPacketSize);
+        ArrayList<T> batchToFlush = new ArrayList<>(flushPacketSize);
         if (_memoryRedoLogFile.size() > _memoryPacketCapacity) {
-            for (int i = 0; i < _flushPacketSize; i++) {
+            for (int i = 0; i < flushPacketSize; i++) {
                 T oldest = _memoryRedoLogFile.removeOldest();
                 if (oldest != null) { //todo: check if needed
-                    rpToFlush.add(oldest);
+                    batchToFlush.add(oldest);
                 }
             }
             try {
-                _externalStorageRedoLog.appendBatch(rpToFlush);
-                lastMemoryRedoKey += rpToFlush.size(); //todo: maybe use flushPacketSize
+                _externalStorageRedoLog.appendBatch(batchToFlush);
+                lastMemoryRedoKey += batchToFlush.size(); //todo: maybe use flushPacketSize
             } catch (StorageException e) {
                 throw new IllegalArgumentException(e);
             }
@@ -237,8 +238,9 @@ public class DBSwapRedoLogFile<T extends IReplicationOrderedPacket> implements I
     @Override
     public ReadOnlyIterator<T> readOnlyIterator(long fromKey) {
         try {
-            if ((_memoryRedoLogFile.getOldest().getKey() <= fromKey)
-                    || (_externalStorageRedoLog.isEmpty())) {
+            if (_externalStorageRedoLog.isEmpty()
+                    || (!_memoryRedoLogFile.isEmpty()
+                        && _memoryRedoLogFile.getOldest().getKey() <= fromKey)) {
                 return _memoryRedoLogFile.readOnlyIterator(fromKey);
             }
             return new DBSwapIterator(fromKey);
