@@ -155,16 +155,5 @@ public class DBMemoryRedoLogFile<T extends IReplicationOrderedPacket> implements
         long oldestKey = getOldest().getKey(); //25
         int fromIndex = (int)(fromKey - oldestKey); // index = (25 - 21) =4
         return _redoFile.subList(fromIndex, _redoFile.size()).iterator();
-
-//TODO the above code assumes that the keys are +1
-// if it turns out not to be the case, we might need to go over and find the first index:
-//        int fromIndex = 0;
-//        for (T t : _redoFile) {
-//            if (t.getKey() == fromKey) {
-//                break;
-//            } else {
-//                ++fromIndex;
-//            }
-//        }
     }
 }
