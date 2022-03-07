@@ -148,6 +148,8 @@ public class DBMemoryRedoLogFile<T extends IReplicationOrderedPacket> implements
     }
 
     public Iterator<T> iterator(long fromKey) {
+        if (isEmpty()) return _redoFile.iterator();
+
         //fromKey = 25, filter: 25 <= k <= newest
         //oldest->[21, 22, 23, 24, 25, 26, 27, ..., 80]->newest
         long oldestKey = getOldest().getKey(); //25

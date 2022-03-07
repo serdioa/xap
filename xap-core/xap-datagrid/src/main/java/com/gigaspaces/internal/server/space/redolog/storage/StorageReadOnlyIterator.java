@@ -16,6 +16,8 @@
 
 package com.gigaspaces.internal.server.space.redolog.storage;
 
+import com.gigaspaces.internal.utils.collections.ReadOnlyIterator;
+
 import java.util.NoSuchElementException;
 
 /**
@@ -24,7 +26,7 @@ import java.util.NoSuchElementException;
  * @author eitany
  * @since 7.1
  */
-public interface StorageReadOnlyIterator<E> {
+public interface StorageReadOnlyIterator<E> extends ReadOnlyIterator<E> {
     /**
      * Returns <tt>true</tt> if the iteration has more elements. (In other words, returns
      * <tt>true</tt> if <tt>next</tt> would return an element rather than throwing an exception.)

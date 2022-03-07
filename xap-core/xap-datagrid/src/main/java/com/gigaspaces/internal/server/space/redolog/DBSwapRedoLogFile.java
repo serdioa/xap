@@ -4,7 +4,6 @@ import com.gigaspaces.internal.cluster.node.impl.backlog.AbstractSingleFileGroup
 import com.gigaspaces.internal.cluster.node.impl.packets.IReplicationOrderedPacket;
 import com.gigaspaces.internal.server.space.redolog.storage.IRedoLogFileStorage;
 import com.gigaspaces.internal.server.space.redolog.storage.StorageException;
-import com.gigaspaces.internal.server.space.redolog.storage.StorageReadOnlyIterator;
 import com.gigaspaces.internal.server.space.redolog.storage.bytebuffer.WeightedBatch;
 import com.gigaspaces.internal.utils.collections.ReadOnlyIterator;
 import com.gigaspaces.logger.Constants;
@@ -229,7 +228,7 @@ public class DBSwapRedoLogFile<T extends IReplicationOrderedPacket> implements I
             if (_externalStorageRedoLog.isEmpty()) {
                 return _memoryRedoLogFile.readOnlyIterator();
             }
-            return new DBSwapIterator();
+            return _externalStorageRedoLog.readOnlyIterator();
         } catch (StorageException e) {
             throw new IllegalArgumentException(e);
         }
@@ -239,11 +238,10 @@ public class DBSwapRedoLogFile<T extends IReplicationOrderedPacket> implements I
     public ReadOnlyIterator<T> readOnlyIterator(long fromKey) {
         try {
             if (_externalStorageRedoLog.isEmpty()
-                    || (!_memoryRedoLogFile.isEmpty()
-                        && _memoryRedoLogFile.getOldest().getKey() <= fromKey)) {
+                    || _memoryRedoLogFile.getOldest().getKey() <= fromKey) {
                 return _memoryRedoLogFile.readOnlyIterator(fromKey);
             }
-            return new DBSwapIterator(fromKey);
+            return _externalStorageRedoLog.readOnlyIterator(fromKey);
         } catch (StorageException e) {
             throw new IllegalArgumentException(e);
         }
@@ -252,67 +250,5 @@ public class DBSwapRedoLogFile<T extends IReplicationOrderedPacket> implements I
     @Override
     public Iterator<T> iterator() {
         return _memoryRedoLogFile.iterator();
-    }
-
-    private class DBSwapIterator implements ReadOnlyIterator<T> {
-
-        private ReadOnlyIterator<T> memoryIter;
-        private StorageReadOnlyIterator<T> storageIter;
-        private boolean fromDisk = false;
-        private boolean fromMemory = false;
-
-        public DBSwapIterator() throws StorageException {
-            this.memoryIter = _memoryRedoLogFile.readOnlyIterator();
-            this.storageIter = _externalStorageRedoLog.readOnlyIterator();
-        }
-
-        public DBSwapIterator(long fromKey) throws StorageException {
-            this.memoryIter = _memoryRedoLogFile.readOnlyIterator();
-            this.storageIter = _externalStorageRedoLog.readOnlyIterator(fromKey);
-        }
-
-        @Override
-        public boolean hasNext() {
-            try {
-                if (storageIter != null && storageIter.hasNext()) {
-                    fromDisk = true;
-                    fromMemory = false;
-                    return true;
-                }
-            } catch (StorageException e) {
-                throw new IllegalArgumentException(e);
-            }
-            if (memoryIter.hasNext()) {
-                fromDisk = false;
-                fromMemory = true;
-                return true;
-            }
-            return false;
-        }
-
-        @Override
-        public T next() {
-            if (fromMemory) {
-                return memoryIter.next();
-            }
-            if (fromDisk) {
-                try {
-                    return storageIter.next();
-                } catch (StorageException e) {
-                    throw new IllegalArgumentException(e);
-                }
-            }
-            return null;
-        }
-
-        @Override
-        public void close() {
-            memoryIter.close();
-            try {
-                storageIter.close();
-            } catch (StorageException e) {
-                throw new IllegalArgumentException(e);
-            }
-        }
     }
 }
