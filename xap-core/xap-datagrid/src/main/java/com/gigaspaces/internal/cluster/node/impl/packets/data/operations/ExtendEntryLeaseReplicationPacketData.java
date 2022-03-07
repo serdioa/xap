@@ -29,7 +29,6 @@ import com.gigaspaces.time.SystemTime;
 import com.j_spaces.core.ObjectTypes;
 import com.j_spaces.core.OperationID;
 import com.j_spaces.core.cluster.ReplicationOperationType;
-
 import net.jini.core.lease.UnknownLeaseException;
 
 import java.io.IOException;
@@ -126,7 +125,7 @@ public class ExtendEntryLeaseReplicationPacketData
     }
 
     @Override
-    protected String getTypeName() {
+    public String getTypeName() {
         return _className;
     }
 

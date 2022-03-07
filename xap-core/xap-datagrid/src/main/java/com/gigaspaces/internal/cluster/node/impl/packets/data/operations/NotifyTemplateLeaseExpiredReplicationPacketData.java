@@ -45,6 +45,7 @@ public class NotifyTemplateLeaseExpiredReplicationPacketData
         _className = className;
     }
 
+    @Override
     public String getTypeName() {
         return _className;
     }

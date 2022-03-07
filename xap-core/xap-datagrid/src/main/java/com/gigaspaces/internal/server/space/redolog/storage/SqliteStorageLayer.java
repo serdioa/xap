@@ -15,6 +15,7 @@ import java.nio.file.Path;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -34,6 +35,10 @@ public abstract class SqliteStorageLayer<T extends IReplicationOrderedPacket> {
     protected final Connection connection;
     private final ReentrantLock modifierLock = new ReentrantLock();
     protected final ArrayList<T> buffered = new ArrayList<>(20_000); //TODO: validate configuration
+    protected final List<String> COLUMN_NAMES = Arrays.asList("redo_key", "type_name", "operation_type", "uuid", "packet_count", "packet");
+    protected final int REDO_KEY_COLUMN_INDEX = 1;
+    protected final int PACKET_COLUMN_INDEX = 6;
+
 
     protected SqliteStorageLayer(String spaceName, String fullMemberName) throws SAException {
         this.spaceName = spaceName;
@@ -75,8 +80,13 @@ public abstract class SqliteStorageLayer<T extends IReplicationOrderedPacket> {
 
     private void createTable() throws SAException {
         String query = "CREATE TABLE " + TABLE_NAME +
-                " ( 'redo_key' INTEGER, 'type' VARCHAR, 'operation_type' VARCHAR, 'uuid' VARCHAR, 'packet' BLOB," +
-                " PRIMARY KEY (redo_key) );";
+                " ( 'redo_key' INTEGER, " +
+                "'type_name' VARCHAR, " +
+                "'operation_type' VARCHAR, " +
+                "'uuid' VARCHAR, " +
+                "'packet_count' INTEGER, " +
+                "'packet' BLOB, " +
+                "PRIMARY KEY (redo_key) );";
         try {
             executeCreateTable(query);
         } catch (SQLException e) {
@@ -108,35 +118,6 @@ public abstract class SqliteStorageLayer<T extends IReplicationOrderedPacket> {
             return rowsAffected;
         } finally {
             modifierLock.unlock();
-        }
-    }
-
-    private void setPropertyValue(boolean isUpdate, PreparedStatement statement, int columnIndex, int index,
-                                  Object value) throws SQLException {
-        if (value == null) {
-            if (isUpdate) {
-                statement.setObject(index, null);
-            } else {
-                statement.setString(index, "Null");
-            }
-        } else {
-            switch (columnIndex % 5) {
-                case 0: //redo_key
-                    statement.setLong(index, (Long) value);
-                    break;
-                case 1: //type
-                    statement.setString(index, (String) value);
-                    break;
-                case 2: //operation_type
-                    statement.setString(index, (String) value);
-                    break;
-                case 3: //uuid
-                    statement.setString(index, (String) value);
-                    break;
-                case 4: //packet
-                    statement.setBytes(index, packetToBytes((T) value));
-                    break;
-            }
         }
     }
 
@@ -240,10 +221,10 @@ public abstract class SqliteStorageLayer<T extends IReplicationOrderedPacket> {
         @Override
         public T next() throws StorageException {
             try {
-                final T packet = bytesToPacket(resultSet.getBytes(5));
+                final T packet = bytesToPacket(resultSet.getBytes(PACKET_COLUMN_INDEX));
                 if (packet == null) {
                     if (logger.isWarnEnabled()) {
-                        logger.warn("Failed to read packet from RDBMS, packetId=" + resultSet.getLong(1));
+                        logger.warn("Failed to read packet from RDBMS, packetId=" + resultSet.getLong(REDO_KEY_COLUMN_INDEX));
                     }
                 }
                 return packet;

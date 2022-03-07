@@ -87,6 +87,10 @@ public abstract class SingleReplicationPacketData extends AbstractReplicationPac
         return _entryPacket.getUID();
     }
 
+    @Override
+    public String getTypeName() {
+        return _entryPacket.getTypeName();
+    }
 
     public IEntryPacket getEntryPacket() {
         return _entryPacket;

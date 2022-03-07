@@ -3,6 +3,7 @@ package com.gigaspaces.internal.server.space.redolog.storage;
 import com.gigaspaces.internal.cluster.node.impl.packets.IReplicationOrderedPacket;
 import com.gigaspaces.internal.cluster.node.impl.packets.data.IReplicationPacketData;
 import com.gigaspaces.internal.cluster.node.impl.packets.data.IReplicationPacketEntryData;
+import com.gigaspaces.internal.cluster.node.impl.packets.data.operations.AbstractTransactionReplicationPacketData;
 import com.gigaspaces.internal.server.space.redolog.RedoLogFileCompromisedException;
 import com.gigaspaces.internal.server.space.redolog.storage.bytebuffer.WeightedBatch;
 import com.j_spaces.core.cluster.startup.CompactionResult;
@@ -36,24 +37,23 @@ public class SqliteRedoLogFileStorage<T extends IReplicationOrderedPacket> exten
     public void appendBatch(List<T> replicationPackets) throws StorageException, StorageFullException {
         boolean isEmpty = isEmpty();
         long lastOldKey = oldestKey;
-        String query = "INSERT INTO " + TABLE_NAME + " (redo_key, type, operation_type, uuid, packet) VALUES (?, ?, ?, ?, ?);";
-        try (Statement tnx = connection.createStatement()){
+        String query = "INSERT INTO " +
+                TABLE_NAME + " (" + String.join(", ", COLUMN_NAMES) + ") " +
+                "VALUES (?, ?, ?, ?, ?, ?);";
+        try (Statement tnx = connection.createStatement()) {
             tnx.execute("BEGIN TRANSACTION;");
             try (PreparedStatement statement = connection.prepareStatement(query)) {
-                for (int i = 0; i < replicationPackets.size(); i++) {
-                    //TODO: validate what happen in tnx and if  getSingleEntryData == null (data.getSingleEntryData())
-                    final T replicationPacket = replicationPackets.get(i);
-                    final IReplicationPacketData<?> data = replicationPacket.getData();
-                    final IReplicationPacketEntryData iReplicationPacketEntryData = data != null ? data.getSingleEntryData() : null;
+                for (final T replicationPacket : replicationPackets) {
                     if (isEmpty) {
                         oldestKey = replicationPacket.getKey();
                         isEmpty = false;
                     }
                     statement.setLong(1, replicationPacket.getKey());
-                    statement.setString(2, "type?!?!?!!");
-                    statement.setString(3, iReplicationPacketEntryData == null ? "null" : iReplicationPacketEntryData.getOperationType().name());
-                    statement.setString(4, iReplicationPacketEntryData == null ? "null" : iReplicationPacketEntryData.getUid());
-                    statement.setBytes(5, packetToBytes(replicationPacket));
+                    statement.setString(2, getPacketTypeName(replicationPacket));
+                    statement.setString(3, getPacketOperationTypeName(replicationPacket));
+                    statement.setString(4, getPacketUID(replicationPacket));
+                    statement.setInt(5, getPacketCount(replicationPacket));
+                    statement.setBytes(6, packetToBytes(replicationPacket));
                     statement.addBatch();
                 }
                 storageSize += executeInsert(statement);
@@ -61,13 +61,59 @@ public class SqliteRedoLogFileStorage<T extends IReplicationOrderedPacket> exten
                 oldestKey = lastOldKey;
                 tnx.execute("ROLLBACK;");
                 throw new StorageException("failed to insert redo-log keys " + replicationPackets.get(0).getKey() + "-" +
-                        replicationPackets.get(replicationPackets.size()-1).getKey() + " to table " + TABLE_NAME, e);
+                        replicationPackets.get(replicationPackets.size() - 1).getKey() + " to table " + TABLE_NAME, e);
             }
             tnx.execute("COMMIT;");
         } catch (SQLException e) {
             oldestKey = lastOldKey;
             throw new StorageException("failed to commit transaction" + TABLE_NAME, e);
         }
+    }
+
+    private int getPacketCount(T packet) {
+        final IReplicationPacketData<?> data = packet.getData();
+        final boolean isTnx = data != null && (!data.isSingleEntryData());
+        if (isTnx) {
+            return ((AbstractTransactionReplicationPacketData) data).getMetaData().getTransactionParticipantsCount();
+        }
+        return 1;
+    }
+
+    private String getPacketTypeName(T packet) {
+        final IReplicationPacketData<?> data = packet.getData();
+        if (data != null) {
+            final IReplicationPacketEntryData singleEntryData = data.getSingleEntryData();
+            if (singleEntryData != null) {
+                return singleEntryData.getTypeName();
+            }
+        }
+        return null;
+    }
+
+    private String getPacketUID(T packet) {
+        final IReplicationPacketData<?> data = packet.getData();
+        if (data != null) {
+            final boolean isTnx = !data.isSingleEntryData();
+            if (isTnx) {
+                return String.valueOf(((AbstractTransactionReplicationPacketData) data).getTransaction().id);
+            }
+            final IReplicationPacketEntryData singleEntryData = data.getSingleEntryData();
+            if (singleEntryData != null) {
+                return singleEntryData.getUid();
+            }
+        }
+        return null;
+    }
+
+    private String getPacketOperationTypeName(T packet) {
+        final IReplicationPacketData<?> data = packet.getData();
+        if (data != null) {
+            final IReplicationPacketEntryData singleEntryData = data.getSingleEntryData();
+            if (singleEntryData != null) {
+                return singleEntryData.getOperationType().name();
+            }
+        }
+        return null;
     }
 
     @Override
@@ -89,10 +135,10 @@ public class SqliteRedoLogFileStorage<T extends IReplicationOrderedPacket> exten
         }
         try (ResultSet resultSet = executeQuery(selectQuery)) {
             while (resultSet.next()) {
-                final T packet = bytesToPacket(resultSet.getBytes(5));
+                final T packet = bytesToPacket(resultSet.getBytes(PACKET_COLUMN_INDEX));
                 if (packet == null) {
                     if (logger.isWarnEnabled()) {
-                        logger.warn("Failed to read packet from RDBMS, packetId=" + resultSet.getLong(1));
+                        logger.warn("Failed to read packet from RDBMS, packetId=" + resultSet.getLong(REDO_KEY_COLUMN_INDEX));
                     }
                 } else {
                     batch.addToBatch(packet);
@@ -167,10 +213,10 @@ public class SqliteRedoLogFileStorage<T extends IReplicationOrderedPacket> exten
         }
         try (final ResultSet resultSet = executeQuery(query)) {
             if (resultSet.next()) {
-                final T packet = bytesToPacket(resultSet.getBytes(5));
+                final T packet = bytesToPacket(resultSet.getBytes(PACKET_COLUMN_INDEX));
                 if (packet == null) {
                     if (logger.isWarnEnabled()) {
-                        logger.warn("Failed to read packet from RDBMS, packetId=" + resultSet.getLong(1));
+                        logger.warn("Failed to read packet from RDBMS, packetId=" + resultSet.getLong(REDO_KEY_COLUMN_INDEX));
                     }
                 } else {
                     return packet;
