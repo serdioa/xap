@@ -14,6 +14,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.sql.*;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Properties;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -24,6 +25,7 @@ public abstract class SqliteStorageLayer<T extends IReplicationOrderedPacket> {
     private static final String USER = "gs";
     private static final String PASS = "gigaspaces";
     protected static final String TABLE_NAME = "REDO_LOGS";
+    public static final int INSERT_BATCH_SIZE = 10_000;
 
     private final Path path;
     private final String dbName;
@@ -96,21 +98,16 @@ public abstract class SqliteStorageLayer<T extends IReplicationOrderedPacket> {
         }
     }
 
-    protected long executeInsert(String sqlQuery, Object[] values) throws SQLException {
-        try (PreparedStatement statement = connection.prepareStatement(sqlQuery)) {
-            for (int i = 0; i < values.length; i++) {
-                setPropertyValue(true, statement, i, i + 1, values[i]);
+    protected long executeInsert(PreparedStatement statement) throws SQLException {
+        try {
+            modifierLock.lock();
+            final int rowsAffected = Arrays.stream(statement.executeBatch()).sum();
+            if (logger.isTraceEnabled()) {
+                logger.trace("executeInsert manipulated {} rows", rowsAffected);
             }
-            try {
-                modifierLock.lock();
-                final int rowsAffected = statement.executeUpdate();
-                if (logger.isTraceEnabled()) {
-                    logger.trace("executeInsert: {}, values: {} , manipulated {} rows", sqlQuery, values, rowsAffected);
-                }
-                return rowsAffected;
-            } finally {
-                modifierLock.unlock();
-            }
+            return rowsAffected;
+        } finally {
+            modifierLock.unlock();
         }
     }
 

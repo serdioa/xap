@@ -8,8 +8,10 @@ import com.gigaspaces.internal.server.space.redolog.storage.bytebuffer.WeightedB
 import com.j_spaces.core.cluster.startup.CompactionResult;
 import com.j_spaces.core.sadapter.SAException;
 
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.List;
 
 public class SqliteRedoLogFileStorage<T extends IReplicationOrderedPacket> extends SqliteStorageLayer<T> implements INonBatchRedoLogFileStorage<T> {
@@ -33,31 +35,38 @@ public class SqliteRedoLogFileStorage<T extends IReplicationOrderedPacket> exten
     @Override
     public void appendBatch(List<T> replicationPackets) throws StorageException, StorageFullException {
         boolean isEmpty = isEmpty();
-        String query = "INSERT INTO " + TABLE_NAME + " (redo_key, type, operation_type, uuid, packet) VALUES ";
-        Object[] values = new Object[replicationPackets.size() * 5];
-        for (int i = 0; i < replicationPackets.size(); i++) {
-            //TODO: validate what happen in tnx and if  getSingleEntryData == null (data.getSingleEntryData())
-            final T replicationPacket = replicationPackets.get(i);
-            final IReplicationPacketData<?> data = replicationPacket.getData();
-            final IReplicationPacketEntryData iReplicationPacketEntryData = data != null ? data.getSingleEntryData() : null;
-            if (isEmpty) {
-                oldestKey = replicationPacket.getKey();
-                isEmpty = false;
+        long lastOldKey = oldestKey;
+        String query = "INSERT INTO " + TABLE_NAME + " (redo_key, type, operation_type, uuid, packet) VALUES (?, ?, ?, ?, ?);";
+        try (Statement tnx = connection.createStatement()){
+            tnx.execute("BEGIN TRANSACTION;");
+            try (PreparedStatement statement = connection.prepareStatement(query)) {
+                for (int i = 0; i < replicationPackets.size(); i++) {
+                    //TODO: validate what happen in tnx and if  getSingleEntryData == null (data.getSingleEntryData())
+                    final T replicationPacket = replicationPackets.get(i);
+                    final IReplicationPacketData<?> data = replicationPacket.getData();
+                    final IReplicationPacketEntryData iReplicationPacketEntryData = data != null ? data.getSingleEntryData() : null;
+                    if (isEmpty) {
+                        oldestKey = replicationPacket.getKey();
+                        isEmpty = false;
+                    }
+                    statement.setLong(1, replicationPacket.getKey());
+                    statement.setString(2, "type?!?!?!!");
+                    statement.setString(3, iReplicationPacketEntryData == null ? "null" : iReplicationPacketEntryData.getOperationType().name());
+                    statement.setString(4, iReplicationPacketEntryData == null ? "null" : iReplicationPacketEntryData.getUid());
+                    statement.setBytes(5, packetToBytes(replicationPacket));
+                    statement.addBatch();
+                }
+                storageSize += executeInsert(statement);
+            } catch (SQLException e) {
+                oldestKey = lastOldKey;
+                tnx.execute("ROLLBACK;");
+                throw new StorageException("failed to insert redo-log keys " + replicationPackets.get(0).getKey() + "-" +
+                        replicationPackets.get(replicationPackets.size()-1).getKey() + " to table " + TABLE_NAME, e);
             }
-            values[(i * 5)] = replicationPacket.getKey();
-            values[(i * 5) + 1] = "type?!?!?!!";
-            values[(i * 5) + 2] = iReplicationPacketEntryData == null ? "null" : iReplicationPacketEntryData.getOperationType().name();
-            values[(i * 5) + 3] = iReplicationPacketEntryData == null ? "null" : iReplicationPacketEntryData.getUid();
-            values[(i * 5) + 4] = replicationPacket;
-            query += "(?, ?, ?, ?, ?), ";
-        }
-        query = query.substring(0, query.length() - 2) + ";";
-        try {
-            long rowsAffected = executeInsert(query, values);
-            storageSize += rowsAffected;
+            tnx.execute("COMMIT;");
         } catch (SQLException e) {
-            oldestKey = -1;
-            throw new StorageException("failed to insert values to table " + TABLE_NAME, e);
+            oldestKey = lastOldKey;
+            throw new StorageException("failed to commit transaction" + TABLE_NAME, e);
         }
     }
 
