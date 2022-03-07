@@ -226,11 +226,7 @@ public class DBSwapRedoLogFile<T extends IReplicationOrderedPacket> implements I
     public ReadOnlyIterator<T> readOnlyIterator() {
         try {
             if (_externalStorageRedoLog.isEmpty()) {
-                if (_memoryRedoLogFile.isEmpty()) {
-                    return new EmptyReadOnlyIterator();
-                } else {
-                    return _memoryRedoLogFile.readOnlyIterator();
-                }
+                return _memoryRedoLogFile.readOnlyIterator();
             }
             return _externalStorageRedoLog.readOnlyIterator();
         } catch (StorageException e) {
@@ -240,39 +236,17 @@ public class DBSwapRedoLogFile<T extends IReplicationOrderedPacket> implements I
 
     @Override
     public ReadOnlyIterator<T> readOnlyIterator(long fromKey) {
-        try {
-            if (_externalStorageRedoLog.isEmpty()) {
-                if (!_memoryRedoLogFile.isEmpty() && _memoryRedoLogFile.getOldest().getKey() <= fromKey) {
-                    return _memoryRedoLogFile.readOnlyIterator(fromKey);
-                } else {
-                    //no relevant elements
-                    return new EmptyReadOnlyIterator();
-                }
-            }
-            return _externalStorageRedoLog.readOnlyIterator(fromKey);
-        } catch (StorageException e) {
-            throw new IllegalArgumentException(e);
+        if (!_memoryRedoLogFile.isEmpty() && _memoryRedoLogFile.getOldest().getKey() <= fromKey) {
+            return _memoryRedoLogFile.readOnlyIterator(fromKey);
         }
+        if (_externalStorageRedoLog.isEmpty()) {
+            return _memoryRedoLogFile.readOnlyIterator();
+        }
+        return _externalStorageRedoLog.readOnlyIterator(fromKey);
     }
 
     @Override
     public Iterator<T> iterator() {
         return _memoryRedoLogFile.iterator();
-    }
-
-    private class EmptyReadOnlyIterator implements ReadOnlyIterator<T> {
-        @Override
-        public boolean hasNext() {
-            return false;
-        }
-
-        @Override
-        public T next() {
-            return null;
-        }
-
-        @Override
-        public void close() {
-        }
     }
  }
