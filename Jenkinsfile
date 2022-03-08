@@ -23,5 +23,5 @@ node('gspaces-builder') {
         xap.xapDeploy();
     }
 
-    //cleanWs()
+    cleanWs()
 }
