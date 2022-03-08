@@ -4,10 +4,10 @@ import com.gigaspaces.internal.cluster.node.impl.packets.IReplicationOrderedPack
 import com.gigaspaces.internal.cluster.node.impl.packets.data.IReplicationPacketData;
 import com.gigaspaces.internal.cluster.node.impl.packets.data.IReplicationPacketEntryData;
 import com.gigaspaces.internal.cluster.node.impl.packets.data.operations.AbstractTransactionReplicationPacketData;
+import com.gigaspaces.internal.server.space.redolog.DBSwapRedoLogFileConfig;
 import com.gigaspaces.internal.server.space.redolog.RedoLogFileCompromisedException;
 import com.gigaspaces.internal.server.space.redolog.storage.bytebuffer.WeightedBatch;
 import com.j_spaces.core.cluster.startup.CompactionResult;
-import com.j_spaces.core.sadapter.SAException;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -17,11 +17,13 @@ import java.util.List;
 
 public class SqliteRedoLogFileStorage<T extends IReplicationOrderedPacket> extends SqliteStorageLayer<T> implements INonBatchRedoLogFileStorage<T> {
 
+    private final DBSwapRedoLogFileConfig<T> config;
     private long storageSize = 0;
     private long oldestKey = -1;
 
-    public SqliteRedoLogFileStorage(String spaceName, String fullMemberName) throws SAException {
-        super(spaceName, fullMemberName);
+    public SqliteRedoLogFileStorage(DBSwapRedoLogFileConfig<T> config) {
+        super(config.getSpaceName(), config.getFullMemberName());
+        this.config = config;
     }
 
     @Override

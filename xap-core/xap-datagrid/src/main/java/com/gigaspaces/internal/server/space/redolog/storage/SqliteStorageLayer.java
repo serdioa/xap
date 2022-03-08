@@ -4,7 +4,6 @@ import com.gigaspaces.internal.cluster.node.impl.packets.IReplicationOrderedPack
 import com.gigaspaces.internal.utils.ByteUtils;
 import com.gigaspaces.logger.Constants;
 import com.gigaspaces.start.SystemLocations;
-import com.j_spaces.core.sadapter.SAException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.sqlite.SQLiteConfig;
@@ -26,29 +25,24 @@ public abstract class SqliteStorageLayer<T extends IReplicationOrderedPacket> {
     private static final String USER = "gs";
     private static final String PASS = "gigaspaces";
     protected static final String TABLE_NAME = "REDO_LOGS";
-    public static final int INSERT_BATCH_SIZE = 10_000;
 
     private final Path path;
     private final String dbName;
-    private final String spaceName;
-    private final String fullMemberName;
     protected final Connection connection;
     private final ReentrantLock modifierLock = new ReentrantLock();
-    protected final ArrayList<T> buffered = new ArrayList<>(20_000); //TODO: validate configuration
+    protected final ArrayList<T> buffered = new ArrayList<>(20_000); //TODO: move to configuration
     protected final List<String> COLUMN_NAMES = Arrays.asList("redo_key", "type_name", "operation_type", "uuid", "packet_count", "packet");
     protected final int REDO_KEY_COLUMN_INDEX = 1;
     protected final int PACKET_COLUMN_INDEX = 6;
 
 
-    protected SqliteStorageLayer(String spaceName, String fullMemberName) throws SAException {
-        this.spaceName = spaceName;
-        this.fullMemberName = fullMemberName;
+    protected SqliteStorageLayer(String spaceName, String fullMemberName) {
         this.path = SystemLocations.singleton().work("redo-log/" + spaceName); // todo: maybe in temp
         this.dbName = "sqlite_storage_redo_log_" + fullMemberName;
 
         if (!path.toFile().exists()) {
             if (!path.toFile().mkdirs()) {
-                throw new SAException("failed to mkdir " + path);
+                throw new StorageException("failed to mkdir " + path);
             }
         } else {
             deleteDataFile();
@@ -61,7 +55,7 @@ public abstract class SqliteStorageLayer<T extends IReplicationOrderedPacket> {
             logger.info("Successfully created connection {} db {} in path {}", connection, dbName, path);
         } catch (ClassNotFoundException | SQLException e) {
             logger.error("Failed to initialize Sqlite RDBMS", e);
-            throw new SAException("failed to initialize internal sqlite RDBMS", e);
+            throw new StorageException("failed to initialize internal sqlite RDBMS", e);
         }
         createTable();
     }
@@ -78,7 +72,7 @@ public abstract class SqliteStorageLayer<T extends IReplicationOrderedPacket> {
         return conn;
     }
 
-    private void createTable() throws SAException {
+    private void createTable() throws StorageException {
         String query = "CREATE TABLE " + TABLE_NAME +
                 " ( 'redo_key' INTEGER, " +
                 "'type_name' VARCHAR, " +
@@ -90,7 +84,7 @@ public abstract class SqliteStorageLayer<T extends IReplicationOrderedPacket> {
         try {
             executeCreateTable(query);
         } catch (SQLException e) {
-            throw new SAException("failed to create table " + TABLE_NAME, e);
+            throw new StorageException("failed to create table " + TABLE_NAME, e);
         }
     }
 
@@ -185,13 +179,13 @@ public abstract class SqliteStorageLayer<T extends IReplicationOrderedPacket> {
         }
     }
 
-    public void deleteDataFile() throws SAException {
+    public void deleteDataFile() {
         logger.info("Trying to delete db file {}", dbName);
         File folder = path.toFile();
         final File[] files = folder.listFiles((dir, name) -> name.matches(dbName + ".*"));
         if (files == null) {
             logger.error("Failed to delete db {} in path {}", dbName, path);
-            throw new SAException("Failed to delete db {} in path {}");
+            throw new StorageException("Failed to delete db {} in path {}");
         }
         for (final File file : files) {
             if (!file.delete()) {

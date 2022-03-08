@@ -17,7 +17,6 @@
 package com.gigaspaces.internal.server.space.redolog;
 
 import com.gigaspaces.internal.cluster.node.impl.packets.IReplicationOrderedPacket;
-import com.gigaspaces.internal.server.space.redolog.storage.IRedoLogFileStorage;
 
 /**
  * Configures a {@link DBSwapRedoLogFileConfig}
@@ -27,40 +26,42 @@ import com.gigaspaces.internal.server.space.redolog.storage.IRedoLogFileStorage;
  */
 @com.gigaspaces.api.InternalApi
 public class DBSwapRedoLogFileConfig<T extends IReplicationOrderedPacket> {
+    private final String _spaceName;
+    private final String _fullMemberName;
     private final int _memoryPacketCapacity;
     private final int _diskPacketCapacity;
-    private final IRedoLogFileStorage<T> _externalStorageRedoLogFile;
-    private final IRedoLogFile<T> _memoryRedoLogFile;
-    private final int _flushPacketSize;
+    private int _flushBufferPacketCount;
+    private String _onRedoLogCapacityExceededString;
 
-    public DBSwapRedoLogFileConfig(int memoryPacketCapacity, int diskPacketCapacity,
-                                   IRedoLogFileStorage<T> externalStorageRedoLogFile, IRedoLogFile<T> memoryRedoLogFile) {
+    public DBSwapRedoLogFileConfig(String spaceName, String fullMemberName, int memoryPacketCapacity, int diskPacketCapacity) {
+        this._spaceName = spaceName;
+        this._fullMemberName = fullMemberName;
         this._diskPacketCapacity = diskPacketCapacity;
         this._memoryPacketCapacity = memoryPacketCapacity;
-//        this._flushPacketSize = memoryPacketCapacity / 4;
-        this._flushPacketSize = 1_500; //TODO: move to configuration
-        this._externalStorageRedoLogFile = externalStorageRedoLogFile;
-        this._memoryRedoLogFile = memoryRedoLogFile;
+        this._flushBufferPacketCount = 1_500; //TODO: move to configuration
+    }
 
+    public String getSpaceName() {
+        return _spaceName;
+    }
+
+    public String getFullMemberName() {
+        return _fullMemberName;
     }
 
     public int getMemoryPacketCapacity() {
         return _memoryPacketCapacity;
     }
 
-    public IRedoLogFileStorage<T> getExternalStorageRedoLogFile() {
-        return _externalStorageRedoLogFile;
-    }
-
-    public IRedoLogFile<T> getMemoryRedoLogFile() {
-        return _memoryRedoLogFile;
-    }
-
     public int getDiskPacketCapacity() {
         return _diskPacketCapacity;
     }
 
-    public int getFlushPacketSize() {
-        return _flushPacketSize;
+    public void setFlushBufferPacketCount(int flushBufferPacketCount) {
+        this._flushBufferPacketCount = flushBufferPacketCount;
+    }
+
+    public int getFlushBufferPacketCount() {
+        return _flushBufferPacketCount;
     }
 }
