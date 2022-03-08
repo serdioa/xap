@@ -59,9 +59,7 @@ public class DBMemoryRedoLogFile<T extends IReplicationOrderedPacket> implements
 
     @Override
     public T removeOldest() {
-        T oldest = _redoFile.removeFirst();
-        _weight -= oldest.getWeight();
-        return oldest;
+        return _redoFile.removeFirst();
     }
 
     @Override
@@ -72,7 +70,7 @@ public class DBMemoryRedoLogFile<T extends IReplicationOrderedPacket> implements
     @Override
     public void add(T replicationPacket) {
         _redoFile.addLast(replicationPacket);
-        _weight += replicationPacket.getWeight();
+        //todo : increase weight
     }
 
     @Override
@@ -98,7 +96,8 @@ public class DBMemoryRedoLogFile<T extends IReplicationOrderedPacket> implements
             _discardedPacketCount = 0;
         } else {
             for (long i = 0; i < packetsCount; ++i) {
-                _weight -= removeOldest().getWeight();
+                removeOldest();
+                // decreaseWeight(first); TODO
             }
         }
     }
