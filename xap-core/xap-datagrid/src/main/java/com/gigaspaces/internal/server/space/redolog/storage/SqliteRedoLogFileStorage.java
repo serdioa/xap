@@ -22,14 +22,14 @@ public class SqliteRedoLogFileStorage<T extends IReplicationOrderedPacket> exten
     private long oldestKey = -1;
 
     public SqliteRedoLogFileStorage(DBSwapRedoLogFileConfig<T> config) {
-        super(config.getSpaceName(), config.getFullMemberName());
+        super(config);
         this.config = config;
     }
 
     @Override
     public void append(T replicationPacket) throws StorageException, StorageFullException {
         buffered.add(replicationPacket);
-        if (buffered.size() == 20_000) {
+        if (buffered.size() == config.getFlushBufferPacketCount()) {
             appendBatch(buffered);
             buffered.clear();
         }

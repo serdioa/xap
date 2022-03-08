@@ -38,7 +38,7 @@ public class DBSwapRedoLogFileConfig<T extends IReplicationOrderedPacket> {
         this._fullMemberName = fullMemberName;
         this._diskPacketCapacity = diskPacketCapacity;
         this._memoryPacketCapacity = memoryPacketCapacity;
-        this._flushBufferPacketCount = 1_500; //TODO: move to configuration
+        this._flushBufferPacketCount = 1_500;
     }
 
     public String getSpaceName() {

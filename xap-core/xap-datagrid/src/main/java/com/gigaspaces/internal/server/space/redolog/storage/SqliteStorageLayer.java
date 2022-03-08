@@ -1,6 +1,7 @@
 package com.gigaspaces.internal.server.space.redolog.storage;
 
 import com.gigaspaces.internal.cluster.node.impl.packets.IReplicationOrderedPacket;
+import com.gigaspaces.internal.server.space.redolog.DBSwapRedoLogFileConfig;
 import com.gigaspaces.internal.utils.ByteUtils;
 import com.gigaspaces.logger.Constants;
 import com.gigaspaces.start.SystemLocations;
@@ -30,15 +31,16 @@ public abstract class SqliteStorageLayer<T extends IReplicationOrderedPacket> {
     private final String dbName;
     protected final Connection connection;
     private final ReentrantLock modifierLock = new ReentrantLock();
-    protected final ArrayList<T> buffered = new ArrayList<>(20_000); //TODO: move to configuration
+    protected final ArrayList<T> buffered;
     protected final List<String> COLUMN_NAMES = Arrays.asList("redo_key", "type_name", "operation_type", "uuid", "packet_count", "packet");
     protected final int REDO_KEY_COLUMN_INDEX = 1;
     protected final int PACKET_COLUMN_INDEX = 6;
 
 
-    protected SqliteStorageLayer(String spaceName, String fullMemberName) {
-        this.path = SystemLocations.singleton().work("redo-log/" + spaceName); // todo: maybe in temp
-        this.dbName = "sqlite_storage_redo_log_" + fullMemberName;
+    protected SqliteStorageLayer(DBSwapRedoLogFileConfig<T> config) {
+        this.path = SystemLocations.singleton().work("redo-log/" + config.getSpaceName()); // todo: maybe in temp
+        this.dbName = "sqlite_storage_redo_log_" + config.getFullMemberName();
+        this.buffered = new ArrayList<>(config.getFlushBufferPacketCount());
 
         if (!path.toFile().exists()) {
             if (!path.toFile().mkdirs()) {
@@ -49,9 +51,9 @@ public abstract class SqliteStorageLayer<T extends IReplicationOrderedPacket> {
         }
 
         try {
-            SQLiteConfig config = new SQLiteConfig();
+            SQLiteConfig sqLiteConfig = new SQLiteConfig();
             String dbUrl = "jdbc:sqlite:" + path + "/" + dbName;
-            connection = connectToDB(JDBC_DRIVER, dbUrl, USER, PASS, config);
+            connection = connectToDB(JDBC_DRIVER, dbUrl, USER, PASS, sqLiteConfig);
             logger.info("Successfully created connection {} db {} in path {}", connection, dbName, path);
         } catch (ClassNotFoundException | SQLException e) {
             logger.error("Failed to initialize Sqlite RDBMS", e);
