@@ -40,6 +40,7 @@ public class DBSwapRedoLogFileConfig<T extends IReplicationOrderedPacket> {
         this.storagePacketCapacity = storagePacketCapacity;
         this.memoryPacketCapacity = memoryPacketCapacity;
         this.flushBufferPacketCount = 1_500;
+        this.redoLogCapacityExceededPolicy = RedoLogCapacityExceededPolicy.BLOCK_OPERATIONS;
     }
 
     public String getSpaceName() {
