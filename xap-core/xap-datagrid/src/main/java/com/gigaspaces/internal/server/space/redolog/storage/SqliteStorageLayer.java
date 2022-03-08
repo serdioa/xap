@@ -1,5 +1,6 @@
 package com.gigaspaces.internal.server.space.redolog.storage;
 
+import com.gigaspaces.internal.cluster.node.impl.backlog.globalorder.GlobalOrderDiscardedReplicationPacket;
 import com.gigaspaces.internal.cluster.node.impl.packets.IReplicationOrderedPacket;
 import com.gigaspaces.internal.server.space.redolog.DBSwapRedoLogFileConfig;
 import com.gigaspaces.internal.utils.ByteUtils;
@@ -33,6 +34,10 @@ public abstract class SqliteStorageLayer<T extends IReplicationOrderedPacket> {
     private final DBSwapRedoLogFileConfig<T> config;
     protected final List<String> COLUMN_NAMES = Arrays.asList("redo_key", "type_name", "operation_type", "uuid", "packet_count", "packet");
     protected final int REDO_KEY_COLUMN_INDEX = 1;
+    protected final int TYPE_NAME_COLUMN_INDEX = 2;
+    protected final int OPERATION_TYPE_COLUMN_INDEX = 3;
+    protected final int UID_COLUMN_INDEX = 4;
+    protected final int PACKET_COUNT_COLUMN_INDEX = 5;
     protected final int PACKET_COLUMN_INDEX = 6;
 
 
@@ -147,7 +152,7 @@ public abstract class SqliteStorageLayer<T extends IReplicationOrderedPacket> {
             return ByteUtils.objectToBytes(packet);
         } catch (IOException e) {
             if (logger.isWarnEnabled()) {
-                logger.warn("Failed to create bytes from packet [" + packet + "]", e);
+                logger.warn("Failed to serialize bytes from packet [" + packet + "]", e);
             }
         }
         return new byte[0];
@@ -158,7 +163,7 @@ public abstract class SqliteStorageLayer<T extends IReplicationOrderedPacket> {
             return (T) ByteUtils.bytesToObject(bytes);
         } catch (IOException | ClassNotFoundException e) {
             if (logger.isWarnEnabled()) {
-                logger.warn("Failed to create packet from bytes", e);
+                logger.warn("Failed to deserialize packet from bytes", e);
             }
         }
         return null;
@@ -196,6 +201,19 @@ public abstract class SqliteStorageLayer<T extends IReplicationOrderedPacket> {
         logger.info("Successfully deleted db {} in path {}", dbName, path);
     }
 
+    protected void logFailureInfo(ResultSet resultSet) throws SQLException {
+        if (logger.isWarnEnabled()) {
+            final long redoKey = resultSet.getLong(REDO_KEY_COLUMN_INDEX);
+            final String typeName = resultSet.getString(TYPE_NAME_COLUMN_INDEX);
+            final String operationType = resultSet.getString(OPERATION_TYPE_COLUMN_INDEX);
+            final String uid = resultSet.getString(UID_COLUMN_INDEX);
+            final int packetCount = resultSet.getInt(PACKET_COUNT_COLUMN_INDEX);
+            logger.warn("Failed to read packet from storage: " +
+                    "[redoKey=" + redoKey + ", typeName=" + typeName + ", operationType=" + operationType +
+                    ", uid=" + uid + ", packetCount=" + packetCount + "], this packet was discarded");
+        }
+    }
+
     protected class RDBMSRedoLogIterator implements StorageReadOnlyIterator<T> {
 
         private final ResultSet resultSet;
@@ -218,9 +236,9 @@ public abstract class SqliteStorageLayer<T extends IReplicationOrderedPacket> {
             try {
                 final T packet = bytesToPacket(resultSet.getBytes(PACKET_COLUMN_INDEX));
                 if (packet == null) {
-                    if (logger.isWarnEnabled()) {
-                        logger.warn("Failed to read packet from RDBMS, packetId=" + resultSet.getLong(REDO_KEY_COLUMN_INDEX));
-                    }
+                    logFailureInfo(resultSet);
+                    final long redoKey = resultSet.getLong(REDO_KEY_COLUMN_INDEX);
+                    return (T) new GlobalOrderDiscardedReplicationPacket(redoKey);
                 }
                 return packet;
             } catch (SQLException e) {

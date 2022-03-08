@@ -5,6 +5,7 @@ import com.gigaspaces.internal.cluster.node.impl.packets.IReplicationOrderedPack
 import com.gigaspaces.internal.server.space.redolog.storage.IRedoLogFileStorage;
 import com.gigaspaces.internal.server.space.redolog.storage.SqliteRedoLogFileStorage;
 import com.gigaspaces.internal.server.space.redolog.storage.StorageException;
+import com.gigaspaces.internal.server.space.redolog.storage.StorageReadOnlyIterator;
 import com.gigaspaces.internal.server.space.redolog.storage.bytebuffer.WeightedBatch;
 import com.gigaspaces.internal.utils.collections.ReadOnlyIterator;
 import com.gigaspaces.logger.Constants;
@@ -13,8 +14,10 @@ import com.j_spaces.core.cluster.startup.CompactionResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.NoSuchElementException;
 
 public class DBSwapRedoLogFile<T extends IReplicationOrderedPacket> implements IRedoLogFile<T> {
 
@@ -90,8 +93,10 @@ public class DBSwapRedoLogFile<T extends IReplicationOrderedPacket> implements I
     public T removeOldest() {
         try {
             if (_externalRedoLogStorage.isEmpty()) {
-                T oldest = _memoryRedoLog.removeOldest();
-                return oldest == null ? removeOldest() : oldest; //todo limited retry attempts
+                if (_memoryRedoLog.isEmpty()) {
+                    throw new NoSuchElementException();
+                }
+                return _memoryRedoLog.removeOldest();
             }
             WeightedBatch<T> tWeightedBatch = _externalRedoLogStorage.removeFirstBatch(1, _lastCompactionRangeEndKey);//todo : check _lastCompactionRangeEndKey
             return tWeightedBatch.getBatch().get(0);
@@ -104,8 +109,10 @@ public class DBSwapRedoLogFile<T extends IReplicationOrderedPacket> implements I
     public T getOldest() {
         try {
             if (_externalRedoLogStorage.isEmpty()) {
-                T oldest = _memoryRedoLog.getOldest();
-                return oldest == null ? getOldest() : oldest; //todo limited retry attempts
+                if (_memoryRedoLog.isEmpty()) {
+                    throw new NoSuchElementException();
+                }
+                return _memoryRedoLog.getOldest();
             }
             return _externalRedoLogStorage.getOldest();
         } catch (StorageException e) {

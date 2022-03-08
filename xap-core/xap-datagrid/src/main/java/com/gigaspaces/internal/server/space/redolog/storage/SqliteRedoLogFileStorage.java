@@ -1,5 +1,6 @@
 package com.gigaspaces.internal.server.space.redolog.storage;
 
+import com.gigaspaces.internal.cluster.node.impl.backlog.globalorder.GlobalOrderDiscardedReplicationPacket;
 import com.gigaspaces.internal.cluster.node.impl.packets.IReplicationOrderedPacket;
 import com.gigaspaces.internal.cluster.node.impl.packets.data.IReplicationPacketData;
 import com.gigaspaces.internal.cluster.node.impl.packets.data.IReplicationPacketEntryData;
@@ -14,6 +15,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.List;
+import java.util.NoSuchElementException;
 
 public class SqliteRedoLogFileStorage<T extends IReplicationOrderedPacket> extends SqliteStorageLayer<T> implements IRedoLogFileStorage<T> {
 
@@ -28,7 +30,6 @@ public class SqliteRedoLogFileStorage<T extends IReplicationOrderedPacket> exten
 
     @Override
     public void appendBatch(List<T> replicationPackets) throws StorageException, StorageFullException {
-        boolean isEmpty = isEmpty();
         long lastOldKey = oldestKey;
         String query = "INSERT INTO " +
                 TABLE_NAME + " (" + String.join(", ", COLUMN_NAMES) + ") " +
@@ -37,9 +38,8 @@ public class SqliteRedoLogFileStorage<T extends IReplicationOrderedPacket> exten
             tnx.execute("BEGIN TRANSACTION;");
             try (PreparedStatement statement = connection.prepareStatement(query)) {
                 for (final T replicationPacket : replicationPackets) {
-                    if (isEmpty) {
+                    if (lastOldKey == oldestKey && storageSize == 0) {
                         oldestKey = replicationPacket.getKey();
-                        isEmpty = false;
                     }
                     statement.setLong(1, replicationPacket.getKey());
                     statement.setString(2, getPacketTypeName(replicationPacket));
@@ -126,9 +126,9 @@ public class SqliteRedoLogFileStorage<T extends IReplicationOrderedPacket> exten
             while (resultSet.next()) {
                 final T packet = bytesToPacket(resultSet.getBytes(PACKET_COLUMN_INDEX));
                 if (packet == null) {
-                    if (logger.isWarnEnabled()) {
-                        logger.warn("Failed to read packet from RDBMS, packetId=" + resultSet.getLong(REDO_KEY_COLUMN_INDEX));
-                    }
+                    logFailureInfo(resultSet);
+                    final long redoKey = resultSet.getLong(REDO_KEY_COLUMN_INDEX);
+                    batch.addToBatch((T) new GlobalOrderDiscardedReplicationPacket(redoKey));
                 } else {
                     batch.addToBatch(packet);
                 }
@@ -186,18 +186,19 @@ public class SqliteRedoLogFileStorage<T extends IReplicationOrderedPacket> exten
 
     @Override
     public T getOldest() throws StorageException {
-        //TODO: considering using cache to keep more
+        if (isEmpty()) {
+            throw new NoSuchElementException();
+        }
         String query = "SELECT * FROM " + TABLE_NAME + " WHERE redo_key = " + oldestKey + ";";
         try (final ResultSet resultSet = executeQuery(query)) {
             if (resultSet.next()) {
                 final T packet = bytesToPacket(resultSet.getBytes(PACKET_COLUMN_INDEX));
                 if (packet == null) {
-                    if (logger.isWarnEnabled()) {
-                        logger.warn("Failed to read packet from RDBMS, packetId=" + resultSet.getLong(REDO_KEY_COLUMN_INDEX));
-                    }
-                } else {
-                    return packet;
+                    logFailureInfo(resultSet);
+                    final long redoKey = resultSet.getLong(REDO_KEY_COLUMN_INDEX);
+                    return (T) new GlobalOrderDiscardedReplicationPacket(redoKey);
                 }
+                return packet;
             }
         } catch (SQLException e) {
             throw new StorageException("Fail to get oldest", e);
