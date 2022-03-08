@@ -32,12 +32,14 @@ public abstract class SqliteStorageLayer<T extends IReplicationOrderedPacket> {
     protected final Connection connection;
     private final ReentrantLock modifierLock = new ReentrantLock();
     protected final ArrayList<T> buffered;
+    private final DBSwapRedoLogFileConfig<T> config;
     protected final List<String> COLUMN_NAMES = Arrays.asList("redo_key", "type_name", "operation_type", "uuid", "packet_count", "packet");
     protected final int REDO_KEY_COLUMN_INDEX = 1;
     protected final int PACKET_COLUMN_INDEX = 6;
 
 
     protected SqliteStorageLayer(DBSwapRedoLogFileConfig<T> config) {
+        this.config = config;
         this.path = SystemLocations.singleton().work("redo-log/" + config.getSpaceName()); // todo: maybe in temp
         this.dbName = "sqlite_storage_redo_log_" + config.getFullMemberName();
         this.buffered = new ArrayList<>(config.getFlushBufferPacketCount());
@@ -62,12 +64,12 @@ public abstract class SqliteStorageLayer<T extends IReplicationOrderedPacket> {
         createTable();
     }
 
-    private Connection connectToDB(String jdbcDriver, String dbUrl, String user, String password, SQLiteConfig config) throws ClassNotFoundException, SQLException {
+    private Connection connectToDB(String jdbcDriver, String dbUrl, String user, String password, SQLiteConfig sqLiteConfig) throws ClassNotFoundException, SQLException {
         Connection conn;
         Class.forName(jdbcDriver);
-        config.setPragma(SQLiteConfig.Pragma.JOURNAL_MODE, "wal");
-        config.setPragma(SQLiteConfig.Pragma.CACHE_SIZE, "5000");
-        Properties properties = config.toProperties();
+        sqLiteConfig.setPragma(SQLiteConfig.Pragma.JOURNAL_MODE, "wal");
+        sqLiteConfig.setPragma(SQLiteConfig.Pragma.CACHE_SIZE, "5000");
+        Properties properties = sqLiteConfig.toProperties();
         properties.setProperty("user", user);
         properties.setProperty("password", password);
         conn = DriverManager.getConnection(dbUrl, properties);

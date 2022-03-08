@@ -17,6 +17,7 @@
 package com.gigaspaces.internal.server.space.redolog;
 
 import com.gigaspaces.internal.cluster.node.impl.packets.IReplicationOrderedPacket;
+import com.j_spaces.core.cluster.RedoLogCapacityExceededPolicy;
 
 /**
  * Configures a {@link DBSwapRedoLogFileConfig}
@@ -26,42 +27,50 @@ import com.gigaspaces.internal.cluster.node.impl.packets.IReplicationOrderedPack
  */
 @com.gigaspaces.api.InternalApi
 public class DBSwapRedoLogFileConfig<T extends IReplicationOrderedPacket> {
-    private final String _spaceName;
-    private final String _fullMemberName;
-    private final int _memoryPacketCapacity;
-    private final int _diskPacketCapacity;
-    private int _flushBufferPacketCount;
-    private String _onRedoLogCapacityExceededString;
+    private final String spaceName;
+    private final String fullMemberName;
+    private final int memoryPacketCapacity;
+    private final int storagePacketCapacity;
+    private int flushBufferPacketCount;
+    private RedoLogCapacityExceededPolicy redoLogCapacityExceededPolicy;
 
-    public DBSwapRedoLogFileConfig(String spaceName, String fullMemberName, int memoryPacketCapacity, int diskPacketCapacity) {
-        this._spaceName = spaceName;
-        this._fullMemberName = fullMemberName;
-        this._diskPacketCapacity = diskPacketCapacity;
-        this._memoryPacketCapacity = memoryPacketCapacity;
-        this._flushBufferPacketCount = 1_500;
+    public DBSwapRedoLogFileConfig(String spaceName, String fullMemberName, int memoryPacketCapacity, int storagePacketCapacity) {
+        this.spaceName = spaceName;
+        this.fullMemberName = fullMemberName;
+        this.storagePacketCapacity = storagePacketCapacity;
+        this.memoryPacketCapacity = memoryPacketCapacity;
+        this.flushBufferPacketCount = 1_500;
     }
 
     public String getSpaceName() {
-        return _spaceName;
+        return spaceName;
     }
 
     public String getFullMemberName() {
-        return _fullMemberName;
+        return fullMemberName;
     }
 
     public int getMemoryPacketCapacity() {
-        return _memoryPacketCapacity;
+        return memoryPacketCapacity;
     }
 
-    public int getDiskPacketCapacity() {
-        return _diskPacketCapacity;
+    public int getStoragePacketCapacity() {
+        return storagePacketCapacity;
     }
 
     public void setFlushBufferPacketCount(int flushBufferPacketCount) {
-        this._flushBufferPacketCount = flushBufferPacketCount;
+        this.flushBufferPacketCount = flushBufferPacketCount;
     }
 
     public int getFlushBufferPacketCount() {
-        return _flushBufferPacketCount;
+        return flushBufferPacketCount;
+    }
+
+    public void setRedoLogCapacityExceededPolicy(RedoLogCapacityExceededPolicy redoLogCapacityExceededPolicy) {
+        this.redoLogCapacityExceededPolicy = redoLogCapacityExceededPolicy;
+    }
+
+    public RedoLogCapacityExceededPolicy getRedoLogCapacityExceededPolicy() {
+        return redoLogCapacityExceededPolicy;
     }
 }
