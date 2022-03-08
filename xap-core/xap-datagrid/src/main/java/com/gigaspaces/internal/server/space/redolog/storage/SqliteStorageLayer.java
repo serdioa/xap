@@ -13,7 +13,6 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.sql.*;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
@@ -31,7 +30,6 @@ public abstract class SqliteStorageLayer<T extends IReplicationOrderedPacket> {
     private final String dbName;
     protected final Connection connection;
     private final ReentrantLock modifierLock = new ReentrantLock();
-    protected final ArrayList<T> buffered;
     private final DBSwapRedoLogFileConfig<T> config;
     protected final List<String> COLUMN_NAMES = Arrays.asList("redo_key", "type_name", "operation_type", "uuid", "packet_count", "packet");
     protected final int REDO_KEY_COLUMN_INDEX = 1;
@@ -42,7 +40,6 @@ public abstract class SqliteStorageLayer<T extends IReplicationOrderedPacket> {
         this.config = config;
         this.path = SystemLocations.singleton().work("redo-log/" + config.getSpaceName()); // todo: maybe in temp
         this.dbName = "sqlite_storage_redo_log_" + config.getFullMemberName();
-        this.buffered = new ArrayList<>(config.getFlushBufferPacketCount());
 
         if (!path.toFile().exists()) {
             if (!path.toFile().mkdirs()) {
@@ -109,7 +106,7 @@ public abstract class SqliteStorageLayer<T extends IReplicationOrderedPacket> {
     protected long executeInsert(PreparedStatement statement) throws SQLException {
         try {
             modifierLock.lock();
-            final int rowsAffected = Arrays.stream(statement.executeBatch()).sum();
+            final long rowsAffected = Arrays.stream(statement.executeBatch()).count();
             if (logger.isTraceEnabled()) {
                 logger.trace("executeInsert manipulated {} rows", rowsAffected);
             }

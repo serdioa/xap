@@ -66,13 +66,18 @@ public class DBSwapRedoLogFile<T extends IReplicationOrderedPacket> implements I
     public void add(T replicationPacket) {
         _memoryRedoLog.add(replicationPacket);
         //todo: use weight
-        final int flushPacketSize = (int) Math.min(_memoryRedoLog.size(), _config.getFlushBufferPacketCount());
-        ArrayList<T> batchToFlush = new ArrayList<>(flushPacketSize);
         if (_memoryRedoLog.size() > _config.getMemoryPacketCapacity()) {
+            final int flushPacketSize = (int) Math.min(_memoryRedoLog.size(), _config.getFlushBufferPacketCount());
+            ArrayList<T> batchToFlush = new ArrayList<>(flushPacketSize);
+            int batchWeight = 0;
             for (int i = 0; i < flushPacketSize; i++) {
                 T oldest = _memoryRedoLog.removeOldest();
                 if (oldest != null) { //todo: check if needed
                     batchToFlush.add(oldest);
+                    batchWeight += oldest.getWeight();
+                    if (batchWeight > flushPacketSize){
+                        break;
+                    }
                 }
             }
             try {

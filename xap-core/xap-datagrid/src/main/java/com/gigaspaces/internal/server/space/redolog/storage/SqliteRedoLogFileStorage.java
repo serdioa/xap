@@ -15,10 +15,12 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.List;
 
-public class SqliteRedoLogFileStorage<T extends IReplicationOrderedPacket> extends SqliteStorageLayer<T> implements INonBatchRedoLogFileStorage<T> {
+public class SqliteRedoLogFileStorage<T extends IReplicationOrderedPacket> extends SqliteStorageLayer<T> implements IRedoLogFileStorage<T> {
 
     private final DBSwapRedoLogFileConfig<T> config;
     private long storageSize = 0;
+    private long storageWeight = 0;
+    private int bufferWeight = 0;
     private long oldestKey = -1;
 
     public SqliteRedoLogFileStorage(DBSwapRedoLogFileConfig<T> config) {
@@ -27,18 +29,12 @@ public class SqliteRedoLogFileStorage<T extends IReplicationOrderedPacket> exten
     }
 
     @Override
-    public void append(T replicationPacket) throws StorageException, StorageFullException {
-        buffered.add(replicationPacket);
-        if (buffered.size() == config.getFlushBufferPacketCount()) {
-            appendBatch(buffered);
-            buffered.clear();
-        }
-    }
-
-    @Override
-    public void appendBatch(List<T> replicationPackets) throws StorageException, StorageFullException {
+    public void appendBatch(List<T> replicationPackets) throws StorageException {
         boolean isEmpty = isEmpty();
         long lastOldKey = oldestKey;
+        long batchWeight = 0;
+        long lastStorageSize = storageSize;
+        long lastStorageWeight = storageWeight;
         String query = "INSERT INTO " +
                 TABLE_NAME + " (" + String.join(", ", COLUMN_NAMES) + ") " +
                 "VALUES (?, ?, ?, ?, ?, ?);";
@@ -57,8 +53,15 @@ public class SqliteRedoLogFileStorage<T extends IReplicationOrderedPacket> exten
                     statement.setInt(5, getPacketCount(replicationPacket));
                     statement.setBytes(6, packetToBytes(replicationPacket));
                     statement.addBatch();
+                    batchWeight += replicationPacket.getWeight();
                 }
-                storageSize += executeInsert(statement);
+                long rowsAffected = executeInsert(statement);
+                if (rowsAffected == replicationPackets.size()){
+                    storageWeight += batchWeight;
+                    storageSize += rowsAffected;
+                } else{
+                    throw new SQLException("Number of expected inserted rows: " + replicationPackets.size() + ", actual number of inserted rows: " + rowsAffected);
+                }
             } catch (SQLException e) {
                 oldestKey = lastOldKey;
                 tnx.execute("ROLLBACK;");
@@ -67,8 +70,10 @@ public class SqliteRedoLogFileStorage<T extends IReplicationOrderedPacket> exten
             }
             tnx.execute("COMMIT;");
         } catch (SQLException e) {
+            storageSize = lastStorageSize;
+            storageWeight = lastStorageWeight;
             oldestKey = lastOldKey;
-            throw new StorageException("failed to commit transaction" + TABLE_NAME, e);
+            throw new StorageException("failed to commit transaction for table: " + TABLE_NAME, e);
         }
     }
 
@@ -130,13 +135,10 @@ public class SqliteRedoLogFileStorage<T extends IReplicationOrderedPacket> exten
 
         String whereClause = " WHERE redo_key >= " + oldestKey + " AND redo_key < " + (oldestKey + batchCapacity) + ";";
         String selectQuery = "SELECT * FROM " + TABLE_NAME + whereClause;
-        String deleteQuery = "DELETE FROM " + TABLE_NAME + whereClause;
-        if (isEmpty() && !buffered.isEmpty()) {
-            appendBatch(buffered);
-            buffered.clear();
-        }
+        int removedWeight = 0;
+        long oldestKeyRemoved = -1;
         try (ResultSet resultSet = executeQuery(selectQuery)) {
-            while (resultSet.next()) {
+            while (resultSet.next() && removedWeight < batchCapacity) {
                 final T packet = bytesToPacket(resultSet.getBytes(PACKET_COLUMN_INDEX));
                 if (packet == null) {
                     if (logger.isWarnEnabled()) {
@@ -144,6 +146,8 @@ public class SqliteRedoLogFileStorage<T extends IReplicationOrderedPacket> exten
                     }
                 } else {
                     batch.addToBatch(packet);
+                    removedWeight += packet.getWeight();
+                    oldestKeyRemoved = packet.getKey();
                 }
             }
         } catch (SQLException e) {
@@ -151,8 +155,10 @@ public class SqliteRedoLogFileStorage<T extends IReplicationOrderedPacket> exten
         }
 
         try {
+            String deleteQuery = "DELETE FROM " + TABLE_NAME + " WHERE redo_key >= " + oldestKey + " AND redo_key <= " + (oldestKeyRemoved) + ";";
             long rowsAffected = executeDelete(deleteQuery);
             storageSize -= rowsAffected;
+            storageWeight -= removedWeight;
             oldestKey += rowsAffected;
         } catch (SQLException e) {
             throw new StorageException("failed to delete values table " + TABLE_NAME, e);
@@ -169,10 +175,6 @@ public class SqliteRedoLogFileStorage<T extends IReplicationOrderedPacket> exten
     @Override
     public StorageReadOnlyIterator<T> readOnlyIterator() throws StorageException {
         String query = "SELECT * FROM " + TABLE_NAME + " ORDER BY redo_key;";
-        if (isEmpty() && !buffered.isEmpty()) {
-            appendBatch(buffered);
-            buffered.clear();
-        }
         try (final ResultSet resultSet = executeQuery(query)) {
             return new RDBMSRedoLogIterator(resultSet);
         } catch (SQLException e) {
@@ -183,10 +185,6 @@ public class SqliteRedoLogFileStorage<T extends IReplicationOrderedPacket> exten
     @Override
     public StorageReadOnlyIterator<T> readOnlyIterator(long fromIndex) throws StorageException {
         String query = "SELECT * FROM " + TABLE_NAME + " WHERE redo_key >= " + fromIndex + " ORDER BY redo_key;";
-        if (isEmpty() && !buffered.isEmpty()) {
-            appendBatch(buffered);
-            buffered.clear();
-        }
         try {
             final ResultSet resultSet = executeQuery(query);
             return new RDBMSRedoLogIterator(resultSet);
@@ -209,10 +207,6 @@ public class SqliteRedoLogFileStorage<T extends IReplicationOrderedPacket> exten
     public T getOldest() throws StorageException {
         //TODO: considering using cache to keep more
         String query = "SELECT * FROM " + TABLE_NAME + " WHERE redo_key = " + oldestKey + ";";
-        if (isEmpty() && !buffered.isEmpty()) {
-            appendBatch(buffered);
-            buffered.clear();
-        }
         try (final ResultSet resultSet = executeQuery(query)) {
             if (resultSet.next()) {
                 final T packet = bytesToPacket(resultSet.getBytes(PACKET_COLUMN_INDEX));
@@ -247,7 +241,7 @@ public class SqliteRedoLogFileStorage<T extends IReplicationOrderedPacket> exten
 
     @Override
     public long getWeight() {
-        return 0;
+        return storageWeight;
     }
 
     @Override
@@ -263,7 +257,7 @@ public class SqliteRedoLogFileStorage<T extends IReplicationOrderedPacket> exten
 
     @Override
     public long getCacheWeight() {
-        return 0;
+        return bufferWeight;
     }
 
     @Override
@@ -283,11 +277,11 @@ public class SqliteRedoLogFileStorage<T extends IReplicationOrderedPacket> exten
 
     @Override
     public long getMemoryPacketsWeight() {
-        return 0;
+        return bufferWeight;
     }
 
     @Override
     public long getExternalStoragePacketsWeight() {
-        return 0;
+        return storageWeight + bufferWeight;
     }
 }
