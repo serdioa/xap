@@ -16,15 +16,17 @@ public class GSMessageRequestInfo implements SpaceRequestInfo {
     private CDCInfo cdcInfo;
     private SpaceDocument document;
     private GSMessageTask.OperationType operationType;
-
+    private SpaceDocument deletedDocument;
 
     public GSMessageRequestInfo() {
     }
 
-    public GSMessageRequestInfo(SpaceDocument document, CDCInfo cdcInfo, GSMessageTask.OperationType operationType) {
+    public GSMessageRequestInfo(SpaceDocument document, CDCInfo cdcInfo,
+                                GSMessageTask.OperationType operationType, SpaceDocument deletedDocument ) {
         this.document = document;
         this.cdcInfo = cdcInfo;
         this.operationType = operationType;
+        this.deletedDocument = deletedDocument;
     }
 
 
@@ -50,11 +52,16 @@ public class GSMessageRequestInfo implements SpaceRequestInfo {
 
     }
 
+    public SpaceDocument getDeletedDocument() {
+        return deletedDocument;
+    }
+
     @Override
     public void writeExternal(ObjectOutput out) throws IOException {
         IOUtils.writeObject(out, cdcInfo);
         IOUtils.writeObject(out, document);
         IOUtils.writeObject(out, operationType);
+        IOUtils.writeObject(out, deletedDocument);
     }
 
     @Override
@@ -62,6 +69,7 @@ public class GSMessageRequestInfo implements SpaceRequestInfo {
         this.cdcInfo = IOUtils.readObject(in);
         this.document = IOUtils.readObject(in);
         this.operationType = IOUtils.readObject(in);
+        this.deletedDocument = IOUtils.readObject(in);
     }
 
     @Override
@@ -74,6 +82,7 @@ public class GSMessageRequestInfo implements SpaceRequestInfo {
         return "Request Info:" + " " +
                 "cdcInfo = " + cdcInfo + " " +
                 "document = " + document + " " +
-                "operationType = " + operationType;
+                "operationType = " + operationType +
+                "deletedDocument = " + deletedDocument ;
     }
 }

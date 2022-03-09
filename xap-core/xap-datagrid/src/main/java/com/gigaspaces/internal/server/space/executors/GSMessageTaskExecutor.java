@@ -106,6 +106,9 @@ public class GSMessageTaskExecutor extends SpaceActionExecutor {
                         logger.error(errorMsg);
                         throw new SkippedMessageExecutionException(errorMsg);
                     }
+                    if( requestInfo.getDeletedDocument() != null ){
+                        singleProxy.write( requestInfo.getDeletedDocument(), transaction, Lease.FOREVER );
+                    }
                     break;
             }
 
@@ -178,6 +181,11 @@ public class GSMessageTaskExecutor extends SpaceActionExecutor {
                         }
                         logger.debug("received same message again, ignoring delete entry: " + entry.getTypeName() + ", message id: " + cdcInfo.getMessageID());
                     }
+                    if( requestInfo.getDeletedDocument() != null ){
+                        logger.debug("writing deleted message: " + requestInfo.getDeletedDocument());
+                        singleProxy.write(requestInfo.getDeletedDocument(), null, Lease.FOREVER, 0, WriteModifiers.WRITE_ONLY.getCode());
+                    }
+
                     break;
             }
         } catch (Exception e) {
@@ -208,7 +216,7 @@ public class GSMessageTaskExecutor extends SpaceActionExecutor {
         }
     }
 
-    private void handleExceptionUnderTransaction(SpaceDocument entry, CDCInfo cdcInfo, Transaction transaction, Exception e) throws CannotAbortException, UnknownTransactionException, RemoteException {
+    private void handleExceptionUnderTransaction(SpaceDocument entry, CDCInfo cdcInfo, Transaction transaction, Exception e) {
         logger.warn(String.format("failed to complete task execution for Object: %s, message id: %s", entry != null ? entry.getTypeName() : null, cdcInfo != null ? cdcInfo.getMessageID() : null));
         logger.warn("rolling back operation", e);
         if (transaction == null) {
