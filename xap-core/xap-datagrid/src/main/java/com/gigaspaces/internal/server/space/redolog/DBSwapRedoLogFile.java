@@ -5,16 +5,15 @@ import com.gigaspaces.internal.cluster.node.impl.packets.IReplicationOrderedPack
 import com.gigaspaces.internal.server.space.redolog.storage.IRedoLogFileStorage;
 import com.gigaspaces.internal.server.space.redolog.storage.SqliteRedoLogFileStorage;
 import com.gigaspaces.internal.server.space.redolog.storage.StorageException;
-import com.gigaspaces.internal.server.space.redolog.storage.StorageReadOnlyIterator;
 import com.gigaspaces.internal.server.space.redolog.storage.bytebuffer.WeightedBatch;
 import com.gigaspaces.internal.utils.collections.ReadOnlyIterator;
 import com.gigaspaces.logger.Constants;
 import com.j_spaces.core.cluster.ReplicationPolicy;
 import com.j_spaces.core.cluster.startup.CompactionResult;
+import com.j_spaces.core.cluster.startup.RedoLogCompactionUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
@@ -68,25 +67,24 @@ public class DBSwapRedoLogFile<T extends IReplicationOrderedPacket> implements I
     @Override
     public void add(T replicationPacket) {
         _memoryRedoLog.add(replicationPacket);
-        //todo: use weight
         final int flushPacketSize = (int) Math.min(_memoryRedoLog.size(), _config.getFlushBufferPacketCount());
         ArrayList<T> batchToFlush = new ArrayList<>(flushPacketSize);
         if (_memoryRedoLog.size() > _config.getMemoryPacketCapacity()) {
+            int batchWeight = 0;
             for (int i = 0; i < flushPacketSize; i++) {
                 T oldest = _memoryRedoLog.removeOldest();
-                if (oldest != null) { //todo: check if needed
-                    batchToFlush.add(oldest);
+                batchToFlush.add(oldest);
+                batchWeight += oldest.getWeight();
+                if (batchWeight > flushPacketSize){
+                    break;
                 }
             }
-            try {
-                _externalRedoLogStorage.appendBatch(batchToFlush);
-            } catch (StorageException e) {
-                throw new IllegalArgumentException(e);
-            }
+            _externalRedoLogStorage.appendBatch(batchToFlush);
         }
-        //        if (RedoLogCompactionUtil.isCompactable(replicationPacket)) {
-        //            _lastSeenTransientPacketKey = replicationPacket.getKey();
-        //        }
+
+        if (RedoLogCompactionUtil.isCompactable(replicationPacket)) {
+            _lastSeenTransientPacketKey = replicationPacket.getKey();
+        }
     }
 
     @Override

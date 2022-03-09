@@ -32,13 +32,14 @@ public abstract class SqliteStorageLayer<T extends IReplicationOrderedPacket> {
     protected final Connection connection;
     private final ReentrantLock modifierLock = new ReentrantLock();
     private final DBSwapRedoLogFileConfig<T> config;
-    protected final List<String> COLUMN_NAMES = Arrays.asList("redo_key", "type_name", "operation_type", "uuid", "packet_count", "packet");
+    protected final List<String> COLUMN_NAMES = Arrays.asList("redo_key", "type_name", "operation_type", "uuid", "packet_count", "packet_weight", "packet");
     protected final int REDO_KEY_COLUMN_INDEX = 1;
     protected final int TYPE_NAME_COLUMN_INDEX = 2;
     protected final int OPERATION_TYPE_COLUMN_INDEX = 3;
     protected final int UID_COLUMN_INDEX = 4;
     protected final int PACKET_COUNT_COLUMN_INDEX = 5;
-    protected final int PACKET_COLUMN_INDEX = 6;
+    protected final int PACKET_WEIGHT_COLUMN_INDEX = 6;
+    protected final int PACKET_COLUMN_INDEX = 7;
 
 
     protected SqliteStorageLayer(DBSwapRedoLogFileConfig<T> config) {
@@ -85,6 +86,7 @@ public abstract class SqliteStorageLayer<T extends IReplicationOrderedPacket> {
                 "'operation_type' VARCHAR, " +
                 "'uuid' VARCHAR, " +
                 "'packet_count' INTEGER, " +
+                "'packet_weight' INTEGER, " +
                 "'packet' BLOB, " +
                 "PRIMARY KEY (redo_key) );";
         try {
@@ -111,7 +113,7 @@ public abstract class SqliteStorageLayer<T extends IReplicationOrderedPacket> {
     protected long executeInsert(PreparedStatement statement) throws SQLException {
         try {
             modifierLock.lock();
-            final int rowsAffected = Arrays.stream(statement.executeBatch()).sum();
+            final long rowsAffected = Arrays.stream(statement.executeBatch()).sum();
             if (logger.isTraceEnabled()) {
                 logger.trace("executeInsert manipulated {} rows", rowsAffected);
             }

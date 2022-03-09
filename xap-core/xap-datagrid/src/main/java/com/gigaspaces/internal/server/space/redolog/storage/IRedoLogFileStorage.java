@@ -64,7 +64,7 @@ public interface IRedoLogFileStorage<T extends IReplicationOrderedPacket> extend
     /**
      * Delete a batch from the start of the list
      *
-     * @param packetsCount to delete
+     * @param packetsCount number of packets to delete
      */
     void deleteOldestPackets(long packetsCount) throws StorageException;
 
