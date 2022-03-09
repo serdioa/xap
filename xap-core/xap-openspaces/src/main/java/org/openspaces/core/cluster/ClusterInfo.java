@@ -18,6 +18,8 @@
 package org.openspaces.core.cluster;
 
 import com.gigaspaces.cluster.DynamicPartitionInfo;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 import java.io.Serializable;
 
@@ -47,6 +49,8 @@ import java.io.Serializable;
 public class ClusterInfo implements Cloneable, Serializable {
 
     private static final long serialVersionUID = -128705742407213814L;
+    private static final Log logger = LogFactory.getLog(ClusterInfo.class);
+
 
     private String schema;
 
@@ -235,21 +239,32 @@ public class ClusterInfo implements Cloneable, Serializable {
     public int getRunningNumber() {
         //Can have null value which means that it was not set and should not be taken into account.
         if (getNumberOfInstances() == null) {
+            logger.error("<<<<<<<<getRunningNumber()=0 case 1");
             return 0;
         }
         if (getNumberOfInstances() == 0) {
-            if (getInstanceId() != null)
+            if (getInstanceId() != null) {
+                logger.error("<<<<<<<<<<<getRunningNumber()="+getInstanceId()+" case 2");
                 return getInstanceId(); //GS-8737: stateless pu deployed with zero instances but later incremented
-            else
+            } else {
+                logger.error("<<<<<<<<<<<getRunningNumber()=0 case 3");
                 return 0;
+            }
         }
         if (getInstanceId() == null || getInstanceId() == 0) {
+            logger.error("<<<<<<<<<<<<<<getRunningNumber()=0 case 4");
             return 0;
         }
         if (getNumberOfBackups() == null || getNumberOfBackups() == 0) {
+            logger.error("<<<<<<<<<<<<<<getRunningNumber()="+(getInstanceId() - 1)+" case 5");
+
             return getInstanceId() - 1;
         }
-        return ((getInstanceId() - 1) * (getNumberOfBackups() + 1)) + (getBackupId() == null ? 0 : getBackupId());
+        int result =  ((getInstanceId() - 1) * (getNumberOfBackups() + 1)) + (getBackupId() == null ? 0 : getBackupId());
+
+        logger.error("<<<<<<<<<<<<<<getRunningNumber()="+result+" case 6");
+
+        return result;
     }
 
     /**
