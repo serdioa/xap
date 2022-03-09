@@ -101,6 +101,18 @@ public class GSMessageTaskExecutor extends SpaceActionExecutor {
                     break;
                 case DELETE:
                     logger.debug("deleting message: " + entry);
+                    if( requestInfo.isPopulateDeletedObjectsTable() ){
+                        DeletedDocumentInfo deletedSpaceDocument = createDeletedSpaceDocument( cdcInfo, entry );
+                        logger.debug("writing deleted message(all in cache): " + deletedSpaceDocument );
+                        try {
+                            singleProxy.write( deletedSpaceDocument, null, Lease.FOREVER );
+                        }
+                        catch( Exception e ){
+                            logger.error("failed to write entry of type: " + deletedSpaceDocument.getFullTypeName() +
+                                    " to deleted table: " + deletedSpaceDocument.getTypeName() +
+                                    " with id: " + deletedSpaceDocument.getId() + " due to ", e );
+                        }
+                    }
                     if (singleProxy.take(entry, transaction, 0) == null) {
                         String errorMsg = "failed to delete entry: " + entry.getTypeName() + ", message id: " + cdcInfo.getMessageID();
                         logger.error(errorMsg);
@@ -117,7 +129,6 @@ public class GSMessageTaskExecutor extends SpaceActionExecutor {
             handleExceptionUnderTransaction(entry, cdcInfo, transaction, e);
             throw e;
         }
-
     }
 
     private void handleTieredStorage(SpaceImpl space, GSMessageRequestInfo requestInfo) throws UnusableEntryException, TransactionException, RemoteException, InterruptedException {
@@ -170,6 +181,18 @@ public class GSMessageTaskExecutor extends SpaceActionExecutor {
                     break;
                 case DELETE:
                     logger.debug("deleting message: " + entry);
+                    if( requestInfo.isPopulateDeletedObjectsTable() ){
+                        DeletedDocumentInfo deletedSpaceDocument = createDeletedSpaceDocument(cdcInfo, entry);
+                        logger.debug("writing deleted message(tieredStorage): " + deletedSpaceDocument);
+                        try{
+                            singleProxy.write( deletedSpaceDocument, null, Lease.FOREVER );
+                        }
+                        catch( Exception e ){
+                            logger.error("failed to write entry of type: " + deletedSpaceDocument.getFullTypeName() +
+                                    " to deleted table: " + deletedSpaceDocument.getTypeName() +
+                                    " with id: " + deletedSpaceDocument.getId() + " due to ", e );
+                        }
+                    }
                     if (singleProxy.take(entry, null, 0) == null) {
                         if (!cdcInfo.getMessageID().equals(lastMsgID)) {
                             String errorMsg = "failed to delete entry: " + entry.getTypeName() + ", message id: " + cdcInfo.getMessageID();
@@ -178,12 +201,18 @@ public class GSMessageTaskExecutor extends SpaceActionExecutor {
                         }
                         logger.debug("received same message again, ignoring delete entry: " + entry.getTypeName() + ", message id: " + cdcInfo.getMessageID());
                     }
+
                     break;
             }
         } catch (Exception e) {
             logger.warn(String.format("failed to complete task execution for Object: %s, message id: %s", entry != null ? entry.getTypeName() : null, cdcInfo != null ? cdcInfo.getMessageID() : null));
             throw e;
         }
+    }
+
+    private DeletedDocumentInfo createDeletedSpaceDocument( CDCInfo cdcInfo, SpaceDocument spaceDocument ) {
+        return new DeletedDocumentInfo(
+                cdcInfo.getPipelineName(), spaceDocument.getTypeName(), String.valueOf( System.currentTimeMillis() ) );
     }
 
     private boolean isEntryNotInSpaceException(Throwable e) {
@@ -208,7 +237,7 @@ public class GSMessageTaskExecutor extends SpaceActionExecutor {
         }
     }
 
-    private void handleExceptionUnderTransaction(SpaceDocument entry, CDCInfo cdcInfo, Transaction transaction, Exception e) throws CannotAbortException, UnknownTransactionException, RemoteException {
+    private void handleExceptionUnderTransaction(SpaceDocument entry, CDCInfo cdcInfo, Transaction transaction, Exception e) {
         logger.warn(String.format("failed to complete task execution for Object: %s, message id: %s", entry != null ? entry.getTypeName() : null, cdcInfo != null ? cdcInfo.getMessageID() : null));
         logger.warn("rolling back operation", e);
         if (transaction == null) {
@@ -223,5 +252,4 @@ public class GSMessageTaskExecutor extends SpaceActionExecutor {
             throw new RetriableMessageExecutionException("failed to rollback", ex);
         }
     }
-
 }
