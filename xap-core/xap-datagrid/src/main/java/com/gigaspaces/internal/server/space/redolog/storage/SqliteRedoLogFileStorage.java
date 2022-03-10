@@ -85,10 +85,12 @@ public class SqliteRedoLogFileStorage<T extends IReplicationOrderedPacket> exten
     private String getPacketTypeName(T packet) {
         final IReplicationPacketData<?> data = packet.getData();
         if (data != null) {
-            final IReplicationPacketEntryData singleEntryData = data.getSingleEntryData();
-            if (singleEntryData != null) {
-                return singleEntryData.getTypeName();
-            }
+            if (data.isSingleEntryData()) {
+                final IReplicationPacketEntryData singleEntryData = data.getSingleEntryData();
+                if (singleEntryData != null) {
+                    return singleEntryData.getTypeName();
+                }
+            }//else txn
         }
         return null;
     }
@@ -111,10 +113,12 @@ public class SqliteRedoLogFileStorage<T extends IReplicationOrderedPacket> exten
     private String getPacketOperationTypeName(T packet) {
         final IReplicationPacketData<?> data = packet.getData();
         if (data != null) {
-            final IReplicationPacketEntryData singleEntryData = data.getSingleEntryData();
-            if (singleEntryData != null) {
-                return singleEntryData.getOperationType().name();
-            }
+            if (data.isSingleEntryData()) {
+                final IReplicationPacketEntryData singleEntryData = data.getSingleEntryData();
+                if (singleEntryData != null) {
+                    return singleEntryData.getOperationType().name();
+                }
+            }//else txn
         }
         return null;
     }
