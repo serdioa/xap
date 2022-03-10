@@ -22,8 +22,7 @@ import com.j_spaces.core.cluster.SwapBacklogConfig;
 /**
  * Configures a {@link DBSwapRedoLogFileConfig}
  *
- * @author eitany
- * @since 7.1
+ * @since 16.2
  */
 @com.gigaspaces.api.InternalApi
 public class DBSwapRedoLogFileConfig<T extends IReplicationOrderedPacket> {
@@ -57,5 +56,15 @@ public class DBSwapRedoLogFileConfig<T extends IReplicationOrderedPacket> {
 
     public int getFlushBufferPacketCount() {
         return flushBufferPacketCount;
+    }
+
+    @Override
+    public String toString() {
+        return "DBSwapRedoLogFileConfig{" +
+                "spaceName='" + spaceName + '\'' +
+                ", fullMemberName='" + fullMemberName + '\'' +
+                ", memoryPacketCapacity=" + memoryPacketCapacity +
+                ", flushBufferPacketCount=" + flushBufferPacketCount +
+                '}';
     }
 }

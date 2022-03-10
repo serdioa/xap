@@ -44,9 +44,9 @@ public abstract class SqliteStorageLayer<T extends IReplicationOrderedPacket> {
 
     protected SqliteStorageLayer(DBSwapRedoLogFileConfig<T> config) {
         this.config = config;
-        this.path = SystemLocations.singleton().work("redo-log/" + config.getSpaceName()); // todo: maybe in temp
+        this.path = SystemLocations.singleton().work("redo-log/" + config.getSpaceName());
         this.dbName = "sqlite_storage_redo_log_" + config.getFullMemberName();
-
+        logger.info("Database path: " + path + ", file: " + dbName);
         if (!path.toFile().exists()) {
             if (!path.toFile().mkdirs()) {
                 throw new StorageException("failed to mkdir " + path);
@@ -59,7 +59,7 @@ public abstract class SqliteStorageLayer<T extends IReplicationOrderedPacket> {
             SQLiteConfig sqLiteConfig = new SQLiteConfig();
             String dbUrl = "jdbc:sqlite:" + path + "/" + dbName;
             connection = connectToDB(JDBC_DRIVER, dbUrl, USER, PASS, sqLiteConfig);
-            logger.info("Successfully created connection {} db {} in path {}", connection, dbName, path);
+            logger.info("Successfully connected: " + dbUrl);
         } catch (ClassNotFoundException | SQLException e) {
             logger.error("Failed to initialize Sqlite RDBMS", e);
             throw new StorageException("failed to initialize internal sqlite RDBMS", e);
@@ -188,7 +188,7 @@ public abstract class SqliteStorageLayer<T extends IReplicationOrderedPacket> {
     }
 
     public void deleteDataFile() {
-        logger.info("Trying to delete db file {}", dbName);
+        logger.info("Deleting database file {}", dbName);
         File folder = path.toFile();
         final File[] files = folder.listFiles((dir, name) -> name.matches(dbName + ".*"));
         if (files == null) {
@@ -200,7 +200,7 @@ public abstract class SqliteStorageLayer<T extends IReplicationOrderedPacket> {
                 logger.error("Can't remove " + file.getAbsolutePath());
             }
         }
-        logger.info("Successfully deleted db {} in path {}", dbName, path);
+        logger.info("Successfully deleted");
     }
 
     protected void logFailureInfo(ResultSet resultSet) throws SQLException {

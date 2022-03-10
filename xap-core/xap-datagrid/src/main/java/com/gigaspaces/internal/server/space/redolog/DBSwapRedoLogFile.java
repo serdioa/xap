@@ -32,6 +32,7 @@ public class DBSwapRedoLogFile<T extends IReplicationOrderedPacket> implements I
 
     public DBSwapRedoLogFile(DBSwapRedoLogFileConfig<T> config,
                              AbstractSingleFileGroupBacklog groupBacklog) {
+        _logger.info("Creating swap redo-log - configuration: " + config);
         this._memoryRedoLog = new DBMemoryRedoLogFile<T>(config, groupBacklog);
         this._externalRedoLogStorage = new SqliteRedoLogFileStorage<T>(config);
         this._config = config;
