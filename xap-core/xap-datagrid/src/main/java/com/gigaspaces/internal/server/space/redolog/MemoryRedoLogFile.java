@@ -23,12 +23,12 @@ import com.gigaspaces.internal.utils.collections.ReadOnlyIterator;
 import com.gigaspaces.internal.utils.collections.ReadOnlyIteratorAdapter;
 import com.j_spaces.core.cluster.startup.CompactionResult;
 import com.j_spaces.core.cluster.startup.RedoLogCompactionUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.ListIterator;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import static com.gigaspaces.logger.Constants.LOGGER_REPLICATION_BACKLOG;
 
@@ -89,8 +89,12 @@ public class MemoryRedoLogFile<T extends IReplicationOrderedPacket> implements I
         return size();
     }
 
-    public ReadOnlyIterator<T> readOnlyIterator(long fromIndex) {
-        return new ReadOnlyIteratorAdapter<T>(_redoFile.listIterator((int) fromIndex));
+    public ReadOnlyIterator<T> readOnlyIterator(long fromKey) {
+        if (isEmpty()) return readOnlyIterator();
+        final long key = getOldest().getKey();
+        final long firstKeyInBacklog = key < 0 ? 0 : key;
+        final int fromIndex = (int) Math.max(0, fromKey - firstKeyInBacklog);
+        return new ReadOnlyIteratorAdapter<T>(_redoFile.listIterator(fromIndex));
     }
 
     public Iterator<T> iterator() {

@@ -421,8 +421,7 @@ public abstract class AbstractSingleFileGroupBacklog<T extends IReplicationOrder
 
     // Should be under read lock
     protected long getFirstKeyInBacklogInternal() {
-        // 0 is returned both when backlog is empty and when the first packet is
-        // 0
+        // 0 is returned both when backlog is empty and when the first packet is 0
         if (getBacklogFile().isEmpty())
             return 0;
         return getBacklogFile().getOldest().getKey();
@@ -861,8 +860,7 @@ public abstract class AbstractSingleFileGroupBacklog<T extends IReplicationOrder
 
         SynchronizingData synchronizingData = isSynchronizing(memberName);
 
-        long startIndex = backlogOverflown ? 0 : memberLastConfirmedKey + 1
-                - firstKeyInBacklog;
+        long startIndex = backlogOverflown ? 0 : memberLastConfirmedKey + 1 - firstKeyInBacklog;
 
         if (startIndex >= calculateSizeUnsafe()) {
             if (result.isEmpty() && synchronizingData != null)
@@ -871,7 +869,7 @@ public abstract class AbstractSingleFileGroupBacklog<T extends IReplicationOrder
             return result;
         }
 
-        ReadOnlyIterator<T> iterator = getBacklogFile().readOnlyIterator(startIndex);
+        ReadOnlyIterator<T> iterator = getBacklogFile().readOnlyIterator(memberLastConfirmedKey + 1);
         T previousDiscardedPacket = null;
         int weightSum = 0;
         try {
@@ -1633,7 +1631,7 @@ public abstract class AbstractSingleFileGroupBacklog<T extends IReplicationOrder
             final long packetIndex = packetKey - firstKeyInBacklog;
             final long size = calculateSizeUnsafe();
             if (packetIndex < size) {
-                ReadOnlyIterator<T> readOnlyIterator = _backlogFile.readOnlyIterator(packetIndex);
+                ReadOnlyIterator<T> readOnlyIterator = _backlogFile.readOnlyIterator(packetKey);
                 try {
                     T firstPacket = readOnlyIterator.next();
                     if (firstPacket != null)
@@ -1664,7 +1662,7 @@ public abstract class AbstractSingleFileGroupBacklog<T extends IReplicationOrder
         final long size = calculateSizeUnsafe();
         final List<T> packets = new LinkedList<T>();
         if (packetIndex < size) {
-            ReadOnlyIterator<T> readOnlyIterator = _backlogFile.readOnlyIterator(packetIndex);
+            ReadOnlyIterator<T> readOnlyIterator = _backlogFile.readOnlyIterator(startPacketKey);
             try {
                 while (readOnlyIterator.hasNext()) {
                     T packet = readOnlyIterator.next();
@@ -1684,11 +1682,7 @@ public abstract class AbstractSingleFileGroupBacklog<T extends IReplicationOrder
         List<IReplicationOrderedPacket> packets = new LinkedList<IReplicationOrderedPacket>();
         _rwLock.readLock().lock();
         try {
-            long firstKeyInBacklogInternal = getFirstKeyInBacklogInternal();
-            // Start index can be less than 0 in case of a deleted backlog.
-            long startIndex = Math.max(0, fromKey - firstKeyInBacklogInternal);
-
-            ReadOnlyIterator<T> iterator = getBacklogFile().readOnlyIterator(startIndex);
+            ReadOnlyIterator<T> iterator = getBacklogFile().readOnlyIterator(fromKey);
             int weightSum = 0;
             try {
                 while (iterator.hasNext() && weightSum < maxWeight) {
@@ -1720,13 +1714,15 @@ public abstract class AbstractSingleFileGroupBacklog<T extends IReplicationOrder
                     packets.add(packet);
                 }
             } catch (RuntimeException e) {
-                if (_logger.isErrorEnabled())
+                if (_logger.isErrorEnabled()) {
                     _logger.error(
                             "exception while iterating over the backlog file (getPacketsWithFullSerializedContent), "
-                                    + "[startIndex=" + startIndex
-                                    + " iteration=" + weightSum + " "
-                                    + getStatistics() + "]",
+                                    + "[fromKey=" + fromKey
+                                    + ", firstKeyInBacklog=" + getFirstKeyInBacklogInternal()
+                                    + ", iteration=" + weightSum
+                                    + ", " + getStatistics() + "]",
                             e);
+                }
                 validateIntegrity();
                 throw e;
             } finally {

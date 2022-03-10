@@ -36,7 +36,7 @@ public class DBSwapRedoLogFile<T extends IReplicationOrderedPacket> implements I
         this._memoryRedoLog = new DBMemoryRedoLogFile<T>(config, groupBacklog);
         this._externalRedoLogStorage = new SqliteRedoLogFileStorage<T>(config);
         this._config = config;
-        _groupBacklog = groupBacklog;
+        this._groupBacklog = groupBacklog;
     }
 
     @Override
@@ -82,7 +82,6 @@ public class DBSwapRedoLogFile<T extends IReplicationOrderedPacket> implements I
             }
             _externalRedoLogStorage.appendBatch(batchToFlush);
         }
-
         if (RedoLogCompactionUtil.isCompactable(replicationPacket)) {
             _lastSeenTransientPacketKey = replicationPacket.getKey();
         }
@@ -249,4 +248,4 @@ public class DBSwapRedoLogFile<T extends IReplicationOrderedPacket> implements I
     public Iterator<T> iterator() {
         return _memoryRedoLog.iterator();
     }
- }
+}
