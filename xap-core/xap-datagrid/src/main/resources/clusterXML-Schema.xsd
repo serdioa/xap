@@ -175,6 +175,10 @@
 				<xsd:element name="swap-redo-log" minOccurs="0">
 					<xsd:complexType>
 						<xsd:all>
+							<xsd:element name="storage-type" type="RedoLogSwapStorageType" minOccurs="0" default="byte-buffer"/>
+							<!-- properties for sqlite swap redo log mechanism -->
+							<xsd:element name="sqlite-flush-buffer-packet-count" type="xsd:integer" minOccurs="0" default="1500"/>
+							<!-- properties for byte-buffer swap redo log mechanism -->
 							<xsd:element name="flush-buffer-packet-count" type="xsd:integer" minOccurs="0"/>
 							<xsd:element name="fetch-buffer-packet-count" type="xsd:integer" minOccurs="0"/>
 							<xsd:element name="segment-size" type="xsd:long" minOccurs="0"/>
@@ -289,6 +293,12 @@
 		<xsd:restriction base="xsd:string">
 			<xsd:enumeration value="none"/>
 			<xsd:enumeration value="mirror"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:simpleType name="RedoLogSwapStorageType">
+		<xsd:restriction base="xsd:string">
+			<xsd:enumeration value="byte-buffer"/>
+			<xsd:enumeration value="sqlite"/>
 		</xsd:restriction>
 	</xsd:simpleType>
 	<xsd:simpleType name="ConsistencyLevel">

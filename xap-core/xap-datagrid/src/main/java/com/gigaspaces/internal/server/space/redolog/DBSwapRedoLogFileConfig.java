@@ -17,7 +17,7 @@
 package com.gigaspaces.internal.server.space.redolog;
 
 import com.gigaspaces.internal.cluster.node.impl.packets.IReplicationOrderedPacket;
-import com.j_spaces.core.cluster.RedoLogCapacityExceededPolicy;
+import com.j_spaces.core.cluster.SwapBacklogConfig;
 
 /**
  * Configures a {@link DBSwapRedoLogFileConfig}
@@ -30,17 +30,13 @@ public class DBSwapRedoLogFileConfig<T extends IReplicationOrderedPacket> {
     private final String spaceName;
     private final String fullMemberName;
     private final int memoryPacketCapacity;
-    private final int storagePacketCapacity;
     private int flushBufferPacketCount;
-    private RedoLogCapacityExceededPolicy redoLogCapacityExceededPolicy;
 
-    public DBSwapRedoLogFileConfig(String spaceName, String fullMemberName, int memoryPacketCapacity, int storagePacketCapacity) {
+    public DBSwapRedoLogFileConfig(String spaceName, String fullMemberName, int memoryPacketCapacity) {
         this.spaceName = spaceName;
         this.fullMemberName = fullMemberName;
-        this.storagePacketCapacity = storagePacketCapacity;
         this.memoryPacketCapacity = memoryPacketCapacity;
-        this.flushBufferPacketCount = 1_500;
-        this.redoLogCapacityExceededPolicy = RedoLogCapacityExceededPolicy.BLOCK_OPERATIONS;
+        this.flushBufferPacketCount = SwapBacklogConfig.SQLITE_FLUSH_BUFFER_PACKETS_COUNT_DEFAULT;
     }
 
     public String getSpaceName() {
@@ -55,23 +51,11 @@ public class DBSwapRedoLogFileConfig<T extends IReplicationOrderedPacket> {
         return memoryPacketCapacity;
     }
 
-    public int getStoragePacketCapacity() {
-        return storagePacketCapacity;
-    }
-
     public void setFlushBufferPacketCount(int flushBufferPacketCount) {
         this.flushBufferPacketCount = flushBufferPacketCount;
     }
 
     public int getFlushBufferPacketCount() {
         return flushBufferPacketCount;
-    }
-
-    public void setRedoLogCapacityExceededPolicy(RedoLogCapacityExceededPolicy redoLogCapacityExceededPolicy) {
-        this.redoLogCapacityExceededPolicy = redoLogCapacityExceededPolicy;
-    }
-
-    public RedoLogCapacityExceededPolicy getRedoLogCapacityExceededPolicy() {
-        return redoLogCapacityExceededPolicy;
     }
 }

@@ -40,18 +40,8 @@ import com.gigaspaces.internal.cluster.node.impl.groups.async.AsyncSingleOriginR
 import com.gigaspaces.internal.cluster.node.impl.groups.async.AsyncSourceGroupConfig;
 import com.gigaspaces.internal.cluster.node.impl.groups.consistencylevel.GroupConsistencyLevelPolicy;
 import com.gigaspaces.internal.cluster.node.impl.groups.consistencylevel.SyncMembersInSyncConsistencyLevelPolicy;
-import com.gigaspaces.internal.cluster.node.impl.groups.reliableasync.AsyncChannelConfig;
-import com.gigaspaces.internal.cluster.node.impl.groups.reliableasync.IDynamicSourceGroupMemberLifeCycleBuilder;
-import com.gigaspaces.internal.cluster.node.impl.groups.reliableasync.MirrorChannelDataFilter;
-import com.gigaspaces.internal.cluster.node.impl.groups.reliableasync.ReliableAsyncKeeperReplicationTargetGroupBuilder;
-import com.gigaspaces.internal.cluster.node.impl.groups.reliableasync.ReliableAsyncReplicationSourceGroupBuilder;
-import com.gigaspaces.internal.cluster.node.impl.groups.reliableasync.ReliableAsyncSingleOriginReplicationTargetGroupBuilder;
-import com.gigaspaces.internal.cluster.node.impl.groups.reliableasync.ReliableAsyncSourceGroupConfig;
-import com.gigaspaces.internal.cluster.node.impl.groups.sync.BacklogAdjustedThrottleControllerBuilder;
-import com.gigaspaces.internal.cluster.node.impl.groups.sync.IReplicationThrottleControllerBuilder;
-import com.gigaspaces.internal.cluster.node.impl.groups.sync.SyncMultiOriginReplicationTargetGroupBuilder;
-import com.gigaspaces.internal.cluster.node.impl.groups.sync.SyncReplicationSourceGroupBuilder;
-import com.gigaspaces.internal.cluster.node.impl.groups.sync.SyncSingleOriginReplicationTargetGroupBuilder;
+import com.gigaspaces.internal.cluster.node.impl.groups.reliableasync.*;
+import com.gigaspaces.internal.cluster.node.impl.groups.sync.*;
 import com.gigaspaces.internal.cluster.node.impl.processlog.ProcessLogConfig;
 import com.gigaspaces.internal.cluster.node.impl.processlog.globalorder.GlobalOrderProcessLogConfig;
 import com.gigaspaces.internal.cluster.node.impl.processlog.multibucketsinglefile.MultiBucketSingleFileProcessLogConfig;
@@ -65,21 +55,12 @@ import com.j_spaces.core.cluster.ReplicationPolicy;
 import com.j_spaces.core.cluster.ReplicationProcessingType;
 import com.j_spaces.core.filters.ReplicationStatistics.ReplicationMode;
 import com.j_spaces.core.sadapter.IStorageAdapter;
-
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static com.j_spaces.core.Constants.CacheManager.CACHE_POLICY_ALL_IN_CACHE;
-import static com.j_spaces.core.Constants.CacheManager.CACHE_POLICY_BLOB_STORE;
-import static com.j_spaces.core.Constants.CacheManager.CACHE_POLICY_LRU;
-import static com.j_spaces.core.Constants.CacheManager.CACHE_POLICY_PROP;
+import java.util.*;
+
+import static com.j_spaces.core.Constants.CacheManager.*;
 import static com.j_spaces.core.Constants.DataAdapter.SUPPORTS_VERSION_DEFAULT;
 import static com.j_spaces.core.Constants.DataAdapter.SUPPORTS_VERSION_PROP;
 

@@ -34,14 +34,7 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.Hashtable;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 
 public class ReplicationPolicy implements Serializable, SmartExternalizable {
@@ -227,9 +220,9 @@ public class ReplicationPolicy implements Serializable, SmartExternalizable {
 
     private ReplicationProcessingType processingType = DEFAULT_PROCESSING_TYPE;
 
-    private MultiBucketReplicationPolicy multiBucketReplicationPolicy = null;
+    private MultiBucketReplicationPolicy multiBucketReplicationPolicy;
 
-    private SwapBacklogConfig swapRedologPolicy = null;
+    private SwapBacklogConfig swapRedologPolicy;
 
     private Long localViewMaxRedologCapacity = DEFAULT_LOCALVIEW_REDOLOG_CAPACITY;
 

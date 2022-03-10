@@ -27,16 +27,15 @@ import com.gigaspaces.logger.Constants;
 import com.j_spaces.core.cluster.ReplicationPolicy;
 import com.j_spaces.core.cluster.startup.CompactionResult;
 import com.j_spaces.core.cluster.startup.RedoLogCompactionUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 /**
  * A swap based implementation of the {@link IRedoLogFile} interface, A fixed number of packets can
- * be held in the memory and once this number is exeeded the other packets are stored in a provided
+ * be held in the memory and once this number is exceeded the other packets are stored in a provided
  * {@link INonBatchRedoLogFileStorage}
  *
  * @author eitany

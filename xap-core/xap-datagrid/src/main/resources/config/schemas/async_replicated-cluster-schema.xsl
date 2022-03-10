@@ -45,9 +45,13 @@
 						<redo-log-compaction>none</redo-log-compaction>
 						<backlog-weight-policy>accumulated</backlog-weight-policy>
 						<redo-log-recovery-capacity>-1</redo-log-recovery-capacity>
+						<!-- The swap redo log is only used when the redo log memory capacity is limited (not -1) -->
 						<swap-redo-log>
-							<!--This are low level properties that has to do with the swap redo log mechanism, this should not be changed normally
-							    The swap redo log is only used when the redo log memory capacity is limited (not -1)-->
+							<storage-type>byte-buffer</storage-type>
+							<!-- properties for sqlite swap redo log mechanism -->
+							<!-- <sqlite-flush-buffer-packet-count/> -->
+
+							<!-- properties for byte-buffer swap redo log mechanism -->
 							<flush-buffer-packet-count>500</flush-buffer-packet-count>
 							<fetch-buffer-packet-count>500</fetch-buffer-packet-count>
 							<segment-size>10485760</segment-size>
