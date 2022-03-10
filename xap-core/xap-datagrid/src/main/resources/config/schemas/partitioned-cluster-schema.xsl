@@ -227,7 +227,7 @@
 							<swap-redo-log>
 								<storage-type>byte-buffer</storage-type>
 								<!-- properties for sqlite swap redo log mechanism -->
-								<!-- <sqlite-flush-buffer-packet-count/> -->
+								<sqlite-flush-buffer-packet-count>1500</sqlite-flush-buffer-packet-count>
 
 								<!-- properties for byte-buffer swap redo log mechanism -->
 								<flush-buffer-packet-count>500</flush-buffer-packet-count>
