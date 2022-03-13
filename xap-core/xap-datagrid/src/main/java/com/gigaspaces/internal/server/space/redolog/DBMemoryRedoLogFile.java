@@ -17,14 +17,12 @@ import static com.gigaspaces.logger.Constants.LOGGER_REPLICATION_BACKLOG;
 public class DBMemoryRedoLogFile<T extends IReplicationOrderedPacket> implements IRedoLogFile<T> {
 
     final private LinkedList<T> _redoFile = new LinkedList<>();
-    private final DBSwapRedoLogFileConfig<T> config;
-    private final AbstractSingleFileGroupBacklog _groupBacklog;
+    private final AbstractSingleFileGroupBacklog<?, ?> _groupBacklog;
     private long _weight;
     private long _discardedPacketCount;
     private final Logger _logger;
 
-    public DBMemoryRedoLogFile(DBSwapRedoLogFileConfig<T> config, AbstractSingleFileGroupBacklog groupBacklog) {
-        this.config = config;
+    public DBMemoryRedoLogFile(DBSwapRedoLogFileConfig<T> config, AbstractSingleFileGroupBacklog<?, ?> groupBacklog) {
         this._groupBacklog = groupBacklog;
         this._logger = LoggerFactory.getLogger(LOGGER_REPLICATION_BACKLOG + "." + config.getSpaceName());
     }

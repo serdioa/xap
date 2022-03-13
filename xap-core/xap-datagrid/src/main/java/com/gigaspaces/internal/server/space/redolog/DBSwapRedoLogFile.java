@@ -4,7 +4,6 @@ import com.gigaspaces.internal.cluster.node.impl.backlog.AbstractSingleFileGroup
 import com.gigaspaces.internal.cluster.node.impl.packets.IReplicationOrderedPacket;
 import com.gigaspaces.internal.server.space.redolog.storage.IRedoLogFileStorage;
 import com.gigaspaces.internal.server.space.redolog.storage.SqliteRedoLogFileStorage;
-import com.gigaspaces.internal.server.space.redolog.storage.StorageException;
 import com.gigaspaces.internal.server.space.redolog.storage.bytebuffer.WeightedBatch;
 import com.gigaspaces.internal.utils.collections.ReadOnlyIterator;
 import com.gigaspaces.logger.Constants;
@@ -26,12 +25,12 @@ public class DBSwapRedoLogFile<T extends IReplicationOrderedPacket> implements I
     private final IRedoLogFileStorage<T> _externalRedoLogStorage;
     private final DBSwapRedoLogFileConfig<T> _config;
 
-    private final AbstractSingleFileGroupBacklog _groupBacklog;
+    private final AbstractSingleFileGroupBacklog<?, ?> _groupBacklog;
     private long _lastCompactionRangeEndKey = -1;
     private long _lastSeenTransientPacketKey = -1;
 
     public DBSwapRedoLogFile(DBSwapRedoLogFileConfig<T> config,
-                             AbstractSingleFileGroupBacklog groupBacklog) {
+                             AbstractSingleFileGroupBacklog<?, ?> groupBacklog) {
         _logger.info("Creating swap redo-log - configuration: " + config);
         this._memoryRedoLog = new DBMemoryRedoLogFile<T>(config, groupBacklog);
         this._externalRedoLogStorage = new SqliteRedoLogFileStorage<T>(config);
@@ -91,76 +90,52 @@ public class DBSwapRedoLogFile<T extends IReplicationOrderedPacket> implements I
 
     @Override
     public T removeOldest() {
-        try {
-            if (_externalRedoLogStorage.isEmpty()) {
-                if (_memoryRedoLog.isEmpty()) {
-                    throw new NoSuchElementException();
-                }
-                return _memoryRedoLog.removeOldest();
+        if (_externalRedoLogStorage.isEmpty()) {
+            if (_memoryRedoLog.isEmpty()) {
+                throw new NoSuchElementException();
             }
-            WeightedBatch<T> tWeightedBatch = _externalRedoLogStorage.removeFirstBatch(1, _lastCompactionRangeEndKey);//todo : check _lastCompactionRangeEndKey
-            return tWeightedBatch.getBatch().get(0);
-        } catch (StorageException e) {
-            throw new IllegalArgumentException(e);
+            return _memoryRedoLog.removeOldest();
         }
+        WeightedBatch<T> tWeightedBatch = _externalRedoLogStorage.removeFirstBatch(1, _lastCompactionRangeEndKey);//todo : check _lastCompactionRangeEndKey
+        return tWeightedBatch.getBatch().get(0);
     }
 
     @Override
     public T getOldest() {
-        try {
-            if (_externalRedoLogStorage.isEmpty()) {
-                if (_memoryRedoLog.isEmpty()) {
-                    throw new NoSuchElementException();
-                }
-                return _memoryRedoLog.getOldest();
+        if (_externalRedoLogStorage.isEmpty()) {
+            if (_memoryRedoLog.isEmpty()) {
+                throw new NoSuchElementException();
             }
-            return _externalRedoLogStorage.getOldest();
-        } catch (StorageException e) {
-            throw new IllegalArgumentException(e);
+            return _memoryRedoLog.getOldest();
         }
+        return _externalRedoLogStorage.getOldest();
     }
 
     @Override
     public long size() {
-        try {
-            return _externalRedoLogStorage.size() + _memoryRedoLog.size();
-        } catch (StorageException e) {
-            throw new IllegalArgumentException(e);
-        }
+        return _externalRedoLogStorage.size() + _memoryRedoLog.size();
     }
 
     @Override
     public long getApproximateSize() {
-        try {
-            return _externalRedoLogStorage.size() + _memoryRedoLog.size();
-        } catch (StorageException e) {
-            throw new IllegalArgumentException(e);
-        }
+        return _externalRedoLogStorage.size() + _memoryRedoLog.size();
     }
 
     @Override
     public boolean isEmpty() {
-        try {
-            return _externalRedoLogStorage.isEmpty() && _memoryRedoLog.isEmpty();
-        } catch (StorageException e) {
-            throw new IllegalArgumentException(e);
-        }
+        return _externalRedoLogStorage.isEmpty() && _memoryRedoLog.isEmpty();
     }
 
     @Override
     public void deleteOldestPackets(long packetsCount) {
-        try {
-            if (_externalRedoLogStorage.isEmpty()) {
-                _memoryRedoLog.deleteOldestPackets(packetsCount);
-                return;
-            }
-            WeightedBatch<T> tWeightedBatch = _externalRedoLogStorage.removeFirstBatch((int) packetsCount, _lastCompactionRangeEndKey);//todo : check _lastCompactionRangeEndKey
-            long packetsRemaining = packetsCount - tWeightedBatch.size();
-            if (packetsRemaining > 0) {
-                _memoryRedoLog.deleteOldestPackets(packetsRemaining);
-            }
-        } catch (StorageException e) {
-            throw new IllegalArgumentException(e);
+        if (_externalRedoLogStorage.isEmpty()) {
+            _memoryRedoLog.deleteOldestPackets(packetsCount);
+            return;
+        }
+        WeightedBatch<T> tWeightedBatch = _externalRedoLogStorage.removeFirstBatch((int) packetsCount, _lastCompactionRangeEndKey);//todo : check _lastCompactionRangeEndKey
+        long packetsRemaining = packetsCount - tWeightedBatch.size();
+        if (packetsRemaining > 0) {
+            _memoryRedoLog.deleteOldestPackets(packetsRemaining);
         }
     }
 
@@ -225,14 +200,10 @@ public class DBSwapRedoLogFile<T extends IReplicationOrderedPacket> implements I
 
     @Override
     public ReadOnlyIterator<T> readOnlyIterator() {
-        try {
-            if (_externalRedoLogStorage.isEmpty()) {
-                return _memoryRedoLog.readOnlyIterator();
-            }
-            return _externalRedoLogStorage.readOnlyIterator();
-        } catch (StorageException e) {
-            throw new IllegalArgumentException(e);
+        if (_externalRedoLogStorage.isEmpty()) {
+            return _memoryRedoLog.readOnlyIterator();
         }
+        return _externalRedoLogStorage.readOnlyIterator();
     }
 
     @Override

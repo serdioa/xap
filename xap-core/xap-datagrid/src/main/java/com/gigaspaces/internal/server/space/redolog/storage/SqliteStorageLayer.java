@@ -4,7 +4,6 @@ import com.gigaspaces.internal.cluster.node.impl.backlog.globalorder.GlobalOrder
 import com.gigaspaces.internal.cluster.node.impl.packets.IReplicationOrderedPacket;
 import com.gigaspaces.internal.server.space.redolog.DBSwapRedoLogFileConfig;
 import com.gigaspaces.internal.utils.ByteUtils;
-import com.gigaspaces.logger.Constants;
 import com.gigaspaces.start.SystemLocations;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,8 +18,10 @@ import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.locks.ReentrantLock;
 
+import static com.gigaspaces.logger.Constants.LOGGER_REPLICATION_BACKLOG;
+
 public abstract class SqliteStorageLayer<T extends IReplicationOrderedPacket> {
-    protected static final Logger logger = LoggerFactory.getLogger(Constants.LOGGER_REPLICATION_BACKLOG + ".sqlite");
+    protected final Logger logger;
 
     private static final String JDBC_DRIVER = "org.sqlite.JDBC";
     private static final String USER = "gs";
@@ -31,7 +32,6 @@ public abstract class SqliteStorageLayer<T extends IReplicationOrderedPacket> {
     private final String dbName;
     protected final Connection connection;
     private final ReentrantLock modifierLock = new ReentrantLock();
-    private final DBSwapRedoLogFileConfig<T> config;
     protected final List<String> COLUMN_NAMES = Arrays.asList("redo_key", "type_name", "operation_type", "uuid", "packet_count", "packet_weight", "packet");
     protected final int REDO_KEY_COLUMN_INDEX = 1;
     protected final int TYPE_NAME_COLUMN_INDEX = 2;
@@ -43,7 +43,7 @@ public abstract class SqliteStorageLayer<T extends IReplicationOrderedPacket> {
 
 
     protected SqliteStorageLayer(DBSwapRedoLogFileConfig<T> config) {
-        this.config = config;
+        this.logger = LoggerFactory.getLogger(LOGGER_REPLICATION_BACKLOG + "." + config.getSpaceName() + ".sqlite");
         this.path = SystemLocations.singleton().work("redo-log/" + config.getSpaceName());
         this.dbName = "sqlite_storage_redo_log_" + config.getFullMemberName();
         logger.info("Database path: " + path + ", file: " + dbName);
