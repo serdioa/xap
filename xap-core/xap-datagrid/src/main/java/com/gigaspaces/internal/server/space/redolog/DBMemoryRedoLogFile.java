@@ -99,7 +99,6 @@ public class DBMemoryRedoLogFile<T extends IReplicationOrderedPacket> implements
         } else {
             for (long i = 0; i < packetsCount; ++i) {
                 T oldest = removeOldest();
-                decreaseWeight(oldest);
             }
         }
     }
