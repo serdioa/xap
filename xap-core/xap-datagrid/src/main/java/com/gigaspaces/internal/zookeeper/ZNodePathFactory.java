@@ -13,6 +13,7 @@ public class ZNodePathFactory {
     private static final String LOCKS = "locks";
     private static final String SPACES = "spaces";
     private static final String PIPELINES = "pipelines";
+    private static final String CONSUMERS = "consumers";
     private static final String REQUESTS = "requests";
     //without agent id info, requests that put by RequestManager
     private static final String PRE_CREATE_CONTAINER = "pre-create-container";
@@ -62,6 +63,10 @@ public class ZNodePathFactory {
     }
     public static String pipelineConfig(String pipeline) {
         return path(PIPELINES, pipeline + "/configuration");
+    }
+
+    public static String consumerConfig(String consumer) {
+        return path(CONSUMERS, consumer + "/configuration");
     }
     public static String pipeline(String pipeline, String component) {
         return path(PIPELINES, pipeline, component);
