@@ -60,7 +60,7 @@ public class DBMemoryRedoLogFile<T extends IReplicationOrderedPacket> implements
     @Override
     public T removeOldest() {
         T oldest = _redoFile.removeFirst();
-        _weight -= oldest.getWeight();
+        decreaseWeight(oldest);
         return oldest;
     }
 
@@ -72,7 +72,7 @@ public class DBMemoryRedoLogFile<T extends IReplicationOrderedPacket> implements
     @Override
     public void add(T replicationPacket) {
         _redoFile.addLast(replicationPacket);
-        _weight += replicationPacket.getWeight();
+        increaseWeight(replicationPacket);
     }
 
     @Override
@@ -98,7 +98,8 @@ public class DBMemoryRedoLogFile<T extends IReplicationOrderedPacket> implements
             _discardedPacketCount = 0;
         } else {
             for (long i = 0; i < packetsCount; ++i) {
-                removeOldest();
+                T oldest = removeOldest();
+                decreaseWeight(oldest);
             }
         }
     }
@@ -156,5 +157,27 @@ public class DBMemoryRedoLogFile<T extends IReplicationOrderedPacket> implements
         long oldestKey = getOldest().getKey(); //25
         int fromIndex = (int)(fromKey - oldestKey); // index = (25 - 21) =4
         return _redoFile.subList(fromIndex, _redoFile.size()).iterator();
+    }
+
+    private void increaseWeight(T packet) {
+        if (packet.isDiscardedPacket()) {
+            _discardedPacketCount++;
+            if (_groupBacklog.hasMirror()) {
+                _groupBacklog.increaseMirrorDiscardedCount(1);
+            }
+        } else {
+            _weight += packet.getWeight();
+        }
+    }
+
+    private void decreaseWeight(T packet) {
+        if (packet.isDiscardedPacket()) {
+            _discardedPacketCount--;
+            if (_groupBacklog.hasMirror()) {
+                _groupBacklog.decreaseMirrorDiscardedCount(1);
+            }
+        } else {
+            _weight -= packet.getWeight();
+        }
     }
 }

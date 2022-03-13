@@ -68,8 +68,10 @@ public class DBSwapRedoLogFile<T extends IReplicationOrderedPacket> implements I
     @Override
     public void add(T replicationPacket) {
         _memoryRedoLog.add(replicationPacket);
+        //don't move this block into the 'if' - major degradation in performance
         final int flushPacketSize = (int) Math.min(_memoryRedoLog.size(), _config.getFlushBufferPacketCount());
         final ArrayList<T> batchToFlush = new ArrayList<>(flushPacketSize);
+        //end of block
         if (_memoryRedoLog.getWeight() > _config.getMemoryPacketCapacity()) {
             int batchWeight = 0;
             for (int i = 0; i < flushPacketSize; i++) {
