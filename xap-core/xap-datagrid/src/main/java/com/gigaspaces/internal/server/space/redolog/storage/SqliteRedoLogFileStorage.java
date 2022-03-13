@@ -1,5 +1,6 @@
 package com.gigaspaces.internal.server.space.redolog.storage;
 
+import com.gigaspaces.internal.cluster.node.handlers.ITransactionInContext;
 import com.gigaspaces.internal.cluster.node.impl.backlog.globalorder.GlobalOrderDiscardedReplicationPacket;
 import com.gigaspaces.internal.cluster.node.impl.packets.IReplicationOrderedPacket;
 import com.gigaspaces.internal.cluster.node.impl.packets.data.IReplicationPacketData;
@@ -100,7 +101,11 @@ public class SqliteRedoLogFileStorage<T extends IReplicationOrderedPacket> exten
         if (data != null) {
             final boolean isTnx = !data.isSingleEntryData();
             if (isTnx) {
-                return String.valueOf(((AbstractTransactionReplicationPacketData) data).getTransaction().id);
+                ITransactionInContext txnPacketData = (ITransactionInContext) data;
+                if (txnPacketData.getMetaData() == null) {
+                    throw new IllegalArgumentException("Transaction packet without metadata to extract UID from: " + data);
+                }
+                return String.valueOf(txnPacketData.getMetaData().getTransactionUniqueId().getTransactionId());
             }
             final IReplicationPacketEntryData singleEntryData = data.getSingleEntryData();
             if (singleEntryData != null) {
