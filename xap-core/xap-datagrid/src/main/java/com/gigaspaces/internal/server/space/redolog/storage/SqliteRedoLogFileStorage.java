@@ -20,14 +20,12 @@ import java.util.NoSuchElementException;
 
 public class SqliteRedoLogFileStorage<T extends IReplicationOrderedPacket> extends SqliteStorageLayer<T> implements IRedoLogFileStorage<T> {
 
-    private final DBSwapRedoLogFileConfig<T> config;
     private long storageSize = 0;
     private long storageWeight = 0;
     private long oldestKey = -1;
 
     public SqliteRedoLogFileStorage(DBSwapRedoLogFileConfig<T> config) {
         super(config);
-        this.config = config;
     }
 
     @Override
@@ -136,7 +134,7 @@ public class SqliteRedoLogFileStorage<T extends IReplicationOrderedPacket> exten
     @Override
     public WeightedBatch<T> removeFirstBatch(int batchCapacity, long lastCompactionRangeEndKey) throws
             StorageException {
-        WeightedBatch<T> batch = new WeightedBatch<T>(lastCompactionRangeEndKey);
+        WeightedBatch<T> batch = new WeightedBatch<>(lastCompactionRangeEndKey);
 
         String selectQuery = "SELECT * FROM\n" +
                 "(\n" +
@@ -171,7 +169,7 @@ public class SqliteRedoLogFileStorage<T extends IReplicationOrderedPacket> exten
             long rowsAffected = executeDelete(deleteQuery);
             storageSize -= rowsAffected;
             storageWeight -= removedWeight;
-            oldestKey += rowsAffected;
+            oldestKey = (storageSize == 0) ? oldestKey + rowsAffected -1 : oldestKey + rowsAffected;
         } catch (SQLException e) {
             throw new StorageException("failed to delete values table " + TABLE_NAME, e);
         }
@@ -187,7 +185,7 @@ public class SqliteRedoLogFileStorage<T extends IReplicationOrderedPacket> exten
         int removedWeight = 0;
         try (ResultSet resultSet = executeQuery(selectSumQuery)) {
             while (resultSet.next()) {
-                removedWeight = resultSet.getInt(1);;
+                removedWeight = resultSet.getInt(1);
             }
         } catch (SQLException e) {
             throw new StorageException("failed to select rows table " + TABLE_NAME, e);
@@ -197,7 +195,7 @@ public class SqliteRedoLogFileStorage<T extends IReplicationOrderedPacket> exten
             long rowsAffected = executeDelete(deleteQuery);
             storageSize -= rowsAffected;
             storageWeight -= removedWeight;
-            oldestKey += rowsAffected;
+            oldestKey = (storageSize == 0) ? oldestKey + rowsAffected -1 : oldestKey + rowsAffected;
         } catch (SQLException e) {
             throw new StorageException("failed to delete values table " + TABLE_NAME, e);
         }
@@ -253,7 +251,7 @@ public class SqliteRedoLogFileStorage<T extends IReplicationOrderedPacket> exten
         } catch (SQLException e) {
             throw new StorageException("Fail to get oldest", e);
         }
-        return null;
+        throw new IllegalStateException("Reached empty result set with the following query="+query);
     }
 
     @Override
