@@ -165,7 +165,6 @@ public class DBSwapRedoLogFile<T extends IReplicationOrderedPacket> implements I
     public CompactionResult performCompaction(long from, long to) {
         final CompactionResult result = new CompactionResult();
         if (_lastCompactionRangeEndKey != -1) {
-
             from = _lastCompactionRangeEndKey + 1;
         }
 
@@ -176,13 +175,13 @@ public class DBSwapRedoLogFile<T extends IReplicationOrderedPacket> implements I
 
         if (from > _lastSeenTransientPacketKey) {
             if (_logger.isTraceEnabled()) {
-                _logger.debug("[" + _config.getSpaceName() + "]: No transient packets in range " + from + "-" + to + ", lastSeenTransientPacketKey = " + _lastSeenTransientPacketKey);
+                _logger.debug("[" + _config.getFullMemberName() + "]: No transient packets in range " + from + "-" + to + ", lastSeenTransientPacketKey = " + _lastSeenTransientPacketKey);
             }
             return result;
         }
 
         if (_logger.isDebugEnabled()) {
-            _logger.debug("[" + _config.getSpaceName() + "]: Performing Compaction " + from + "-" + to);
+            _logger.debug("[" + _config.getFullMemberName() + "]: Performing Compaction " + from + "-" + to);
         }
 
         result.appendResult(_memoryRedoLog.performCompaction(from, to));
@@ -190,7 +189,7 @@ public class DBSwapRedoLogFile<T extends IReplicationOrderedPacket> implements I
 //        result.appendResult(_externalStorageRedoLog.performCompaction(from, to));
 
         if (_logger.isDebugEnabled()) {
-            _logger.debug("[" + _config.getSpaceName() + "]: Discarded of " + result.getDiscardedCount() + " packets and deleted " + result.getDeletedFromTxn() + " transient packets from transactions during compaction process");
+            _logger.debug("[" + _config.getFullMemberName() + "]: Discarded of " + result.getDiscardedCount() + " packets and deleted " + result.getDeletedFromTxn() + " transient packets from transactions during compaction process");
         }
 
         _lastCompactionRangeEndKey = to;
