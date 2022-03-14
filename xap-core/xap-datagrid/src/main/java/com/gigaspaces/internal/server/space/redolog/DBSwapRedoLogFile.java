@@ -199,20 +199,12 @@ public class DBSwapRedoLogFile<T extends IReplicationOrderedPacket> implements I
     }
 
     @Override
-    public ReadOnlyIterator<T> readOnlyIterator() {
-        if (_externalRedoLogStorage.isEmpty()) {
-            return _memoryRedoLog.readOnlyIterator();
-        }
-        return _externalRedoLogStorage.readOnlyIterator();
-    }
-
-    @Override
     public ReadOnlyIterator<T> readOnlyIterator(long fromKey) {
         if (!_memoryRedoLog.isEmpty() && _memoryRedoLog.getOldest().getKey() <= fromKey) {
             return _memoryRedoLog.readOnlyIterator(fromKey);
         }
         if (_externalRedoLogStorage.isEmpty()) {
-            return _memoryRedoLog.readOnlyIterator();
+            return _memoryRedoLog.readOnlyIterator(-1);
         }
         return _externalRedoLogStorage.readOnlyIterator(fromKey);
     }

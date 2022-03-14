@@ -90,7 +90,7 @@ public class MemoryRedoLogFile<T extends IReplicationOrderedPacket> implements I
     }
 
     public ReadOnlyIterator<T> readOnlyIterator(long fromKey) {
-        if (isEmpty()) return readOnlyIterator();
+        if (isEmpty()) return new ReadOnlyIteratorAdapter<T>(_redoFile.iterator());
         final long key = getOldest().getKey();
         final long firstKeyInBacklog = key < 0 ? 0 : key;
         final int fromIndex = (int) Math.max(0, fromKey - firstKeyInBacklog);
@@ -99,10 +99,6 @@ public class MemoryRedoLogFile<T extends IReplicationOrderedPacket> implements I
 
     public Iterator<T> iterator() {
         return _redoFile.iterator();
-    }
-
-    public ReadOnlyIterator<T> readOnlyIterator() {
-        return new ReadOnlyIteratorAdapter<T>(iterator());
     }
 
     public T removeOldest() {

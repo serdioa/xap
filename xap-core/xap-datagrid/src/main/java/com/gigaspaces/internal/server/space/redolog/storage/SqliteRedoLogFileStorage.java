@@ -169,7 +169,7 @@ public class SqliteRedoLogFileStorage<T extends IReplicationOrderedPacket> exten
             long rowsAffected = executeDelete(deleteQuery);
             storageSize -= rowsAffected;
             storageWeight -= removedWeight;
-            oldestKey = (storageSize == 0) ? oldestKey + rowsAffected -1 : oldestKey + rowsAffected;
+            oldestKey = (storageSize == 0) ? oldestKey + rowsAffected - 1 : oldestKey + rowsAffected;
         } catch (SQLException e) {
             throw new StorageException("failed to delete values table " + TABLE_NAME, e);
         }
@@ -195,19 +195,9 @@ public class SqliteRedoLogFileStorage<T extends IReplicationOrderedPacket> exten
             long rowsAffected = executeDelete(deleteQuery);
             storageSize -= rowsAffected;
             storageWeight -= removedWeight;
-            oldestKey = (storageSize == 0) ? oldestKey + rowsAffected -1 : oldestKey + rowsAffected;
+            oldestKey = (storageSize == 0) ? oldestKey + rowsAffected - 1 : oldestKey + rowsAffected;
         } catch (SQLException e) {
             throw new StorageException("failed to delete values table " + TABLE_NAME, e);
-        }
-    }
-
-    @Override
-    public StorageReadOnlyIterator<T> readOnlyIterator() throws StorageException {
-        String query = "SELECT * FROM " + TABLE_NAME + " ORDER BY redo_key;";
-        try (final ResultSet resultSet = executeQuery(query)) {
-            return new RDBMSRedoLogIterator(resultSet);
-        } catch (SQLException e) {
-            throw new StorageException("Failed to create readOnlyIterator", e);
         }
     }
 
@@ -251,7 +241,7 @@ public class SqliteRedoLogFileStorage<T extends IReplicationOrderedPacket> exten
         } catch (SQLException e) {
             throw new StorageException("Fail to get oldest", e);
         }
-        throw new IllegalStateException("Reached empty result set with the following query="+query);
+        throw new IllegalStateException("Reached empty result set with the following query=" + query);
     }
 
     @Override

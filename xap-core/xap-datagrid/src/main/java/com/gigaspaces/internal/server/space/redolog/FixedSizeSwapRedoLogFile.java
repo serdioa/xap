@@ -23,6 +23,7 @@ import com.gigaspaces.internal.server.space.redolog.storage.StorageException;
 import com.gigaspaces.internal.server.space.redolog.storage.StorageReadOnlyIterator;
 import com.gigaspaces.internal.server.space.redolog.storage.bytebuffer.WeightedBatch;
 import com.gigaspaces.internal.utils.collections.ReadOnlyIterator;
+import com.gigaspaces.internal.utils.collections.ReadOnlyIteratorAdapter;
 import com.gigaspaces.logger.Constants;
 import com.j_spaces.core.cluster.ReplicationPolicy;
 import com.j_spaces.core.cluster.startup.CompactionResult;
@@ -110,7 +111,10 @@ public class FixedSizeSwapRedoLogFile<T extends IReplicationOrderedPacket> imple
 
     private T getOldestFromDataStorage() {
         try {
-            StorageReadOnlyIterator<T> storageIterator = _externalStorage.readOnlyIterator();
+            if (_externalStorage.isEmpty()) {
+                throw new NoSuchElementException();
+            }
+            StorageReadOnlyIterator<T> storageIterator = _externalStorage.readOnlyIterator(0);
             T oldest = storageIterator.next();
             storageIterator.close();
             return oldest;
@@ -130,7 +134,7 @@ public class FixedSizeSwapRedoLogFile<T extends IReplicationOrderedPacket> imple
 
     public ReadOnlyIterator<T> readOnlyIterator(long fromKey) {
         if (isEmpty()) {
-            return _memoryRedoLogFile.readOnlyIterator();
+            return new ReadOnlyIteratorAdapter<T>(_memoryRedoLogFile.iterator());
         }
         final long key = getOldest().getKey();
         final long firstKeyInBacklog = key < 0 ? 0 : key;
@@ -174,11 +178,6 @@ public class FixedSizeSwapRedoLogFile<T extends IReplicationOrderedPacket> imple
         //However the only usage of it does not really need it to be propogated and it is currently
         //done so to simplify the IExternalRedoLogFileStorage interface to support only read only iterators
         return _memoryRedoLogFile.iterator();
-    }
-
-    public ReadOnlyIterator<T> readOnlyIterator() {
-        ReadOnlyIterator<T> memoryIterator = _memoryRedoLogFile.readOnlyIterator();
-        return new SwapReadOnlyIterator(memoryIterator);
     }
 
     public void deleteOldestPackets(long packetsCount) {
@@ -378,7 +377,7 @@ public class FixedSizeSwapRedoLogFile<T extends IReplicationOrderedPacket> imple
             try {
                 //If here, memory iterator is exhausted
                 if (_externalIterator == null)
-                    _externalIterator = _externalStorage.readOnlyIterator();
+                    _externalIterator = _externalStorage.readOnlyIterator(0);
 
                 return _externalIterator.hasNext();
             } catch (StorageException e) {
@@ -398,7 +397,7 @@ public class FixedSizeSwapRedoLogFile<T extends IReplicationOrderedPacket> imple
             try {
                 //If here, memory iterator is exhausted (support iteration using only next())
                 if (_externalIterator == null)
-                    _externalIterator = _externalStorage.readOnlyIterator();
+                    _externalIterator = _externalStorage.readOnlyIterator(0);
 
                 return _externalIterator.next();
             } catch (StorageException e) {

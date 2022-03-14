@@ -21,14 +21,13 @@ import com.gigaspaces.internal.server.space.redolog.RedoLogFileCompromisedExcept
 import com.gigaspaces.internal.server.space.redolog.storage.bytebuffer.WeightedBatch;
 import com.gigaspaces.logger.Constants;
 import com.j_spaces.core.cluster.startup.CompactionResult;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.NoSuchElementException;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Wraps a {@link IRedoLogFileStorage} with a buffer, allowing adding single packets in the storage
@@ -98,10 +97,6 @@ public class BufferedRedoLogFileStorageDecorator<T extends IReplicationOrderedPa
             T firstPacket = _buffer.removeFirst();
             decreaseWeight(firstPacket);
         }
-    }
-
-    public StorageReadOnlyIterator<T> readOnlyIterator() throws StorageException {
-        return new BufferedReadOnlyIterator(_storage.readOnlyIterator());
     }
 
     public StorageReadOnlyIterator<T> readOnlyIterator(long fromIndex) throws StorageException {

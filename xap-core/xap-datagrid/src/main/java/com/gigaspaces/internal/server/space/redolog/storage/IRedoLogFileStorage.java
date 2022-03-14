@@ -69,11 +69,6 @@ public interface IRedoLogFileStorage<T extends IReplicationOrderedPacket> extend
     void deleteOldestPackets(long packetsCount) throws StorageException;
 
     /**
-     * @return read only iterator that starts from the beginning of the list
-     */
-    StorageReadOnlyIterator<T> readOnlyIterator() throws StorageException;
-
-    /**
      * @param fromIndex index to start iterating from
      * @return read only iterator that starts from the specified index
      */
