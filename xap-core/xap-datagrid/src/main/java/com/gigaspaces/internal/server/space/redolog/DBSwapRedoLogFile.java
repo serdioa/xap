@@ -68,7 +68,7 @@ public class DBSwapRedoLogFile<T extends IReplicationOrderedPacket> implements I
     public void add(T replicationPacket) {
         _memoryRedoLog.add(replicationPacket);
         //don't move this block into the 'if' - major degradation in performance
-        final int flushPacketSize = (int) Math.min(_memoryRedoLog.size(), _config.getFlushBufferPacketCount());
+        final int flushPacketSize = (int) Math.min(_memoryRedoLog.getWeight(), _config.getFlushBufferPacketCount());
         final ArrayList<T> batchToFlush = new ArrayList<>(flushPacketSize);
         //end of block
         if (_memoryRedoLog.getWeight() > _config.getMemoryPacketCapacity()) {
@@ -132,8 +132,10 @@ public class DBSwapRedoLogFile<T extends IReplicationOrderedPacket> implements I
             _memoryRedoLog.deleteOldestPackets(packetsCount);
             return;
         }
-        WeightedBatch<T> tWeightedBatch = _externalRedoLogStorage.removeFirstBatch((int) packetsCount, _lastCompactionRangeEndKey);//todo : check _lastCompactionRangeEndKey
-        long packetsRemaining = packetsCount - tWeightedBatch.size();
+        long beforeDeletionPacketCount = _externalRedoLogStorage.getExternalPacketsCount();
+        _externalRedoLogStorage.deleteOldestPackets(packetsCount);
+        long afterDeletionPacketCount = _externalRedoLogStorage.getExternalPacketsCount();
+        long packetsRemaining = packetsCount - (beforeDeletionPacketCount - afterDeletionPacketCount);
         if (packetsRemaining > 0) {
             _memoryRedoLog.deleteOldestPackets(packetsRemaining);
         }
