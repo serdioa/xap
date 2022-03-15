@@ -19,7 +19,6 @@ public class DBMemoryRedoLogFile<T extends IReplicationOrderedPacket> implements
     final private LinkedList<T> _redoFile = new LinkedList<>();
     private final AbstractSingleFileGroupBacklog<?, ?> _groupBacklog;
     private long _weight;
-    private long _discardedPacketCount;
     private final Logger _logger;
 
     public DBMemoryRedoLogFile(DBSwapRedoLogFileConfig<T> config, AbstractSingleFileGroupBacklog<?, ?> groupBacklog) {
@@ -93,10 +92,9 @@ public class DBMemoryRedoLogFile<T extends IReplicationOrderedPacket> implements
         if (packetsCount > size()) {
             _redoFile.clear();
             _weight = 0;
-            _discardedPacketCount = 0;
         } else {
             for (long i = 0; i < packetsCount; ++i) {
-                T oldest = removeOldest();
+                removeOldest();
             }
         }
     }
@@ -110,24 +108,23 @@ public class DBMemoryRedoLogFile<T extends IReplicationOrderedPacket> implements
     public void close() {
         _redoFile.clear();
         _weight = 0;
-        _discardedPacketCount = 0;
     }
 
     @Override
     public long getWeight() {
-        return RedoLogCompactionUtil.calculateWeight(_weight, _discardedPacketCount);
+        return RedoLogCompactionUtil.calculateWeight(_weight, 0);
     }
 
     @Override
     public long getDiscardedPacketsCount() {
-        return _discardedPacketCount;
+        //todo: remove from interface!!!!!!
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public CompactionResult performCompaction(long from, long to) {
         final CompactionResult compactionResult = RedoLogCompactionUtil.compact(from, to, _redoFile.listIterator());
-        this._weight -= compactionResult.getDiscardedCount() + compactionResult.getDeletedFromTxn();
-        this._discardedPacketCount += compactionResult.getDiscardedCount();
+        this._weight -= (compactionResult.getDiscardedCount() + compactionResult.getDeletedFromTxn());
         return compactionResult;
     }
 
@@ -153,7 +150,7 @@ public class DBMemoryRedoLogFile<T extends IReplicationOrderedPacket> implements
 
     private void increaseWeight(T packet) {
         if (packet.isDiscardedPacket()) {
-            _discardedPacketCount++;
+            _weight++;
             if (_groupBacklog.hasMirror()) {
                 _groupBacklog.increaseMirrorDiscardedCount(1);
             }
@@ -164,7 +161,7 @@ public class DBMemoryRedoLogFile<T extends IReplicationOrderedPacket> implements
 
     private void decreaseWeight(T packet) {
         if (packet.isDiscardedPacket()) {
-            _discardedPacketCount--;
+            _weight--;
             if (_groupBacklog.hasMirror()) {
                 _groupBacklog.decreaseMirrorDiscardedCount(1);
             }

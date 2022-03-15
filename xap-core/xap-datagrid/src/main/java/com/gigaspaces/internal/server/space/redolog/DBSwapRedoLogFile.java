@@ -4,7 +4,6 @@ import com.gigaspaces.internal.cluster.node.impl.backlog.AbstractSingleFileGroup
 import com.gigaspaces.internal.cluster.node.impl.packets.IReplicationOrderedPacket;
 import com.gigaspaces.internal.server.space.redolog.storage.IRedoLogFileStorage;
 import com.gigaspaces.internal.server.space.redolog.storage.SqliteRedoLogFileStorage;
-import com.gigaspaces.internal.server.space.redolog.storage.bytebuffer.WeightedBatch;
 import com.gigaspaces.internal.utils.collections.ReadOnlyIterator;
 import com.gigaspaces.logger.Constants;
 import com.j_spaces.core.cluster.ReplicationPolicy;
@@ -96,8 +95,7 @@ public class DBSwapRedoLogFile<T extends IReplicationOrderedPacket> implements I
             }
             return _memoryRedoLog.removeOldest();
         }
-        WeightedBatch<T> tWeightedBatch = _externalRedoLogStorage.removeFirstBatch(1, _lastCompactionRangeEndKey);//todo : check _lastCompactionRangeEndKey
-        return tWeightedBatch.getBatch().get(0);
+        return _externalRedoLogStorage.removeOldest();
     }
 
     @Override
@@ -160,7 +158,7 @@ public class DBSwapRedoLogFile<T extends IReplicationOrderedPacket> implements I
 
     @Override
     public long getDiscardedPacketsCount() {
-        return _externalRedoLogStorage.getDiscardedPacketsCount() + _memoryRedoLog.getDiscardedPacketsCount();
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -187,8 +185,6 @@ public class DBSwapRedoLogFile<T extends IReplicationOrderedPacket> implements I
         }
 
         result.appendResult(_memoryRedoLog.performCompaction(from, to));
-        //TODO: @sagiv currently we not support it
-//        result.appendResult(_externalStorageRedoLog.performCompaction(from, to));
 
         if (_logger.isDebugEnabled()) {
             _logger.debug("[" + _config.getFullMemberName() + "]: Discarded of " + result.getDiscardedCount() + " packets and deleted " + result.getDeletedFromTxn() + " transient packets from transactions during compaction process");
@@ -207,11 +203,41 @@ public class DBSwapRedoLogFile<T extends IReplicationOrderedPacket> implements I
         if (_externalRedoLogStorage.isEmpty()) {
             return _memoryRedoLog.readOnlyIterator(-1);
         }
-        return _externalRedoLogStorage.readOnlyIterator(fromKey);
+        return new ExternalStorageCompactionReadOnlyIterator(
+                _externalRedoLogStorage.readOnlyIterator(fromKey),
+                _lastCompactionRangeEndKey);
     }
 
     @Override
     public Iterator<T> iterator() {
+        //todo: remove from interface!!!!!!
         return _memoryRedoLog.iterator();
+    }
+
+
+    private class ExternalStorageCompactionReadOnlyIterator implements ReadOnlyIterator<T>{
+
+        private final ReadOnlyIterator<T> iterator;
+        private final long lastCompactionKey;
+
+        public ExternalStorageCompactionReadOnlyIterator(ReadOnlyIterator<T> iterator, long lastCompactionKey){
+            this.iterator = iterator;
+            this.lastCompactionKey = lastCompactionKey;
+        }
+
+        @Override
+        public boolean hasNext() {
+            return iterator.hasNext();
+        }
+
+        @Override
+        public T next() {
+            return (T) RedoLogCompactionUtil.compactPacket(iterator.next(), lastCompactionKey);
+        }
+
+        @Override
+        public void close() {
+            iterator.close();
+        }
     }
 }

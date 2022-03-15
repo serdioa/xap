@@ -44,15 +44,16 @@ public class SqliteRedoLogFileStorage<T extends IReplicationOrderedPacket> exten
                     if (lastOldKey == oldestKey && storageSize == 0) {
                         oldestKey = replicationPacket.getKey();
                     }
-                    statement.setLong(1, replicationPacket.getKey());
-                    statement.setString(2, getPacketTypeName(replicationPacket));
-                    statement.setString(3, getPacketOperationTypeName(replicationPacket));
-                    statement.setString(4, getPacketUID(replicationPacket));
-                    statement.setInt(5, getPacketCount(replicationPacket));
-                    statement.setInt(6, replicationPacket.getWeight());
-                    statement.setBytes(7, packetToBytes(replicationPacket));
+                    final int packetWeight = getPacketWeight(replicationPacket);
+                    statement.setLong(REDO_KEY_COLUMN_INDEX, replicationPacket.getKey());
+                    statement.setString(TYPE_NAME_COLUMN_INDEX, getPacketTypeName(replicationPacket));
+                    statement.setString(OPERATION_TYPE_COLUMN_INDEX, getPacketOperationTypeName(replicationPacket));
+                    statement.setString(UID_COLUMN_INDEX, getPacketUID(replicationPacket));
+                    statement.setInt(PACKET_COUNT_COLUMN_INDEX, getPacketCount(replicationPacket));
+                    statement.setInt(PACKET_WEIGHT_COLUMN_INDEX, packetWeight);
+                    statement.setBytes(PACKET_COLUMN_INDEX, packetToBytes(replicationPacket));
                     statement.addBatch();
-                    batchWeight += replicationPacket.getWeight();
+                    batchWeight += packetWeight;
                 }
                 long rowsAffected = executeInsert(statement);
                 storageWeight += batchWeight;
@@ -113,6 +114,14 @@ public class SqliteRedoLogFileStorage<T extends IReplicationOrderedPacket> exten
         return null;
     }
 
+    private int getPacketWeight(T packet) {
+        return packet.isDiscardedPacket() ? 1 : packet.getWeight();
+    }
+
+    private long updateOldestKey(long rowsAffected) {
+        return (storageSize == 0) ? oldestKey + rowsAffected - 1 : oldestKey + rowsAffected;
+    }
+
     private String getPacketOperationTypeName(T packet) {
         final IReplicationPacketData<?> data = packet.getData();
         if (data != null) {
@@ -131,49 +140,11 @@ public class SqliteRedoLogFileStorage<T extends IReplicationOrderedPacket> exten
         return storageSize;
     }
 
+
     @Override
     public WeightedBatch<T> removeFirstBatch(int batchCapacity, long lastCompactionRangeEndKey) throws
             StorageException {
-        WeightedBatch<T> batch = new WeightedBatch<>(lastCompactionRangeEndKey);
-
-        String selectQuery = "SELECT * FROM\n" +
-                "(\n" +
-                "    SELECT \n" +
-                "    *, \n" +
-                "    SUM(packet_weight) OVER(ORDER BY redo_key ROWS \n" +
-                "       BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS Total\n" +
-                "FROM " + TABLE_NAME + "\n" +
-                ") T\n" +
-                "WHERE T.Total <= " + batchCapacity;
-        int removedWeight = 0;
-        long newestKeyRemoved = -1;
-        try (ResultSet resultSet = executeQuery(selectQuery)) {
-            while (resultSet.next()) {
-                final T packet = bytesToPacket(resultSet.getBytes(PACKET_COLUMN_INDEX));
-                if (packet == null) {
-                    logFailureInfo(resultSet);
-                    final long redoKey = resultSet.getLong(REDO_KEY_COLUMN_INDEX);
-                    batch.addToBatch((T) new GlobalOrderDiscardedReplicationPacket(redoKey));
-                } else {
-                    batch.addToBatch(packet);
-                }
-                removedWeight += resultSet.getInt(PACKET_WEIGHT_COLUMN_INDEX);
-                newestKeyRemoved = resultSet.getLong(REDO_KEY_COLUMN_INDEX);
-            }
-        } catch (SQLException e) {
-            throw new StorageException("failed to select rows table " + TABLE_NAME, e);
-        }
-
-        try {
-            String deleteQuery = "DELETE FROM " + TABLE_NAME + " WHERE redo_key >= " + oldestKey + " AND redo_key <= " + (newestKeyRemoved) + ";";
-            long rowsAffected = executeDelete(deleteQuery);
-            storageSize -= rowsAffected;
-            storageWeight -= removedWeight;
-            oldestKey = (storageSize == 0) ? oldestKey + rowsAffected - 1 : oldestKey + rowsAffected;
-        } catch (SQLException e) {
-            throw new StorageException("failed to delete values table " + TABLE_NAME, e);
-        }
-        return batch;
+        throw new UnsupportedOperationException();
     }
 
 
@@ -195,7 +166,7 @@ public class SqliteRedoLogFileStorage<T extends IReplicationOrderedPacket> exten
             long rowsAffected = executeDelete(deleteQuery);
             storageSize -= rowsAffected;
             storageWeight -= removedWeight;
-            oldestKey = (storageSize == 0) ? oldestKey + rowsAffected - 1 : oldestKey + rowsAffected;
+            oldestKey = updateOldestKey(rowsAffected);
         } catch (SQLException e) {
             throw new StorageException("failed to delete values table " + TABLE_NAME, e);
         }
@@ -245,6 +216,21 @@ public class SqliteRedoLogFileStorage<T extends IReplicationOrderedPacket> exten
     }
 
     @Override
+    public T removeOldest() throws StorageException {
+        T oldest = getOldest();
+        String query = "DELETE FROM " + TABLE_NAME + " WHERE redo_key = " + oldestKey + ";";
+        try {
+            long rowsAffected = executeDelete(query);
+            storageSize -= rowsAffected;
+            storageWeight -= getPacketWeight(oldest);
+            oldestKey = updateOldestKey(rowsAffected);
+        } catch (SQLException e) {
+            throw new StorageException("failed to delete using query: " + query, e);
+        }
+        return oldest;
+    }
+
+    @Override
     public void close() {
         try {
             dropTable();
@@ -266,12 +252,12 @@ public class SqliteRedoLogFileStorage<T extends IReplicationOrderedPacket> exten
 
     @Override
     public long getDiscardedPacketsCount() {
-        return 0;
+        //todo: remove from interface!!!!!!
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public CompactionResult performCompaction(long from, long to) {
-        //TODO: @sagiv currently we not support it
         throw new UnsupportedOperationException("performCompaction is not support in RDBMS layer");
     }
 
