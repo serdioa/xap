@@ -1107,10 +1107,13 @@ public abstract class AbstractSingleFileGroupBacklog<T extends IReplicationOrder
             return;
         }
         _rwLock.writeLock().lock();
-        _getMinUnconfirmedKeyProcedure.reset();
-        CollectionsFactory.getInstance().forEachEntry(_confirmationMap.getUnsafeMapReference(), _getMinUnconfirmedKeyProcedure);
-        performCompactionUnsafe();
-        _rwLock.writeLock().unlock();
+        try {
+            _getMinUnconfirmedKeyProcedure.reset();
+            CollectionsFactory.getInstance().forEachEntry(_confirmationMap.getUnsafeMapReference(), _getMinUnconfirmedKeyProcedure);
+            performCompactionUnsafe();
+        } finally {
+            _rwLock.writeLock().unlock();
+        }
     }
 
     private boolean isRedoLogCompactionEnabled() {
