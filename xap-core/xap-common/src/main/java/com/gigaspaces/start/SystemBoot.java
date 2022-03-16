@@ -291,7 +291,7 @@ public class SystemBoot {
             if (!isSilent) {
                 if (logger.isInfoEnabled()) {
                     logger.info("Starting ServiceGrid [user=" + System.getProperty("user.name") +
-                            ", command=\"" + command + "\"]");
+                            ", command=\"" + command + "\"]");// on this step - wrong value
                 }
 
                 if (logger.isTraceEnabled()) {
