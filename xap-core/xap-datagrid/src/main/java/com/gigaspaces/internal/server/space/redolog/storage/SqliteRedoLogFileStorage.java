@@ -10,6 +10,8 @@ import com.gigaspaces.internal.server.space.redolog.DBSwapRedoLogFileConfig;
 import com.gigaspaces.internal.server.space.redolog.RedoLogFileCompromisedException;
 import com.gigaspaces.internal.server.space.redolog.storage.bytebuffer.WeightedBatch;
 import com.j_spaces.core.cluster.startup.CompactionResult;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -18,14 +20,18 @@ import java.sql.Statement;
 import java.util.List;
 import java.util.NoSuchElementException;
 
+import static com.gigaspaces.logger.Constants.LOGGER_REPLICATION_BACKLOG;
+
 public class SqliteRedoLogFileStorage<T extends IReplicationOrderedPacket> extends SqliteStorageLayer<T> implements IRedoLogFileStorage<T> {
 
+    private final Logger logger;
     private long storageSize = 0;
     private long storageWeight = 0;
     private long oldestKey = -1;
 
     public SqliteRedoLogFileStorage(DBSwapRedoLogFileConfig<T> config) {
         super(config);
+        this.logger = LoggerFactory.getLogger(LOGGER_REPLICATION_BACKLOG + "." + config.getFullMemberName());
     }
 
     @Override

@@ -5,7 +5,6 @@ import com.gigaspaces.internal.cluster.node.impl.packets.IReplicationOrderedPack
 import com.gigaspaces.internal.server.space.redolog.storage.IRedoLogFileStorage;
 import com.gigaspaces.internal.server.space.redolog.storage.SqliteRedoLogFileStorage;
 import com.gigaspaces.internal.utils.collections.ReadOnlyIterator;
-import com.gigaspaces.logger.Constants;
 import com.j_spaces.core.cluster.ReplicationPolicy;
 import com.j_spaces.core.cluster.startup.CompactionResult;
 import com.j_spaces.core.cluster.startup.RedoLogCompactionUtil;
@@ -16,9 +15,11 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
+import static com.gigaspaces.logger.Constants.LOGGER_REPLICATION_BACKLOG;
+
 public class DBSwapRedoLogFile<T extends IReplicationOrderedPacket> implements IRedoLogFile<T> {
 
-    private static final Logger _logger = LoggerFactory.getLogger(Constants.LOGGER_REPLICATION_BACKLOG);
+    private final Logger _logger;
 
     private final IRedoLogFile<T> _memoryRedoLog;
     private final IRedoLogFileStorage<T> _externalRedoLogStorage;
@@ -30,6 +31,7 @@ public class DBSwapRedoLogFile<T extends IReplicationOrderedPacket> implements I
 
     public DBSwapRedoLogFile(DBSwapRedoLogFileConfig<T> config,
                              AbstractSingleFileGroupBacklog<?, ?> groupBacklog) {
+        this._logger = LoggerFactory.getLogger(LOGGER_REPLICATION_BACKLOG + "." + config.getFullMemberName());
         _logger.info("Creating swap redo-log - configuration: " + config);
         this._memoryRedoLog = new DBMemoryRedoLogFile<T>(config, groupBacklog);
         this._externalRedoLogStorage = new SqliteRedoLogFileStorage<T>(config);
@@ -67,10 +69,11 @@ public class DBSwapRedoLogFile<T extends IReplicationOrderedPacket> implements I
     public void add(T replicationPacket) {
         _memoryRedoLog.add(replicationPacket);
         //don't move this block into the 'if' - major degradation in performance
-        final int flushPacketSize = (int) Math.min(_memoryRedoLog.getWeight(), _config.getFlushBufferPacketCount());
+        final long weight = _memoryRedoLog.getWeight();
+        final int flushPacketSize = (int) Math.min(weight, _config.getFlushBufferPacketCount());
         final ArrayList<T> batchToFlush = new ArrayList<>(flushPacketSize);
         //end of block
-        if (_memoryRedoLog.getWeight() > _config.getMemoryPacketCapacity()) {
+        if (weight > _config.getMemoryPacketCapacity()) {
             int batchWeight = 0;
             for (int i = 0; i < flushPacketSize; i++) {
                 T oldest = _memoryRedoLog.removeOldest();
@@ -184,12 +187,16 @@ public class DBSwapRedoLogFile<T extends IReplicationOrderedPacket> implements I
             _logger.debug("[" + _config.getFullMemberName() + "]: Performing Compaction " + from + "-" + to);
         }
 
-        result.appendResult(_memoryRedoLog.performCompaction(from, to));
+        // we perform compaction only on memory redo-log
+        CompactionResult compactionResult = _memoryRedoLog.performCompaction(from, to);
+        result.appendResult(compactionResult);
 
         if (_logger.isDebugEnabled()) {
             _logger.debug("[" + _config.getFullMemberName() + "]: Discarded of " + result.getDiscardedCount() + " packets and deleted " + result.getDeletedFromTxn() + " transient packets from transactions during compaction process");
         }
 
+        // we use this range to compact while iterating over external storage
+        // see ExternalStorageCompactionReadOnlyIterator
         _lastCompactionRangeEndKey = to;
 
         return result;

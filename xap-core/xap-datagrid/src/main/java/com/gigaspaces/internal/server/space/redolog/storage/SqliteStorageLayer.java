@@ -43,7 +43,7 @@ public abstract class SqliteStorageLayer<T extends IReplicationOrderedPacket> {
 
 
     protected SqliteStorageLayer(DBSwapRedoLogFileConfig<T> config) {
-        this.logger = LoggerFactory.getLogger(LOGGER_REPLICATION_BACKLOG + "." + config.getSpaceName() + ".sqlite");
+        this.logger = LoggerFactory.getLogger(LOGGER_REPLICATION_BACKLOG + "." + config.getFullMemberName());
         this.path = SystemLocations.singleton().work("redo-log/" + config.getSpaceName());
         this.dbName = "sqlite_storage_redo_log_" + config.getFullMemberName();
         logger.info("Database path: " + path + ", file: " + dbName);

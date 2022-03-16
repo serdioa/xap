@@ -16,14 +16,14 @@ import static com.gigaspaces.logger.Constants.LOGGER_REPLICATION_BACKLOG;
 
 public class DBMemoryRedoLogFile<T extends IReplicationOrderedPacket> implements IRedoLogFile<T> {
 
-    final private LinkedList<T> _redoFile = new LinkedList<>();
-    private final AbstractSingleFileGroupBacklog<?, ?> _groupBacklog;
-    private long _weight;
     private final Logger _logger;
+    private final AbstractSingleFileGroupBacklog<?, ?> _groupBacklog;
+    final private LinkedList<T> _redoFile = new LinkedList<>();
+    private long _weight;
 
     public DBMemoryRedoLogFile(DBSwapRedoLogFileConfig<T> config, AbstractSingleFileGroupBacklog<?, ?> groupBacklog) {
+        this._logger = LoggerFactory.getLogger(LOGGER_REPLICATION_BACKLOG + "." + config.getFullMemberName());
         this._groupBacklog = groupBacklog;
-        this._logger = LoggerFactory.getLogger(LOGGER_REPLICATION_BACKLOG + "." + config.getSpaceName());
     }
 
     @Override
@@ -124,6 +124,7 @@ public class DBMemoryRedoLogFile<T extends IReplicationOrderedPacket> implements
     @Override
     public CompactionResult performCompaction(long from, long to) {
         final CompactionResult compactionResult = RedoLogCompactionUtil.compact(from, to, _redoFile.listIterator());
+        compactionResult.setDiscardedCount(0); //we replace transient packet with discarded packet that have the same weight
         this._weight -= (compactionResult.getDiscardedCount() + compactionResult.getDeletedFromTxn());
         return compactionResult;
     }
