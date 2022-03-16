@@ -166,21 +166,20 @@ public class DBSwapRedoLogFile<T extends IReplicationOrderedPacket> implements I
 
     @Override
     public CompactionResult performCompaction(long from, long to) {
-        final CompactionResult result = new CompactionResult();
         if (_lastCompactionRangeEndKey != -1) {
             from = _lastCompactionRangeEndKey + 1;
         }
 
-
         if (to - from < ReplicationPolicy.DEFAULT_REDO_LOG_COMPACTION_BATCH_SIZE) {
-            return result;
+            return new CompactionResult(); //empty
         }
 
         if (from > _lastSeenTransientPacketKey) {
-            if (_logger.isTraceEnabled()) {
-                _logger.debug("[" + _config.getFullMemberName() + "]: No transient packets in range " + from + "-" + to + ", lastSeenTransientPacketKey = " + _lastSeenTransientPacketKey);
+            if (_logger.isDebugEnabled()) {
+                _logger.debug("[" + _config.getFullMemberName() + "]: No transient packets in range "
+                        + from + "-" + to + ", lastSeenTransientPacketKey = " + _lastSeenTransientPacketKey);
             }
-            return result;
+            return new CompactionResult(); //empty
         }
 
         if (_logger.isDebugEnabled()) {
@@ -189,17 +188,21 @@ public class DBSwapRedoLogFile<T extends IReplicationOrderedPacket> implements I
 
         // we perform compaction only on memory redo-log
         CompactionResult compactionResult = _memoryRedoLog.performCompaction(from, to);
-        result.appendResult(compactionResult);
 
         if (_logger.isDebugEnabled()) {
-            _logger.debug("[" + _config.getFullMemberName() + "]: Discarded of " + result.getDiscardedCount() + " packets and deleted " + result.getDeletedFromTxn() + " transient packets from transactions during compaction process");
+            _logger.debug("[" + _config.getFullMemberName() + "]: Discarded of " + compactionResult.getDiscardedCount()
+                    + " packets and deleted " + compactionResult.getDeletedFromTxn()
+                    + " transient packets from transactions during compaction process");
         }
+
+        //we replace transient packet with discarded packet that have the same weight
+        compactionResult.setDiscardedCount(0);
 
         // we use this range to compact while iterating over external storage
         // see ExternalStorageCompactionReadOnlyIterator
         _lastCompactionRangeEndKey = to;
 
-        return result;
+        return compactionResult;
     }
 
     @Override

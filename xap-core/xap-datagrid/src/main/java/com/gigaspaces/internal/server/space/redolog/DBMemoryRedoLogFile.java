@@ -124,8 +124,8 @@ public class DBMemoryRedoLogFile<T extends IReplicationOrderedPacket> implements
     @Override
     public CompactionResult performCompaction(long from, long to) {
         final CompactionResult compactionResult = RedoLogCompactionUtil.compact(from, to, _redoFile.listIterator());
-        compactionResult.setDiscardedCount(0); //we replace transient packet with discarded packet that have the same weight
-        this._weight -= (compactionResult.getDiscardedCount() + compactionResult.getDeletedFromTxn());
+        //we remove only txn compacted packets since transient packets have the same weight when replaced as discarded
+        this._weight -= compactionResult.getDeletedFromTxn();
         return compactionResult;
     }
 
