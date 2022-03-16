@@ -152,9 +152,6 @@ public class DBMemoryRedoLogFile<T extends IReplicationOrderedPacket> implements
     private void increaseWeight(T packet) {
         if (packet.isDiscardedPacket()) {
             _weight++;
-            if (_groupBacklog.hasMirror()) {
-                _groupBacklog.increaseMirrorDiscardedCount(1);
-            }
         } else {
             _weight += packet.getWeight();
         }
@@ -163,9 +160,6 @@ public class DBMemoryRedoLogFile<T extends IReplicationOrderedPacket> implements
     private void decreaseWeight(T packet) {
         if (packet.isDiscardedPacket()) {
             _weight--;
-            if (_groupBacklog.hasMirror()) {
-                _groupBacklog.decreaseMirrorDiscardedCount(1);
-            }
         } else {
             _weight -= packet.getWeight();
         }

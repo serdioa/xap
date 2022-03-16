@@ -190,9 +190,9 @@ public class DBSwapRedoLogFile<T extends IReplicationOrderedPacket> implements I
         CompactionResult compactionResult = _memoryRedoLog.performCompaction(from, to);
 
         if (_logger.isDebugEnabled()) {
-            _logger.debug("[" + _config.getFullMemberName() + "]: Discarded of " + compactionResult.getDiscardedCount()
-                    + " packets and deleted " + compactionResult.getDeletedFromTxn()
-                    + " transient packets from transactions during compaction process");
+            _logger.debug("[" + _config.getFullMemberName()
+                    + "]: transient packets compacted =" + compactionResult.getDiscardedCount()
+                    + ", transient packets removed from txn =" + compactionResult.getDeletedFromTxn());
         }
 
         //we replace transient packet with discarded packet that have the same weight
