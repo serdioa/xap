@@ -1652,7 +1652,7 @@ public class ClusterXML {
 
             //REDO LOG STORAGE TYPE
             RedoLogSwapStorageType storageType = RedoLogSwapStorageType.BYTE_BUFFER;
-            value = getNodeValueIfExists(replPolicyNode, SWAP_REDOLOG_STORAGE_TYPE);
+            value = getNodeValueIfExists(swapRedologNode, SWAP_REDOLOG_STORAGE_TYPE);
             if (value != null) {
                 storageType = RedoLogSwapStorageType.valueOf(value.toUpperCase().replaceAll("-", "_"));
                 replPolicy.getSwapRedologPolicy().setSwapStorageType(storageType);
