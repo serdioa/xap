@@ -70,20 +70,21 @@ public class DBSwapRedoLogFile<T extends IReplicationOrderedPacket> implements I
         _memoryRedoLog.add(replicationPacket);
         //don't move this block into the 'if' - major degradation in performance
         final long weight = _memoryRedoLog.getWeight();
-        final int flushPacketSize = (int) Math.min(weight, _config.getFlushBufferPacketCount());
-        final ArrayList<T> batchToFlush = new ArrayList<>(flushPacketSize);
+        final int numberOfPacketsToRemove = (int) Math.min(weight, Math.min(_memoryRedoLog.size(), _config.getFlushBufferPacketCount()));
+        final ArrayList<T> packetsRemoved = new ArrayList<>(numberOfPacketsToRemove);
         //end of block
         if (weight > _config.getMemoryPacketCapacity()) {
             int batchWeight = 0;
-            for (int i = 0; i < flushPacketSize; i++) {
+            for (int i = 0; i < numberOfPacketsToRemove; i++) {
                 T oldest = _memoryRedoLog.removeOldest();
-                batchToFlush.add(oldest);
+                packetsRemoved.add(oldest);
                 batchWeight += oldest.getWeight();
-                if (batchWeight > flushPacketSize){
+                if (batchWeight > numberOfPacketsToRemove){
                     break;
                 }
             }
-            _externalRedoLogStorage.appendBatch(batchToFlush);
+            //move packets from memory to external storage
+            _externalRedoLogStorage.appendBatch(packetsRemoved);
         }
         if (RedoLogCompactionUtil.isCompactable(replicationPacket)) {
             _lastSeenTransientPacketKey = replicationPacket.getKey();
