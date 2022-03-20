@@ -2,15 +2,14 @@ package com.gigaspaces.internal.server.space.redolog.storage;
 
 import com.gigaspaces.internal.cluster.node.impl.backlog.globalorder.GlobalOrderDiscardedReplicationPacket;
 import com.gigaspaces.internal.cluster.node.impl.packets.IReplicationOrderedPacket;
+import com.gigaspaces.internal.io.IOUtils;
 import com.gigaspaces.internal.server.space.redolog.DBSwapRedoLogFileConfig;
-import com.gigaspaces.internal.utils.ByteUtils;
 import com.gigaspaces.start.SystemLocations;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.sqlite.SQLiteConfig;
 
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 import java.nio.file.Path;
 import java.sql.*;
 import java.util.Arrays;
@@ -149,9 +148,28 @@ public abstract class SqliteStorageLayer<T extends IReplicationOrderedPacket> {
         }
     }
 
+    private byte[] objectToBytesUsingSwapExternalizable(T obj) throws java.io.IOException {
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        ObjectOutputStream oos = new ObjectOutputStream(bos);
+        IOUtils.writeSwapExternalizableObject(oos, obj);
+        oos.close();
+        bos.close();
+        return bos.toByteArray();
+    }
+
+    private T bytesToObjectUsingSwapExternalizable(byte[] bytes) throws IOException, ClassNotFoundException {
+        ByteArrayInputStream inStream = new ByteArrayInputStream(bytes);
+        ObjectInputStream in = new ObjectInputStream(inStream);
+        T data = IOUtils.readSwapExternalizableObject(in);
+        in.close();
+        return data;
+    }
+
+
     protected byte[] packetToBytes(T packet) {
         try {
-            return ByteUtils.objectToBytes(packet);
+//            return ByteUtils.objectToBytes(packet);
+            return objectToBytesUsingSwapExternalizable(packet);
         } catch (IOException e) {
             if (logger.isWarnEnabled()) {
                 logger.warn("Failed to serialize bytes from packet [" + packet + "]", e);
@@ -162,7 +180,8 @@ public abstract class SqliteStorageLayer<T extends IReplicationOrderedPacket> {
 
     protected T bytesToPacket(byte[] bytes) {
         try {
-            return (T) ByteUtils.bytesToObject(bytes);
+//            return (T) ByteUtils.bytesToObject(bytes);
+            return bytesToObjectUsingSwapExternalizable(bytes);
         } catch (IOException | ClassNotFoundException e) {
             if (logger.isWarnEnabled()) {
                 logger.warn("Failed to deserialize packet from bytes", e);
