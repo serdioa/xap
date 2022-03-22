@@ -162,13 +162,13 @@ public abstract class SqliteStorageLayer<T extends IReplicationOrderedPacket> {
         ObjectInputStream in = new ObjectInputStream(inStream);
         T data = IOUtils.readSwapExternalizableObject(in);
         in.close();
+        inStream.close();
         return data;
     }
 
 
     protected byte[] packetToBytes(T packet) {
         try {
-//            return ByteUtils.objectToBytes(packet);
             return objectToBytesUsingSwapExternalizable(packet);
         } catch (IOException e) {
             if (logger.isWarnEnabled()) {
@@ -180,7 +180,6 @@ public abstract class SqliteStorageLayer<T extends IReplicationOrderedPacket> {
 
     protected T bytesToPacket(byte[] bytes) {
         try {
-//            return (T) ByteUtils.bytesToObject(bytes);
             return bytesToObjectUsingSwapExternalizable(bytes);
         } catch (IOException | ClassNotFoundException e) {
             if (logger.isWarnEnabled()) {

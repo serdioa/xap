@@ -71,6 +71,9 @@ public class SqliteRedoLogFileStorage<T extends IReplicationOrderedPacket> exten
                         replicationPackets.get(replicationPackets.size() - 1).getKey() + " to table " + TABLE_NAME, e);
             }
             tnx.execute("COMMIT;");
+            if (logger.isTraceEnabled()) {
+                logger.trace("flushing #" + replicationPackets.size() + " packets to underlying storage");
+            }
         } catch (SQLException e) {
             storageSize = lastStorageSize;
             storageWeight = lastStorageWeight;
