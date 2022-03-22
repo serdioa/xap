@@ -104,8 +104,7 @@ public class GSMessageTaskExecutor extends SpaceActionExecutor {
                     if( requestInfo.isPopulateDeletedObjectsTable() ){
                         SpaceDocument deletedSpaceDocument = createDeletedSpaceDocument( cdcInfo, entry );
                         logger.debug("writing deleted message(all in cache): " + deletedSpaceDocument );
-
-                        singleProxy.write( deletedSpaceDocument, transaction, Lease.FOREVER );
+                        singleProxy.write( deletedSpaceDocument, null, Lease.FOREVER );
                     }
                     if (singleProxy.take(entry, transaction, 0) == null) {
                         String errorMsg = "failed to delete entry: " + entry.getTypeName() + ", message id: " + cdcInfo.getMessageID();
