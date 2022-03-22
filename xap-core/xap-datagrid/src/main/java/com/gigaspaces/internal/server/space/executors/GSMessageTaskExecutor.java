@@ -200,7 +200,7 @@ public class GSMessageTaskExecutor extends SpaceActionExecutor {
     private SpaceDocument createDeletedSpaceDocument( CDCInfo cdcInfo, SpaceDocument spaceDocument ) {
         return
                 new SpaceDocument( DIHUtils.getDeletedObjectsTableName( cdcInfo.getPipelineName() ) )
-                        .setProperty("ID", 1 )//in next stage it will be replaced by actual id value
+                        .setProperty("ID", "1" )//in next stage it will be replaced by actual id value
                         .setProperty("TypeName", spaceDocument.getTypeName())
                         .setProperty("Timestamp", System.currentTimeMillis());
     }
