@@ -16,17 +16,17 @@ public class GSMessageRequestInfo implements SpaceRequestInfo {
     private CDCInfo cdcInfo;
     private SpaceDocument document;
     private GSMessageTask.OperationType operationType;
-    private SpaceDocument deletedDocument;
+    private boolean populateDeletedObjectsTable;
 
     public GSMessageRequestInfo() {
     }
 
     public GSMessageRequestInfo(SpaceDocument document, CDCInfo cdcInfo,
-                                GSMessageTask.OperationType operationType, SpaceDocument deletedDocument ) {
+                                GSMessageTask.OperationType operationType, boolean populateDeletedObjectsTable ) {
         this.document = document;
         this.cdcInfo = cdcInfo;
         this.operationType = operationType;
-        this.deletedDocument = deletedDocument;
+        this.populateDeletedObjectsTable = populateDeletedObjectsTable;
     }
 
 
@@ -52,8 +52,8 @@ public class GSMessageRequestInfo implements SpaceRequestInfo {
 
     }
 
-    public SpaceDocument getDeletedDocument() {
-        return deletedDocument;
+    public boolean isPopulateDeletedObjectsTable() {
+        return populateDeletedObjectsTable;
     }
 
     @Override
@@ -61,7 +61,7 @@ public class GSMessageRequestInfo implements SpaceRequestInfo {
         IOUtils.writeObject(out, cdcInfo);
         IOUtils.writeObject(out, document);
         IOUtils.writeObject(out, operationType);
-        IOUtils.writeObject(out, deletedDocument);
+        IOUtils.writeObject(out, populateDeletedObjectsTable);
     }
 
     @Override
@@ -69,7 +69,7 @@ public class GSMessageRequestInfo implements SpaceRequestInfo {
         this.cdcInfo = IOUtils.readObject(in);
         this.document = IOUtils.readObject(in);
         this.operationType = IOUtils.readObject(in);
-        this.deletedDocument = IOUtils.readObject(in);
+        this.populateDeletedObjectsTable = IOUtils.readObject(in);
     }
 
     @Override
@@ -83,6 +83,8 @@ public class GSMessageRequestInfo implements SpaceRequestInfo {
                 "cdcInfo = " + cdcInfo + " " +
                 "document = " + document + " " +
                 "operationType = " + operationType +
-                "deletedDocument = " + deletedDocument ;
+                "populateDeletedObjectsTable = " + populateDeletedObjectsTable ;
     }
+
+
 }
