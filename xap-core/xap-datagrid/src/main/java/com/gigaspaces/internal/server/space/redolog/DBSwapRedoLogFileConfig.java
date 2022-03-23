@@ -17,6 +17,7 @@
 package com.gigaspaces.internal.server.space.redolog;
 
 import com.gigaspaces.internal.cluster.node.impl.packets.IReplicationOrderedPacket;
+import com.gigaspaces.internal.cluster.node.impl.packets.data.IReplicationPacketDataProducer;
 import com.j_spaces.core.cluster.SwapBacklogConfig;
 
 /**
@@ -30,6 +31,7 @@ public class DBSwapRedoLogFileConfig<T extends IReplicationOrderedPacket> {
     private final String fullMemberName;
     private final int memoryPacketCapacity;
     private int flushBufferPacketCount;
+    private IReplicationPacketDataProducer<?> dataProducer;
 
     public DBSwapRedoLogFileConfig(String spaceName, String fullMemberName, int memoryPacketCapacity) {
         this.spaceName = spaceName;
@@ -52,6 +54,14 @@ public class DBSwapRedoLogFileConfig<T extends IReplicationOrderedPacket> {
 
     public void setFlushBufferPacketCount(int flushBufferPacketCount) {
         this.flushBufferPacketCount = flushBufferPacketCount;
+    }
+
+    public IReplicationPacketDataProducer<?> getDataProducer() {
+        return dataProducer;
+    }
+
+    public void setDataProducer(IReplicationPacketDataProducer<?> _dataProducer) {
+        this.dataProducer = _dataProducer;
     }
 
     public int getFlushBufferPacketCount() {

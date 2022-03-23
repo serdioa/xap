@@ -366,6 +366,7 @@ public abstract class AbstractSingleFileGroupBacklog<T extends IReplicationOrder
             final String fullMemberName = _name.substring(0, indexOfCol);
             final DBSwapRedoLogFileConfig<T> config = new DBSwapRedoLogFileConfig<>(spaceName, fullMemberName, backlogConfig.getLimitedMemoryCapacity());
             config.setFlushBufferPacketCount(swapBacklogConfig.getFlushBufferPacketsCount());
+            config.setDataProducer(_dataProducer);
             return new DBSwapRedoLogFile<>(config, this);
         }
         else { // RedoLogSwapStorageType.BYTE_BUFFER
