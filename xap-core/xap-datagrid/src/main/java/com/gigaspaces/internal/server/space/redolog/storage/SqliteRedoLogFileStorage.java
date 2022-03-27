@@ -1,11 +1,7 @@
 package com.gigaspaces.internal.server.space.redolog.storage;
 
-import com.gigaspaces.internal.cluster.node.handlers.ITransactionInContext;
 import com.gigaspaces.internal.cluster.node.impl.backlog.globalorder.GlobalOrderDiscardedReplicationPacket;
 import com.gigaspaces.internal.cluster.node.impl.packets.IReplicationOrderedPacket;
-import com.gigaspaces.internal.cluster.node.impl.packets.data.IReplicationPacketData;
-import com.gigaspaces.internal.cluster.node.impl.packets.data.IReplicationPacketEntryData;
-import com.gigaspaces.internal.cluster.node.impl.packets.data.operations.AbstractTransactionReplicationPacketData;
 import com.gigaspaces.internal.server.space.redolog.DBSwapRedoLogFileConfig;
 import com.gigaspaces.internal.server.space.redolog.RedoLogFileCompromisedException;
 import com.gigaspaces.internal.server.space.redolog.storage.bytebuffer.WeightedBatch;
@@ -57,7 +53,7 @@ public class SqliteRedoLogFileStorage<T extends IReplicationOrderedPacket> exten
                     statement.setString(UID_COLUMN_INDEX, getPacketUID(replicationPacket));
                     statement.setInt(PACKET_COUNT_COLUMN_INDEX, getPacketCount(replicationPacket));
                     statement.setInt(PACKET_WEIGHT_COLUMN_INDEX, packetWeight);
-                    statement.setBytes(PACKET_COLUMN_INDEX, packetToBytes(replicationPacket));
+                    statement.setBytes(PACKET_COLUMN_INDEX, serializePacket(replicationPacket));
                     statement.addBatch();
                     batchWeight += packetWeight;
                 }
@@ -82,66 +78,8 @@ public class SqliteRedoLogFileStorage<T extends IReplicationOrderedPacket> exten
         }
     }
 
-    private int getPacketCount(T packet) {
-        final IReplicationPacketData<?> data = packet.getData();
-        final boolean isTnx = data != null && (!data.isSingleEntryData());
-        if (isTnx) {
-            return ((AbstractTransactionReplicationPacketData) data).getMetaData().getTransactionParticipantsCount();
-        }
-        return 1;
-    }
-
-    private String getPacketTypeName(T packet) {
-        final IReplicationPacketData<?> data = packet.getData();
-        if (data != null) {
-            if (data.isSingleEntryData()) {
-                final IReplicationPacketEntryData singleEntryData = data.getSingleEntryData();
-                if (singleEntryData != null) {
-                    return singleEntryData.getTypeName();
-                }
-            }//else txn
-        }
-        return null;
-    }
-
-    private String getPacketUID(T packet) {
-        final IReplicationPacketData<?> data = packet.getData();
-        if (data != null) {
-            final boolean isTnx = !data.isSingleEntryData();
-            if (isTnx) {
-                ITransactionInContext txnPacketData = (ITransactionInContext) data;
-                if (txnPacketData.getMetaData() == null) {
-                    throw new IllegalArgumentException("Transaction packet without metadata to extract UID from: " + data);
-                }
-                return String.valueOf(txnPacketData.getMetaData().getTransactionUniqueId().getTransactionId());
-            }
-            final IReplicationPacketEntryData singleEntryData = data.getSingleEntryData();
-            if (singleEntryData != null) {
-                return singleEntryData.getUid();
-            }
-        }
-        return null;
-    }
-
-    private int getPacketWeight(T packet) {
-        return packet.isDiscardedPacket() ? 1 : packet.getWeight();
-    }
-
     private long updateOldestKey(long rowsAffected) {
         return (storageSize == 0) ? oldestKey + rowsAffected - 1 : oldestKey + rowsAffected;
-    }
-
-    private String getPacketOperationTypeName(T packet) {
-        final IReplicationPacketData<?> data = packet.getData();
-        if (data != null) {
-            if (data.isSingleEntryData()) {
-                final IReplicationPacketEntryData singleEntryData = data.getSingleEntryData();
-                if (singleEntryData != null) {
-                    return singleEntryData.getOperationType().name();
-                }
-            }//else txn
-        }
-        return null;
     }
 
     @Override
@@ -210,9 +148,8 @@ public class SqliteRedoLogFileStorage<T extends IReplicationOrderedPacket> exten
         String query = "SELECT * FROM " + TABLE_NAME + " WHERE redo_key = " + oldestKey + ";";
         try (final ResultSet resultSet = executeQuery(query)) {
             if (resultSet.next()) {
-                final T packet = bytesToPacket(resultSet.getBytes(PACKET_COLUMN_INDEX));
+                final T packet = deserializePacket(resultSet);
                 if (packet == null) {
-                    logFailureInfo(resultSet);
                     final long redoKey = resultSet.getLong(REDO_KEY_COLUMN_INDEX);
                     return (T) new GlobalOrderDiscardedReplicationPacket(redoKey);
                 }

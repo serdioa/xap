@@ -1,7 +1,11 @@
 package com.gigaspaces.internal.server.space.redolog.storage;
 
+import com.gigaspaces.internal.cluster.node.handlers.ITransactionInContext;
 import com.gigaspaces.internal.cluster.node.impl.backlog.globalorder.GlobalOrderDiscardedReplicationPacket;
 import com.gigaspaces.internal.cluster.node.impl.packets.IReplicationOrderedPacket;
+import com.gigaspaces.internal.cluster.node.impl.packets.data.IReplicationPacketData;
+import com.gigaspaces.internal.cluster.node.impl.packets.data.IReplicationPacketEntryData;
+import com.gigaspaces.internal.cluster.node.impl.packets.data.operations.AbstractTransactionReplicationPacketData;
 import com.gigaspaces.internal.io.IOUtils;
 import com.gigaspaces.internal.server.space.redolog.DBSwapRedoLogFileConfig;
 import com.gigaspaces.start.SystemLocations;
@@ -167,24 +171,21 @@ public abstract class SqliteStorageLayer<T extends IReplicationOrderedPacket> {
     }
 
 
-    protected byte[] packetToBytes(T packet) {
+    protected byte[] serializePacket(T packet) {
         try {
             return objectToBytesUsingSwapExternalizable(packet);
-        } catch (IOException e) {
-            if (logger.isWarnEnabled()) {
-                logger.warn("Failed to serialize bytes from packet [" + packet + "]", e);
-            }
+        } catch (Exception e) {
+            logSerializePacketFailureInfo(packet, e);
         }
         return new byte[0];
     }
 
-    protected T bytesToPacket(byte[] bytes) {
+    protected T deserializePacket(ResultSet resultSet) {
         try {
+            final byte[] bytes = resultSet.getBytes(PACKET_COLUMN_INDEX);
             return bytesToObjectUsingSwapExternalizable(bytes);
-        } catch (IOException | ClassNotFoundException e) {
-            if (logger.isWarnEnabled()) {
-                logger.warn("Failed to deserialize packet from bytes", e);
-            }
+        } catch (Exception e) {
+            logDeserializePacketFailureInfo(resultSet, e);
         }
         return null;
     }
@@ -221,17 +222,95 @@ public abstract class SqliteStorageLayer<T extends IReplicationOrderedPacket> {
         logger.info("Successfully deleted");
     }
 
-    protected void logFailureInfo(ResultSet resultSet) throws SQLException {
+    private void logDeserializePacketFailureInfo(ResultSet resultSet, Exception e){
         if (logger.isWarnEnabled()) {
-            final long redoKey = resultSet.getLong(REDO_KEY_COLUMN_INDEX);
-            final String typeName = resultSet.getString(TYPE_NAME_COLUMN_INDEX);
-            final String operationType = resultSet.getString(OPERATION_TYPE_COLUMN_INDEX);
-            final String uid = resultSet.getString(UID_COLUMN_INDEX);
-            final int packetCount = resultSet.getInt(PACKET_COUNT_COLUMN_INDEX);
-            logger.warn("Failed to read packet from storage: " +
-                    "[redoKey=" + redoKey + ", typeName=" + typeName + ", operationType=" + operationType +
-                    ", uid=" + uid + ", packetCount=" + packetCount + "], this packet was discarded");
+            String msg = "Failed to deserialize packet from bytes when reading packet from storage: ";
+            try {
+                final long redoKey = resultSet.getLong(REDO_KEY_COLUMN_INDEX);
+                final String typeName = resultSet.getString(TYPE_NAME_COLUMN_INDEX);
+                final String operationType = resultSet.getString(OPERATION_TYPE_COLUMN_INDEX);
+                final String uid = resultSet.getString(UID_COLUMN_INDEX);
+                final int packetCount = resultSet.getInt(PACKET_COUNT_COLUMN_INDEX);
+                msg += "[redoKey=" + redoKey + ", typeName=" + typeName + ", operationType=" + operationType +
+                        ", uid=" + uid + ", packetCount=" + packetCount + "], this packet was discarded.";
+                logger.warn(msg, e);
+            } catch (SQLException ignore) {
+                logger.warn(msg, e);
+            }
         }
+    }
+
+    private void logSerializePacketFailureInfo(T packet, Exception e) {
+        if (logger.isWarnEnabled()) {
+            String msg = "Failed to serialize bytes from packet [" + packet + "] when writing packet to storage: ";
+            final long redoKey = packet.getKey();
+            final String typeName = getPacketTypeName(packet);
+            final String operationType = getPacketOperationTypeName(packet);
+            final String uid = getPacketUID(packet);
+            final int packetCount = getPacketCount(packet);
+            msg += "[redoKey=" + redoKey + ", typeName=" + typeName + ", operationType=" + operationType +
+                    ", uid=" + uid + ", packetCount=" + packetCount + "], this packet was discarded.";
+            logger.warn(msg, e);
+        }
+    }
+
+
+    protected int getPacketCount(T packet) {
+        final IReplicationPacketData<?> data = packet.getData();
+        final boolean isTnx = data != null && (!data.isSingleEntryData());
+        if (isTnx) {
+            return ((AbstractTransactionReplicationPacketData) data).getMetaData().getTransactionParticipantsCount();
+        }
+        return 1;
+    }
+
+    protected String getPacketTypeName(T packet) {
+        final IReplicationPacketData<?> data = packet.getData();
+        if (data != null) {
+            if (data.isSingleEntryData()) {
+                final IReplicationPacketEntryData singleEntryData = data.getSingleEntryData();
+                if (singleEntryData != null) {
+                    return singleEntryData.getTypeName();
+                }
+            }//else txn
+        }
+        return null;
+    }
+
+    protected String getPacketUID(T packet) {
+        final IReplicationPacketData<?> data = packet.getData();
+        if (data != null) {
+            final boolean isTnx = !data.isSingleEntryData();
+            if (isTnx) {
+                ITransactionInContext txnPacketData = (ITransactionInContext) data;
+                if (txnPacketData.getMetaData() == null) {
+                    throw new IllegalArgumentException("Transaction packet without metadata to extract UID from: " + data);
+                }
+                return String.valueOf(txnPacketData.getMetaData().getTransactionUniqueId().getTransactionId());
+            }
+            final IReplicationPacketEntryData singleEntryData = data.getSingleEntryData();
+            if (singleEntryData != null) {
+                return singleEntryData.getUid();
+            }
+        }
+        return null;
+    }
+
+    protected int getPacketWeight(T packet) {
+        return packet.isDiscardedPacket() ? 1 : packet.getWeight();
+    }
+
+    protected String getPacketOperationTypeName(T packet) {
+        final IReplicationPacketData<?> data = packet.getData();
+        if (data != null) {
+            if (data.isSingleEntryData()) {
+                final IReplicationPacketEntryData singleEntryData = data.getSingleEntryData();
+                if (singleEntryData != null) {
+                    return singleEntryData.getOperationType().name();
+                }
+            }//else txn
+        }
+        return null;
     }
 
     protected class RDBMSRedoLogIterator implements StorageReadOnlyIterator<T> {
@@ -254,9 +333,8 @@ public abstract class SqliteStorageLayer<T extends IReplicationOrderedPacket> {
         @Override
         public T next() throws StorageException {
             try {
-                final T packet = bytesToPacket(resultSet.getBytes(PACKET_COLUMN_INDEX));
+                final T packet = deserializePacket(resultSet);
                 if (packet == null) {
-                    logFailureInfo(resultSet);
                     final long redoKey = resultSet.getLong(REDO_KEY_COLUMN_INDEX);
                     return (T) new GlobalOrderDiscardedReplicationPacket(redoKey);
                 }
