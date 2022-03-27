@@ -140,6 +140,15 @@ public class DBSwapRedoLogFile<T extends IReplicationOrderedPacket> implements I
 
     @Override
     public void deleteOldestPackets(long packetsCount) {
+        if (_logger.isTraceEnabled()) {
+            _logger.trace(
+                    "confirmed-packets= " + packetsCount
+                    + ", storage.size= " + _externalRedoLogStorage.size()
+                    + ", memory.size= " + _memoryRedoLog.size()
+                    + (_memoryRedoLog.isEmpty() ? ""
+                        : ", memory.oldest-key= " + _memoryRedoLog.getOldest().getKey())
+            );
+        }
         if (_externalRedoLogStorage.isEmpty()) {
             _memoryRedoLog.deleteOldestPackets(packetsCount);
             return;
@@ -187,22 +196,21 @@ public class DBSwapRedoLogFile<T extends IReplicationOrderedPacket> implements I
 
         if (from > _lastSeenTransientPacketKey) {
             if (_logger.isDebugEnabled()) {
-                _logger.debug("[" + _config.getFullMemberName() + "]: No transient packets in range "
+                _logger.debug("No transient packets in range "
                         + from + "-" + to + ", lastSeenTransientPacketKey = " + _lastSeenTransientPacketKey);
             }
             return new CompactionResult(); //empty
         }
 
         if (_logger.isDebugEnabled()) {
-            _logger.debug("[" + _config.getFullMemberName() + "]: Performing Compaction " + from + "-" + to);
+            _logger.debug("Performing Compaction " + from + "-" + to);
         }
 
         // we perform compaction only on memory redo-log
         CompactionResult compactionResult = _memoryRedoLog.performCompaction(from, to);
 
         if (_logger.isDebugEnabled()) {
-            _logger.debug("[" + _config.getFullMemberName()
-                    + "]: transient packets compacted =" + compactionResult.getDiscardedCount()
+            _logger.debug("Transient packets compacted =" + compactionResult.getDiscardedCount()
                     + ", transient packets removed from txn =" + compactionResult.getDeletedFromTxn());
         }
 
