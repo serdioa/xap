@@ -13,7 +13,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.NoSuchElementException;
 
 import static com.gigaspaces.logger.Constants.LOGGER_REPLICATION_BACKLOG;
@@ -231,13 +230,6 @@ public class DBSwapRedoLogFile<T extends IReplicationOrderedPacket> implements I
                 _externalRedoLogStorage.readOnlyIterator(fromKey),
                 _lastCompactionRangeEndKey);
     }
-
-    @Override
-    public Iterator<T> iterator() {
-        //todo: remove from interface!!!!!!
-        return _memoryRedoLog.iterator();
-    }
-
 
     private class ExternalStorageCompactionReadOnlyIterator implements ReadOnlyIterator<T>{
 

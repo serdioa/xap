@@ -32,7 +32,7 @@ import com.j_spaces.core.cluster.startup.CompactionResult;
  * @author eitany
  * @since 7.1
  */
-public interface IRedoLogFile<T extends IReplicationOrderedPacket> extends Iterable<T>, IRedoLogFileStatistics {
+public interface IRedoLogFile<T extends IReplicationOrderedPacket> extends IRedoLogFileStatistics {
     /**
      * Remove and returns the oldest replication packet in the file
      *

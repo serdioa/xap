@@ -23,7 +23,6 @@ import com.gigaspaces.internal.server.space.redolog.storage.StorageException;
 import com.gigaspaces.internal.server.space.redolog.storage.StorageReadOnlyIterator;
 import com.gigaspaces.internal.server.space.redolog.storage.bytebuffer.WeightedBatch;
 import com.gigaspaces.internal.utils.collections.ReadOnlyIterator;
-import com.gigaspaces.internal.utils.collections.ReadOnlyIteratorAdapter;
 import com.gigaspaces.logger.Constants;
 import com.j_spaces.core.cluster.ReplicationPolicy;
 import com.j_spaces.core.cluster.startup.CompactionResult;
@@ -31,7 +30,6 @@ import com.j_spaces.core.cluster.startup.RedoLogCompactionUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Iterator;
 import java.util.NoSuchElementException;
 
 /**
@@ -134,7 +132,7 @@ public class FixedSizeSwapRedoLogFile<T extends IReplicationOrderedPacket> imple
 
     public ReadOnlyIterator<T> readOnlyIterator(long fromKey) {
         if (isEmpty()) {
-            return new ReadOnlyIteratorAdapter<T>(_memoryRedoLogFile.iterator());
+            return _memoryRedoLogFile.readOnlyIterator(fromKey);
         }
         final long key = getOldest().getKey();
         final long firstKeyInBacklog = key < 0 ? 0 : key;
@@ -171,13 +169,6 @@ public class FixedSizeSwapRedoLogFile<T extends IReplicationOrderedPacket> imple
         } catch (StorageException e) {
             throw new SwapStorageException(e);
         }
-    }
-
-    public Iterator<T> iterator() {
-        //TODO This iterator which is not read only does not propogate to the swapped redo log
-        //However the only usage of it does not really need it to be propogated and it is currently
-        //done so to simplify the IExternalRedoLogFileStorage interface to support only read only iterators
-        return _memoryRedoLogFile.iterator();
     }
 
     public void deleteOldestPackets(long packetsCount) {

@@ -128,11 +128,6 @@ public class DBMemoryRedoLogFile<T extends IReplicationOrderedPacket> implements
         return new ReadOnlyIteratorAdapter<>(iterator(fromKey));
     }
 
-    @Override
-    public Iterator<T> iterator() {
-        return _redoFile.iterator();
-    }
-
     public Iterator<T> iterator(long fromKey) {
         if (isEmpty()) return _redoFile.iterator();
 

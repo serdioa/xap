@@ -26,7 +26,6 @@ import com.j_spaces.core.cluster.startup.RedoLogCompactionUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.ListIterator;
 
@@ -95,10 +94,6 @@ public class MemoryRedoLogFile<T extends IReplicationOrderedPacket> implements I
         final long firstKeyInBacklog = key < 0 ? 0 : key;
         final int fromIndex = (int) Math.max(0, fromKey - firstKeyInBacklog);
         return new ReadOnlyIteratorAdapter<T>(_redoFile.listIterator(fromIndex));
-    }
-
-    public Iterator<T> iterator() {
-        return _redoFile.iterator();
     }
 
     public T removeOldest() {
