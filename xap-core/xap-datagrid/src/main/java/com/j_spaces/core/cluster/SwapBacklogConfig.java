@@ -17,6 +17,8 @@
 package com.j_spaces.core.cluster;
 
 import com.gigaspaces.internal.server.space.redolog.storage.bytebuffer.ByteBufferRedoLogFileConfig;
+import com.gigaspaces.internal.version.PlatformLogicalVersion;
+import com.gigaspaces.lrmi.LRMIInvocationContext;
 import com.gigaspaces.serialization.SmartExternalizable;
 
 import java.io.IOException;
@@ -34,12 +36,14 @@ public class SwapBacklogConfig
 
     private static final long serialVersionUID = 1L;
 
+    final static public int SQLITE_FLUSH_BUFFER_PACKETS_COUNT_DEFAULT = 1500;
     final static public int FLUSH_BUFFER_PACKETS_COUNT_DEFAULT = 500;
     final static public int FETCH_BUFFER_PACKETS_COUNT_DEFAULT = 500;
     final static public long SEGMENT_SIZE_DEFAULT = ByteBufferRedoLogFileConfig.DEFAULT_SEGMENT_SIZE;
     final static public int MAX_SCAN_LENGTH_DEFAULT = ByteBufferRedoLogFileConfig.DEFAULT_MAX_SCAN;
     final static public int MAX_OPEN_CURSORS_DEFAULT = ByteBufferRedoLogFileConfig.DEFAULT_MAX_STORAGE_CURSORS;
     final static public int WRITE_BUFFER_SIZE_DEFAULT = ByteBufferRedoLogFileConfig.DEFAULT_MAX_BUFFER_SIZE;
+    final static public RedoLogSwapStorageType SWAP_STORAGE_TYPE_DEFAULT = RedoLogSwapStorageType.BYTE_BUFFER;
 
     private int _flushBufferPacketsCount = FLUSH_BUFFER_PACKETS_COUNT_DEFAULT;
     private int _fetchBufferPacketsCount = FETCH_BUFFER_PACKETS_COUNT_DEFAULT;
@@ -47,6 +51,7 @@ public class SwapBacklogConfig
     private int _maxScanLength = MAX_SCAN_LENGTH_DEFAULT;
     private int _maxOpenCursors = MAX_OPEN_CURSORS_DEFAULT;
     private int _writerBufferSize = WRITE_BUFFER_SIZE_DEFAULT;
+    private RedoLogSwapStorageType _swapStorageType = SWAP_STORAGE_TYPE_DEFAULT;
 
     private interface BitMap {
         int FLUSH_BUFFER_PACKETS_COUNT = 1 << 0;
@@ -55,6 +60,7 @@ public class SwapBacklogConfig
         int MAX_SCAN_LENGTH = 1 << 3;
         int MAX_OPEN_CURSORS = 1 << 4;
         int WRITE_BUFFER_SIZE = 1 << 5;
+        int SWAP_STORAGE_TYPE = 1 << 6; //since 16.2
     }
 
     public int getFlushBufferPacketsCount() {
@@ -105,7 +111,39 @@ public class SwapBacklogConfig
         _writerBufferSize = writerBufferSize;
     }
 
+    public RedoLogSwapStorageType getSwapStorageType() {
+        return _swapStorageType;
+    }
+
+    public void setSwapStorageType(RedoLogSwapStorageType swapStorageType) {
+        this._swapStorageType = swapStorageType;
+    }
+
     public void writeExternal(ObjectOutput out) throws IOException {
+        final PlatformLogicalVersion version = LRMIInvocationContext.getEndpointLogicalVersion();
+        int flags = buildFlags();
+
+        out.writeInt(flags);
+
+        if (_flushBufferPacketsCount != FLUSH_BUFFER_PACKETS_COUNT_DEFAULT)
+            out.writeInt(_flushBufferPacketsCount);
+        if (_fetchBufferPacketsCount != FETCH_BUFFER_PACKETS_COUNT_DEFAULT)
+            out.writeInt(_fetchBufferPacketsCount);
+        if (_segmentSize != SEGMENT_SIZE_DEFAULT)
+            out.writeLong(_segmentSize);
+        if (_maxScanLength != MAX_SCAN_LENGTH_DEFAULT)
+            out.writeInt(_maxScanLength);
+        if (_maxOpenCursors != MAX_OPEN_CURSORS_DEFAULT)
+            out.writeInt(_maxOpenCursors);
+        if (_writerBufferSize != WRITE_BUFFER_SIZE_DEFAULT)
+            out.writeInt(_writerBufferSize);
+        if (version.greaterOrEquals(PlatformLogicalVersion.v16_2_0)) {
+            if (_swapStorageType != SWAP_STORAGE_TYPE_DEFAULT)
+                out.writeInt(_swapStorageType.ordinal());
+        }
+    }
+
+    private int buildFlags() {
         int flags = 0;
 
         if (_flushBufferPacketsCount != FLUSH_BUFFER_PACKETS_COUNT_DEFAULT)
@@ -126,20 +164,10 @@ public class SwapBacklogConfig
         if (_writerBufferSize != WRITE_BUFFER_SIZE_DEFAULT)
             flags |= BitMap.WRITE_BUFFER_SIZE;
 
-        out.writeInt(flags);
+        if (_swapStorageType != SWAP_STORAGE_TYPE_DEFAULT)
+            flags |= BitMap.SWAP_STORAGE_TYPE;
 
-        if (_flushBufferPacketsCount != FLUSH_BUFFER_PACKETS_COUNT_DEFAULT)
-            out.writeInt(_flushBufferPacketsCount);
-        if (_fetchBufferPacketsCount != FETCH_BUFFER_PACKETS_COUNT_DEFAULT)
-            out.writeInt(_fetchBufferPacketsCount);
-        if (_segmentSize != SEGMENT_SIZE_DEFAULT)
-            out.writeLong(_segmentSize);
-        if (_maxScanLength != MAX_SCAN_LENGTH_DEFAULT)
-            out.writeInt(_maxScanLength);
-        if (_maxOpenCursors != MAX_OPEN_CURSORS_DEFAULT)
-            out.writeInt(_maxOpenCursors);
-        if (_writerBufferSize != WRITE_BUFFER_SIZE_DEFAULT)
-            out.writeInt(_writerBufferSize);
+        return flags;
     }
 
     public void readExternal(ObjectInput in) throws IOException,
@@ -171,17 +199,24 @@ public class SwapBacklogConfig
         } else {
             _maxOpenCursors = MAX_OPEN_CURSORS_DEFAULT;
         }
+        if ((flags & BitMap.SWAP_STORAGE_TYPE) != 0) {
+            int ordinal = in.readInt();
+            _swapStorageType = RedoLogSwapStorageType.values()[ordinal];
+        } else {
+            _swapStorageType = SWAP_STORAGE_TYPE_DEFAULT;
+        }
     }
 
     @Override
     public String toString() {
-        return "SwapRedologConfig [_flushBufferPacketsCount="
-                + _flushBufferPacketsCount + ", _fetchBufferPacketsCount="
-                + _fetchBufferPacketsCount + ", _segmentSize=" + _segmentSize
-                + ", _maxScanLength=" + _maxScanLength + ", _maxOpenCursors="
-                + _maxOpenCursors + ", _writerBufferSize=" + _writerBufferSize
-                + "]";
+        return "SwapBacklogConfig{" +
+                "_swapStorageType=" + _swapStorageType +
+                ", _flushBufferPacketsCount=" + _flushBufferPacketsCount +
+                ", _fetchBufferPacketsCount=" + _fetchBufferPacketsCount +
+                ", _segmentSize=" + _segmentSize +
+                ", _maxScanLength=" + _maxScanLength +
+                ", _maxOpenCursors=" + _maxOpenCursors +
+                ", _writerBufferSize=" + _writerBufferSize +
+                '}';
     }
-
-
 }

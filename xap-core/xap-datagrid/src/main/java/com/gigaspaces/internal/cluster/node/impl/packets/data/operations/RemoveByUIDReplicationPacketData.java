@@ -31,7 +31,6 @@ import com.j_spaces.core.ObjectTypes;
 import com.j_spaces.core.OperationID;
 import com.j_spaces.core.cluster.IReplicationFilterEntry;
 import com.j_spaces.core.cluster.ReplicationOperationType;
-
 import net.jini.core.transaction.Transaction;
 
 import java.io.IOException;
@@ -85,7 +84,7 @@ public class RemoveByUIDReplicationPacketData
     }
 
     @Override
-    protected String getTypeName() {
+    public String getTypeName() {
         return _typeName;
     }
 

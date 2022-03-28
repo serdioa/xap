@@ -79,4 +79,21 @@ public class RedoLogCompactionUtil {
         }
         return data.getSingleEntryData() != null && data.getSingleEntryData().isTransient();
     }
+
+    public static IReplicationOrderedPacket compactPacket(IReplicationOrderedPacket packet, long lastCompactionRangeKey) {
+        if (packet.getKey() <= lastCompactionRangeKey
+                && RedoLogCompactionUtil.isCompactable(packet)
+                && !packet.isDiscardedPacket()) {
+            if (packet.getData().isSingleEntryData()) {
+                return new GlobalOrderDiscardedReplicationPacket(packet.getKey());
+            } else {
+                AbstractTransactionReplicationPacketData txnPacketData = (AbstractTransactionReplicationPacketData) packet.getData();
+                int deletedFromTxn = RedoLogCompactionUtil.compactTxn(txnPacketData.listIterator());
+                txnPacketData.setWeight(txnPacketData.getWeight() - deletedFromTxn);
+                return packet;
+            }
+        } else {
+            return packet;
+        }
+    }
 }

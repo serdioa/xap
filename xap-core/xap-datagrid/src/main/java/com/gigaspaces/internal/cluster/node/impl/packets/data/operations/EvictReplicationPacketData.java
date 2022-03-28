@@ -45,6 +45,7 @@ public class EvictReplicationPacketData
         _className = className;
     }
 
+    @Override
     public String getTypeName() {
         return _className;
     }

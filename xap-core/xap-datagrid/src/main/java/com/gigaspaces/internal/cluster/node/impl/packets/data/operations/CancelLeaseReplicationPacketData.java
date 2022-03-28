@@ -49,6 +49,7 @@ public class CancelLeaseReplicationPacketData
         _routingHash = routingHash;
     }
 
+    @Override
     public String getTypeName() {
         return _className;
     }

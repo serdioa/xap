@@ -66,7 +66,9 @@ public class ServiceConfig {
                 kafkaMessageValidateClass,
                 kafkaMaxPollRecords,
                 kafkaReceiveBufferConfig,
-                initConverter(), initCleanser(), initAuditor());
+                initConverter(),
+                initCleanser(),
+                initAuditor()).setMessageExecutor(new GSMessageExecutorImpl((ISpaceProxy) gigaspace.getSpace()));
     }
 
     private GSAuditor initAuditor() {

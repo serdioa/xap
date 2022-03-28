@@ -166,8 +166,6 @@ public abstract class SingleUidReplicationPacketData extends AbstractReplication
         return null;
     }
 
-    protected abstract String getTypeName();
-
     protected abstract int getFilterObjectType();
 
     protected abstract ReplicationOperationType getFilterOldReplicationOpType();
