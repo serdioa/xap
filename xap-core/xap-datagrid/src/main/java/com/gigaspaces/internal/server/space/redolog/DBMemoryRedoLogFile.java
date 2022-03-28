@@ -116,12 +116,6 @@ public class DBMemoryRedoLogFile<T extends IReplicationOrderedPacket> implements
     }
 
     @Override
-    public long getDiscardedPacketsCount() {
-        //todo: remove from interface!!!!!!
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public CompactionResult performCompaction(long from, long to) {
         final CompactionResult compactionResult = RedoLogCompactionUtil.compact(from, to, _redoFile.listIterator());
         //we remove only txn compacted packets since transient packets have the same weight when replaced as discarded

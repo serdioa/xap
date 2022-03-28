@@ -180,11 +180,6 @@ public class DBSwapRedoLogFile<T extends IReplicationOrderedPacket> implements I
     }
 
     @Override
-    public long getDiscardedPacketsCount() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public CompactionResult performCompaction(long from, long to) {
         if (_lastCompactionRangeEndKey != -1) {
             from = _lastCompactionRangeEndKey + 1;

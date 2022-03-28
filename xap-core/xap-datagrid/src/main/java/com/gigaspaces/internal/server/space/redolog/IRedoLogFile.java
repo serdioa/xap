@@ -97,8 +97,6 @@ public interface IRedoLogFile<T extends IReplicationOrderedPacket> extends Itera
 
     long getWeight();
 
-    long getDiscardedPacketsCount();
-
     /**
      *
      * @param from key to start searching transient packet from

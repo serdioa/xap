@@ -164,11 +164,6 @@ public class MemoryRedoLogFile<T extends IReplicationOrderedPacket> implements I
     }
 
     @Override
-    public long getDiscardedPacketsCount() {
-        return _discardedPacketCount;
-    }
-
-    @Override
     public CompactionResult performCompaction(long from, long to) {
         ListIterator<T> iterator = _redoFile.listIterator();
         final CompactionResult compactionResult =RedoLogCompactionUtil.compact(from, to, iterator);

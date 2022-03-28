@@ -286,11 +286,6 @@ public class FixedSizeSwapRedoLogFile<T extends IReplicationOrderedPacket> imple
     }
 
     @Override
-    public long getDiscardedPacketsCount() {
-        return _memoryRedoLogFile.getDiscardedPacketsCount() + _externalStorage.getDiscardedPacketsCount();
-    }
-
-    @Override
     public CompactionResult performCompaction(long from, long to) {
         final CompactionResult result = new CompactionResult();
         if (_lastCompactionRangeEndKey != -1) {
