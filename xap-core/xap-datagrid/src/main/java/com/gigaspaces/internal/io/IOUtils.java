@@ -867,9 +867,7 @@ public class IOUtils {
             T newInstance = (T) clazz.newInstance();
             newInstance.readFromSwap(in);
             return newInstance;
-        } catch (IOException e) {
-            throw e;
-        } catch (ClassNotFoundException e) {
+        } catch (IOException | ClassNotFoundException e) {
             throw e;
         } catch (Exception e) {
             throw new IOException(e.getMessage(), e);

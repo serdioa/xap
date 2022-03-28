@@ -27,16 +27,14 @@ import com.gigaspaces.logger.Constants;
 import com.j_spaces.core.cluster.ReplicationPolicy;
 import com.j_spaces.core.cluster.startup.CompactionResult;
 import com.j_spaces.core.cluster.startup.RedoLogCompactionUtil;
-
-import java.util.Iterator;
-import java.util.NoSuchElementException;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.NoSuchElementException;
+
 /**
  * A swap based implementation of the {@link IRedoLogFile} interface, A fixed number of packets can
- * be held in the memory and once this number is exeeded the other packets are stored in a provided
+ * be held in the memory and once this number is exceeded the other packets are stored in a provided
  * {@link INonBatchRedoLogFileStorage}
  *
  * @author eitany
@@ -111,7 +109,10 @@ public class FixedSizeSwapRedoLogFile<T extends IReplicationOrderedPacket> imple
 
     private T getOldestFromDataStorage() {
         try {
-            StorageReadOnlyIterator<T> storageIterator = _externalStorage.readOnlyIterator();
+            if (_externalStorage.isEmpty()) {
+                throw new NoSuchElementException();
+            }
+            StorageReadOnlyIterator<T> storageIterator = _externalStorage.readOnlyIterator(0);
             T oldest = storageIterator.next();
             storageIterator.close();
             return oldest;
@@ -129,10 +130,16 @@ public class FixedSizeSwapRedoLogFile<T extends IReplicationOrderedPacket> imple
         }
     }
 
-    public ReadOnlyIterator<T> readOnlyIterator(long fromIndex) {
-        long memRedoFileSize = _memoryRedoLogFile.size();
+    public ReadOnlyIterator<T> readOnlyIterator(long fromKey) {
+        if (isEmpty()) {
+            return _memoryRedoLogFile.readOnlyIterator(fromKey);
+        }
+        final long key = getOldest().getKey();
+        final long firstKeyInBacklog = key < 0 ? 0 : key;
+        final long fromIndex = Math.max(0, fromKey - firstKeyInBacklog);
+        final long memRedoFileSize = _memoryRedoLogFile.size();
         if (fromIndex < memRedoFileSize)
-            return new SwapReadOnlyIterator(_memoryRedoLogFile.readOnlyIterator(fromIndex));
+            return new SwapReadOnlyIterator(_memoryRedoLogFile.readOnlyIterator(fromKey));
         //Skip entire memory redo log, can safely cast to int because here memRedoFileSize cannot be more than int
         return new SwapReadOnlyIterator(fromIndex - memRedoFileSize);
     }
@@ -162,18 +169,6 @@ public class FixedSizeSwapRedoLogFile<T extends IReplicationOrderedPacket> imple
         } catch (StorageException e) {
             throw new SwapStorageException(e);
         }
-    }
-
-    public Iterator<T> iterator() {
-        //TODO This iterator which is not read only does not propogate to the swapped redo log
-        //However the only usage of it does not really need it to be propogated and it is currently
-        //done so to simplify the IExternalRedoLogFileStorage interface to support only read only iterators
-        return _memoryRedoLogFile.iterator();
-    }
-
-    public ReadOnlyIterator<T> readOnlyIterator() {
-        ReadOnlyIterator<T> memoryIterator = _memoryRedoLogFile.readOnlyIterator();
-        return new SwapReadOnlyIterator(memoryIterator);
     }
 
     public void deleteOldestPackets(long packetsCount) {
@@ -282,11 +277,6 @@ public class FixedSizeSwapRedoLogFile<T extends IReplicationOrderedPacket> imple
     }
 
     @Override
-    public long getDiscardedPacketsCount() {
-        return _memoryRedoLogFile.getDiscardedPacketsCount() + _externalStorage.getDiscardedPacketsCount();
-    }
-
-    @Override
     public CompactionResult performCompaction(long from, long to) {
         final CompactionResult result = new CompactionResult();
         if (_lastCompactionRangeEndKey != -1) {
@@ -314,7 +304,7 @@ public class FixedSizeSwapRedoLogFile<T extends IReplicationOrderedPacket> imple
         result.appendResult(_externalStorage.performCompaction(from, to));
 
         if (_logger.isDebugEnabled()) {
-            _logger.debug("[" + _name + "]: Discarded of " + result.getDiscardedCount() + " packets and deleted "+result.getDeletedFromTxn()+" transient packets from transactions during compaction process");
+            _logger.debug("[" + _name + "]: Discarded of " + result.getDiscardedCount() + " packets and deleted " + result.getDeletedFromTxn() + " transient packets from transactions during compaction process");
         }
 
         _lastCompactionRangeEndKey = to;
@@ -373,7 +363,7 @@ public class FixedSizeSwapRedoLogFile<T extends IReplicationOrderedPacket> imple
             try {
                 //If here, memory iterator is exhausted
                 if (_externalIterator == null)
-                    _externalIterator = _externalStorage.readOnlyIterator();
+                    _externalIterator = _externalStorage.readOnlyIterator(0);
 
                 return _externalIterator.hasNext();
             } catch (StorageException e) {
@@ -393,7 +383,7 @@ public class FixedSizeSwapRedoLogFile<T extends IReplicationOrderedPacket> imple
             try {
                 //If here, memory iterator is exhausted (support iteration using only next())
                 if (_externalIterator == null)
-                    _externalIterator = _externalStorage.readOnlyIterator();
+                    _externalIterator = _externalStorage.readOnlyIterator(0);
 
                 return _externalIterator.next();
             } catch (StorageException e) {

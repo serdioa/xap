@@ -55,6 +55,7 @@ public class RemoveNotifyTemplateReplicationPacketData
         _objectType = objectType;
     }
 
+    @Override
     public String getTypeName() {
         return _className;
     }

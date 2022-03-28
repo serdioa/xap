@@ -65,10 +65,13 @@ import com.gigaspaces.logger.Constants;
 import com.gigaspaces.metrics.Gauge;
 import com.gigaspaces.metrics.MetricRegistrator;
 import com.j_spaces.core.cluster.RedoLogCompaction;
+import com.j_spaces.core.cluster.RedoLogSwapStorageType;
 import com.j_spaces.core.cluster.SwapBacklogConfig;
 import com.j_spaces.core.cluster.startup.CompactionResult;
 import com.j_spaces.core.exception.internal.ReplicationInternalSpaceException;
 import com.j_spaces.kernel.JSpaceUtilities;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.ObjectInput;
@@ -77,9 +80,6 @@ import java.util.*;
 import java.util.Map.Entry;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 
 /**
@@ -358,60 +358,71 @@ public abstract class AbstractSingleFileGroupBacklog<T extends IReplicationOrder
     }
 
     private IRedoLogFile<T> createSwapBacklog(SourceGroupConfig groupConfig) {
-        BacklogConfig backlogConfig = groupConfig.getBacklogConfig();
-        SwapBacklogConfig swapBacklogConfig = backlogConfig.getSwapBacklogConfig();
-        IByteBufferStorageFactory byteBufferStorageProvider = new RAFByteBufferStorageFactory("redolog_"
-                + _name.replace(":", "_"));
-        // Configure ByteBufferRedoLogFile
-        ByteBufferRedoLogFileConfig<T> storageConfig = new ByteBufferRedoLogFileConfig<T>();
-        storageConfig.setMaxSizePerSegment(swapBacklogConfig.getSegmentSize());
-        storageConfig.setMaxScanLength(swapBacklogConfig.getMaxScanLength());
-        storageConfig.setMaxOpenStorageCursors(swapBacklogConfig.getMaxOpenCursors());
-        storageConfig.setWriterMaxBufferSize(swapBacklogConfig.getWriterBufferSize());
+        final BacklogConfig backlogConfig = groupConfig.getBacklogConfig();
+        final SwapBacklogConfig swapBacklogConfig = backlogConfig.getSwapBacklogConfig();
+        if (RedoLogSwapStorageType.SQLITE.equals(swapBacklogConfig.getSwapStorageType())) {
+            final int indexOfCol = _name.indexOf(":");
+            final String spaceName = _name.substring(indexOfCol + 1);
+            final String fullMemberName = _name.substring(0, indexOfCol);
+            final DBSwapRedoLogFileConfig<T> config = new DBSwapRedoLogFileConfig<>(spaceName, fullMemberName, backlogConfig.getLimitedMemoryCapacity());
+            config.setFlushBufferPacketCount(swapBacklogConfig.getFlushBufferPacketsCount());
+            config.setDataProducer(_dataProducer);
+            return new DBSwapRedoLogFile<>(config, this);
+        }
+        else { // RedoLogSwapStorageType.BYTE_BUFFER
+            IByteBufferStorageFactory byteBufferStorageProvider = new RAFByteBufferStorageFactory("redolog_"
+                    + _name.replace(":", "_"));
+
+            // Configure ByteBufferRedoLogFile
+            ByteBufferRedoLogFileConfig<T> storageConfig = new ByteBufferRedoLogFileConfig<T>();
+            storageConfig.setMaxSizePerSegment(swapBacklogConfig.getSegmentSize());
+            storageConfig.setMaxScanLength(swapBacklogConfig.getMaxScanLength());
+            storageConfig.setMaxOpenStorageCursors(swapBacklogConfig.getMaxOpenCursors());
+            storageConfig.setWriterMaxBufferSize(swapBacklogConfig.getWriterBufferSize());
 
 
-        storageConfig.setPacketStreamSerializer(new IPacketStreamSerializer<T>() {
-            final SwapPacketStreamSerializer<T> serializer = new SwapPacketStreamSerializer<T>();
+            storageConfig.setPacketStreamSerializer(new IPacketStreamSerializer<T>() {
+                final SwapPacketStreamSerializer<T> serializer = new SwapPacketStreamSerializer<T>();
 
-            @Override
-            public void writePacketToStream(ObjectOutput output, T packet) throws IOException {
-                serializer.writePacketToStream(output, packet);
-            }
+                @Override
+                public void writePacketToStream(ObjectOutput output, T packet) throws IOException {
+                    serializer.writePacketToStream(output, packet);
+                }
 
-            @Override
-            public T readPacketFromStream(ObjectInput input) throws IOException, ClassNotFoundException {
-                final T packet = serializer.readPacketFromStream(input);
-                final IReplicationPacketDataProducer dataProducer = _dataProducer;
-                dataProducer.completePacketDataContent(packet.getData());
-                return packet;
-            }
-        });
+                @Override
+                public T readPacketFromStream(ObjectInput input) throws IOException, ClassNotFoundException {
+                    final T packet = serializer.readPacketFromStream(input);
+                    final IReplicationPacketDataProducer dataProducer = _dataProducer;
+                    dataProducer.completePacketDataContent(packet.getData());
+                    return packet;
+                }
+            });
 
-        IRedoLogFileStorage<T> externalRedoLogFileStorage = new ByteBufferRedoLogFileStorage<T>(byteBufferStorageProvider,
-                storageConfig, backlogConfig.getBackLogWeightPolicy());
-        // Configure BufferedRedoLogFileStorageDecorator
-        BufferedRedoLogFileStorageDecorator<T> bufferedRedoLogFileStorage = new BufferedRedoLogFileStorageDecorator<T>(swapBacklogConfig.getFlushBufferPacketsCount(),
-                externalRedoLogFileStorage);
+            IRedoLogFileStorage<T> externalRedoLogFileStorage = new ByteBufferRedoLogFileStorage<T>(byteBufferStorageProvider,
+                    storageConfig, backlogConfig.getBackLogWeightPolicy());
+            // Configure BufferedRedoLogFileStorageDecorator
+            BufferedRedoLogFileStorageDecorator<T> bufferedRedoLogFileStorage = new BufferedRedoLogFileStorageDecorator<T>(swapBacklogConfig.getFlushBufferPacketsCount(),
+                    externalRedoLogFileStorage);
 
 
-        // Configure CacheLastRedoLogFileStorageDecorator
-        int memoryRedoLogFileSize = backlogConfig.getLimitedMemoryCapacity() / 2;
-        int cachedDecoratorSize = (backlogConfig.getLimitedMemoryCapacity() - memoryRedoLogFileSize);
+            // Configure CacheLastRedoLogFileStorageDecorator
+            int memoryRedoLogFileSize = backlogConfig.getLimitedMemoryCapacity() / 2;
+            int cachedDecoratorSize = (backlogConfig.getLimitedMemoryCapacity() - memoryRedoLogFileSize);
 
-        CacheLastRedoLogFileStorageDecorator<T> cacheLastRedoLogFileStorage = new CacheLastRedoLogFileStorageDecorator<T>(cachedDecoratorSize,
-                bufferedRedoLogFileStorage, this);
-        FixedSizeSwapRedoLogFileConfig<T> config = new FixedSizeSwapRedoLogFileConfig<T>(memoryRedoLogFileSize,
-                Math.min(swapBacklogConfig.getFetchBufferPacketsCount(), memoryRedoLogFileSize),
-                backlogConfig.getLimitedMemoryCapacity(),
-                cacheLastRedoLogFileStorage);
-        IRedoLogFile<T> swappedRedoLogFile = new FixedSizeSwapRedoLogFile<T>(config, _name, this);
-        return swappedRedoLogFile;
+            CacheLastRedoLogFileStorageDecorator<T> cacheLastRedoLogFileStorage = new CacheLastRedoLogFileStorageDecorator<T>(cachedDecoratorSize,
+                    bufferedRedoLogFileStorage, this);
+            FixedSizeSwapRedoLogFileConfig<T> config = new FixedSizeSwapRedoLogFileConfig<T>(memoryRedoLogFileSize,
+                    Math.min(swapBacklogConfig.getFetchBufferPacketsCount(), memoryRedoLogFileSize),
+                    backlogConfig.getLimitedMemoryCapacity(),
+                    cacheLastRedoLogFileStorage);
+
+            return new FixedSizeSwapRedoLogFile<T>(config, _name, this);
+        }
     }
 
     // Should be under read lock
     protected long getFirstKeyInBacklogInternal() {
-        // 0 is returned both when backlog is empty and when the first packet is
-        // 0
+        // 0 is returned both when backlog is empty and when the first packet is 0
         if (getBacklogFile().isEmpty())
             return 0;
         return getBacklogFile().getOldest().getKey();
@@ -850,8 +861,7 @@ public abstract class AbstractSingleFileGroupBacklog<T extends IReplicationOrder
 
         SynchronizingData synchronizingData = isSynchronizing(memberName);
 
-        long startIndex = backlogOverflown ? 0 : memberLastConfirmedKey + 1
-                - firstKeyInBacklog;
+        long startIndex = backlogOverflown ? 0 : memberLastConfirmedKey + 1 - firstKeyInBacklog;
 
         if (startIndex >= calculateSizeUnsafe()) {
             if (result.isEmpty() && synchronizingData != null)
@@ -860,7 +870,7 @@ public abstract class AbstractSingleFileGroupBacklog<T extends IReplicationOrder
             return result;
         }
 
-        ReadOnlyIterator<T> iterator = getBacklogFile().readOnlyIterator(startIndex);
+        ReadOnlyIterator<T> iterator = getBacklogFile().readOnlyIterator(memberLastConfirmedKey + 1);
         T previousDiscardedPacket = null;
         int weightSum = 0;
         try {
@@ -1098,10 +1108,13 @@ public abstract class AbstractSingleFileGroupBacklog<T extends IReplicationOrder
             return;
         }
         _rwLock.writeLock().lock();
-        _getMinUnconfirmedKeyProcedure.reset();
-        CollectionsFactory.getInstance().forEachEntry(_confirmationMap.getUnsafeMapReference(), _getMinUnconfirmedKeyProcedure);
-        performCompactionUnsafe();
-        _rwLock.writeLock().unlock();
+        try {
+            _getMinUnconfirmedKeyProcedure.reset();
+            CollectionsFactory.getInstance().forEachEntry(_confirmationMap.getUnsafeMapReference(), _getMinUnconfirmedKeyProcedure);
+            performCompactionUnsafe();
+        } finally {
+            _rwLock.writeLock().unlock();
+        }
     }
 
     private boolean isRedoLogCompactionEnabled() {
@@ -1622,7 +1635,7 @@ public abstract class AbstractSingleFileGroupBacklog<T extends IReplicationOrder
             final long packetIndex = packetKey - firstKeyInBacklog;
             final long size = calculateSizeUnsafe();
             if (packetIndex < size) {
-                ReadOnlyIterator<T> readOnlyIterator = _backlogFile.readOnlyIterator(packetIndex);
+                ReadOnlyIterator<T> readOnlyIterator = _backlogFile.readOnlyIterator(packetKey);
                 try {
                     T firstPacket = readOnlyIterator.next();
                     if (firstPacket != null)
@@ -1653,7 +1666,7 @@ public abstract class AbstractSingleFileGroupBacklog<T extends IReplicationOrder
         final long size = calculateSizeUnsafe();
         final List<T> packets = new LinkedList<T>();
         if (packetIndex < size) {
-            ReadOnlyIterator<T> readOnlyIterator = _backlogFile.readOnlyIterator(packetIndex);
+            ReadOnlyIterator<T> readOnlyIterator = _backlogFile.readOnlyIterator(startPacketKey);
             try {
                 while (readOnlyIterator.hasNext()) {
                     T packet = readOnlyIterator.next();
@@ -1673,11 +1686,7 @@ public abstract class AbstractSingleFileGroupBacklog<T extends IReplicationOrder
         List<IReplicationOrderedPacket> packets = new LinkedList<IReplicationOrderedPacket>();
         _rwLock.readLock().lock();
         try {
-            long firstKeyInBacklogInternal = getFirstKeyInBacklogInternal();
-            // Start index can be less than 0 in case of a deleted backlog.
-            long startIndex = Math.max(0, fromKey - firstKeyInBacklogInternal);
-
-            ReadOnlyIterator<T> iterator = getBacklogFile().readOnlyIterator(startIndex);
+            ReadOnlyIterator<T> iterator = getBacklogFile().readOnlyIterator(fromKey);
             int weightSum = 0;
             try {
                 while (iterator.hasNext() && weightSum < maxWeight) {
@@ -1709,13 +1718,15 @@ public abstract class AbstractSingleFileGroupBacklog<T extends IReplicationOrder
                     packets.add(packet);
                 }
             } catch (RuntimeException e) {
-                if (_logger.isErrorEnabled())
+                if (_logger.isErrorEnabled()) {
                     _logger.error(
                             "exception while iterating over the backlog file (getPacketsWithFullSerializedContent), "
-                                    + "[startIndex=" + startIndex
-                                    + " iteration=" + weightSum + " "
-                                    + getStatistics() + "]",
+                                    + "[fromKey=" + fromKey
+                                    + ", firstKeyInBacklog=" + getFirstKeyInBacklogInternal()
+                                    + ", iteration=" + weightSum
+                                    + ", " + getStatistics() + "]",
                             e);
+                }
                 validateIntegrity();
                 throw e;
             } finally {
