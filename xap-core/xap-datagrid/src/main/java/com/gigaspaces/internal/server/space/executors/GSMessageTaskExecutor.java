@@ -2,7 +2,10 @@ package com.gigaspaces.internal.server.space.executors;
 
 import com.gigaspaces.client.WriteModifiers;
 import com.gigaspaces.dih.consumer.*;
+import com.gigaspaces.dih.consumer.configuration.ConflictResolutionPolicy;
+import com.gigaspaces.dih.consumer.configuration.GenericType;
 import com.gigaspaces.document.SpaceDocument;
+import com.gigaspaces.entry.CompoundSpaceId;
 import com.gigaspaces.internal.client.spaceproxy.IDirectSpaceProxy;
 import com.gigaspaces.internal.server.space.SpaceImpl;
 import com.gigaspaces.internal.server.space.executors.GSMessageTask.OperationType;
@@ -10,6 +13,7 @@ import com.gigaspaces.internal.space.requests.GSMessageRequestInfo;
 import com.gigaspaces.internal.space.requests.SpaceRequestInfo;
 import com.gigaspaces.internal.space.responses.SpaceResponseInfo;
 import com.gigaspaces.metadata.SpaceMetadataException;
+import com.gigaspaces.metadata.SpaceTypeDescriptor;
 import com.j_spaces.core.client.EntryAlreadyInSpaceException;
 import com.j_spaces.core.client.EntryNotInSpaceException;
 import net.jini.core.entry.UnusableEntryException;
@@ -20,6 +24,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.rmi.RemoteException;
+import java.util.ArrayList;
+import java.util.List;
 
 public class GSMessageTaskExecutor extends SpaceActionExecutor {
 
@@ -102,7 +108,12 @@ public class GSMessageTaskExecutor extends SpaceActionExecutor {
                 case DELETE:
                     logger.debug("deleting message: " + entry);
                     if( requestInfo.isPopulateDeletedObjectsTable() ){
-                        DeletedDocumentInfo deletedSpaceDocument = createDeletedSpaceDocument( cdcInfo, entry );
+                        SpaceTypeDescriptor typeDescriptor = singleProxy.getTypeDescriptor(entry.getTypeName());
+                        if (typeDescriptor == null) {
+                            throw new NonRetriableMessageExecutionException("Unknown type: " + entry.getTypeName());
+                        }
+
+                        DeletedDocumentInfo deletedSpaceDocument = createDeletedSpaceDocument( typeDescriptor, cdcInfo, entry );
                         logger.debug("writing deleted message(all in cache): " + deletedSpaceDocument );
                         try {
                             singleProxy.write( deletedSpaceDocument, null, Lease.FOREVER );
@@ -181,8 +192,17 @@ public class GSMessageTaskExecutor extends SpaceActionExecutor {
                     break;
                 case DELETE:
                     logger.debug("deleting message: " + entry);
+                    GenericType genericType = requestInfo.getGenericType();
+                    ConflictResolutionPolicy conflictResolutionPolicy = requestInfo.getConflictResolutionPolicy();
+                    logger.info( "--- DELETE, genericType=" + genericType + ", conflictResolutionPolicy=" +
+                            conflictResolutionPolicy + ", isPopulateDeletedObjectsTable=" + requestInfo.isPopulateDeletedObjectsTable() );//TODO remove it
                     if( requestInfo.isPopulateDeletedObjectsTable() ){
-                        DeletedDocumentInfo deletedSpaceDocument = createDeletedSpaceDocument(cdcInfo, entry);
+                        SpaceTypeDescriptor typeDescriptor = singleProxy.getTypeDescriptor(entry.getTypeName());
+                        if (typeDescriptor == null) {
+                            throw new NonRetriableMessageExecutionException("Unknown type: " + entry.getTypeName());
+                        }
+
+                        DeletedDocumentInfo deletedSpaceDocument = createDeletedSpaceDocument(typeDescriptor, cdcInfo, entry);
                         logger.debug("writing deleted message(tieredStorage): " + deletedSpaceDocument);
                         try{
                             singleProxy.write( deletedSpaceDocument, null, Lease.FOREVER );
@@ -210,10 +230,31 @@ public class GSMessageTaskExecutor extends SpaceActionExecutor {
         }
     }
 
-    private DeletedDocumentInfo createDeletedSpaceDocument( CDCInfo cdcInfo, SpaceDocument spaceDocument ) {
-        return new DeletedDocumentInfo(
-                cdcInfo.getPipelineName(), spaceDocument.getTypeName(), String.valueOf( System.currentTimeMillis() ) );
+    private DeletedDocumentInfo createDeletedSpaceDocument( SpaceTypeDescriptor typeDescriptor, CDCInfo cdcInfo, SpaceDocument spaceDocument ) {
+
+        List<String> idPropertiesNames = typeDescriptor.getIdPropertiesNames();
+        Object idValue = getIdValues(idPropertiesNames, spaceDocument);
+        logger.info( "Deleted object id:" + idValue );//TODO remove it
+        return new DeletedDocumentInfo( cdcInfo.getPipelineName(), spaceDocument.getTypeName(), idValue.toString() );
     }
+
+
+    private Object getIdValues(List<String> idPropertiesNames, SpaceDocument entry) {
+        Object retValue;
+        if( idPropertiesNames.size() == 1 ){
+            retValue = entry.getProperty( idPropertiesNames.get( 0 ) );
+        }
+        else {
+            List<Object> values = new ArrayList<>( idPropertiesNames.size() );
+            for (String idPropertyName : idPropertiesNames) {
+                values.add( entry.getProperty(idPropertyName) );
+            }
+            retValue = new CompoundSpaceId( values.toArray( new Object[0] ) );
+        }
+
+        return retValue;
+    }
+
 
     private boolean isEntryNotInSpaceException(Throwable e) {
         if (e instanceof EntryNotInSpaceException) {
