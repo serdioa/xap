@@ -24,7 +24,7 @@ package com.gigaspaces.internal.server.space.redolog.storage;
  */
 @com.gigaspaces.api.InternalApi
 public class StorageException
-        extends Exception {
+        extends RuntimeException {
 
     public StorageException(String msg, Throwable cause) {
         super(msg, cause);

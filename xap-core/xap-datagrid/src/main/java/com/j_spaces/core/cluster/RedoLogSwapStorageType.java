@@ -14,17 +14,21 @@
  * limitations under the License.
  */
 
-package com.gigaspaces.internal.utils.collections;
+package com.j_spaces.core.cluster;
 
 /**
- * Implementing this interface allows an object to be iterated with a {@link ReadOnlyIterator}.
+ * Specifies the redo log swap storage type to use
  *
- * @author eitany
- * @since 7.1
+ * @author moran
+ * @since 16.2
  */
-public interface ReadOnlyIterable<E> {
+public enum RedoLogSwapStorageType {
     /**
-     * @return a read only iterator over the specified object
+     * Redo log packets are serialized/deserialized to/from a byte buffer file
      */
-    ReadOnlyIterator<E> readOnlyIterator();
+    BYTE_BUFFER,
+    /**
+     * Redo log packets are stored using SQLite - a SQL database engine
+     */
+    SQLITE
 }
