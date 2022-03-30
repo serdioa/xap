@@ -18,7 +18,6 @@ import com.gigaspaces.metadata.SpaceTypeDescriptor;
 import com.j_spaces.core.client.EntryAlreadyInSpaceException;
 import com.j_spaces.core.client.EntryNotInSpaceException;
 import com.j_spaces.core.client.Modifiers;
-import com.j_spaces.kernel.JSpaceUtilities;
 import net.jini.core.entry.UnusableEntryException;
 import net.jini.core.lease.Lease;
 import net.jini.core.transaction.*;
@@ -128,7 +127,8 @@ public class GSMessageTaskExecutor extends SpaceActionExecutor {
                     break;
                 case DELETE:
                     logger.debug("deleting message: " + entry);
-                    if( requestInfo.isPopulateDeletedObjectsTable() && genericType == GenericType.FROM_CDC ){
+                    if( requestInfo.isPopulateDeletedObjectsTable() &&
+                            ( genericType == GenericType.FROM_CDC || genericType == null ) ){
 
                         SpaceTypeDescriptor typeDescriptor = null;
                         try{
@@ -238,7 +238,7 @@ public class GSMessageTaskExecutor extends SpaceActionExecutor {
                 case DELETE:
                     logger.debug("deleting message: " + entry);
                     if( requestInfo.isPopulateDeletedObjectsTable() &&
-                            ( JSpaceUtilities.isObjectEquals( genericType, GenericType.FROM_CDC ) || genericType == null ) ){
+                            ( genericType == GenericType.FROM_CDC || genericType == null ) ){
                         //TODO remove condition genericType == null, and change test accordingly
                         SpaceTypeDescriptor typeDescriptor = null;
                         try{
