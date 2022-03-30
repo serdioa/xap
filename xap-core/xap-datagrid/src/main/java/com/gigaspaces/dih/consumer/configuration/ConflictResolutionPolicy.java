@@ -4,6 +4,7 @@ import java.util.Arrays;
 
 public enum ConflictResolutionPolicy {
 
+    NONE("none"),
     TIMESTAMP("timestamp"),
     INITIAL_LOAD("initialLoad"),
     CONSUMER_ID("consumerId");
