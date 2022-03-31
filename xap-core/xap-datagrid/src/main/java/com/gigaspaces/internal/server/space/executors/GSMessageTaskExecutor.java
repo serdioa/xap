@@ -289,6 +289,7 @@ public class GSMessageTaskExecutor extends SpaceActionExecutor {
                                          ConflictResolutionPolicy conflictResolutionPolicy ) {
         boolean writeAllowed = true;
         //TODO add warn about update + GenericType.FROM_INITIAL_LOAD ans skip such message
+        logger.info("isWriteEntryAllowed, genericType=" + genericType + ", conflictResolutionPolicy=" + conflictResolutionPolicy);//TODO remove info
         if( genericType == GenericType.FROM_INITIAL_LOAD && conflictResolutionPolicy == ConflictResolutionPolicy.INITIAL_LOAD ){
             boolean entryInDeletedTableOfSpace = isEntryInDeletedTableOfSpace(singleProxy, cdcInfo, entry, transaction);
             writeAllowed = !entryInDeletedTableOfSpace;
@@ -331,7 +332,10 @@ public class GSMessageTaskExecutor extends SpaceActionExecutor {
             }
         }
 
-        return readObjects != null && readObjects.length > 0;
+        boolean isEntryInDeletedTableOfSpace = readObjects != null && readObjects.length > 0;
+        logger.info( "isEntryInDeletedTableOfSpace, isEntryInDeletedTableOfSpace=" + isEntryInDeletedTableOfSpace );//TODO remove it
+
+        return isEntryInDeletedTableOfSpace;
     }
 
     private Object getIdValues( List<String> idPropertiesNames, SpaceDocument entry) {
