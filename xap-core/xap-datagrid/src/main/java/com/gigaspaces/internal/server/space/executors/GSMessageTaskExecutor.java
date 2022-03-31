@@ -127,8 +127,7 @@ public class GSMessageTaskExecutor extends SpaceActionExecutor {
                     break;
                 case DELETE:
                     logger.debug("deleting message: " + entry);
-                    if( requestInfo.isPopulateDeletedObjectsTable() &&
-                            ( genericType == GenericType.FROM_CDC || genericType == null ) ){
+                    if( requestInfo.isPopulateDeletedObjectsTable() && genericType == GenericType.FROM_CDC ){
 
                         SpaceTypeDescriptor typeDescriptor = null;
                         try{
@@ -237,9 +236,8 @@ public class GSMessageTaskExecutor extends SpaceActionExecutor {
                     break;
                 case DELETE:
                     logger.debug("deleting message: " + entry);
-                    if( requestInfo.isPopulateDeletedObjectsTable() &&
-                            ( genericType == GenericType.FROM_CDC || genericType == null ) ){
-                        //TODO remove condition genericType == null, and change test accordingly
+                    if( requestInfo.isPopulateDeletedObjectsTable() && genericType == GenericType.FROM_CDC ){
+
                         SpaceTypeDescriptor typeDescriptor = null;
                         try{
                             typeDescriptor = singleProxy.getTypeDescriptor(entry.getTypeName());
