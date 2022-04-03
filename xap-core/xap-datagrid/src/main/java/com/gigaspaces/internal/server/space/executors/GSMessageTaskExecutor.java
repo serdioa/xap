@@ -82,13 +82,15 @@ public class GSMessageTaskExecutor extends SpaceActionExecutor {
 
             GenericType genericType = requestInfo.getGenericType();
             ConflictResolutionPolicy conflictResolutionPolicy = requestInfo.getConflictResolutionPolicy();
+            String deletedObjectsTableName = requestInfo.getDeletedObjectsTableName();
             logger.info( "--- operation type:" + operationType + ", allInCache, genericType=" + genericType + ", conflictResolutionPolicy=" +
-                    conflictResolutionPolicy + ", isPopulateDeletedObjectsTable=" + requestInfo.isPopulateDeletedObjectsTable() );//TODO remove it
+                    conflictResolutionPolicy + ", isPopulateDeletedObjectsTable=" + requestInfo.isPopulateDeletedObjectsTable() +
+                    ", deletedObjectsTableName=" + deletedObjectsTableName );//TODO remove it
 
             switch (operationType) {
                 case INSERT:
                     boolean isWriteAllowed =
-                            isWriteEntryAllowed( singleProxy, cdcInfo, entry, transaction, genericType, conflictResolutionPolicy );
+                            isWriteEntryAllowed( singleProxy, deletedObjectsTableName, entry, transaction, genericType, conflictResolutionPolicy );
                     if ( isWriteAllowed ) {
                         try {
                             logger.debug("inserting message to space: " + entry);
@@ -108,7 +110,7 @@ public class GSMessageTaskExecutor extends SpaceActionExecutor {
                     break;
                 case UPDATE:
                     isWriteAllowed =
-                            isWriteEntryAllowed( singleProxy, cdcInfo, entry, transaction, genericType, conflictResolutionPolicy );
+                            isWriteEntryAllowed( singleProxy, deletedObjectsTableName, entry, transaction, genericType, conflictResolutionPolicy );
                     if( isWriteAllowed ) {
                         logger.debug("update message: " + entry);
                         try {
@@ -190,6 +192,7 @@ public class GSMessageTaskExecutor extends SpaceActionExecutor {
 
             GenericType genericType = requestInfo.getGenericType();
             ConflictResolutionPolicy conflictResolutionPolicy = requestInfo.getConflictResolutionPolicy();
+            String deletedObjectsTableName = requestInfo.getDeletedObjectsTableName();
             logger.info( "--- operation type:" + operationType + ", TieredStorage, genericType=" + genericType + ", conflictResolutionPolicy=" +
                     conflictResolutionPolicy + ", isPopulateDeletedObjectsTable=" + requestInfo.isPopulateDeletedObjectsTable() +
                     " ,isPopulateDeletedObjectsTable=" + requestInfo.isPopulateDeletedObjectsTable());//TODO remove it
@@ -197,7 +200,7 @@ public class GSMessageTaskExecutor extends SpaceActionExecutor {
             switch (operationType) {
                 case INSERT:
                     boolean isWriteAllowed =
-                            isWriteEntryAllowed( singleProxy, cdcInfo, entry, null, genericType, conflictResolutionPolicy );
+                            isWriteEntryAllowed( singleProxy, deletedObjectsTableName, entry, null, genericType, conflictResolutionPolicy );
                     if ( isWriteAllowed ) {
                         try {
                             logger.debug("inserting message to space: " + entry);
@@ -217,7 +220,7 @@ public class GSMessageTaskExecutor extends SpaceActionExecutor {
                 case UPDATE:
                     //CDC case
                     isWriteAllowed =
-                            isWriteEntryAllowed( singleProxy, cdcInfo, entry, null, genericType, conflictResolutionPolicy );
+                            isWriteEntryAllowed( singleProxy, deletedObjectsTableName, entry, null, genericType, conflictResolutionPolicy );
                     if( isWriteAllowed ) {
                         logger.debug("update message: " + entry);
                         try {
@@ -283,22 +286,28 @@ public class GSMessageTaskExecutor extends SpaceActionExecutor {
         return new DeletedDocumentInfo( cdcInfo.getPipelineName(), spaceDocument.getTypeName(), idValue.toString() );
     }
 
-    private boolean isWriteEntryAllowed( IDirectSpaceProxy singleProxy, CDCInfo cdcInfo, SpaceDocument entry,
+    private boolean isWriteEntryAllowed( IDirectSpaceProxy singleProxy, String deletedObjectsTableName, SpaceDocument entry,
                                          Transaction transaction, GenericType genericType,
                                          ConflictResolutionPolicy conflictResolutionPolicy ) {
         boolean writeAllowed = true;
         //TODO add warn about update + GenericType.FROM_INITIAL_LOAD ans skip such message
-        logger.info("isWriteEntryAllowed, genericType=" + genericType + ", conflictResolutionPolicy=" + conflictResolutionPolicy);//TODO remove info
+        logger.info("isWriteEntryAllowed, genericType=" + genericType +
+                ", conflictResolutionPolicy=" + conflictResolutionPolicy +
+                ", deletedObjectsTableName=" + deletedObjectsTableName );//TODO remove info
         if( genericType == GenericType.FROM_INITIAL_LOAD && conflictResolutionPolicy == ConflictResolutionPolicy.INITIAL_LOAD ){
-            boolean entryInDeletedTableOfSpace = isEntryInDeletedTableOfSpace(singleProxy, cdcInfo, entry, transaction);
+            boolean entryInDeletedTableOfSpace = isEntryInDeletedTableOfSpace(singleProxy, deletedObjectsTableName, entry, transaction);
             writeAllowed = !entryInDeletedTableOfSpace;
         }
 
         return writeAllowed;
     }
 
-    private boolean isEntryInDeletedTableOfSpace(
-                            IDirectSpaceProxy singleProxy, CDCInfo cdcInfo, SpaceDocument entry, Transaction transaction ){
+    private boolean isEntryInDeletedTableOfSpace( IDirectSpaceProxy singleProxy, String deletedObjectsTableName,
+                                                  SpaceDocument entry, Transaction transaction ){
+
+        if( deletedObjectsTableName == null ){
+            throw new IllegalArgumentException("Name of deletedObjectsTableName can't be null");
+        }
 
         SpaceTypeDescriptor typeDescriptor = null;
         try {
@@ -312,8 +321,6 @@ public class GSMessageTaskExecutor extends SpaceActionExecutor {
         Object idValues = getIdValues( typeDescriptor.getIdPropertiesNames(), entry);
         String routingPropertyName = typeDescriptor.getRoutingPropertyName();
         Object routingPropertyValue = entry.getProperty(routingPropertyName);
-
-        String deletedObjectsTableName = DIHUtils.getDeletedObjectsTableName( cdcInfo.getPipelineName() );
 
         logger.info( "isEntryInDeletedTableOfSpace, deletedObjectsTableName=" + deletedObjectsTableName + ", id=" + idValues );//TODO remove it
 

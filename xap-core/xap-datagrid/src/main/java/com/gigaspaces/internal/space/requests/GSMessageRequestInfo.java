@@ -22,19 +22,22 @@ public class GSMessageRequestInfo implements SpaceRequestInfo {
 
     private GenericType genericType;
     private ConflictResolutionPolicy conflictResolutionPolicy;
+    private String deletedObjectsTableName;
 
     public GSMessageRequestInfo() {
     }
 
     public GSMessageRequestInfo(SpaceDocument document, CDCInfo cdcInfo,
                                 GSMessageTask.OperationType operationType, boolean populateDeletedObjectsTable,
-                                GenericType genericType, ConflictResolutionPolicy conflictResolutionPolicy) {
+                                GenericType genericType, ConflictResolutionPolicy conflictResolutionPolicy,
+                                String deletedObjectsTableName ) {
         this.document = document;
         this.cdcInfo = cdcInfo;
         this.operationType = operationType;
         this.populateDeletedObjectsTable = populateDeletedObjectsTable;
         this.genericType = genericType;
         this.conflictResolutionPolicy = conflictResolutionPolicy;
+        this.deletedObjectsTableName = deletedObjectsTableName;
     }
 
     public CDCInfo getCdcInfo() {
@@ -71,6 +74,10 @@ public class GSMessageRequestInfo implements SpaceRequestInfo {
         return conflictResolutionPolicy;
     }
 
+    public String getDeletedObjectsTableName() {
+        return deletedObjectsTableName;
+    }
+
     @Override
     public void writeExternal(ObjectOutput out) throws IOException {
         IOUtils.writeObject(out, cdcInfo);
@@ -79,6 +86,7 @@ public class GSMessageRequestInfo implements SpaceRequestInfo {
         IOUtils.writeObject(out, populateDeletedObjectsTable);
         IOUtils.writeObject(out, genericType);
         IOUtils.writeObject(out, conflictResolutionPolicy);
+        IOUtils.writeObject(out, deletedObjectsTableName);
     }
 
     @Override
@@ -89,6 +97,7 @@ public class GSMessageRequestInfo implements SpaceRequestInfo {
         this.populateDeletedObjectsTable = IOUtils.readObject(in);
         this.genericType = IOUtils.readObject(in);
         this.conflictResolutionPolicy = IOUtils.readObject(in);
+        this.deletedObjectsTableName = IOUtils.readObject(in);
     }
 
     @Override
@@ -99,11 +108,12 @@ public class GSMessageRequestInfo implements SpaceRequestInfo {
     @Override
     public String toString() {
         return "Request Info:" + " " +
-                "cdcInfo = " + cdcInfo + " " +
-                "document = " + document + " " +
-                "operationType = " + operationType +
-                "populateDeletedObjectsTable = " + populateDeletedObjectsTable +
-                "genericType = " + genericType +
-                "conflictResolutionPolicy = " + conflictResolutionPolicy;
+                "cdcInfo=" + cdcInfo + " " +
+                "document=" + document + " " +
+                "operationType=" + operationType +
+                "populateDeletedObjectsTable=" + populateDeletedObjectsTable + " " +
+                "genericType=" + genericType + " " +
+                "conflictResolutionPolicy=" + conflictResolutionPolicy + " " +
+                "deletedObjectsTableName=" + deletedObjectsTableName;
     }
 }
