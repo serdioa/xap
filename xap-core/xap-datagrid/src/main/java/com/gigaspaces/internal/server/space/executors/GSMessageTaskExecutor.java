@@ -83,8 +83,7 @@ public class GSMessageTaskExecutor extends SpaceActionExecutor {
             GenericType genericType = requestInfo.getGenericType();
             ConflictResolutionPolicy conflictResolutionPolicy = requestInfo.getConflictResolutionPolicy();
             logger.info( "--- operation type:" + operationType + ", allInCache, genericType=" + genericType + ", conflictResolutionPolicy=" +
-                    conflictResolutionPolicy + ", isPopulateDeletedObjectsTable=" + requestInfo.isPopulateDeletedObjectsTable() +
-                    " ,isPopulateDeletedObjectsTable=" + requestInfo.isPopulateDeletedObjectsTable());//TODO remove it
+                    conflictResolutionPolicy + ", isPopulateDeletedObjectsTable=" + requestInfo.isPopulateDeletedObjectsTable() );//TODO remove it
 
             switch (operationType) {
                 case INSERT:
