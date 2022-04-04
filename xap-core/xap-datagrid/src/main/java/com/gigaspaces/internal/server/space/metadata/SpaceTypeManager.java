@@ -23,6 +23,7 @@ import com.gigaspaces.internal.client.spaceproxy.metadata.TypeDescFactory;
 import com.gigaspaces.internal.metadata.EntryType;
 import com.gigaspaces.internal.metadata.ITypeDesc;
 import com.gigaspaces.internal.metadata.PropertyInfo;
+import com.gigaspaces.internal.metadata.TypeDesc;
 import com.gigaspaces.internal.server.metadata.AddTypeDescResult;
 import com.gigaspaces.internal.server.metadata.AddTypeDescResultType;
 import com.gigaspaces.internal.server.metadata.IServerTypeDesc;
@@ -342,15 +343,18 @@ public class SpaceTypeManager {
         return tieredStorageManager != null && tieredStorageManager.isTransient(typeDesc.getTypeName());
     }
 
+    /** @see Constants.TieredStorage#SUPPORT_DYNAMIC_PROPERTIES */
     private void validateTieredStorage(ITypeDesc typeDesc) {
         String typeName = typeDesc.getTypeName();
         if (tieredStorageManager.isTransient(typeName)) {
             return; // Transient Types are never written to InternalRDBMS , supports all features
         }
 
+        //since 16.2, PIC-487 we override setting and warn about usage. Exception is only thrown when actually used
         if (typeDesc.supportsDynamicProperties()) {
-            throw new TieredStorageMetadataException("Unsupported type " + typeName + ": dynamic properties not supported in tiered storage " +
-                    "(set com.gigaspaces.metadata.SpaceTypeDescriptorBuilder.supportsDynamicProperties(false) ");
+            _logger.warn("Tiered-storage does not support dynamic properties; "
+                    + "Explicitly set SpaceTypeDescriptorBuilder.supportsDynamicProperties(false) for type: " + typeName);
+            ((TypeDesc) typeDesc).setDynamicProperties(false);
         }
 
         String[] superClassesNames = typeDesc.getSuperClassesNames();
