@@ -318,9 +318,11 @@ public class GSMessageTaskExecutor extends SpaceActionExecutor {
         if (typeDescriptor == null) {
             throw new NonRetriableMessageExecutionException("Unknown type: " + entry.getTypeName());
         }
-        Object idValues = getIdValues( typeDescriptor.getIdPropertiesNames(), entry);
+        List<String> idPropertiesNames = typeDescriptor.getIdPropertiesNames();
+        Object idValues = getIdValues( idPropertiesNames, entry);
         String routingPropertyName = typeDescriptor.getRoutingPropertyName();
-        Object routingPropertyValue = entry.getProperty(routingPropertyName);
+        Object routingPropertyValue = idPropertiesNames.contains( routingPropertyName ) ?
+                                                    null : entry.getProperty(routingPropertyName);
 
         logger.info( "isEntryInDeletedTableOfSpace, deletedObjectsTableName=" + deletedObjectsTableName + ", id=" + idValues );//TODO remove it
 
