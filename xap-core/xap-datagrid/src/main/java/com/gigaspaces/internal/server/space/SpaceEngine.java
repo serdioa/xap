@@ -4193,8 +4193,11 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
         boolean needMatch = !toScan.isAlreadyMatched();
         int alreadyMatchedFixedPropertyIndexPos = toScan.getAlreadyMatchedFixedPropertyIndexPos();
         String alreadyMatchedIndexPath = toScan.getAlreadyMatchedIndexPath();
-        boolean checkResultSize = 0 < _resultsSizeLimit && !template.isReturnOnlyUid() && template.isReadMultiple();
-        int resultSizeOverflow = 0;
+	
+        //pic-414
+	boolean checkResultSize = 0 < _resultsSizeLimit && !template.isReturnOnlyUid() && ( template.isChangeMultiple() || template.isReadMultiple() || template.isTakeMultiple() );
+        boolean monitorMemory = 0 < _resultsSizeLimitMemoryCheckBatchSize && _memoryManager.isEnabled() && !template.isReturnOnlyUid() && ( template.isChangeMultiple() || template.isReadMultiple() || template.isTakeMultiple());
+        
         boolean hasNext = false;
         try {
             //can we use blob-store prefetch ?
@@ -4212,15 +4215,18 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
                     return;
                 }
 
-                if (checkResultSize && _resultsSizeLimit < template.getBatchOperationContext().getNumResults()) {
-                    if (0 < _resultsSizeLimitMemoryCheckBatchSize && _memoryManager.isEnabled()) {
-                        if ((resultSizeOverflow % _resultsSizeLimitMemoryCheckBatchSize == 0)) {
-                            _memoryManager.monitorMemoryUsage(false);
-                        }
-                    } else {
-                        throw new LimitExceededException("Query max result", _resultsSizeLimit);
+               int numOfResults = template.getBatchOperationContext().getNumResults();
+                //limit check pic-414
+                if (checkResultSize && _resultsSizeLimit < numOfResults) {
+                    throw new LimitExceededException("Query max result", _resultsSizeLimit);
+                }
+
+                //memory monitor pic-414
+                if (monitorMemory) {
+                    if ((numOfResults % _resultsSizeLimitMemoryCheckBatchSize) == 0) {
+                        System.out.println("numOfResults is :" + numOfResults + " monitor memory");
+                        _memoryManager.monitorMemoryUsage(false);
                     }
-                    resultSizeOverflow += 1;
                 }
             }
         } finally {
