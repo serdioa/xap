@@ -4224,7 +4224,6 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
                 //memory monitor pic-414
                 if (monitorMemory) {
                     if ((numOfResults % _resultsSizeLimitMemoryCheckBatchSize) == 0) {
-                        System.out.println("numOfResults is :" + numOfResults + " monitor memory");
                         _memoryManager.monitorMemoryUsage(false);
                     }
                 }
