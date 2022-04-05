@@ -29,7 +29,6 @@ import com.gigaspaces.internal.reflection.ProxyInvocationHandler;
 import com.gigaspaces.internal.reflection.fast.proxy.ProxyFactory;
 import com.gigaspaces.internal.reflection.standard.StandardReflectionFactory;
 
-import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Member;
@@ -89,7 +88,7 @@ public class ASMReflectionFactory implements IReflectionFactory {
     public <T> String[] getConstructorParametersNames(Constructor<T> ctor) {
         try {
             return ConstructorPropertyNameExtractor.getParameterNames(ctor);
-        } catch (IOException e) {
+        } catch (Exception e) {
             if (_logger.isWarnEnabled())
                 _logger.warn("Failed to get constructor parameters names using ASM, falling back to standard reflection. " +
                         "class: " + ctor.getDeclaringClass().getName(), e);
