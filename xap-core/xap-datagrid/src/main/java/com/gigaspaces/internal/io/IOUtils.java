@@ -367,6 +367,11 @@ public class IOUtils {
         }
     }
 
+    public static void writeBoolean(ObjectOutput out, boolean val)
+            throws IOException {
+        out.writeBoolean(val);
+    }
+
     public static boolean[] readBooleanArray(ObjectInput in)
             throws IOException {
         boolean[] array = null;
@@ -379,6 +384,11 @@ public class IOUtils {
         }
 
         return array;
+    }
+
+    public static boolean readBoolean(ObjectInput in)
+            throws IOException {
+        return in.readBoolean();
     }
 
     /**
