@@ -473,7 +473,7 @@ public abstract class AbstractSingleFileGroupBacklog<T extends IReplicationOrder
                             + "["
                             + memberLookupName + " retained size before inserting packet: " + targetWeightUnsafe
                             + ", packet weight: " + operationWeight
-                            + ",but member is limited to " + memberLimit
+                            + ", but member is limited to " + memberLimit
                             + "], backlog is kept for replication group "
                             + getGroupName()
                             + " from space "
