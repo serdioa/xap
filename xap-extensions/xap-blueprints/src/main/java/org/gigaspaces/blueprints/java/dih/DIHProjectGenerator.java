@@ -47,20 +47,13 @@ public class DIHProjectGenerator {
                     Collections.emptyList() :
                     overrideProperties.getDocuments().stream().map(doc -> doc.getClassName() + "Document").collect(Collectors.toList());
             HashMap<String, Object> properties = new HashMap<>();
-            setProperty("project.pipeline-name", overrideProperties.getProjectPipelineName(), properties);
-            setProperty("project.pipeline-name-lower-case", overrideProperties.getProjectPipelineName().toLowerCase(), properties);
+            setProperty("project.consumer-name", overrideProperties.getProjectPipelineName(), properties);
+            setProperty("project.consumer-name-lower-case", overrideProperties.getProjectPipelineName().toLowerCase(), properties);
             setProperty("project.version", overrideProperties.getProjectVersion(), properties);
             setProperty("gs.version", overrideProperties.getGsVersion(), properties);
             setProperty("java.version", overrideProperties.getJavaVersion(), properties);
             setProperty("slf4j.version", overrideProperties.getSlf4jVersion(), properties);
             setProperty("kafka.web-port", overrideProperties.getKafkaWebPort(), properties);
-            setProperty("kafka.space-name", overrideProperties.getKafkaSpaceName(), properties);
-            setProperty("kafka.bootstrap-servers", overrideProperties.getKafkaBootstrapServers(), properties);
-            setProperty("kafka.topic", overrideProperties.getKafkaTopic(), properties);
-            setProperty("kafka.max-poll-records", overrideProperties.getKafkaMaxPollRecords(), properties);
-            setProperty("kafka.receive-buffer-config", overrideProperties.getKafkaReceiveBufferConfig(), properties);
-            setProperty("kafka.message-command-class", overrideProperties.getKafkaMessageCommandClass(), properties);
-            setProperty("kafka.message-validate-class", overrideProperties.getKafkaMessageValidateClass(), properties);
             setProperty("resources.types-metadata-json", overrideProperties.getResourcesTypeMetadataJson(), properties);
             setProperty("resources.default-type-conversion-map", overrideProperties.getResourcesDefaultTypeConversionMap(), properties);
             setProperty("config.stream-json", overrideProperties.getConfigStreamJson(), properties);
@@ -78,8 +71,8 @@ public class DIHProjectGenerator {
     }
 
     private static String getPipelineRootFolderName(HashMap<String, Object> properties, Blueprint blueprint) throws IOException {
-        String pipelineRootFolderName = "pipeline-consumer-" + blueprint.getValues().get("project.pipeline-name-lower-case");
-        String overrideProperty = (String) properties.get("project.pipeline-name-lower-case");
+        String pipelineRootFolderName = "pipeline-consumer-" + blueprint.getValues().get("project.consumer-name-lower-case");
+        String overrideProperty = (String) properties.get("project.consumer-name-lower-case");
         if (overrideProperty != null) {
             pipelineRootFolderName = "pipeline-consumer-" + overrideProperty;
         }

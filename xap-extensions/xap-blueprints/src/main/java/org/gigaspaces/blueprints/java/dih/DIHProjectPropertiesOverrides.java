@@ -20,13 +20,6 @@ public class DIHProjectPropertiesOverrides {
     private final String slf4jVersion;
     private final String javaVersion;
     private final String kafkaWebPort;
-    private final String kafkaSpaceName;
-    private final String kafkaBootstrapServers;
-    private final String kafkaTopic;
-    private final String kafkaMessageCommandClass;
-    private final String kafkaMessageValidateClass;
-    private final String kafkaMaxPollRecords;
-    private final String kafkaReceiveBufferConfig;
     private final String resourcesTypeMetadataJson;
     private final String resourcesDefaultTypeConversionMap;
     private final String configStreamJson;
@@ -39,13 +32,6 @@ public class DIHProjectPropertiesOverrides {
                                          String slf4jVersion,
                                          String javaVersion,
                                          String kafkaWebPort,
-                                         String kafkaSpaceName,
-                                         String kafkaBootstrapServers,
-                                         String kafkaTopic,
-                                         String kafkaMessageCommandClass,
-                                         String kafkaMessageValidateClass,
-                                         String kafkaMaxPollRecords,
-                                         String kafkaReceiveBufferConfig,
                                          String resourcesTypeMetadataJson,
                                          String resourcesDefaultTypeConversionMap,
                                          String configStreamJson, Path target,
@@ -56,13 +42,6 @@ public class DIHProjectPropertiesOverrides {
         this.slf4jVersion = slf4jVersion;
         this.javaVersion = javaVersion;
         this.kafkaWebPort = kafkaWebPort;
-        this.kafkaSpaceName = kafkaSpaceName;
-        this.kafkaBootstrapServers = kafkaBootstrapServers;
-        this.kafkaTopic = kafkaTopic;
-        this.kafkaMessageCommandClass = kafkaMessageCommandClass;
-        this.kafkaMessageValidateClass = kafkaMessageValidateClass;
-        this.kafkaMaxPollRecords = kafkaMaxPollRecords;
-        this.kafkaReceiveBufferConfig = kafkaReceiveBufferConfig;
         this.resourcesTypeMetadataJson = resourcesTypeMetadataJson;
         this.resourcesDefaultTypeConversionMap = resourcesDefaultTypeConversionMap;
         this.configStreamJson = configStreamJson;
@@ -80,26 +59,6 @@ public class DIHProjectPropertiesOverrides {
 
     public String getKafkaWebPort() {
         return kafkaWebPort;
-    }
-
-    public String getKafkaSpaceName() {
-        return kafkaSpaceName;
-    }
-
-    public String getKafkaBootstrapServers() {
-        return kafkaBootstrapServers;
-    }
-
-    public String getKafkaTopic() {
-        return kafkaTopic;
-    }
-
-    public String getKafkaMessageCommandClass() {
-        return kafkaMessageCommandClass;
-    }
-
-    public String getKafkaMessageValidateClass() {
-        return kafkaMessageValidateClass;
     }
 
     public Path getTarget() {
@@ -134,11 +93,4 @@ public class DIHProjectPropertiesOverrides {
         return configStreamJson;
     }
 
-    public String getKafkaMaxPollRecords() {
-        return kafkaMaxPollRecords;
-    }
-
-    public String getKafkaReceiveBufferConfig() {
-        return kafkaReceiveBufferConfig;
-    }
 }

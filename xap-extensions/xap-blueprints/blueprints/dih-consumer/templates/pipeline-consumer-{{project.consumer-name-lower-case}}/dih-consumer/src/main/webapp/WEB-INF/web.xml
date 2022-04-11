@@ -5,9 +5,9 @@
   <display-name>GS data integration consumer</display-name>
   <servlet>
     <description>"GS data integration consumer"</description>
-    <display-name>{{project.pipeline-name}}PipelineConsumer</display-name>
+    <display-name>{{project.consumer-name}}PipelineConsumer</display-name>
     <servlet-name>pipelineConsumer</servlet-name>
-    <servlet-class>com.gigaspaces.dih.{{project.pipeline-name}}PipelineConsumerServlet</servlet-class>
+    <servlet-class>com.gigaspaces.dih.{{project.consumer-name}}PipelineConsumerServlet</servlet-class>
     <load-on-startup>1</load-on-startup>
   </servlet>
   <servlet-mapping>

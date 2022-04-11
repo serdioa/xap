@@ -6,7 +6,7 @@ call build.bat
 echo Creating container for space service (processing unit)...
 SETLOCAL
 if not defined GS_HOME set GS_HOME=%~dp0..\..\..
-call %GS_HOME%\bin\gs container create --count=1 --zone=pipeline-consumer-{{project.pipeline-name-lower-case}} localhost
+call %GS_HOME%\bin\gs container create --count=1 --zone=pipeline-consumer-{{project.consumer-name-lower-case}} localhost
 
 echo Deploying service (processing unit)...
 call deploy.bat

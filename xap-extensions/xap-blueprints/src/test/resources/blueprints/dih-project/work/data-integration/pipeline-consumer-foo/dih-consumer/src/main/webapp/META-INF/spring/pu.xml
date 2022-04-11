@@ -14,15 +14,8 @@
     <os-core:giga-space id="gigaSpace" space="space" />
 
     <bean class="com.gigaspaces.dih.ServiceConfig" id="MyConfig">
-        <constructor-arg value="${pipeline.name}" />
-        <constructor-arg value="${space.name}" />
+        <constructor-arg value="${consumer.name}" />
         <constructor-arg value="${web.port}" />
-        <constructor-arg value="${kafka.bootstrap.servers}" />
-        <constructor-arg value="${kafka.topic}" />
-        <constructor-arg value="${kafka.message.command.class}" />
-        <constructor-arg value="${kafka.message.validate.class}" />
-        <constructor-arg value="${kafka.max-poll-records}" />
-        <constructor-arg value="${kafka.receive-buffer-config}" />
     </bean>
 
 

@@ -28,22 +28,24 @@ public class DIHProjectTestCase {
     public void generateProject() {
         String projectPipelineName = "Foo";
         String projectVersion = "1.0";
-        String kafkaSpaceName = "mySpace";
-        String kafkaTopic = "myTopic";
         String resourcesTypeMetadataJson = getTypeMetadataJson();
         String resourcesDefaultTypeConversionMap = getDefaultTypeConversionMap();
         String configStreamJson = getStreamJson();
-        String kafkaMaxPollRecords = "10000";
-        String kafkaReceiveBufferConfig = "16000";
         target = SystemLocations.singleton().work("data-integration");
         List<DocumentInfo> documents = getDocumentsInfo();
 
         DIHProjectPropertiesOverrides dihProjectProperties = new DIHProjectPropertiesOverrides(
-                projectPipelineName, projectVersion, null,
-                null, null, null,
-                kafkaSpaceName, null, kafkaTopic,
-                null, null, kafkaMaxPollRecords, kafkaReceiveBufferConfig, resourcesTypeMetadataJson,
-                resourcesDefaultTypeConversionMap, configStreamJson, target, documents);
+                projectPipelineName,
+                projectVersion,
+                null,
+                null,
+                null,
+                null,
+                resourcesTypeMetadataJson,
+                resourcesDefaultTypeConversionMap,
+                configStreamJson,
+                target,
+                documents);
 
         try {
             if (target.toFile().exists()) {

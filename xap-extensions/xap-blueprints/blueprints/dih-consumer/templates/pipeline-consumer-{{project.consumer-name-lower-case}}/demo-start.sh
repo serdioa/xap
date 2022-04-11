@@ -6,7 +6,7 @@ echo "Building consumer..."
 ./build.sh
 
 echo "Creating container for consumer service (processing unit)..."
-$GS_HOME/bin/gs.sh container create --count=1 --zone=pipeline-consumer-{{project.pipeline-name-lower-case}} localhost
+$GS_HOME/bin/gs.sh container create --count=1 --zone=pipeline-consumer-{{project.consumer-name-lower-case}} localhost
 
 echo "Deploying service (processing unit)..."
 ./deploy.sh

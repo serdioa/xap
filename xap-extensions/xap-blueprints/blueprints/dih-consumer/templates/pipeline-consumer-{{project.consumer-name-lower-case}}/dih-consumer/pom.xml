@@ -3,7 +3,7 @@
 
     <parent>
         <groupId>com.gigaspaces.dih</groupId>
-        <artifactId>pipeline-consumer-{{project.pipeline-name-lower-case}}</artifactId>
+        <artifactId>pipeline-consumer-{{project.consumer-name-lower-case}}</artifactId>
         <version>{{project.version}}</version>
     </parent>
 
@@ -40,7 +40,7 @@
     </dependencies>
 
     <build>
-        <finalName>{{project.pipeline-name-lower-case}}-${project.artifactId}</finalName>
+        <finalName>{{project.consumer-name-lower-case}}-${project.artifactId}</finalName>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
