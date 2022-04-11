@@ -225,7 +225,7 @@ public class DIHProjectTestCase {
                 "TIMESTAMP:com.gigaspaces.dih.type_converter.TIMESTAMPToTimestamp\n" +
                 "TIMESTAMP_WITH_TIME_ZONE:com.gigaspaces.dih.type_converter.TIMESTAMP_WITH_TIME_ZONEToTimestamp\n" +
                 "TIMESTAMP_WITH_LOCAL_TIME_ZONE:com.gigaspaces.dih.type_converter.TIMESTAMP_WITH_LOCAL_TIME_ZONEToTimestamp\n" +
-                "TIMESTMP:com.gigaspaces.dih.type_converter.TIMESTMPToTimestamp\n" +
+                "TIMESTMP:com.gigaspaces.dih.type_converter.TIMESTZToTimestamp\n" +
                 "TIMESTZ:com.gigaspaces.dih.type_converter.TIMESTZToTimestamp\n" +
                 "TIME:com.gigaspaces.dih.type_converter.TIMEToTime\n" +
                 "TIME_WITH_TIME_ZONE:com.gigaspaces.dih.type_converter.TIME_WITH_TIME_ZONEToTime\n" +
