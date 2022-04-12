@@ -443,14 +443,17 @@ public abstract class AbstractSingleFileGroupBacklog<T extends IReplicationOrder
         BacklogConfig backlogConfig = config.getBacklogConfig();
 
         // Size is not near the capacity, we may continue safely
-        int operationWeight = backlogConfig.getBackLogWeightPolicy().predictWeightBeforeOperation(info);
-        if (operationWeight > _minBlockLimitation && (getWeight() == 0 || dataTypeIntroduceOnly())) {
-            _logger.warn(
-                    getLogPrefix()
-                            + "Allowing to do an operation which is larger than the backlog's capacity.\n"
-                            + "backlog capacity = " + _minBlockLimitation + ". operation weight = " +
-                            operationWeight);
-            return;
+        final int operationWeight = backlogConfig.getBackLogWeightPolicy().predictWeightBeforeOperation(info);
+        if (operationWeight > _minBlockLimitation) {
+            final long weight = getWeight();
+            if (weight == 0 || (weight == 1 && dataTypeIntroduceOnly())) {
+                _logger.warn(
+                        getLogPrefix()
+                                + "Allowing to do an operation which is larger than the backlog's capacity.\n"
+                                + "backlog capacity = " + _minBlockLimitation + ". operation weight = " +
+                                operationWeight);
+                return;
+            }
         }
         if (_minBlockLimitation > getBacklogFile().getWeight() + operationWeight)
             return;
@@ -498,7 +501,7 @@ public abstract class AbstractSingleFileGroupBacklog<T extends IReplicationOrder
     }
 
     private boolean dataTypeIntroduceOnly() {
-        return getWeight() == 1 && _backlogFile.readOnlyIterator(0).next().getData() instanceof DataTypeIntroducePacketData;
+        return _backlogFile.readOnlyIterator(0).next().getData() instanceof DataTypeIntroducePacketData;
     }
 
     // Should be called under write lock

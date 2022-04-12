@@ -445,6 +445,11 @@ public class TypeDesc implements ITypeDesc {
         return _supportsDynamicProperties;
     }
 
+    //this method was added for overriding in tiered-storage, but should be removed when dynamic properties are supported
+    public void setDynamicProperties(boolean supportsDynamicProperties) {
+        this._supportsDynamicProperties = supportsDynamicProperties;
+    }
+
     public boolean supportsOptimisticLocking() {
         return _supportsOptimisticLocking;
     }
