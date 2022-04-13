@@ -110,7 +110,7 @@ public class GSMessageRequestInfo implements SpaceRequestInfo {
         return "Request Info:" + " " +
                 "cdcInfo=" + cdcInfo + " " +
                 "document=" + document + " " +
-                "operationType=" + operationType +
+                "operationType=" + operationType + " " +
                 "populateDeletedObjectsTable=" + populateDeletedObjectsTable + " " +
                 "genericType=" + genericType + " " +
                 "conflictResolutionPolicy=" + conflictResolutionPolicy + " " +

@@ -22,8 +22,8 @@ public class DeletedDocumentInfo extends SpaceDocument {
                 .create();
     }
 
-    public DeletedDocumentInfo(String pipelineName, String typeName, String id) {
-        super(DIHUtils.getDeletedObjectsTableName( pipelineName ));
+    public DeletedDocumentInfo(String deletedObjectsTableName, String typeName, String id) {
+        super(deletedObjectsTableName);
         setFullTypeName(typeName);
         setId(id);
         setTimestamp(System.currentTimeMillis() );
