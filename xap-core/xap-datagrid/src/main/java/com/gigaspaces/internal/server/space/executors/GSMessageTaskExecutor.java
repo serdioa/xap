@@ -142,7 +142,8 @@ public class GSMessageTaskExecutor extends SpaceActionExecutor {
                             throw new NonRetriableMessageExecutionException("Unknown type: " + entry.getTypeName());
                         }
 
-                        DeletedDocumentInfo deletedSpaceDocument = createDeletedSpaceDocument( typeDescriptor, cdcInfo, entry );
+                        DeletedDocumentInfo deletedSpaceDocument =
+                                        createDeletedSpaceDocument( deletedObjectsTableName, typeDescriptor, entry );
                         logger.debug("writing deleted message(all in cache): " + deletedSpaceDocument );
                         try {
                             singleProxy.write( deletedSpaceDocument, null, Lease.FOREVER );
@@ -197,8 +198,7 @@ public class GSMessageTaskExecutor extends SpaceActionExecutor {
             String deletedObjectsTableName = requestInfo.getDeletedObjectsTableName();
             if (logger.isDebugEnabled()){
                 logger.debug("--- operation type:" + operationType + ", TieredStorage, genericType=" + genericType + ", conflictResolutionPolicy=" +
-                        conflictResolutionPolicy + ", isPopulateDeletedObjectsTable=" + requestInfo.isPopulateDeletedObjectsTable() +
-                        " ,isPopulateDeletedObjectsTable=" + requestInfo.isPopulateDeletedObjectsTable());
+                        conflictResolutionPolicy + ", isPopulateDeletedObjectsTable=" + requestInfo.isPopulateDeletedObjectsTable() );
             }
 
             switch (operationType) {
@@ -254,7 +254,8 @@ public class GSMessageTaskExecutor extends SpaceActionExecutor {
                             throw new NonRetriableMessageExecutionException("Unknown type: " + entry.getTypeName());
                         }
 
-                        DeletedDocumentInfo deletedSpaceDocument = createDeletedSpaceDocument(typeDescriptor, cdcInfo, entry);
+                        DeletedDocumentInfo deletedSpaceDocument =
+                                createDeletedSpaceDocument( deletedObjectsTableName, typeDescriptor, entry);
                         logger.debug("writing deleted message(tieredStorage): " + deletedSpaceDocument);
                         try{
                             singleProxy.write( deletedSpaceDocument, null, Lease.FOREVER );
@@ -282,14 +283,15 @@ public class GSMessageTaskExecutor extends SpaceActionExecutor {
         }
     }
 
-    private DeletedDocumentInfo createDeletedSpaceDocument( SpaceTypeDescriptor typeDescriptor, CDCInfo cdcInfo, SpaceDocument spaceDocument ) {
+    private DeletedDocumentInfo createDeletedSpaceDocument( String deletedObjectTableName,
+                                                            SpaceTypeDescriptor typeDescriptor, SpaceDocument spaceDocument ) {
 
         List<String> idPropertiesNames = typeDescriptor.getIdPropertiesNames();
         Object idValue = getIdValues(idPropertiesNames, spaceDocument);
         if( logger.isDebugEnabled() ) {
             logger.debug("Deleted object id:" + idValue);
         }
-        return new DeletedDocumentInfo( cdcInfo.getPipelineName(), spaceDocument.getTypeName(), idValue.toString() );
+        return new DeletedDocumentInfo( deletedObjectTableName, spaceDocument.getTypeName(), idValue.toString() );
     }
 
     private boolean isWriteEntryAllowed( IDirectSpaceProxy singleProxy, String deletedObjectsTableName, SpaceDocument entry,
