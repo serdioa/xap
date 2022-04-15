@@ -65,6 +65,7 @@ public class GSSimpleFormatter extends Formatter {
     private final static String defaultPattern = "{0,date,yyyy-MM-dd HH:mm:ss,SSS} {6} {3} [{4}] - {5}";
     private final MessageFormat messageFormat;
     private final boolean[] patternIds = new boolean[lastIndex];
+    private String username;
 
     // Line separator string.  This is the value of the line.separator
     // property at the moment that the SimpleFormatter was created.
@@ -200,9 +201,30 @@ public class GSSimpleFormatter extends Formatter {
 
     public String setArgsWithRecordExtension(LogRecord record) {
          return " method=" + record.getSourceClassName() + "." + record.getSourceMethodName() + " " +
-                "thread=" + record.getThreadID() + " " +
-                "msg=" + encodeSpecialSymbols(formatMessage(record)) + " " +
-                "LRMI=" + encodeSpecialSymbols(LRMIInvocationContext.getContextMethodLongDisplayString()) + " ";
+                 "thread=" + record.getThreadID() + " " +
+                 "msg=" + encodeSpecialSymbols(formatMessage(record)) + " " +
+                 "LRMI=" + encodeSpecialSymbols(LRMIInvocationContext.getContextMethodLongDisplayString()) + " " +
+                 // new values
+                 "externalId=" + encodeSpecialSymbols(LRMIInvocationContext.getContextMethodLongDisplayString()) + " " + // SpaceComponentManager e.t.c ZK value
+                 "cs1=" + encodeSpecialSymbols(formatMessage(record)) + " " +
+                 "cs1Label=Message " +
+                 "requestUrl=" + encodeSpecialSymbols(LRMIInvocationContext.getContextMethodLongDisplayString()) + " " + // REST
+                 "requestMethod=" + encodeSpecialSymbols(LRMIInvocationContext.getContextMethodLongDisplayString()) + " " + // REST
+                 "rt=" + encodeSpecialSymbols(this._date.toString()) + " " + // timestamp
+                 "shost=" + encodeSpecialSymbols(SystemInfo.singleton().network().getHostId()) + " " +
+                 "spt=" + encodeSpecialSymbols(LRMIInvocationContext.getContextMethodLongDisplayString()) + " " + // source port
+                 "suid=" + encodeSpecialSymbols(getUsername()) + " " + // user id
+                 "suser=" + encodeSpecialSymbols(getUsername()) + " "; // user id
+    }
+
+    public String getUsername() {
+        if (username == null) {
+            final String gsManagerAddress = System.getenv("GS_MANAGER_USERNAME");
+            if (gsManagerAddress != null && !gsManagerAddress.isEmpty()) {
+                username = gsManagerAddress;
+            }
+        }
+        return username;
     }
 
     private String findContext() {
