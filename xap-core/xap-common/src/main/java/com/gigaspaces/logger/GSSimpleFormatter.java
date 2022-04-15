@@ -214,7 +214,7 @@ public class GSSimpleFormatter extends Formatter {
                  "shost=" + encodeSpecialSymbols(SystemInfo.singleton().network().getHostId()) + " " +
                  "spt=" + encodeSpecialSymbols(LRMIInvocationContext.getContextMethodLongDisplayString()) + " " + // source port
                  "suid=" + encodeSpecialSymbols(getUsername()) + " " + // user id
-                 "suser=" + encodeSpecialSymbols(getUsername()) + " "; // user id
+                 "suser=" + encodeSpecialSymbols(SystemInfo.singleton().os().getUsername()) + " "; // user id
     }
 
     public String getUsername() {
