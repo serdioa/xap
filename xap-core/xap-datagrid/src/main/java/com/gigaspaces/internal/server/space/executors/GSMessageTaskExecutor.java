@@ -18,6 +18,7 @@ import com.gigaspaces.metadata.SpaceTypeDescriptor;
 import com.j_spaces.core.client.EntryAlreadyInSpaceException;
 import com.j_spaces.core.client.EntryNotInSpaceException;
 import com.j_spaces.core.client.Modifiers;
+import com.j_spaces.kernel.JSpaceUtilities;
 import net.jini.core.entry.UnusableEntryException;
 import net.jini.core.lease.Lease;
 import net.jini.core.transaction.*;
@@ -331,7 +332,7 @@ public class GSMessageTaskExecutor extends SpaceActionExecutor {
             throw new NonRetriableMessageExecutionException("Unknown type: " + entry.getTypeName());
         }
         List<String> idPropertiesNames = typeDescriptor.getIdPropertiesNames();
-        Object idValues = getIdValues( idPropertiesNames, entry);
+        Object idValues = getIdValues( idPropertiesNames, entry).toString();
         String routingPropertyName = typeDescriptor.getRoutingPropertyName();
         Object routingPropertyValue = idPropertiesNames.contains( routingPropertyName ) ?
                                                     null : entry.getProperty(routingPropertyName);
@@ -358,7 +359,8 @@ public class GSMessageTaskExecutor extends SpaceActionExecutor {
             }
         }
 
-        boolean isEntryInDeletedTableOfSpace = readObjects != null && readObjects.length > 0;
+        boolean isEntryInDeletedTableOfSpace = readObjects != null && readObjects.length > 0 &&
+                                                !JSpaceUtilities.areAllArrayElementsNull( readObjects );
         if (logger.isDebugEnabled()) {
             logger.debug("isEntryInDeletedTableOfSpace, isEntryInDeletedTableOfSpace=" + isEntryInDeletedTableOfSpace);
         }
