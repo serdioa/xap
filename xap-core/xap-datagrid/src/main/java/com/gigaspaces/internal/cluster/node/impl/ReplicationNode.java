@@ -23,20 +23,7 @@ import com.gigaspaces.internal.cluster.node.IReplicationNode;
 import com.gigaspaces.internal.cluster.node.IReplicationNodeAdmin;
 import com.gigaspaces.internal.cluster.node.IReplicationNodeStateListener;
 import com.gigaspaces.internal.cluster.node.IReplicationOutContext;
-import com.gigaspaces.internal.cluster.node.handlers.IReplicationInBatchConsumptionHandler;
-import com.gigaspaces.internal.cluster.node.handlers.IReplicationInDataTypeCreatedHandler;
-import com.gigaspaces.internal.cluster.node.handlers.IReplicationInDataTypeIndexAddedHandler;
-import com.gigaspaces.internal.cluster.node.handlers.IReplicationInEntryHandler;
-import com.gigaspaces.internal.cluster.node.handlers.IReplicationInEntryLeaseCancelledHandler;
-import com.gigaspaces.internal.cluster.node.handlers.IReplicationInEntryLeaseExpiredHandler;
-import com.gigaspaces.internal.cluster.node.handlers.IReplicationInEntryLeaseExtendedHandler;
-import com.gigaspaces.internal.cluster.node.handlers.IReplicationInEvictEntryHandler;
-import com.gigaspaces.internal.cluster.node.handlers.IReplicationInNotificationSentHandler;
-import com.gigaspaces.internal.cluster.node.handlers.IReplicationInNotifyTemplateCreatedHandler;
-import com.gigaspaces.internal.cluster.node.handlers.IReplicationInNotifyTemplateLeaseExpiredHandler;
-import com.gigaspaces.internal.cluster.node.handlers.IReplicationInNotifyTemplateLeaseExtendedHandler;
-import com.gigaspaces.internal.cluster.node.handlers.IReplicationInNotifyTemplateRemovedHandler;
-import com.gigaspaces.internal.cluster.node.handlers.IReplicationInTransactionHandler;
+import com.gigaspaces.internal.cluster.node.handlers.*;
 import com.gigaspaces.internal.cluster.node.impl.backlog.IBacklogMemberState;
 import com.gigaspaces.internal.cluster.node.impl.backlog.IReplicationGroupBacklog;
 import com.gigaspaces.internal.cluster.node.impl.backlog.OperationWeightInfo;
@@ -46,48 +33,14 @@ import com.gigaspaces.internal.cluster.node.impl.directPersistency.DirectPersist
 import com.gigaspaces.internal.cluster.node.impl.directPersistency.IDirectPersistencySyncHandler;
 import com.gigaspaces.internal.cluster.node.impl.filters.IReplicationInFilter;
 import com.gigaspaces.internal.cluster.node.impl.filters.IReplicationOutFilter;
-import com.gigaspaces.internal.cluster.node.impl.groups.BrokenReplicationTopologyException;
-import com.gigaspaces.internal.cluster.node.impl.groups.IReplicationDynamicTargetGroupBuilder;
-import com.gigaspaces.internal.cluster.node.impl.groups.IReplicationGroupOutContext;
-import com.gigaspaces.internal.cluster.node.impl.groups.IReplicationSourceGroup;
-import com.gigaspaces.internal.cluster.node.impl.groups.IReplicationSourceGroupBuilder;
-import com.gigaspaces.internal.cluster.node.impl.groups.IReplicationSourceGroupStateListener;
-import com.gigaspaces.internal.cluster.node.impl.groups.IReplicationStaticTargetGroupBuilder;
-import com.gigaspaces.internal.cluster.node.impl.groups.IReplicationTargetGroup;
-import com.gigaspaces.internal.cluster.node.impl.groups.IReplicationTargetGroupStateListener;
-import com.gigaspaces.internal.cluster.node.impl.groups.IReplicationUnreliableOperation;
-import com.gigaspaces.internal.cluster.node.impl.groups.ISpaceItemGroupsExtractor;
-import com.gigaspaces.internal.cluster.node.impl.groups.NoSuchReplicationGroupExistException;
-import com.gigaspaces.internal.cluster.node.impl.groups.ReplicationNodeGroupsHolder;
+import com.gigaspaces.internal.cluster.node.impl.groups.*;
 import com.gigaspaces.internal.cluster.node.impl.handlers.SpaceReplicationMetadataEventHandler;
 import com.gigaspaces.internal.cluster.node.impl.packets.ReplicaRequestPacket;
 import com.gigaspaces.internal.cluster.node.impl.processlog.DefaultProcessLogExceptionHandlerBuilder;
-import com.gigaspaces.internal.cluster.node.impl.processlog.IReplicationProcessLogBuilder;
 import com.gigaspaces.internal.cluster.node.impl.processlog.IReplicationProcessLogExceptionHandlerBuilder;
-import com.gigaspaces.internal.cluster.node.impl.replica.CurrentStageInfo;
-import com.gigaspaces.internal.cluster.node.impl.replica.ISpaceReplicaData;
-import com.gigaspaces.internal.cluster.node.impl.replica.ISpaceReplicaDataConsumer;
-import com.gigaspaces.internal.cluster.node.impl.replica.ReplicationNodeReplicaHandler;
-import com.gigaspaces.internal.cluster.node.impl.replica.SpaceCopyIntermediateResult;
-import com.gigaspaces.internal.cluster.node.impl.replica.SpaceCopyReplicaRequestContext;
-import com.gigaspaces.internal.cluster.node.impl.replica.SpaceCopyReplicaRunnable;
-import com.gigaspaces.internal.cluster.node.impl.replica.SpaceReplicaState;
-import com.gigaspaces.internal.cluster.node.impl.replica.SpaceSynchronizeReplicaRequestContext;
-import com.gigaspaces.internal.cluster.node.impl.router.AbstractReplicationPacket;
-import com.gigaspaces.internal.cluster.node.impl.router.ConnectionState;
-import com.gigaspaces.internal.cluster.node.impl.router.IIncomingReplicationHandler;
-import com.gigaspaces.internal.cluster.node.impl.router.IReplicationMonitoredConnection;
-import com.gigaspaces.internal.cluster.node.impl.router.IReplicationRouter;
-import com.gigaspaces.internal.cluster.node.impl.router.IReplicationRouterAdmin;
-import com.gigaspaces.internal.cluster.node.impl.router.ReplicationEndpointDetails;
-import com.gigaspaces.internal.cluster.node.impl.router.ReplicationRouterBuilder;
-import com.gigaspaces.internal.cluster.node.impl.router.RouterStubHolder;
-import com.gigaspaces.internal.cluster.node.replica.ISpaceCopyReplicaParameters;
-import com.gigaspaces.internal.cluster.node.replica.ISpaceCopyReplicaRequestContext;
-import com.gigaspaces.internal.cluster.node.replica.ISpaceCopyReplicaState;
-import com.gigaspaces.internal.cluster.node.replica.ISpaceCopyResult;
-import com.gigaspaces.internal.cluster.node.replica.ISpaceSynchronizeReplicaRequestContext;
-import com.gigaspaces.internal.cluster.node.replica.ISpaceSynchronizeReplicaState;
+import com.gigaspaces.internal.cluster.node.impl.replica.*;
+import com.gigaspaces.internal.cluster.node.impl.router.*;
+import com.gigaspaces.internal.cluster.node.replica.*;
 import com.gigaspaces.internal.metadata.ITypeDesc;
 import com.gigaspaces.internal.server.storage.IEntryHolder;
 import com.gigaspaces.internal.server.storage.NotifyTemplateHolder;
@@ -106,9 +59,10 @@ import com.j_spaces.core.OperationID;
 import com.j_spaces.core.cache.blobStore.BlobStoreReplicaConsumeHelper;
 import com.j_spaces.core.cache.blobStore.BlobStoreReplicationBulkConsumeHelper;
 import com.j_spaces.core.exception.ClosedResourceException;
-
 import net.jini.core.event.EventRegistration;
 import net.jini.core.transaction.server.ServerTransaction;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.rmi.RemoteException;
 import java.util.ArrayList;
@@ -117,9 +71,6 @@ import java.util.Map;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 
 /**
@@ -901,8 +852,21 @@ public class ReplicationNode
         return RedoLogStatistics.EMPTY_STATISTICS;
     }
 
+    /**
+     * @return number of flushed packets
+     * @since 16.2
+     */
+    public int flushRedoLogToStorage() {
+        // get shared backlog - use the first backlog
+        for (IReplicationSourceGroup group : getReplicationSourceGroups()) {
+            IReplicationGroupBacklog groupBacklog = group.getGroupBacklog();
+            return groupBacklog.flushRedoLogToStorage();
+        }
+        return 0;
+    }
+
     public void monitorState(OperationWeightInfo info) {
-        for (IReplicationSourceGroup sourceGroup : _groupsHolder.getSourceGroups()) {
+        for (IReplicationSourceGroup sourceGroup : getReplicationSourceGroups()) {
             sourceGroup.getGroupBacklog().monitor(info);
             sourceGroup.monitorConsistencyLevel();
         }

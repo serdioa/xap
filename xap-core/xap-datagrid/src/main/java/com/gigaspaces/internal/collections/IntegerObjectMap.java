@@ -16,11 +16,14 @@
 
 package com.gigaspaces.internal.collections;
 
+import java.io.Serializable;
+
 /**
  * @author Niv Ingberg
  * @since 12.0
  */
-public interface IntegerObjectMap<V> {
+public interface IntegerObjectMap<V> extends Serializable {
+
     boolean isEmpty();
 
     int size();
@@ -36,4 +39,6 @@ public interface IntegerObjectMap<V> {
     int[] keys();
 
     V[] getValues(V[] array);
+
+    void flush(IntegerObjectMap<V> target);
 }

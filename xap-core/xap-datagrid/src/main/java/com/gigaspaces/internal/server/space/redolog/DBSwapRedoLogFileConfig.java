@@ -32,6 +32,7 @@ public class DBSwapRedoLogFileConfig<T extends IReplicationOrderedPacket> {
     private final int memoryPacketCapacity;
     private int flushBufferPacketCount;
     private IReplicationPacketDataProducer<?> dataProducer;
+    private boolean useExistingDBFileOnStart;
 
     public DBSwapRedoLogFileConfig(String spaceName, String fullMemberName, int memoryPacketCapacity) {
         this.spaceName = spaceName;
@@ -66,6 +67,14 @@ public class DBSwapRedoLogFileConfig<T extends IReplicationOrderedPacket> {
 
     public int getFlushBufferPacketCount() {
         return flushBufferPacketCount;
+    }
+
+    public void setUseExistingDBFileOnStart(boolean useExistingDBFileOnStart){
+        this.useExistingDBFileOnStart = useExistingDBFileOnStart;
+    }
+
+    public boolean shouldUseExistingDBFileOnStart() {
+        return useExistingDBFileOnStart;
     }
 
     @Override

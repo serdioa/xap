@@ -36,7 +36,6 @@ import com.j_spaces.core.client.TransactionInfo;
 import com.j_spaces.core.client.UnderTxnLockedObject;
 import com.j_spaces.core.exception.SpaceAlreadyStartedException;
 import com.j_spaces.core.exception.SpaceAlreadyStoppedException;
-
 import net.jini.core.transaction.Transaction;
 
 import java.rmi.RemoteException;
@@ -269,6 +268,14 @@ public interface IInternalRemoteJSpaceAdmin extends IRemoteJSpaceAdmin, NIOInfoP
     public void forceMoveToPrimary() throws RemoteException;
 
     public String getReplicationDump() throws RemoteException;
+
+    /**
+     * flush redo-log packets from memory to storage.
+     * Should be called when the space is in quiesce mode.
+     * @return number of flushed packets
+     * @since 16.2
+     */
+    public int flushRedoLogToStorage() throws RemoteException;
 
     /**
      * @since 9.5.0

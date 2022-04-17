@@ -3,15 +3,20 @@ package com.gigaspaces.internal.server.space.redolog;
 import com.gigaspaces.internal.cluster.node.impl.backlog.AbstractSingleFileGroupBacklog;
 import com.gigaspaces.internal.cluster.node.impl.packets.IReplicationOrderedPacket;
 import com.gigaspaces.internal.cluster.node.impl.packets.data.IReplicationPacketDataProducer;
+import com.gigaspaces.internal.io.IOUtils;
 import com.gigaspaces.internal.server.space.redolog.storage.IRedoLogFileStorage;
 import com.gigaspaces.internal.server.space.redolog.storage.SqliteRedoLogFileStorage;
 import com.gigaspaces.internal.utils.collections.ReadOnlyIterator;
+import com.gigaspaces.start.SystemLocations;
 import com.j_spaces.core.cluster.ReplicationPolicy;
 import com.j_spaces.core.cluster.startup.CompactionResult;
 import com.j_spaces.core.cluster.startup.RedoLogCompactionUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.FileOutputStream;
+import java.io.ObjectOutputStream;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.NoSuchElementException;
 
@@ -79,7 +84,7 @@ public class DBSwapRedoLogFile<T extends IReplicationOrderedPacket> implements I
                 T oldest = _memoryRedoLog.removeOldest();
                 packetsRemoved.add(oldest);
                 batchWeight += oldest.getWeight();
-                if (batchWeight > numberOfPacketsToRemove){
+                if (batchWeight > numberOfPacketsToRemove) {
                     break;
                 }
             }
@@ -142,10 +147,10 @@ public class DBSwapRedoLogFile<T extends IReplicationOrderedPacket> implements I
         if (_logger.isTraceEnabled()) {
             _logger.trace(
                     "confirmed-packets= " + packetsCount
-                    + ", storage.size= " + _externalRedoLogStorage.size()
-                    + ", memory.size= " + _memoryRedoLog.size()
-                    + (_memoryRedoLog.isEmpty() ? ""
-                        : ", memory.oldest-key= " + _memoryRedoLog.getOldest().getKey())
+                            + ", storage.size= " + _externalRedoLogStorage.size()
+                            + ", memory.size= " + _memoryRedoLog.size()
+                            + (_memoryRedoLog.isEmpty() ? ""
+                            : ", memory.oldest-key= " + _memoryRedoLog.getOldest().getKey())
             );
         }
         if (_externalRedoLogStorage.isEmpty()) {
@@ -231,12 +236,38 @@ public class DBSwapRedoLogFile<T extends IReplicationOrderedPacket> implements I
                 _lastCompactionRangeEndKey);
     }
 
-    private class ExternalStorageCompactionReadOnlyIterator implements ReadOnlyIterator<T>{
+
+    @Override
+    public int flushToStorage() {
+        final ArrayList<T> moveToDisk = new ArrayList<>((int) _memoryRedoLog.size());
+        while (!_memoryRedoLog.isEmpty()) {
+            T oldest = _memoryRedoLog.removeOldest();
+            moveToDisk.add(oldest);
+        }
+        //move packets from memory to external storage
+        if (!moveToDisk.isEmpty()) {
+            _externalRedoLogStorage.appendBatch(moveToDisk);
+
+            try {
+                Path path = SystemLocations.singleton().work("redo-log/" + _config.getSpaceName() + "/_code_map");
+                try (FileOutputStream file = new FileOutputStream(path.toFile())) {
+                    try (ObjectOutputStream oos = new ObjectOutputStream(file)) {
+                        IOUtils.writeCodeMaps(oos);
+                    }
+                }
+            } catch (Exception e) {
+                throw new RuntimeException("failed to write code maps to disk", e);
+            }
+        }
+        return moveToDisk.size();
+    }
+
+    private class ExternalStorageCompactionReadOnlyIterator implements ReadOnlyIterator<T> {
 
         private final ReadOnlyIterator<T> iterator;
         private final long lastCompactionKey;
 
-        public ExternalStorageCompactionReadOnlyIterator(ReadOnlyIterator<T> iterator, long lastCompactionKey){
+        public ExternalStorageCompactionReadOnlyIterator(ReadOnlyIterator<T> iterator, long lastCompactionKey) {
             this.iterator = iterator;
             this.lastCompactionKey = lastCompactionKey;
         }

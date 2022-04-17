@@ -33,10 +33,9 @@ import com.gigaspaces.internal.cluster.node.impl.processlog.IProcessLogHandshake
 import com.gigaspaces.internal.cluster.node.impl.processlog.IProcessResult;
 import com.gigaspaces.internal.version.PlatformLogicalVersion;
 import com.gigaspaces.metrics.MetricRegistrator;
+import org.slf4j.Logger;
 
 import java.util.List;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 
 /**
@@ -150,6 +149,12 @@ public interface IReplicationGroupBacklog extends IDynamicSourceGroupStateListen
     boolean supportDiscardMerge();
 
     IRedoLogStatistics getStatistics();
+
+    /**
+     * @return number of flushed packets
+     * @since 16.2
+     */
+    int flushRedoLogToStorage();
 
     void monitor(OperationWeightInfo info) throws RedoLogCapacityExceededException;
 

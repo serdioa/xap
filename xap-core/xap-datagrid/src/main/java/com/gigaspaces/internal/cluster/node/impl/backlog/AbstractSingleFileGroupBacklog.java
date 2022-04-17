@@ -1347,6 +1347,16 @@ public abstract class AbstractSingleFileGroupBacklog<T extends IReplicationOrder
         }
     }
 
+    @Override
+    public int flushRedoLogToStorage() {
+        _rwLock.writeLock().lock();
+        try {
+            return getBacklogFile().flushToStorage();
+        } finally {
+            _rwLock.writeLock().lock();
+        }
+    }
+
     private Map<String, ReplicationTargetInfo> generateInfotForMemberMap() {
         Map<String, ReplicationTargetInfo> result = new HashMap<String, ReplicationTargetInfo>();
         for (Entry<String, CType> entry : _confirmationMap.entrySet()) {
