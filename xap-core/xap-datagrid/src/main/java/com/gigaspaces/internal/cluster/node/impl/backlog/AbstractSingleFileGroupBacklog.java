@@ -444,19 +444,9 @@ public abstract class AbstractSingleFileGroupBacklog<T extends IReplicationOrder
 
         // Size is not near the capacity, we may continue safely
         final int operationWeight = backlogConfig.getBackLogWeightPolicy().predictWeightBeforeOperation(info);
-        if (operationWeight > _minBlockLimitation) {
-            final long weight = getWeight();
-            if (weight == 0 || (weight == 1 && dataTypeIntroduceOnly())) {
-                _logger.warn(
-                        getLogPrefix()
-                                + "Allowing to do an operation which is larger than the backlog's capacity.\n"
-                                + "backlog capacity = " + _minBlockLimitation + ". operation weight = " +
-                                operationWeight);
-                return;
-            }
-        }
-        if (_minBlockLimitation > getBacklogFile().getWeight() + operationWeight)
+        if (_minBlockLimitation > getWeightUnsafe() + operationWeight) {
             return;
+        }
 
         _rwLock.readLock().lock();
         try {
@@ -483,7 +473,7 @@ public abstract class AbstractSingleFileGroupBacklog<T extends IReplicationOrder
                             + "["
                             + memberLookupName + " retained size before inserting packet: " + targetWeightUnsafe
                             + ", packet weight: " + operationWeight
-                            + ",but member is limited to " + memberLimit
+                            + ", but member is limited to " + memberLimit
                             + "], backlog is kept for replication group "
                             + getGroupName()
                             + " from space "
@@ -528,6 +518,8 @@ public abstract class AbstractSingleFileGroupBacklog<T extends IReplicationOrder
         if (maxAllowedDeleteUpTo <= firstKeyInBacklog)
             return;
 
+        final String operationType = String.valueOf(data.isSingleEntryData() ?
+                data.getSingleEntryData().getOperationType() : data.getMultipleOperationType());
 
         SourceGroupConfig<?> config = _groupConfigHolder.getConfig();
         BacklogConfig backlogConfig = config.getBacklogConfig();
@@ -601,9 +593,10 @@ public abstract class AbstractSingleFileGroupBacklog<T extends IReplicationOrder
             if (currentAllowedLimit < weight) {
                 _logger.warn(
                         getLogPrefix()
-                                + "inserting to the backlog an operation which is larger than the backlog's capacity.\n"
-                                + "target name = " + member + ", target defined capacity = " + currentAllowedLimit + ", operation type = " +
-                                ", operation weight = " + weight);
+                                + "inserting to the backlog an operation which is larger than the backlog's capacity; "
+                                + "target name = " + member + ", target defined capacity = " + currentAllowedLimit
+                                + ", operation type = " + operationType
+                                + ", operation weight = " + weight);
                 if (initiallyEmpty)
                     continue;
             }

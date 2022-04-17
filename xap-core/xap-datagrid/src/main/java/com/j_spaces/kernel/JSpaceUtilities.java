@@ -731,7 +731,7 @@ public class JSpaceUtilities {
      * @return if there is exception of specific class in exception hierarchy it will be returned,
      * otherwise null returned
      */
-    public static Throwable getCauseExceptionFromHierarchy(Exception sourceException, Class checkCauseExceptionClass) {
+    public static Throwable getCauseExceptionFromHierarchy(Throwable sourceException, Class checkCauseExceptionClass) {
         Throwable causeException = sourceException;
         while ((causeException = causeException.getCause()) != null) {
             if (causeException.getClass().equals(checkCauseExceptionClass)) {
