@@ -104,4 +104,14 @@ public interface IRedoLogFile<T extends IReplicationOrderedPacket> extends IRedo
      * @return number of discarded packets
      */
     CompactionResult performCompaction(long from, long to);
+
+    /**
+     * Flush packets from memory redo-log to storage redo-log.
+     * Not thread safe, should be called under lock and only when the space is in quiesce mode.
+     * @return number of flushed packets
+     * @since 16.2
+     */
+    default int flushToStorage() {
+        throw new UnsupportedOperationException();
+    }
 }

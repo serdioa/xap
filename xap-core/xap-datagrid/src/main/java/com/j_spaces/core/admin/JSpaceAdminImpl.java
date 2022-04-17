@@ -48,7 +48,6 @@ import com.j_spaces.core.filters.StatisticsHolder;
 import com.j_spaces.core.service.AbstractService;
 import com.j_spaces.core.service.ServiceAdmin;
 import com.j_spaces.core.service.ServiceAdminImpl;
-
 import net.jini.core.transaction.Transaction;
 import net.jini.export.Exporter;
 import org.jini.rio.boot.SpaceInstanceRemoteClassLoaderInfo;
@@ -378,6 +377,11 @@ public class JSpaceAdminImpl extends ServiceAdminImpl
 
     public String getReplicationDump() throws RemoteException {
         return ((IInternalRemoteJSpaceAdmin) m_service).getReplicationDump();
+    }
+
+    @Override
+    public int flushRedoLogToStorage() throws RemoteException {
+        return ((IInternalRemoteJSpaceAdmin) m_service).flushRedoLogToStorage();
     }
 
     @Override

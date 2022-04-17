@@ -640,6 +640,11 @@ public class LRMISpaceImpl extends RemoteStub<IRemoteSpace>
     }
 
     @Override
+    public int flushRedoLogToStorage() throws RemoteException {
+        return ((IInternalRemoteJSpaceAdmin) getProxy()).flushRedoLogToStorage();
+    }
+
+    @Override
     public Class<?> loadRemoteClass(String className) throws RemoteException, ClassNotFoundException {
         return getProxy().loadRemoteClass(className);
     }

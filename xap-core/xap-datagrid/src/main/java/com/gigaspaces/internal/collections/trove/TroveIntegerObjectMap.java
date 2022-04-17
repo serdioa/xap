@@ -25,7 +25,8 @@ import com.gigaspaces.internal.gnu.trove.TIntObjectHashMap;
  */
 @com.gigaspaces.api.InternalApi
 public class TroveIntegerObjectMap<V> implements IntegerObjectMap<V> {
-    private final TIntObjectHashMap<V> map = new TIntObjectHashMap<V>();
+    private static final long serialVersionUID = -8321502498200244722L;
+    private final TIntObjectHashMap<V> map = new TIntObjectHashMap<>();
 
     @Override
     public boolean isEmpty() {
@@ -65,5 +66,13 @@ public class TroveIntegerObjectMap<V> implements IntegerObjectMap<V> {
     @Override
     public V[] getValues(V[] array) {
         return map.getValues(array);
+    }
+
+    @Override
+    public void flush(IntegerObjectMap<V> target) {
+        map.forEachEntry((key, value) -> {
+            target.put(key, value);
+            return true;
+        });
     }
 }

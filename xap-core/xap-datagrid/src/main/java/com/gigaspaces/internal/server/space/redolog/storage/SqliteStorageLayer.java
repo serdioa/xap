@@ -54,7 +54,7 @@ public abstract class SqliteStorageLayer<T extends IReplicationOrderedPacket> {
             if (!path.toFile().mkdirs()) {
                 throw new StorageException("failed to mkdir " + path);
             }
-        } else {
+        } else if (!config.shouldUseExistingDBFileOnStart()){
             deleteDataFile();
         }
 
@@ -67,7 +67,9 @@ public abstract class SqliteStorageLayer<T extends IReplicationOrderedPacket> {
             logger.error("Failed to initialize Sqlite RDBMS", e);
             throw new StorageException("failed to initialize internal sqlite RDBMS", e);
         }
-        createTable();
+        if (!config.shouldUseExistingDBFileOnStart()){
+            createTable();
+        }
     }
 
     private Connection connectToDB(String jdbcDriver, String dbUrl, String user, String password, SQLiteConfig sqLiteConfig) throws ClassNotFoundException, SQLException {

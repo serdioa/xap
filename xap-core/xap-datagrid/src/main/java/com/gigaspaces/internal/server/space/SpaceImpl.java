@@ -3887,6 +3887,11 @@ public class SpaceImpl extends AbstractService implements IRemoteSpace, IInterna
         return _engine.getReplicationNode().getAdmin().dumpState();
     }
 
+    @Override
+    public int flushRedoLogToStorage() throws RemoteException {
+        return _engine.getReplicationNode().getAdmin().flushRedoLogToStorage();
+    }
+
     public void assertAuthorizedForType(String typeName, SpacePrivilege privilege, SpaceContext spaceContext) {
         if (_securityInterceptor != null) {
             _securityInterceptor.intercept(SpaceContextHelper.getSecurityContext(spaceContext), privilege, typeName);

@@ -19,6 +19,7 @@ package com.gigaspaces.internal.collections.standard;
 import com.gigaspaces.internal.collections.ObjectIntegerMap;
 
 import java.util.HashMap;
+import java.util.Map;
 
 /**
  * @author Niv Ingberg
@@ -26,6 +27,7 @@ import java.util.HashMap;
  */
 @com.gigaspaces.api.InternalApi
 public class StandardObjectIntegerMap<K> implements ObjectIntegerMap<K> {
+    private static final long serialVersionUID = -695817013778834645L;
     private final HashMap<K, Integer> map = new HashMap<K, Integer>();
 
     @Override
@@ -47,4 +49,12 @@ public class StandardObjectIntegerMap<K> implements ObjectIntegerMap<K> {
     public void clear() {
         map.clear();
     }
+
+    @Override
+    public void flush(ObjectIntegerMap<K> target) {
+        for (Map.Entry<K, Integer> entry : map.entrySet()) {
+            target.put(entry.getKey(), entry.getValue());
+        }
+    }
+
 }

@@ -16,11 +16,13 @@
 
 package com.gigaspaces.internal.collections;
 
+import java.io.Serializable;
+
 /**
  * @author Niv Ingberg
  * @since 12.0
  */
-public interface ObjectIntegerMap<K> {
+public interface ObjectIntegerMap<K> extends Serializable {
     boolean containsKey(K key);
 
     int get(K key);
@@ -28,4 +30,6 @@ public interface ObjectIntegerMap<K> {
     void put(K key, int value);
 
     void clear();
+
+    void flush(ObjectIntegerMap<K> target);
 }
