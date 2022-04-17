@@ -10,5 +10,4 @@ kafka:
 resources:
   types-metadata-json:
   default-type-conversion-map:
-config.stream-json:
 type-registrar.class-names:

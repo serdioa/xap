@@ -30,7 +30,6 @@ public class DIHProjectTestCase {
         String projectVersion = "1.0";
         String resourcesTypeMetadataJson = getTypeMetadataJson();
         String resourcesDefaultTypeConversionMap = getDefaultTypeConversionMap();
-        String configStreamJson = getStreamJson();
         target = SystemLocations.singleton().work("data-integration");
         List<DocumentInfo> documents = getDocumentsInfo();
 
@@ -43,7 +42,6 @@ public class DIHProjectTestCase {
                 null,
                 resourcesTypeMetadataJson,
                 resourcesDefaultTypeConversionMap,
-                configStreamJson,
                 target,
                 documents);
 

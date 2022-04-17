@@ -56,7 +56,6 @@ public class DIHProjectGenerator {
             setProperty("kafka.web-port", overrideProperties.getKafkaWebPort(), properties);
             setProperty("resources.types-metadata-json", overrideProperties.getResourcesTypeMetadataJson(), properties);
             setProperty("resources.default-type-conversion-map", overrideProperties.getResourcesDefaultTypeConversionMap(), properties);
-            setProperty("config.stream-json", overrideProperties.getConfigStreamJson(), properties);
             setProperty("type-registrar.class-names", classNames, properties);
 
             Blueprint blueprint = new Blueprint(consumerBlueprint);

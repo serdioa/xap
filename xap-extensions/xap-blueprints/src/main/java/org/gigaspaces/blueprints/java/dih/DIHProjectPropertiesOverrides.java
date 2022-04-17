@@ -22,7 +22,6 @@ public class DIHProjectPropertiesOverrides {
     private final String kafkaWebPort;
     private final String resourcesTypeMetadataJson;
     private final String resourcesDefaultTypeConversionMap;
-    private final String configStreamJson;
     private final Path target;
     private final List<DocumentInfo> documents;
 
@@ -34,7 +33,7 @@ public class DIHProjectPropertiesOverrides {
                                          String kafkaWebPort,
                                          String resourcesTypeMetadataJson,
                                          String resourcesDefaultTypeConversionMap,
-                                         String configStreamJson, Path target,
+                                         Path target,
                                          List<DocumentInfo> documents) {
         this.projectPipelineName = projectPipelineName;
         this.projectVersion = projectVersion;
@@ -44,7 +43,6 @@ public class DIHProjectPropertiesOverrides {
         this.kafkaWebPort = kafkaWebPort;
         this.resourcesTypeMetadataJson = resourcesTypeMetadataJson;
         this.resourcesDefaultTypeConversionMap = resourcesDefaultTypeConversionMap;
-        this.configStreamJson = configStreamJson;
         this.target = target;
         this.documents = documents;
     }
@@ -87,10 +85,6 @@ public class DIHProjectPropertiesOverrides {
 
     public String getResourcesDefaultTypeConversionMap() {
         return resourcesDefaultTypeConversionMap;
-    }
-
-    public String getConfigStreamJson() {
-        return configStreamJson;
     }
 
 }
