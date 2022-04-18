@@ -18,6 +18,7 @@
 package com.gigaspaces.logger;
 
 import com.gigaspaces.internal.version.PlatformVersion;
+import com.gigaspaces.logger.cef.RESTMarker;
 import com.gigaspaces.lrmi.LRMIInvocationContext;
 
 import com.gigaspaces.start.SystemInfo;
@@ -225,7 +226,8 @@ public class GSSimpleFormatter extends Formatter {
             className = element.getClassName();
             methodName = element.getMethodName();
             Class<?> aClass = Class.forName(className);
-
+            // TODO : need to think up about custom marker from xap-common module
+            aClass.getAnnotation(RESTMarker.class);
         }
         return "";
     }
