@@ -22,7 +22,7 @@ public class DBMemoryRedoLogFile<T extends IReplicationOrderedPacket> implements
     private long _weight;
 
     public DBMemoryRedoLogFile(DBSwapRedoLogFileConfig<T> config, AbstractSingleFileGroupBacklog<?, ?> groupBacklog) {
-        this._logger = LoggerFactory.getLogger(LOGGER_REPLICATION_BACKLOG + "." + config.getFullMemberName());
+        this._logger = LoggerFactory.getLogger(LOGGER_REPLICATION_BACKLOG + "." + config.getContainerName());
         this._groupBacklog = groupBacklog;
     }
 
