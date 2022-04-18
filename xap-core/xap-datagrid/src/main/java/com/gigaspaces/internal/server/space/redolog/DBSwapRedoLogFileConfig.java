@@ -27,16 +27,16 @@ import com.j_spaces.core.cluster.SwapBacklogConfig;
  */
 @com.gigaspaces.api.InternalApi
 public class DBSwapRedoLogFileConfig<T extends IReplicationOrderedPacket> {
-    private final String spaceName;
-    private final String fullMemberName;
+    private final String spaceName; //e.g. mySpace
+    private final String containerName; //e.g. mySpace_container1
     private final int memoryPacketCapacity;
     private int flushBufferPacketCount;
     private IReplicationPacketDataProducer<?> dataProducer;
-    private boolean useExistingDBFileOnStart;
+    private boolean keepDatabaseFile;
 
-    public DBSwapRedoLogFileConfig(String spaceName, String fullMemberName, int memoryPacketCapacity) {
+    public DBSwapRedoLogFileConfig(String spaceName, String containerName, int memoryPacketCapacity) {
         this.spaceName = spaceName;
-        this.fullMemberName = fullMemberName;
+        this.containerName = containerName;
         this.memoryPacketCapacity = memoryPacketCapacity;
         this.flushBufferPacketCount = SwapBacklogConfig.SQLITE_FLUSH_BUFFER_PACKETS_COUNT_DEFAULT;
     }
@@ -45,8 +45,8 @@ public class DBSwapRedoLogFileConfig<T extends IReplicationOrderedPacket> {
         return spaceName;
     }
 
-    public String getFullMemberName() {
-        return fullMemberName;
+    public String getContainerName() {
+        return containerName;
     }
 
     public int getMemoryPacketCapacity() {
@@ -69,21 +69,22 @@ public class DBSwapRedoLogFileConfig<T extends IReplicationOrderedPacket> {
         return flushBufferPacketCount;
     }
 
-    public void setUseExistingDBFileOnStart(boolean useExistingDBFileOnStart){
-        this.useExistingDBFileOnStart = useExistingDBFileOnStart;
+    public void setKeepDatabaseFile(boolean keepDatabaseFile){
+        this.keepDatabaseFile = keepDatabaseFile;
     }
 
-    public boolean shouldUseExistingDBFileOnStart() {
-        return useExistingDBFileOnStart;
+    public boolean shouldKeepDatabaseFile() {
+        return keepDatabaseFile;
     }
 
     @Override
     public String toString() {
         return "DBSwapRedoLogFileConfig{" +
                 "spaceName='" + spaceName + '\'' +
-                ", fullMemberName='" + fullMemberName + '\'' +
+                ", containerName='" + containerName + '\'' +
                 ", memoryPacketCapacity=" + memoryPacketCapacity +
                 ", flushBufferPacketCount=" + flushBufferPacketCount +
+                ", keepDatabaseFile=" + keepDatabaseFile +
                 '}';
     }
 }

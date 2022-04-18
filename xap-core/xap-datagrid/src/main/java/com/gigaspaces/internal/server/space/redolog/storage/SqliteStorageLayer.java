@@ -46,15 +46,15 @@ public abstract class SqliteStorageLayer<T extends IReplicationOrderedPacket> {
 
 
     protected SqliteStorageLayer(DBSwapRedoLogFileConfig<T> config) {
-        this.logger = LoggerFactory.getLogger(LOGGER_REPLICATION_BACKLOG + "." + config.getFullMemberName());
+        this.logger = LoggerFactory.getLogger(LOGGER_REPLICATION_BACKLOG + "." + config.getContainerName());
         this.path = SystemLocations.singleton().work("redo-log/" + config.getSpaceName());
-        this.dbName = "sqlite_storage_redo_log_" + config.getFullMemberName();
+        this.dbName = "sqlite_storage_redo_log_" + config.getContainerName();
         logger.info("Database path: " + path + ", file: " + dbName);
         if (!path.toFile().exists()) {
             if (!path.toFile().mkdirs()) {
                 throw new StorageException("failed to mkdir " + path);
             }
-        } else if (!config.shouldUseExistingDBFileOnStart()){
+        } else if (!config.shouldKeepDatabaseFile()) {
             deleteDataFile();
         }
 
@@ -67,7 +67,7 @@ public abstract class SqliteStorageLayer<T extends IReplicationOrderedPacket> {
             logger.error("Failed to initialize Sqlite RDBMS", e);
             throw new StorageException("failed to initialize internal sqlite RDBMS", e);
         }
-        if (!config.shouldUseExistingDBFileOnStart()){
+        if (!config.shouldKeepDatabaseFile()){
             createTable();
         }
     }

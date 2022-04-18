@@ -270,12 +270,12 @@ public interface IInternalRemoteJSpaceAdmin extends IRemoteJSpaceAdmin, NIOInfoP
     public String getReplicationDump() throws RemoteException;
 
     /**
-     * flush redo-log packets from memory to storage.
+     * Flush redo-log packets from memory to underlying storage.
      * Should be called when the space is in quiesce mode.
      * @return number of flushed packets
      * @since 16.2
      */
-    public int flushRedoLogToStorage() throws RemoteException;
+    int flushRedoLogToStorage() throws RemoteException;
 
     /**
      * @since 9.5.0
