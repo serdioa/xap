@@ -217,6 +217,19 @@ public class GSSimpleFormatter extends Formatter {
                  "suser=" + encodeSpecialSymbols(SystemInfo.singleton().os().getUsername()) + " "; // user id
     }
 
+    private String restControllerMethod() throws ClassNotFoundException {
+        // todo : define wheather caller instances has annotation Controller
+        StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
+        String className = null, methodName = null;
+        for (StackTraceElement element: stackTrace) {
+            className = element.getClassName();
+            methodName = element.getMethodName();
+            Class<?> aClass = Class.forName(className);
+
+        }
+        return "";
+    }
+
     public String getUsername() {
         if (username == null) {
             final String gsManagerAddress = System.getenv("GS_MANAGER_USERNAME");
