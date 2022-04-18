@@ -8,9 +8,9 @@ public class DeletedDocumentInfo extends SpaceDocument {
 
     private static final long serialVersionUID = 1L;
 
-    private static final String PROPERTY_ID = "ID";
-    private static final String PROPERTY_FULL_TYPE_NAME = "TypeName";
-    private static final String PROPERTY_TIMESTAMP = "Timestamp";
+    public static final String PROPERTY_ID = "ID";
+    public static final String PROPERTY_FULL_TYPE_NAME = "TypeName";
+    public static final String PROPERTY_TIMESTAMP = "Timestamp";
 
     public static SpaceTypeDescriptor getTypeDescriptor( String typeName ) {
         return new SpaceTypeDescriptorBuilder( typeName )
