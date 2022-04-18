@@ -36,7 +36,7 @@ public class DBSwapRedoLogFile<T extends IReplicationOrderedPacket> implements I
 
     public DBSwapRedoLogFile(DBSwapRedoLogFileConfig<T> config,
                              AbstractSingleFileGroupBacklog<?, ?> groupBacklog) {
-        this._logger = LoggerFactory.getLogger(LOGGER_REPLICATION_BACKLOG + "." + config.getFullMemberName());
+        this._logger = LoggerFactory.getLogger(LOGGER_REPLICATION_BACKLOG + "." + config.getContainerName());
         _logger.info("Creating swap redo-log - configuration: " + config);
         this._memoryRedoLog = new DBMemoryRedoLogFile<T>(config, groupBacklog);
         this._externalRedoLogStorage = new SqliteRedoLogFileStorage<T>(config);
@@ -249,8 +249,9 @@ public class DBSwapRedoLogFile<T extends IReplicationOrderedPacket> implements I
             _externalRedoLogStorage.appendBatch(moveToDisk);
 
             try {
-                Path path = SystemLocations.singleton().work("redo-log/" + _config.getSpaceName() + "/_code_map");
-                try (FileOutputStream file = new FileOutputStream(path.toFile())) {
+                Path directory = SystemLocations.singleton().work("redo-log").resolve(_config.getSpaceName());
+                Path codeMapFile = directory.resolve(_config.getContainerName() + "_code_map");
+                try (FileOutputStream file = new FileOutputStream(codeMapFile.toFile())) {
                     try (ObjectOutputStream oos = new ObjectOutputStream(file)) {
                         IOUtils.writeCodeMaps(oos);
                     }

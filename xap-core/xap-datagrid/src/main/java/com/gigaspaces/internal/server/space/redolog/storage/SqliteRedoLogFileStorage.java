@@ -27,7 +27,7 @@ public class SqliteRedoLogFileStorage<T extends IReplicationOrderedPacket> exten
 
     public SqliteRedoLogFileStorage(DBSwapRedoLogFileConfig<T> config) {
         super(config);
-        this.logger = LoggerFactory.getLogger(LOGGER_REPLICATION_BACKLOG + "." + config.getFullMemberName());
+        this.logger = LoggerFactory.getLogger(LOGGER_REPLICATION_BACKLOG + "." + config.getContainerName());
     }
 
     @Override
