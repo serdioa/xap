@@ -18,7 +18,8 @@
 package com.gigaspaces.logger;
 
 import com.gigaspaces.internal.version.PlatformVersion;
-import com.gigaspaces.logger.cef.RESTMarker;
+import com.gigaspaces.logger.cef.ILogSeeker;
+import com.gigaspaces.logger.cef.LogSeekerRegistry;
 import com.gigaspaces.lrmi.LRMIInvocationContext;
 
 import com.gigaspaces.start.SystemInfo;
@@ -209,8 +210,7 @@ public class GSSimpleFormatter extends Formatter {
                  "externalId=" + encodeSpecialSymbols(LRMIInvocationContext.getContextMethodLongDisplayString()) + " " + // SpaceComponentManager e.t.c ZK value
                  "cs1=" + encodeSpecialSymbols(formatMessage(record)) + " " +
                  "cs1Label=Message " +
-                 "requestUrl=" + encodeSpecialSymbols(LRMIInvocationContext.getContextMethodLongDisplayString()) + " " + // REST
-                 "requestMethod=" + encodeSpecialSymbols(LRMIInvocationContext.getContextMethodLongDisplayString()) + " " + // REST
+                 restControllerMethod() + " " + // rest
                  "rt=" + encodeSpecialSymbols(this._date.toString()) + " " + // timestamp
                  "shost=" + encodeSpecialSymbols(SystemInfo.singleton().network().getHostId()) + " " +
                  "spt=" + encodeSpecialSymbols(LRMIInvocationContext.getContextMethodLongDisplayString()) + " " + // source port
@@ -218,18 +218,16 @@ public class GSSimpleFormatter extends Formatter {
                  "suser=" + encodeSpecialSymbols(SystemInfo.singleton().os().getUsername()) + " "; // user id
     }
 
-    private String restControllerMethod() throws ClassNotFoundException {
-        // todo : define wheather caller instances has annotation Controller
-        StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
-        String className = null, methodName = null;
-        for (StackTraceElement element: stackTrace) {
-            className = element.getClassName();
-            methodName = element.getMethodName();
-            Class<?> aClass = Class.forName(className);
-            // TODO : need to think up about custom marker from xap-common module
-            aClass.getAnnotation(RESTMarker.class);
+    private String restControllerMethod() {
+        try {
+            ILogSeeker iLogSeeker = LogSeekerRegistry.RESTSeeker();
+            if (iLogSeeker!=null) {
+                return iLogSeeker.find(Thread.currentThread().getStackTrace());
+            }
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
         }
-        return "";
+        return "requestUrl=null requestMethod=null";
     }
 
     public String getUsername() {
