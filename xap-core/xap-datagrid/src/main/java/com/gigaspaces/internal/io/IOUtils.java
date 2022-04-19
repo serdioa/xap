@@ -505,6 +505,18 @@ public class IOUtils {
         }
     }
 
+    public static <T extends List> T readList(ObjectInput in, T list)
+            throws IOException, ClassNotFoundException {
+
+        int length = in.readInt();
+        if (length >= 0) {
+            for (int i = 0; i < length; i++)
+                list.add(readObject(in));
+        }
+
+        return list;
+    }
+
     public static List readList(ObjectInput in)
             throws IOException, ClassNotFoundException {
         List list = null;
