@@ -207,7 +207,7 @@ public class GSSimpleFormatter extends Formatter {
                  "msg=" + encodeSpecialSymbols(formatMessage(record)) + " " +
                  "LRMI=" + encodeSpecialSymbols(LRMIInvocationContext.getContextMethodLongDisplayString()) + " " +
                  // new values
-                 "externalId=" + encodeSpecialSymbols(LRMIInvocationContext.getContextMethodLongDisplayString()) + " " + // SpaceComponentManager e.t.c ZK value
+                 "externalId=null " + // SimpleRequestManager e.t.c ZK value
                  "cs1=" + encodeSpecialSymbols(formatMessage(record)) + " " +
                  "cs1Label=Message " +
                  restControllerMethod() + " " + // rest

@@ -24,6 +24,9 @@ public enum ESCAPE_SYMBOLS {
     }
 
     public static String encodeSpecialSymbols(String value) {
+        if (value == null) {
+            return value;
+        }
         for (ESCAPE_SYMBOLS sign : ESCAPE_SYMBOLS.values()) {
             value = value.replace(String.valueOf(sign.ch()), "\\" + sign.ch());
         }
