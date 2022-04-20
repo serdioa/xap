@@ -66,7 +66,8 @@ public class GSSimpleFormatter extends Formatter {
     final static int SEVERITY = 14;
     final static int EXTENSION = 15;
     final static int EVENT_TYPE = 16;
-    final static int lastIndex = EVENT_TYPE + 1;
+    final static int EVENT_TYPE_COUNT = 17;
+    final static int lastIndex = EVENT_TYPE_COUNT + 1;
 
     private final static String defaultPattern = "{0,date,yyyy-MM-dd HH:mm:ss,SSS} {6} {3} [{4}] - {5}";
     private static DateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ");
@@ -208,16 +209,20 @@ public class GSSimpleFormatter extends Formatter {
         if (patternIds[EVENT_TYPE]) {
             _args[EVENT_TYPE] = toEventType(record);
         }
+
+        if (patternIds[EVENT_TYPE_COUNT]) {
+            _args[EVENT_TYPE_COUNT] = toEventType(record);
+        }
     }
 
-    private EventType toEventType(LogRecord record) {
+    private int toEventType(LogRecord record) {
         if (record.getLevel().equals(Level.SEVERE)) {
-            return EventType.ERROR;
+            return 100;
         }
         if (record.getLevel().equals(Level.WARNING)) {
-            return EventType.EXCEPTION;
+            return 500;
         }
-        return EventType.ACTION;
+        return 1;
     }
 
     public String setArgsWithRecordExtension(LogRecord record) {
