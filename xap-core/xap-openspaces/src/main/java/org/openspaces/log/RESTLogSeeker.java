@@ -6,6 +6,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 
 import java.lang.reflect.Method;
+import java.util.logging.LogRecord;
 
 import static com.gigaspaces.logger.cef.ESCAPE_SYMBOLS.encodeSpecialSymbols;
 
@@ -21,16 +22,17 @@ public class RESTLogSeeker implements ILogSeeker {
     }
 
     @Override
-    public String find(StackTraceElement[] stackTrace) throws ClassNotFoundException {
+    public String find(LogRecord record) throws ClassNotFoundException {
         String className = null, methodName = null;
-        for (StackTraceElement element : stackTrace) {
-            String annotation = getString(element.getClassName(), element.getMethodName());
+        // todo : consider other fields of record!
+        for (StackTraceElement element : Thread.getAllStackTraces().get(record.getThreadID())) {
+            String annotation = getRestAnnotation(element.getClassName(), element.getMethodName());
             if (annotation != null) return annotation;
         }
-        return "";
+        return null;
     }
 
-    String getString(String className, String methodName) throws ClassNotFoundException {
+    String getRestAnnotation(String className, String methodName) throws ClassNotFoundException {
         Class<?> aClass = Class.forName(className);
         if (aClass.getAnnotation(Controller.class) != null) {
             String prefix = "";

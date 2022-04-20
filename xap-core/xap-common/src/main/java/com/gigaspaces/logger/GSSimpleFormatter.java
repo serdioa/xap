@@ -210,7 +210,7 @@ public class GSSimpleFormatter extends Formatter {
                  "externalId=null " + // SimpleRequestManager e.t.c ZK value
                  "cs1=" + encodeSpecialSymbols(formatMessage(record)) + " " +
                  "cs1Label=Message " +
-                 restControllerMethod() + " " + // rest
+                 restControllerMethod(record) + " " + // rest
                  "rt=" + encodeSpecialSymbols(this._date.toString()) + " " + // timestamp
                  "shost=" + encodeSpecialSymbols(SystemInfo.singleton().network().getHostId()) + " " +
                  "spt=" + encodeSpecialSymbols(LRMIInvocationContext.getContextMethodLongDisplayString()) + " " + // source port
@@ -218,16 +218,16 @@ public class GSSimpleFormatter extends Formatter {
                  "suser=" + encodeSpecialSymbols(SystemInfo.singleton().os().getUsername()) + " "; // user id
     }
 
-    private String restControllerMethod() {
+    private String restControllerMethod(LogRecord record) {
         try {
             ILogSeeker iLogSeeker = LogSeekerRegistry.RESTSeeker();
             if (iLogSeeker!=null) {
-                return iLogSeeker.find(Thread.currentThread().getStackTrace());
+                return iLogSeeker.find(record);
             }
         } catch (ClassNotFoundException e) {
             e.printStackTrace();
         }
-        return "requestUrl=null requestMethod=null";
+        return "requestUrl=nill requestMethod=nill";
     }
 
     public String getUsername() {
