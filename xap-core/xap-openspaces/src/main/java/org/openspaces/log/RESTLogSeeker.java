@@ -27,10 +27,10 @@ public class RESTLogSeeker implements ILogSeeker {
             String annotation = getString(element.getClassName(), element.getMethodName());
             if (annotation != null) return annotation;
         }
-        return null;
+        return "";
     }
 
-    public String getString(String className, String methodName) throws ClassNotFoundException {
+    String getString(String className, String methodName) throws ClassNotFoundException {
         Class<?> aClass = Class.forName(className);
         if (aClass.getAnnotation(Controller.class) != null) {
             String prefix = "";
