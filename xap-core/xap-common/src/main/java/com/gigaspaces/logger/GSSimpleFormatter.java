@@ -202,12 +202,7 @@ public class GSSimpleFormatter extends Formatter {
     }
 
     public String setArgsWithRecordExtension(LogRecord record) {
-         return " method=" + record.getSourceClassName() + "." + record.getSourceMethodName() + " " +
-                 "thread=" + record.getThreadID() + " " +
-                 "msg=" + encodeSpecialSymbols(formatMessage(record)) + " " +
-                 "LRMI=" + encodeSpecialSymbols(LRMIInvocationContext.getContextMethodLongDisplayString()) + " " +
-                 // new values
-                 "externalId=null " + // SimpleRequestManager e.t.c ZK value
+         return "externalId=null " + // SimpleRequestManager e.t.c ZK value
                  "cs1=" + encodeSpecialSymbols(formatMessage(record)) + " " +
                  "cs1Label=Message " +
                  restControllerMethod(record) + " " + // rest

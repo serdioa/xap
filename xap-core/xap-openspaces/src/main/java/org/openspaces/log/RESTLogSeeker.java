@@ -23,13 +23,14 @@ public class RESTLogSeeker implements ILogSeeker {
 
     @Override
     public String find(LogRecord record) throws ClassNotFoundException {
-        String className = null, methodName = null;
         // todo : consider other fields of record!
         for (StackTraceElement element : Thread.getAllStackTraces().get(record.getThreadID())) {
-            String annotation = getRestAnnotation(element.getClassName(), element.getMethodName());
-            if (annotation != null) return annotation;
+            String restAttributes = getRestAnnotation(element.getClassName(), element.getMethodName());
+            if (restAttributes != null) {
+                return restAttributes;
+            }
         }
-        return null;
+        return "requestUrl=null requestMethod=null";
     }
 
     String getRestAnnotation(String className, String methodName) throws ClassNotFoundException {
@@ -37,11 +38,8 @@ public class RESTLogSeeker implements ILogSeeker {
         if (aClass.getAnnotation(Controller.class) != null) {
             String prefix = "";
             RequestMapping prefixReqestMapping = aClass.getAnnotation(RequestMapping.class);
-            if (prefixReqestMapping != null && prefixReqestMapping.value() != null && prefixReqestMapping.value().length>0) {
+            if (prefixReqestMapping != null && prefixReqestMapping.value() != null && prefixReqestMapping.value().length > 0) {
                 prefix = prefixReqestMapping.value()[0];
-                if (!prefix.endsWith("/")) {
-
-                }
             }
             do {
                 for (Method method : aClass.getDeclaredMethods()) {
@@ -54,7 +52,7 @@ public class RESTLogSeeker implements ILogSeeker {
                             } else if (annotation.path() != null && annotation.path().length > 0) {
                                 requestUrl = annotation.path()[0];
                             }
-                            requestUrl= prefix+requestUrl;
+                            requestUrl = prefix + requestUrl;
                             String requestMethod = "";
                             if (annotation.method() != null && annotation.method().length > 0) {
                                 requestMethod = annotation.method()[0].name();
