@@ -2,6 +2,8 @@ package org.openspaces.log;
 
 import com.gigaspaces.logger.cef.ILogSeeker;
 import com.gigaspaces.logger.cef.LogSeekerRegistry;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 
@@ -12,10 +14,13 @@ import static com.gigaspaces.logger.cef.ESCAPE_SYMBOLS.encodeSpecialSymbols;
 
 public class RESTLogSeeker implements ILogSeeker {
 
+    private static Logger logger = LoggerFactory.getLogger(RESTLogSeeker.class);
+
     private static RESTLogSeeker instance = new RESTLogSeeker();
 
     static {
         LogSeekerRegistry.registerRESTSeeker(instance);
+        logger.error("Registered RESTLogSeeker!");
     }
 
     private RESTLogSeeker() {
@@ -23,7 +28,6 @@ public class RESTLogSeeker implements ILogSeeker {
 
     @Override
     public String find(LogRecord record) throws ClassNotFoundException {
-        // todo : consider other fields of record!
         for (StackTraceElement element : Thread.getAllStackTraces().get(record.getThreadID())) {
             String restAttributes = getRestAnnotation(element.getClassName(), element.getMethodName());
             if (restAttributes != null) {

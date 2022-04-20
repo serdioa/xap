@@ -18,6 +18,7 @@
 package com.gigaspaces.logger;
 
 import com.gigaspaces.internal.version.PlatformVersion;
+import com.gigaspaces.logger.cef.EventType;
 import com.gigaspaces.logger.cef.ILogSeeker;
 import com.gigaspaces.logger.cef.LogSeekerRegistry;
 import com.gigaspaces.lrmi.LRMIInvocationContext;
@@ -28,7 +29,9 @@ import org.jini.rio.boot.LoggableClassLoader;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
+import java.text.DateFormat;
 import java.text.MessageFormat;
+import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.logging.*;
 
@@ -62,9 +65,11 @@ public class GSSimpleFormatter extends Formatter {
     final static int DEVICE_VERSION = 13;
     final static int SEVERITY = 14;
     final static int EXTENSION = 15;
-    final static int lastIndex = EXTENSION + 1;
+    final static int EVENT_TYPE = 16;
+    final static int lastIndex = EVENT_TYPE + 1;
 
     private final static String defaultPattern = "{0,date,yyyy-MM-dd HH:mm:ss,SSS} {6} {3} [{4}] - {5}";
+    private static DateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ");
     private final MessageFormat messageFormat;
     private final boolean[] patternIds = new boolean[lastIndex];
     private String username;
@@ -199,18 +204,32 @@ public class GSSimpleFormatter extends Formatter {
             String ext = setArgsWithRecordExtension(record);
             _args[EXTENSION] = new String(ext.getBytes() , StandardCharsets.UTF_8);
         }
+
+        if (patternIds[EVENT_TYPE]) {
+            _args[EVENT_TYPE] = toEventType(record);
+        }
+    }
+
+    private EventType toEventType(LogRecord record) {
+        if (record.getLevel().equals(Level.SEVERE)) {
+            return EventType.ERROR;
+        }
+        if (record.getLevel().equals(Level.WARNING)) {
+            return EventType.EXCEPTION;
+        }
+        return EventType.ACTION;
     }
 
     public String setArgsWithRecordExtension(LogRecord record) {
-         return "externalId=null " + // SimpleRequestManager e.t.c ZK value
+         return  "externalId=null " + // SimpleRequestManager e.t.c ZK value
                  "cs1=" + encodeSpecialSymbols(formatMessage(record)) + " " +
                  "cs1Label=Message " +
                  restControllerMethod(record) + " " + // rest
-                 "rt=" + encodeSpecialSymbols(this._date.toString()) + " " + // timestamp
+                 "rt=" + encodeSpecialSymbols(DATE_FORMAT.format(this._date)) + " " + // timestamp
                  "shost=" + encodeSpecialSymbols(SystemInfo.singleton().network().getHostId()) + " " +
                  "spt=" + encodeSpecialSymbols(LRMIInvocationContext.getContextMethodLongDisplayString()) + " " + // source port
                  "suid=" + encodeSpecialSymbols(getUsername()) + " " + // user id
-                 "suser=" + encodeSpecialSymbols(SystemInfo.singleton().os().getUsername()) + " "; // user id
+                 "suser=" + encodeSpecialSymbols(getUsername()) + " "; // user id
     }
 
     private String restControllerMethod(LogRecord record) {
