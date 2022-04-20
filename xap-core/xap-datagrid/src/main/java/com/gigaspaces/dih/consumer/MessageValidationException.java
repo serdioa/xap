@@ -1,5 +1,7 @@
 package com.gigaspaces.dih.consumer;
 
+import java.io.IOException;
+
 public class MessageValidationException extends NonRetriableException {
 
 
@@ -8,11 +10,8 @@ public class MessageValidationException extends NonRetriableException {
     public MessageValidationException() {
 
     }
-    public MessageValidationException(String message) {
-        super(message);
-    }
 
-    public MessageValidationException(String message, Throwable cause) {
-        super(message, cause);
+    public MessageValidationException(String message, IOException e) {
+        super(message, e);
     }
 }
