@@ -1,0 +1,61 @@
+pipeline {
+    agent { label 'jenkins-slave'  } 
+    
+    stages{
+        stage('checkout'){
+            steps {
+                parallel(
+                    xappremium: {
+                        container('xap') {
+                            sh '''sudo mkdir -p /xap-premium 
+                            sudo mkdir -p /xap
+                            '''
+                            checkout([
+                            $class: 'GitSCM',
+                            branches: [[name:'origin/$BRANCH_NAME']],
+                            doGenerateSubmoduleConfigurations: false,
+                            extensions: [[$class: 'RelativeTargetDirectory', relativeTargetDir:'xap-premium'],[$class: 'CloneOption', noTags: false]],
+                            browser: [$class: 'GithubWeb', repoUrl: 'git@github.com:Gigaspaces/xap-premium.git'],
+                            submoduleCfg: [],
+                            userRemoteConfigs: [[credentialsId: 'git_credentials_id', url: "git@github.com:Gigaspaces/xap-premium.git"]]])
+                        }
+                    },
+                    xap: {
+                        container('xap') {
+                            checkout([
+                            $class: 'GitSCM',
+                            branches: [[name:'origin/$BRANCH_NAME']],
+                            doGenerateSubmoduleConfigurations: false,
+                            extensions: [[$class: 'RelativeTargetDirectory', relativeTargetDir: 'xap'],[$class: 'CloneOption', noTags: false]],
+                            submoduleCfg: [],
+                            browser: [$class: 'GithubWeb', repoUrl: 'https://github.com/xap/xap.git'],
+                            userRemoteConfigs: [[credentialsId: "", url: "https://github.com/xap/xap.git"]]])
+                        }
+                    
+                    } 
+                )       
+                
+            }
+        }
+        stage('xap'){
+            
+            steps{
+                script{
+                    dir("xap") {
+                        env.TA = sh(returnStdout: true, script: "git show-ref $tagA ").tokenize(" ")[0]
+                        env.TB = sh(returnStdout: true, script: "git show-ref $tagB ").tokenize(" ")[0]
+                        echo(TA)
+                        echo(TB)
+                        sh '''
+                        git log --oneline [$TA]..[$TB] '''
+                    }
+                    dir("xap-premium") {
+                        
+                        sh '''
+                        git log --abbrev-commit --pretty=format:'%h %ar %s' $tagB...$tagA '''
+                    }    
+                }
+            }
+        }
+    }
+}
