@@ -211,11 +211,21 @@ public class GSSimpleFormatter extends Formatter {
         }
 
         if (patternIds[EVENT_TYPE_COUNT]) {
-            _args[EVENT_TYPE_COUNT] = toEventType(record);
+            _args[EVENT_TYPE_COUNT] = toEventTypeCount(record);
         }
     }
 
-    private int toEventType(LogRecord record) {
+    private EventType toEventType(LogRecord record) {
+        if (record.getLevel().equals(Level.SEVERE)) {
+            return EventType.ERROR;
+        }
+        if (record.getLevel().equals(Level.WARNING)) {
+            return EventType.EXCEPTION;
+        }
+        return EventType.ACTION;
+    }
+
+    private int toEventTypeCount(LogRecord record) {
         if (record.getLevel().equals(Level.SEVERE)) {
             return 100;
         }
