@@ -127,8 +127,8 @@ public class MirrorOperationStatisticsImpl implements SmartExternalizable, Mirro
     public void register(MetricRegistrator registrator, String prefix) {
         registrator.register(prefix + "total", _operationCount);
         registrator.register(prefix + "successful", _successfulOperationCount);
-        registrator.register(prefix + "failed", _operationCount);
-        registrator.register(prefix + "discarded", _operationCount);
+        registrator.register(prefix + "failed", _failedOperationCount);
+        registrator.register(prefix + "discarded", _discardedOperationCount);
     }
 
     public void writeExternal(ObjectOutput out) throws IOException {
