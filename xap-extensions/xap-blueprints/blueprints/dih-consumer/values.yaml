@@ -1,19 +1,13 @@
 project:
-  pipeline-name: MyPipeline
-  pipeline-name-lower-case: mypipeline
+  consumer-name: MyPipeline
+  consumer-name-lower-case: mypipeline
   version: 0.1
 gs.version: 16.2.0-SNAPSHOT
 java.version: 1.8
 slf4j.version: 1.7.26
 kafka:
   web-port: 8180
-  space-name: mySpace
-  bootstrap-servers: kafka:29092
-  topic: myTopic
-  message-command-class: com.gigaspaces.dih.consumer.cr8.CR8KafkaCommandMessage
-  message-validate-class: com.gigaspaces.dih.consumer.cr8.CR8KafkaValidateMessage
 resources:
   types-metadata-json:
   default-type-conversion-map:
-config.stream-json:
 type-registrar.class-names:
