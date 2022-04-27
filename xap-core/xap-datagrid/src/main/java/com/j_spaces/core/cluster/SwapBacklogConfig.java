@@ -137,7 +137,7 @@ public class SwapBacklogConfig
             out.writeInt(_maxOpenCursors);
         if (_writerBufferSize != WRITE_BUFFER_SIZE_DEFAULT)
             out.writeInt(_writerBufferSize);
-        if (version.greaterOrEquals(PlatformLogicalVersion.v16_2_0)) {
+        if (version.greaterOrEquals(PlatformLogicalVersion.v16_1_1)) {
             if (_swapStorageType != SWAP_STORAGE_TYPE_DEFAULT)
                 out.writeInt(_swapStorageType.ordinal());
         }

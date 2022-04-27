@@ -880,7 +880,7 @@ public class TypeDesc implements ITypeDesc {
             for (int i = 0; i < numOfProperties; i++)
                 _fixedProperties[i] = PropertyInfo.deserialize(in, version);
         }
-        if (version.greaterOrEquals(PlatformLogicalVersion.v16_2_0))
+        if (version.greaterOrEquals(PlatformLogicalVersion.v16_1_1))
             _idPropertiesNames = IOUtils.readListString(in);
         else
             _idPropertiesNames = toSingleOrEmptyList(IOUtils.readString(in));
@@ -953,7 +953,7 @@ public class TypeDesc implements ITypeDesc {
         ObjectOutputStream ba = new ObjectOutputStream(byteArrayOutputStream);
         ba.writeObject(queryExtensionsInfo);
 
-        if (version.greaterOrEquals(PlatformLogicalVersion.v16_2_0)) {
+        if (version.greaterOrEquals(PlatformLogicalVersion.v16_1_1)) {
             ba.writeObject(_tieredStorageTableConfig);
         }
 
@@ -967,7 +967,7 @@ public class TypeDesc implements ITypeDesc {
         //noinspection unchecked
         queryExtensionsInfo = (TypeQueryExtensions) objectInputStream.readObject();
 
-        if (version.greaterOrEquals(PlatformLogicalVersion.v16_2_0)) {
+        if (version.greaterOrEquals(PlatformLogicalVersion.v16_1_1)) {
             _tieredStorageTableConfig = (TieredStorageTableConfig) objectInputStream.readObject();
         }
     }
@@ -1245,7 +1245,7 @@ public class TypeDesc implements ITypeDesc {
         for (int i = 0; i < numOfProperties; i++) {
             _fixedProperties[i].serialize(out, version);
         }
-        if (version.greaterOrEquals(PlatformLogicalVersion.v16_2_0))
+        if (version.greaterOrEquals(PlatformLogicalVersion.v16_1_1))
             IOUtils.writeListString(out, _idPropertiesNames);
         else
             IOUtils.writeString(out, firstOrNull(_idPropertiesNames));

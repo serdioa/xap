@@ -43,16 +43,13 @@ import com.gigaspaces.metadata.SpaceDocumentSupport;
 import com.gigaspaces.metadata.SpaceMetadataException;
 import com.gigaspaces.metadata.SpaceMetadataValidationException;
 import com.gigaspaces.metadata.StorageType;
-import com.gigaspaces.metadata.index.CustomIndex;
-import com.gigaspaces.metadata.index.ISpaceIndex;
 import com.gigaspaces.metadata.index.SpaceIndex;
-import com.gigaspaces.metadata.index.SpaceIndexFactory;
-import com.gigaspaces.metadata.index.SpaceIndexType;
-import com.gigaspaces.metadata.index.SpacePropertyIndex;
+import com.gigaspaces.metadata.index.*;
 import com.gigaspaces.serialization.SmartExternalizable;
 import com.gigaspaces.server.ServerEntry;
 import com.j_spaces.kernel.ClassLoaderHelper;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
@@ -63,21 +60,9 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.Set;
-import java.util.StringTokenizer;
 import java.util.stream.Collectors;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 @com.gigaspaces.api.InternalApi
 public class SpaceTypeInfo implements SmartExternalizable {
@@ -1686,7 +1671,7 @@ public class SpaceTypeInfo implements SmartExternalizable {
         _constructorDescriptor = IOUtils.readObject(in);
 
         // Read type special properties:
-        if (version.greaterOrEquals(PlatformLogicalVersion.v16_2_0)) {
+        if (version.greaterOrEquals(PlatformLogicalVersion.v16_1_1)) {
             int length = in.readInt();
             _idProperties = new ArrayList<>(length);
             for (int i = 0; i < length; i++)
@@ -1846,7 +1831,7 @@ public class SpaceTypeInfo implements SmartExternalizable {
         IOUtils.writeObject(out, _constructorDescriptor);
 
         // Write type special properties:
-        if (version.greaterOrEquals(PlatformLogicalVersion.v16_2_0)) {
+        if (version.greaterOrEquals(PlatformLogicalVersion.v16_1_1)) {
             out.writeInt(_idProperties.size());
             for (SpacePropertyInfo idProperty : _idProperties)
                 IOUtils.writeString(out, getPropertyName(idProperty));
