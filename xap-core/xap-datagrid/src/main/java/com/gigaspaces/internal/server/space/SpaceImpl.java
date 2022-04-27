@@ -2347,8 +2347,7 @@ public class SpaceImpl extends AbstractService implements IRemoteSpace, IInterna
     }
 
     private boolean isRootType(ITemplatePacket templatePacket){
-        return _engine.getTypeManager().getServerTypeDesc(templatePacket.getTypeName()).isRootType();
-    }
+        return _engine.getTypeManager().loadServerTypeDesc(templatePacket).isRootType();
 
     private Pair<Integer,SingleExplainPlan> clearRootType(ITemplatePacket template, Transaction txn, int modifiers, SpaceContext sc)
             throws UnusableEntryException, UnknownTypeException, TransactionException, RemoteException {
