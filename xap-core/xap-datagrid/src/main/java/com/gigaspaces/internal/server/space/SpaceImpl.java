@@ -2332,6 +2332,8 @@ public class SpaceImpl extends AbstractService implements IRemoteSpace, IInterna
         try {
             if(txn != null && !_engine.isLocalCache())
                 _engine.getTransactionHandler().checkTransactionDisconnection(template.getOperationID(), (ServerTransaction) txn);
+	    if (template.getTypeName() != null)
+                _engine.getTypeManager().loadServerTypeDesc(template);
             if(isRootType(template)){
                 return clearRootType(template, txn, modifiers, sc);
             }
@@ -2347,7 +2349,8 @@ public class SpaceImpl extends AbstractService implements IRemoteSpace, IInterna
     }
 
     private boolean isRootType(ITemplatePacket templatePacket){
-        return _engine.getTypeManager().loadServerTypeDesc(templatePacket).isRootType();
+         return _engine.getTypeManager().getServerTypeDesc(templatePacket.getTypeName()).isRootType();
+    }
 
     private Pair<Integer,SingleExplainPlan> clearRootType(ITemplatePacket template, Transaction txn, int modifiers, SpaceContext sc)
             throws UnusableEntryException, UnknownTypeException, TransactionException, RemoteException {
