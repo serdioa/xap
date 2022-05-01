@@ -112,6 +112,9 @@ public class AggregateEntriesSpaceOperationRequest extends SpaceOperationRequest
     public boolean processPartitionResult(AggregateEntriesSpaceOperationResult remoteOperationResult,
                                           List<AggregateEntriesSpaceOperationResult> previousResults,
                                           int numOfPartitions) {
+        if (remoteOperationResult == null) {
+            return true;
+        }
         if (remoteOperationResult.hasException()) {
             _exception = remoteOperationResult.getExecutionException();
         }
