@@ -33,7 +33,7 @@ import java.util.*;
 
 public class GSMessageTaskExecutor extends SpaceActionExecutor {
 
-    private final static Logger logger = LoggerFactory.getLogger(GSMessageTask.class);
+    private final static Logger logger = LoggerFactory.getLogger(GSMessageTaskExecutor.class);
 
     @Override
     public SpaceResponseInfo execute(SpaceImpl space, SpaceRequestInfo spaceRequestInfo) {
