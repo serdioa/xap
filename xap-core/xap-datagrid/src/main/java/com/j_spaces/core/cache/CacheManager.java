@@ -5969,8 +5969,16 @@ public class CacheManager extends AbstractCacheManager
             for (IServerTypeDesc subType : serverTypeDesc.getAssignableTypes()) {
                 if (subType.isInactive())
                     continue;
-                TypeData typeData = _typeDataMap.get(subType);
-                result += typeData == null ? 0 : typeData.getEntries().size();
+                if(isTieredStorage()){
+                    if(getEngine().getTieredStorageManager().isTransient(subType.getTypeName())) {
+                        result += subType.getTypeCounters().getRamEntriesCounter().getCount();
+                    } else {
+                        result += subType.getTypeCounters().getDiskEntriesCounter().getCount();
+                    }
+                } else {
+                    TypeData typeData = _typeDataMap.get(subType);
+                    result += typeData == null ? 0 : typeData.getEntries().size();
+                }
             }
         } else {
             TypeData typeData = _typeDataMap.get(serverTypeDesc);
