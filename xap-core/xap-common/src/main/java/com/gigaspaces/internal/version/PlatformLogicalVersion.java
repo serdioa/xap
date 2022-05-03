@@ -278,12 +278,13 @@ public class PlatformLogicalVersion implements SmartExternalizable, Comparable<P
     public static final PlatformLogicalVersion v15_8_0 = fromVersion(15, 8, 0);
     public static final PlatformLogicalVersion v15_8_1 = fromVersion(15, 8, 1);
     public static final PlatformLogicalVersion v16_0_0 = fromVersion(16, 0, 0);
+    public static final PlatformLogicalVersion v16_1_0 = fromVersion(16, 1, 0);
+    public static final PlatformLogicalVersion v16_1_1 = fromVersion(16, 1, 1);
     public static final PlatformLogicalVersion v16_2_0 = fromVersion(16, 2, 0);
     //DOCUMENT BACKWARD BREAKING CHANGES, EACH CHANGE IN A LINE
     //GS-XXXX: Short backward breaking description and classes
-    //GS-7725: Partial update replication
-    //GS-7753: ReplicationPolicy new parameter, replicate full take
-    //GS-8130: TypeDesc and SpaceTypeInfo have new non-transient field isSystemType.
+    //GS-14728 SpaceId with multiple properties (#160)
+    //PIC-365 Persistent redo-log alternative to swap redo-log (#198)
     //END DOCUMENT BACKWARD BREAKING CHANGES
 
     public static void main(String[] args) {

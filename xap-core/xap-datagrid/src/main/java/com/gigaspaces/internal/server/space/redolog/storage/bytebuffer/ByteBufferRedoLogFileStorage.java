@@ -33,18 +33,13 @@ import com.j_spaces.kernel.pool.IResourceFactory;
 import com.j_spaces.kernel.pool.IResourcePool;
 import com.j_spaces.kernel.pool.Resource;
 import com.j_spaces.kernel.pool.ResourcePool;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.lang.ref.SoftReference;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.NoSuchElementException;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import java.util.*;
 
 /**
  * An implementation of redo log file storage which is based on an underlying byte buffer storages
@@ -467,10 +462,6 @@ public class ByteBufferRedoLogFileStorage<T extends IReplicationOrderedPacket>
         return batch;
     }
 
-    public StorageReadOnlyIterator<T> readOnlyIterator() throws StorageException {
-        return createReadOnlyIterator(0);
-    }
-
     public StorageReadOnlyIterator<T> readOnlyIterator(long fromIndex) throws StorageException {
         return createReadOnlyIterator(fromIndex);
     }
@@ -794,7 +785,7 @@ public class ByteBufferRedoLogFileStorage<T extends IReplicationOrderedPacket>
             int count = 0;
             //Perform one entire scan using iterator
             try {
-                iterator = readOnlyIterator();
+                iterator = readOnlyIterator(0);
 
                 while (iterator.hasNext()) {
                     if (iterator.next() == null)

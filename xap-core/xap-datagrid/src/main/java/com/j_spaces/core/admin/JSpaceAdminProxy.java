@@ -40,11 +40,7 @@ import com.j_spaces.core.DropClassException;
 import com.j_spaces.core.IJSpace;
 import com.j_spaces.core.SpaceContext;
 import com.j_spaces.core.SpaceCopyStatus;
-import com.j_spaces.core.client.BasicTypeInfo;
-import com.j_spaces.core.client.SpaceURL;
-import com.j_spaces.core.client.SpaceURLParser;
-import com.j_spaces.core.client.TransactionInfo;
-import com.j_spaces.core.client.UnderTxnLockedObject;
+import com.j_spaces.core.client.*;
 import com.j_spaces.core.cluster.ClusterPolicy;
 import com.j_spaces.core.exception.SpaceAlreadyStartedException;
 import com.j_spaces.core.exception.SpaceAlreadyStoppedException;
@@ -52,7 +48,6 @@ import com.j_spaces.core.filters.StatisticsContext;
 import com.j_spaces.core.filters.StatisticsHolder;
 import com.j_spaces.core.service.ServiceAdmin;
 import com.j_spaces.core.service.ServiceAdminProxy;
-
 import net.jini.core.transaction.Transaction;
 import net.jini.id.Uuid;
 import org.jini.rio.boot.SpaceInstanceRemoteClassLoaderInfo;
@@ -421,6 +416,11 @@ public class JSpaceAdminProxy
 
     public String getReplicationDump() throws RemoteException {
         return ((IInternalRemoteJSpaceAdmin) adminImpl).getReplicationDump();
+    }
+
+    @Override
+    public int flushRedoLogToStorage() throws RemoteException {
+        return ((IInternalRemoteJSpaceAdmin) adminImpl).flushRedoLogToStorage();
     }
 
     @Override

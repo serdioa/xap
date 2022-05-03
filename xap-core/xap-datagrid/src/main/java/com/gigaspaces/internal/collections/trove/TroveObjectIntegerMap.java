@@ -25,7 +25,8 @@ import com.gigaspaces.internal.gnu.trove.TObjectIntHashMap;
  */
 @com.gigaspaces.api.InternalApi
 public class TroveObjectIntegerMap<K> implements ObjectIntegerMap<K> {
-    private final TObjectIntHashMap map = new TObjectIntHashMap();
+    private static final long serialVersionUID = 2379451797238915344L;
+    private final TObjectIntHashMap<K> map = new TObjectIntHashMap<>();
 
     @Override
     public boolean containsKey(K key) {
@@ -45,5 +46,13 @@ public class TroveObjectIntegerMap<K> implements ObjectIntegerMap<K> {
     @Override
     public void clear() {
         map.clear();
+    }
+
+    @Override
+    public void flush(ObjectIntegerMap<K> target) {
+        map.forEachEntry((key, value) -> {
+            target.put(key, value);
+            return true;
+        });
     }
 }

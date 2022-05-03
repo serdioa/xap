@@ -2,16 +2,25 @@ package com.gigaspaces.internal.server.space.executors;
 
 import com.gigaspaces.client.WriteModifiers;
 import com.gigaspaces.dih.consumer.*;
+import com.gigaspaces.dih.consumer.configuration.ConflictResolutionPolicy;
+import com.gigaspaces.dih.consumer.configuration.GenericType;
 import com.gigaspaces.document.SpaceDocument;
+import com.gigaspaces.entry.CompoundSpaceId;
+import com.gigaspaces.internal.client.QueryResultTypeInternal;
 import com.gigaspaces.internal.client.spaceproxy.IDirectSpaceProxy;
+import com.gigaspaces.internal.client.spaceproxy.ISpaceProxy;
 import com.gigaspaces.internal.server.space.SpaceImpl;
 import com.gigaspaces.internal.server.space.executors.GSMessageTask.OperationType;
 import com.gigaspaces.internal.space.requests.GSMessageRequestInfo;
 import com.gigaspaces.internal.space.requests.SpaceRequestInfo;
 import com.gigaspaces.internal.space.responses.SpaceResponseInfo;
 import com.gigaspaces.metadata.SpaceMetadataException;
+import com.gigaspaces.metadata.SpaceTypeDescriptor;
+import com.j_spaces.core.IJSpace;
 import com.j_spaces.core.client.EntryAlreadyInSpaceException;
 import com.j_spaces.core.client.EntryNotInSpaceException;
+import com.j_spaces.core.client.Modifiers;
+import com.j_spaces.kernel.JSpaceUtilities;
 import net.jini.core.entry.UnusableEntryException;
 import net.jini.core.lease.Lease;
 import net.jini.core.transaction.*;
@@ -20,10 +29,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.rmi.RemoteException;
+import java.util.*;
 
 public class GSMessageTaskExecutor extends SpaceActionExecutor {
 
-    private final static Logger logger = LoggerFactory.getLogger(GSMessageTask.class);
+    private final static Logger logger = LoggerFactory.getLogger(GSMessageTaskExecutor.class);
 
     @Override
     public SpaceResponseInfo execute(SpaceImpl space, SpaceRequestInfo spaceRequestInfo) {
@@ -70,37 +80,82 @@ public class GSMessageTaskExecutor extends SpaceActionExecutor {
 
             logger.debug("Writing CDCInfo to space: " + cdcInfo);
             singleProxy.write(cdcInfo, transaction, Lease.FOREVER, 0, WriteModifiers.UPDATE_OR_WRITE.getCode());
+
+            GenericType genericType = requestInfo.getGenericType();
+            ConflictResolutionPolicy conflictResolutionPolicy = requestInfo.getConflictResolutionPolicy();
+            String deletedObjectsTableName = requestInfo.getDeletedObjectsTableName();
+            if( logger.isDebugEnabled() ) {
+                logger.debug("--- operation type:" + operationType + ", allInCache, genericType=" + genericType + ", conflictResolutionPolicy=" +
+                        conflictResolutionPolicy + ", isPopulateDeletedObjectsTable=" + requestInfo.isPopulateDeletedObjectsTable() +
+                        ", deletedObjectsTableName=" + deletedObjectsTableName);
+            }
+
             switch (operationType) {
                 case INSERT:
-                    try {
-                        logger.debug("inserting message to space: " + entry);
-                        singleProxy.write(entry, transaction, Lease.FOREVER, 0, WriteModifiers.WRITE_ONLY.getCode());
-                    } catch (EntryAlreadyInSpaceException e) {
-                        if (cdcInfo.getMessageID() != 0) {
-                            logger.error("failed to write entry of type: " + entry.getTypeName() + ", for message id: " + cdcInfo.getMessageID());
-                            throw e; //might be the first time writing this to space
+                    boolean isWriteAllowed =
+                            isWriteEntryAllowed( singleProxy, deletedObjectsTableName, entry, transaction, genericType, conflictResolutionPolicy );
+                    if ( isWriteAllowed ) {
+                        try {
+                            logger.debug("inserting message to space: " + entry);
+                            singleProxy.write(entry, transaction, Lease.FOREVER, 0, WriteModifiers.WRITE_ONLY.getCode());
+                        } catch (EntryAlreadyInSpaceException e) {
+                            if (cdcInfo.getMessageID() != 0) {
+                                logger.error("failed to write entry of type: " + entry.getTypeName() + ", for message id: " + cdcInfo.getMessageID());
+                                throw e; //might be the first time writing this to space
+                            }
+                            // on a long full sync there might be a failover and therefore retry, so we ignore exceptions like this
+                            logger.debug("received same message again, ignoring write entry of type: " +
+                                    entry.getTypeName() + ", for message id: " + cdcInfo.getMessageID());
+                        } catch (SpaceMetadataException e) {
+                            throw new SkippedMessageExecutionException(e);
                         }
-                        // on a long full sync there might be a failover and therefore retry, so we ignore exceptions like this
-                        logger.debug("received same message again, ignoring write entry of type: " + entry.getTypeName() + ", for message id: " + cdcInfo.getMessageID());
-                    } catch (SpaceMetadataException e) {
-                        throw new SkippedMessageExecutionException(e);
                     }
                     break;
                 case UPDATE:
-                    logger.debug("update message: " + entry);
-                    try {
-                        singleProxy.write(entry, transaction, Lease.FOREVER, 0, WriteModifiers.UPDATE_ONLY.getCode());
-                    } catch (TransactionException | RemoteException e) {
-                        if (isEntryNotInSpaceException(e)) {
-                            throw new NonRetriableMessageExecutionException("failed to update entry: " + entry.getTypeName() + ", message id: " + cdcInfo.getMessageID() + " due to EntryNotInSpaceException", e);
+                    isWriteAllowed =
+                            isWriteEntryAllowed( singleProxy, deletedObjectsTableName, entry, transaction, genericType, conflictResolutionPolicy );
+                    if( isWriteAllowed ) {
+                        logger.debug("update message: " + entry);
+                        try {
+                            singleProxy.write(entry, transaction, Lease.FOREVER, 0, WriteModifiers.UPDATE_ONLY.getCode());
+                        } catch (TransactionException | RemoteException e) {
+                            if (isEntryNotInSpaceException(e)) {
+                                throw new NonRetriableMessageExecutionException("failed to update entry: " +
+                                        entry.getTypeName() + ", message id: " + cdcInfo.getMessageID() + " due to EntryNotInSpaceException", e);
+                            }
+                            throw e;
+                        } catch (SpaceMetadataException e) {
+                            throw new SkippedMessageExecutionException(e);
                         }
-                        throw e;
-                    } catch (SpaceMetadataException e) {
-                        throw new SkippedMessageExecutionException(e);
                     }
                     break;
                 case DELETE:
                     logger.debug("deleting message: " + entry);
+                    if( requestInfo.isPopulateDeletedObjectsTable() && genericType == GenericType.FROM_CDC ){
+
+                        SpaceTypeDescriptor typeDescriptor = null;
+                        try{
+                            typeDescriptor = singleProxy.getTypeDescriptor(entry.getTypeName());
+                        } catch (RemoteException e) {
+                            logger.error( "Failed to retrieve type descriptor for type [" + entry.getTypeName() + "] due to ", e );
+                        }
+                        if (typeDescriptor == null) {
+                            throw new NonRetriableMessageExecutionException("Unknown type: " + entry.getTypeName());
+                        }
+
+                        DeletedDocumentInfo deletedSpaceDocument =
+                                        createDeletedSpaceDocument( deletedObjectsTableName, typeDescriptor, entry );
+                        logger.debug("writing deleted message(all in cache): " + deletedSpaceDocument );
+                        try {
+                            IJSpace clusteredProxy = singleProxy.getClusteredProxy();
+                            clusteredProxy.write( deletedSpaceDocument, null, Lease.FOREVER );
+                        }
+                        catch( Exception e ){
+                            logger.error("failed to write entry of type: " + deletedSpaceDocument.getFullTypeName() +
+                                    " to deleted table: " + deletedSpaceDocument.getTypeName() +
+                                    " with id: " + deletedSpaceDocument.getId() + " due to ", e );
+                        }
+                    }
                     if (singleProxy.take(entry, transaction, 0) == null) {
                         String errorMsg = "failed to delete entry: " + entry.getTypeName() + ", message id: " + cdcInfo.getMessageID();
                         logger.error(errorMsg);
@@ -117,7 +172,6 @@ public class GSMessageTaskExecutor extends SpaceActionExecutor {
             handleExceptionUnderTransaction(entry, cdcInfo, transaction, e);
             throw e;
         }
-
     }
 
     private void handleTieredStorage(SpaceImpl space, GSMessageRequestInfo requestInfo) throws UnusableEntryException, TransactionException, RemoteException, InterruptedException {
@@ -140,36 +194,81 @@ public class GSMessageTaskExecutor extends SpaceActionExecutor {
 
             logger.debug("Writing CDCInfo to space: " + cdcInfo);
             singleProxy.write(cdcInfo, null, Lease.FOREVER, 0, WriteModifiers.UPDATE_OR_WRITE.getCode());
+
+            GenericType genericType = requestInfo.getGenericType();
+            ConflictResolutionPolicy conflictResolutionPolicy = requestInfo.getConflictResolutionPolicy();
+            String deletedObjectsTableName = requestInfo.getDeletedObjectsTableName();
+            if (logger.isDebugEnabled()){
+                logger.debug("--- operation type:" + operationType + ", TieredStorage, genericType=" + genericType + ", conflictResolutionPolicy=" +
+                        conflictResolutionPolicy + ", isPopulateDeletedObjectsTable=" + requestInfo.isPopulateDeletedObjectsTable() );
+            }
+
             switch (operationType) {
                 case INSERT:
-                    try {
-                        logger.debug("inserting message to space: " + entry);
-                        singleProxy.write(entry, null, Lease.FOREVER, 0, WriteModifiers.WRITE_ONLY.getCode());
-                    } catch (EntryAlreadyInSpaceException e) {
-                        if (!cdcInfo.getMessageID().equals(lastMsgID)) {
-                            logger.error("failed to write entry of type: " + entry.getTypeName() + ", for message id: " + cdcInfo.getMessageID());
-                            throw e; //might be the first time writing this to space
+                    boolean isWriteAllowed =
+                            isWriteEntryAllowed( singleProxy, deletedObjectsTableName, entry, null, genericType, conflictResolutionPolicy );
+                    if ( isWriteAllowed ) {
+                        try {
+                            logger.debug("inserting message to space: " + entry);
+                            singleProxy.write(entry, null, Lease.FOREVER, 0, WriteModifiers.WRITE_ONLY.getCode());
+                        } catch (EntryAlreadyInSpaceException e) {
+                            if (!cdcInfo.getMessageID().equals(lastMsgID)) {
+                                logger.error("failed to write entry of type: " + entry.getTypeName() + ", for message id: " + cdcInfo.getMessageID());
+                                throw e; //might be the first time writing this to space
+                            }
+                            logger.debug("received same message again, ignoring write entry of type: " +
+                                    entry.getTypeName() + ", for message id: " + cdcInfo.getMessageID());
+                        } catch (SpaceMetadataException e) {
+                            throw new SkippedMessageExecutionException(e);
                         }
-                        logger.debug("received same message again, ignoring write entry of type: " + entry.getTypeName() + ", for message id: " + cdcInfo.getMessageID());
-                    } catch (SpaceMetadataException e) {
-                        throw new SkippedMessageExecutionException(e);
                     }
                     break;
                 case UPDATE:
-                    logger.debug("update message: " + entry);
-                    try {
-                        singleProxy.write(entry, null, Lease.FOREVER, 0, WriteModifiers.UPDATE_ONLY.getCode());
-                    } catch (TransactionException | RemoteException e) {
-                        if (isEntryNotInSpaceException(e)) {
-                            throw new NonRetriableMessageExecutionException("failed to update entry: " + entry.getTypeName() + ", message id: " + cdcInfo.getMessageID() + " due to EntryNotInSpaceException", e);
+                    //CDC case
+                    isWriteAllowed =
+                            isWriteEntryAllowed( singleProxy, deletedObjectsTableName, entry, null, genericType, conflictResolutionPolicy );
+                    if( isWriteAllowed ) {
+                        logger.debug("update message: " + entry);
+                        try {
+                            singleProxy.write(entry, null, Lease.FOREVER, 0, WriteModifiers.UPDATE_ONLY.getCode());
+                        } catch (TransactionException | RemoteException e) {
+                            if (isEntryNotInSpaceException(e)) {
+                                throw new NonRetriableMessageExecutionException("failed to update entry: " +
+                                        entry.getTypeName() + ", message id: " + cdcInfo.getMessageID() + " due to EntryNotInSpaceException", e);
+                            }
+                            throw e;
+                        } catch (SpaceMetadataException e) {
+                            throw new SkippedMessageExecutionException(e);
                         }
-                        throw e;
-                    } catch (SpaceMetadataException e) {
-                        throw new SkippedMessageExecutionException(e);
                     }
                     break;
                 case DELETE:
                     logger.debug("deleting message: " + entry);
+                    if( requestInfo.isPopulateDeletedObjectsTable() && genericType == GenericType.FROM_CDC ){
+
+                        SpaceTypeDescriptor typeDescriptor = null;
+                        try{
+                            typeDescriptor = singleProxy.getTypeDescriptor(entry.getTypeName());
+                        } catch (RemoteException e) {
+                            logger.error( "Failed to retrieve type descriptor for type [" + entry.getTypeName() + "] due to ", e );
+                        }
+                        if (typeDescriptor == null) {
+                            throw new NonRetriableMessageExecutionException("Unknown type: " + entry.getTypeName());
+                        }
+
+                        DeletedDocumentInfo deletedSpaceDocument =
+                                createDeletedSpaceDocument( deletedObjectsTableName, typeDescriptor, entry);
+                        logger.debug("writing deleted message(tieredStorage): " + deletedSpaceDocument);
+                        try{
+                            IJSpace clusteredProxy = singleProxy.getClusteredProxy();
+                            clusteredProxy.write( deletedSpaceDocument, null, Lease.FOREVER );
+                        }
+                        catch( Exception e ){
+                            logger.error("failed to write entry of type: " + deletedSpaceDocument.getFullTypeName() +
+                                    " to deleted table: " + deletedSpaceDocument.getTypeName() +
+                                    " with id: " + deletedSpaceDocument.getId() + " due to ", e );
+                        }
+                    }
                     if (singleProxy.take(entry, null, 0) == null) {
                         if (!cdcInfo.getMessageID().equals(lastMsgID)) {
                             String errorMsg = "failed to delete entry: " + entry.getTypeName() + ", message id: " + cdcInfo.getMessageID();
@@ -178,12 +277,138 @@ public class GSMessageTaskExecutor extends SpaceActionExecutor {
                         }
                         logger.debug("received same message again, ignoring delete entry: " + entry.getTypeName() + ", message id: " + cdcInfo.getMessageID());
                     }
+
                     break;
             }
         } catch (Exception e) {
             logger.warn(String.format("failed to complete task execution for Object: %s, message id: %s", entry != null ? entry.getTypeName() : null, cdcInfo != null ? cdcInfo.getMessageID() : null));
             throw e;
         }
+    }
+
+    private DeletedDocumentInfo createDeletedSpaceDocument( String deletedObjectTableName,
+                                                            SpaceTypeDescriptor typeDescriptor, SpaceDocument spaceDocument ) {
+
+        String idValue = getIdValue( typeDescriptor, spaceDocument );
+        if( logger.isDebugEnabled() ) {
+            logger.debug("Deleted object id:" + idValue );
+        }
+        return new DeletedDocumentInfo( deletedObjectTableName, spaceDocument.getTypeName(), idValue );
+    }
+
+    private boolean isWriteEntryAllowed( IDirectSpaceProxy singleProxy, String deletedObjectsTableName, SpaceDocument entry,
+                                         Transaction transaction, GenericType genericType,
+                                         ConflictResolutionPolicy conflictResolutionPolicy ) {
+        boolean writeAllowed = true;
+        //TODO add warn about update + GenericType.FROM_INITIAL_LOAD ans skip such message
+
+        if( logger.isDebugEnabled() ) {
+            logger.debug("isWriteEntryAllowed, genericType=" + genericType +
+                    ", conflictResolutionPolicy=" + conflictResolutionPolicy +
+                    ", deletedObjectsTableName=" + deletedObjectsTableName);
+        }
+
+        if( genericType == GenericType.FROM_INITIAL_LOAD && conflictResolutionPolicy == ConflictResolutionPolicy.INITIAL_LOAD ){
+            boolean entryInDeletedTableOfSpace = isEntryInDeletedTableOfSpace(singleProxy, deletedObjectsTableName, entry, transaction);
+            writeAllowed = !entryInDeletedTableOfSpace;
+        }
+
+        return writeAllowed;
+    }
+
+
+    private static boolean isEntryInDeletedTableOfSpace( IDirectSpaceProxy singleProxy, String deletedObjectsTableName,
+                                                         SpaceDocument entry, Transaction transaction ){
+
+        Object[] readObjects = getEntriesFromDeletedObjectsTable( singleProxy, deletedObjectsTableName, entry, transaction );
+
+        boolean isEntryInDeletedTableOfSpace = readObjects != null && readObjects.length > 0 &&
+                !JSpaceUtilities.areAllArrayElementsNull( readObjects );
+        if (logger.isDebugEnabled()) {
+            logger.debug("isEntryInDeletedTableOfSpace, isEntryInDeletedTableOfSpace=" + isEntryInDeletedTableOfSpace);
+        }
+
+        return isEntryInDeletedTableOfSpace;
+    }
+
+    public static Object[] getEntriesFromDeletedObjectsTable(IDirectSpaceProxy singleProxy, String deletedObjectsTableName,
+                                                             SpaceDocument spaceDocument, Transaction transaction ){
+
+        String idValue = getIdValue(getTypeDescriptor(singleProxy, spaceDocument.getTypeName()), spaceDocument);
+
+        if( logger.isDebugEnabled() ) {
+            logger.debug("isEntryInDeletedTableOfSpace, deletedObjectsTableName=" +
+                    deletedObjectsTableName + ", id=" + idValue);
+        }
+
+        Map<String,SpaceDocument> singleSpaceDocumentMap = new HashMap<>(1);
+        singleSpaceDocumentMap.put( idValue, spaceDocument );
+        return getEntriesFromDeletedObjectsTable( singleProxy, deletedObjectsTableName, singleSpaceDocumentMap, transaction );
+    }
+
+    public static Object[] getEntriesFromDeletedObjectsTable(IDirectSpaceProxy singleProxy, String deletedObjectsTableName,
+                                                             Map<String, SpaceDocument> spaceDocuments, Transaction transaction ){
+
+        if( deletedObjectsTableName == null ){
+            throw new IllegalArgumentException("Name of deletedObjectsTableName can't be null");
+        }
+
+        if( spaceDocuments.isEmpty() ){
+            return new Object[0];
+        }
+
+        if( singleProxy.getTypeDescFromServer( deletedObjectsTableName ) == null ){
+            return new Object[0];
+        }
+
+        String[] idValues = spaceDocuments.keySet().toArray(new String[0]);
+
+        if( logger.isDebugEnabled() ) {
+            logger.debug("isEntryInDeletedTableOfSpace, deletedObjectsTableName=" +
+                    deletedObjectsTableName + ", id=" + Arrays.toString( idValues ) );
+        }
+
+        Object[] readObjects = null;
+        try {
+            ISpaceProxy clusteredProxy = (ISpaceProxy)singleProxy.getClusteredProxy();
+            readObjects = clusteredProxy.readByIds(deletedObjectsTableName, idValues,
+                    null, transaction, Modifiers.NONE, QueryResultTypeInternal.DOCUMENT_ENTRY, false, null);
+
+            if (logger.isDebugEnabled()){
+                logger.debug("isEntryInDeletedTableOfSpace, result=" + readObjects +
+                        (readObjects != null ? Arrays.toString(readObjects) : "NULL result array"));
+            }
+        }
+        catch( Exception e ){
+            if( logger.isErrorEnabled() ){
+                logger.error( "Failed to read objects from space using id [" + Arrays.toString( idValues ) + "] from ", e );
+            }
+        }
+
+        return readObjects;
+    }
+
+    private static SpaceTypeDescriptor getTypeDescriptor(IDirectSpaceProxy singleProxy, String typeName) {
+        SpaceTypeDescriptor typeDescriptor;
+        try{
+            typeDescriptor = singleProxy.getTypeDescriptor(typeName);
+        } catch (Exception e) {
+            logger.error( "Failed to retrieve type descriptor for type [" + typeName + "] due to ", e );
+            throw new NonRetriableMessageExecutionException("Unknown type: " + typeName);
+        }
+
+        return typeDescriptor;
+    }
+
+    public static String getIdValue( SpaceTypeDescriptor typeDescriptor, SpaceDocument spaceDocument) {
+
+        List<Object> values = new ArrayList<>();
+        values.add(typeDescriptor.getTypeName());
+        for (String idPropertyName : typeDescriptor.getIdPropertiesNames()) {
+            values.add(spaceDocument.getProperty(idPropertyName));
+        }
+
+        return CompoundSpaceId.from(values.toArray(new Object[0])).toString();
     }
 
     private boolean isEntryNotInSpaceException(Throwable e) {
@@ -208,7 +433,7 @@ public class GSMessageTaskExecutor extends SpaceActionExecutor {
         }
     }
 
-    private void handleExceptionUnderTransaction(SpaceDocument entry, CDCInfo cdcInfo, Transaction transaction, Exception e) throws CannotAbortException, UnknownTransactionException, RemoteException {
+    private void handleExceptionUnderTransaction(SpaceDocument entry, CDCInfo cdcInfo, Transaction transaction, Exception e) {
         logger.warn(String.format("failed to complete task execution for Object: %s, message id: %s", entry != null ? entry.getTypeName() : null, cdcInfo != null ? cdcInfo.getMessageID() : null));
         logger.warn("rolling back operation", e);
         if (transaction == null) {
@@ -223,5 +448,4 @@ public class GSMessageTaskExecutor extends SpaceActionExecutor {
             throw new RetriableMessageExecutionException("failed to rollback", ex);
         }
     }
-
 }

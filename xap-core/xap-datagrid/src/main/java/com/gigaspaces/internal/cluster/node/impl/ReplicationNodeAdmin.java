@@ -38,13 +38,12 @@ import com.j_spaces.core.filters.ReplicationStatistics.ChannelState;
 import com.j_spaces.core.filters.ReplicationStatistics.OutgoingChannel;
 import com.j_spaces.core.filters.ReplicationStatistics.ReplicationMode;
 import com.j_spaces.kernel.JSpaceUtilities;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 
 /**
@@ -116,6 +115,11 @@ public class ReplicationNodeAdmin
                 outChannelsStat);
         ReplicationStatistics replicationStatistics = new ReplicationStatistics(outStat);
         return replicationStatistics;
+    }
+
+    @Override
+    public int flushRedoLogToStorage() {
+        return _replicationNode.flushRedoLogToStorage();
     }
 
     public Object[] getStatus() {

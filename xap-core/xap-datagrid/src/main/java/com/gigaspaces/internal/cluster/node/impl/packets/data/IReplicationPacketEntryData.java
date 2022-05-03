@@ -27,6 +27,8 @@ public interface IReplicationPacketEntryData extends SmartExternalizable, ISwapE
 
     String getUid();
 
+    String getTypeName();
+
     int getOrderCode();
 
     boolean isTransient();

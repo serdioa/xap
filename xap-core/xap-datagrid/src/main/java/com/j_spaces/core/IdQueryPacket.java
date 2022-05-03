@@ -183,7 +183,7 @@ public class IdQueryPacket extends AbstractQueryPacket {
             this._propertiesLength = in.readInt();
 
         if ((flags & HAS_ID) != 0) {
-            if (version.greaterOrEquals(PlatformLogicalVersion.v16_2_0))
+            if (version.greaterOrEquals(PlatformLogicalVersion.v16_1_1))
                 this._idFieldIndexes = IOUtils.readIntegerArray(in);
             else
                 this._idFieldIndexes = new int[] {in.readInt()};
@@ -228,7 +228,7 @@ public class IdQueryPacket extends AbstractQueryPacket {
             out.writeInt(_propertiesLength);
 
         if (_id != null) {
-            if (version.greaterOrEquals(PlatformLogicalVersion.v16_2_0))
+            if (version.greaterOrEquals(PlatformLogicalVersion.v16_1_1))
                 IOUtils.writeIntegerArray(out, _idFieldIndexes);
             else
                 out.writeInt(this._idFieldIndexes[0]);

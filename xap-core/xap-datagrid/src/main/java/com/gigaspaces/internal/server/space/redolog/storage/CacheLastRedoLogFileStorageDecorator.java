@@ -23,11 +23,10 @@ import com.gigaspaces.internal.server.space.redolog.storage.bytebuffer.WeightedB
 import com.gigaspaces.logger.Constants;
 import com.j_spaces.core.cluster.startup.CompactionResult;
 import com.j_spaces.core.cluster.startup.RedoLogCompactionUtil;
-
-import java.util.*;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.*;
 
 /**
  * Wraps a {@link INonBatchRedoLogFileStorage} with a cache that keeps a constant size number of
@@ -191,13 +190,7 @@ public class CacheLastRedoLogFileStorageDecorator<T extends IReplicationOrderedP
         return _storage.getExternalStoragePacketsWeight();
     }
 
-    public StorageReadOnlyIterator<T> readOnlyIterator()
-            throws StorageException {
-        return new CacheReadOnlyIterator(_storage.readOnlyIterator());
-    }
-
-    public StorageReadOnlyIterator<T> readOnlyIterator(
-            long fromIndex) throws StorageException {
+    public StorageReadOnlyIterator<T> readOnlyIterator(long fromIndex) throws StorageException {
         long storageSize = _storage.size();
 
         if (fromIndex < storageSize)

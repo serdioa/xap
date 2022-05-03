@@ -28,22 +28,22 @@ public class DIHProjectTestCase {
     public void generateProject() {
         String projectPipelineName = "Foo";
         String projectVersion = "1.0";
-        String kafkaSpaceName = "mySpace";
-        String kafkaTopic = "myTopic";
         String resourcesTypeMetadataJson = getTypeMetadataJson();
         String resourcesDefaultTypeConversionMap = getDefaultTypeConversionMap();
-        String configStreamJson = getStreamJson();
-        String kafkaMaxPollRecords = "10000";
-        String kafkaReceiveBufferConfig = "16000";
         target = SystemLocations.singleton().work("data-integration");
         List<DocumentInfo> documents = getDocumentsInfo();
 
         DIHProjectPropertiesOverrides dihProjectProperties = new DIHProjectPropertiesOverrides(
-                projectPipelineName, projectVersion, null,
-                null, null, null,
-                kafkaSpaceName, null, kafkaTopic,
-                null, null, kafkaMaxPollRecords, kafkaReceiveBufferConfig, resourcesTypeMetadataJson,
-                resourcesDefaultTypeConversionMap, configStreamJson, target, documents);
+                projectPipelineName,
+                projectVersion,
+                null,
+                null,
+                null,
+                null,
+                resourcesTypeMetadataJson,
+                resourcesDefaultTypeConversionMap,
+                target,
+                documents);
 
         try {
             if (target.toFile().exists()) {
@@ -52,7 +52,7 @@ public class DIHProjectTestCase {
             // Blueprint path when executed from a gigaspaces source code
             Path consumerBlueprint = SystemLocations.singleton().home("blueprints").resolve("dih-consumer");
             DIHProjectGenerator.generate(dihProjectProperties, consumerBlueprint);
-            assertPathsRecursively(target, getResourcePath("blueprints/dih-project/work/data-integration"));//TODO update that project
+            assertPathsRecursively(target, getResourcePath("blueprints/dih-project/work/data-integration"));
         } catch (Throwable e) {
             Assertions.fail("failed to validate generated dih consumer blueprint with the expected project", e);
         }
@@ -223,7 +223,7 @@ public class DIHProjectTestCase {
                 "TIMESTAMP:com.gigaspaces.dih.type_converter.TIMESTAMPToTimestamp\n" +
                 "TIMESTAMP_WITH_TIME_ZONE:com.gigaspaces.dih.type_converter.TIMESTAMP_WITH_TIME_ZONEToTimestamp\n" +
                 "TIMESTAMP_WITH_LOCAL_TIME_ZONE:com.gigaspaces.dih.type_converter.TIMESTAMP_WITH_LOCAL_TIME_ZONEToTimestamp\n" +
-                "TIMESTMP:com.gigaspaces.dih.type_converter.TIMESTMPToTimestamp\n" +
+                "TIMESTMP:com.gigaspaces.dih.type_converter.TIMESTZToTimestamp\n" +
                 "TIMESTZ:com.gigaspaces.dih.type_converter.TIMESTZToTimestamp\n" +
                 "TIME:com.gigaspaces.dih.type_converter.TIMEToTime\n" +
                 "TIME_WITH_TIME_ZONE:com.gigaspaces.dih.type_converter.TIME_WITH_TIME_ZONEToTime\n" +

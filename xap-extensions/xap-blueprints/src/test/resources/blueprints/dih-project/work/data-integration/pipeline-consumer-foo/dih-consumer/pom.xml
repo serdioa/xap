@@ -22,8 +22,6 @@
             <groupId>com.gigaspaces</groupId>
             <artifactId>xap-data-integration</artifactId>
             <version>${gs.version}</version>
-            <!--scope should be provided-->
-<!--            TODO test run check as provided-->
             <scope>compile</scope>
         </dependency>
         <dependency>

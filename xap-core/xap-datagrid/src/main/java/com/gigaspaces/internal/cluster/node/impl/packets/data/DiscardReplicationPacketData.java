@@ -95,6 +95,11 @@ public class DiscardReplicationPacketData extends AbstractReplicationPacketSingl
         return null;
     }
 
+    public String getTypeName() {
+        //This packet has no type, it is just used for discard purposes
+        return null;
+    }
+
     @Override
     protected IReplicationFilterEntry toFilterEntry(
             SpaceTypeManager spaceTypeManager) {

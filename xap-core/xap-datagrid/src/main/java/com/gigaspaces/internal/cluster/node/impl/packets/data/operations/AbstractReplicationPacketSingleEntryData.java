@@ -311,6 +311,11 @@ public abstract class AbstractReplicationPacketSingleEntryData
     }
 
     @Override
+    public String getTypeName() {
+        return getMainTypeName();
+    }
+
+    @Override
     public IExecutableReplicationPacketData<IReplicationPacketEntryData> createEmptyMultipleEntryData() {
         throw new UnsupportedOperationException();
     }

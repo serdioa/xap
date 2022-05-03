@@ -18,7 +18,6 @@ package com.gigaspaces.internal.server.space.redolog;
 
 import com.gigaspaces.cluster.replication.IRedoLogFileStatistics;
 import com.gigaspaces.internal.cluster.node.impl.packets.IReplicationOrderedPacket;
-import com.gigaspaces.internal.utils.collections.ReadOnlyIterable;
 import com.gigaspaces.internal.utils.collections.ReadOnlyIterator;
 import com.j_spaces.core.cluster.startup.CompactionResult;
 
@@ -33,7 +32,7 @@ import com.j_spaces.core.cluster.startup.CompactionResult;
  * @author eitany
  * @since 7.1
  */
-public interface IRedoLogFile<T extends IReplicationOrderedPacket> extends Iterable<T>, ReadOnlyIterable<T>, IRedoLogFileStatistics {
+public interface IRedoLogFile<T extends IReplicationOrderedPacket> extends IRedoLogFileStatistics {
     /**
      * Remove and returns the oldest replication packet in the file
      *
@@ -98,8 +97,6 @@ public interface IRedoLogFile<T extends IReplicationOrderedPacket> extends Itera
 
     long getWeight();
 
-    long getDiscardedPacketsCount();
-
     /**
      *
      * @param from key to start searching transient packet from
@@ -107,4 +104,14 @@ public interface IRedoLogFile<T extends IReplicationOrderedPacket> extends Itera
      * @return number of discarded packets
      */
     CompactionResult performCompaction(long from, long to);
+
+    /**
+     * Flush redo-log packets from memory to underlying storage.
+     * Not thread safe, should be called under lock and only when the space is in quiesce mode.
+     * @return number of flushed packets
+     * @since 16.2
+     */
+    default int flushToStorage() {
+        throw new UnsupportedOperationException();
+    }
 }

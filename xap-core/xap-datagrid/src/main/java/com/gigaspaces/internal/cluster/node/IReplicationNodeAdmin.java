@@ -46,6 +46,12 @@ public interface IReplicationNodeAdmin {
     // TODO to be implementation specific statistics
     ReplicationStatistics getStatistics();
 
+    /**
+     * @return number of flushed packets
+     * @since 16.2
+     */
+    int flushRedoLogToStorage();
+
     Object[] getStatus();
 
     void setNodeStateListener(IReplicationNodeStateListener listener);

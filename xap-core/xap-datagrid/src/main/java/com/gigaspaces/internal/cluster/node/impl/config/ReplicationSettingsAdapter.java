@@ -20,12 +20,7 @@ import com.gigaspaces.cluster.replication.ConsistencyLevel;
 import com.gigaspaces.cluster.replication.ReplicationFilterManager;
 import com.gigaspaces.cluster.replication.sync.SyncReplPolicy;
 import com.gigaspaces.internal.cluster.node.impl.backlog.BacklogConfig.LimitReachedPolicy;
-import com.gigaspaces.internal.cluster.node.impl.filters.IReplicationInFilter;
-import com.gigaspaces.internal.cluster.node.impl.filters.IReplicationOutFilter;
-import com.gigaspaces.internal.cluster.node.impl.filters.ISpaceCopyReplicaInFilter;
-import com.gigaspaces.internal.cluster.node.impl.filters.ISpaceCopyReplicaOutFilter;
-import com.gigaspaces.internal.cluster.node.impl.filters.ReplicationInFilterAdapter;
-import com.gigaspaces.internal.cluster.node.impl.filters.ReplicationOutFilterAdapter;
+import com.gigaspaces.internal.cluster.node.impl.filters.*;
 import com.j_spaces.core.cluster.*;
 
 import java.util.List;

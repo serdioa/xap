@@ -44,29 +44,10 @@ import com.j_spaces.kernel.ResourceLoader;
 import com.j_spaces.kernel.SystemProperties;
 import com.j_spaces.kernel.XPathProperties;
 import com.j_spaces.kernel.log.JProperties;
-
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
-import org.w3c.dom.Text;
-import org.xml.sax.SAXException;
-
-import java.io.BufferedReader;
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.PrintStream;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.util.*;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.w3c.dom.*;
+import org.xml.sax.SAXException;
 
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.Transformer;
@@ -75,6 +56,10 @@ import javax.xml.transform.TransformerException;
 import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMResult;
 import javax.xml.transform.dom.DOMSource;
+import java.io.*;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.util.*;
 
 /*******************************************************************************
  * Copyright (c) 2010 GigaSpaces Technologies Ltd. All rights reserved
@@ -254,7 +239,7 @@ public class ClusterXML {
     final static public String REPL_MEMORY_RECOVERY_TAG = "recovery";
     final static public String REPL_ORIGINAL_STATE_TAG = "repl-original-state";
     final static public String REPL_NETWORK_COMPRESSION_TAG = "repl-network-compression";
-    final static public String REPL_REDO_LOG_CAPACITY_TAG = MIRROR_SERVICE_REDO_LOG_CAPACITY_TAG;
+    final static public String REPL_REDO_LOG_CAPACITY_TAG = "redo-log-capacity";
     final static public String REPL_REDO_LOG_MEMORY_CAPACITY_TAG = "redo-log-memory-capacity";
     final static public String REPL_REDO_LOG_COMPACTION_TAG = "redo-log-compaction";
     final static public String REPL_REDO_LOG_BACKLOG_WEIGHT_POLICY = "backlog-weight-policy";
@@ -264,7 +249,7 @@ public class ClusterXML {
     final static public String REPL_REDO_LOG_DURABLE_NOTIFICATION_CAPACITY_TAG = "redo-log-durable-notification-capacity";
     final static public String REPL_LOCALVIEW_MAX_DISCONNECTION_TIME_TAG = "local-view-max-disconnection-time";
     final static public String REPL_DURABLE_NOTIFICATION_MAX_DISCONNECTION_TIME_TAG = "durable-notification-max-disconnection-time";
-    final static public String REPL_REDO_LOG_CAPACITY_EXCEEDED_TAG = MIRROR_SERVICE_REDO_LOG_CAPACITY_EXCEEDED_TAG;
+    final static public String REPL_REDO_LOG_CAPACITY_EXCEEDED_TAG = "on-redo-log-capacity-exceeded";
     final static public String REPL_TOLERATE_MISSING_PACKETS_TAG = "on-missing-packets";
     final static public String REPL_ON_CONFLICTING_PACKETS_TAG = "on-conflicting-packets";
     final static public String REPL_FULL_TAKE_TAG = "repl-full-take";
@@ -355,7 +340,10 @@ public class ClusterXML {
     final static public String REPLICATION_MULTI_BUCKET_BATCH_PARALLEL_FACTOR = "batch-parallel-factor";
     final static public String REPLICATION_MULTI_BUCKET_BATCH_PARALLEL_THRESHOLD = "batch-parallel-threshold";
 
-    final static public String SWAP_REDOLOG_CONFIG = "swap-redo-log";
+    // swap-redo-log tags
+    final static public String SWAP_REDOLOG_TAG = "swap-redo-log";
+    final static public String SWAP_REDOLOG_STORAGE_TYPE = "storage-type";
+    final static public String SQLITE_REDO_LOG_FLUSH_BUFFER_PACKET_COUNT = "sqlite-flush-buffer-packet-count";
     final static public String SWAP_REDOLOG_FLUSH_BUFFER_PACKET_COUNT = "flush-buffer-packet-count";
     final static public String SWAP_REDOLOG_FETCH_BUFFER_PACKET_COUNT = "fetch-buffer-packet-count";
     final static public String SWAP_REDOLOG_SEGMENT_SIZE = "segment-size";
@@ -1658,13 +1646,30 @@ public class ClusterXML {
         }//MULTI BUCKET REPLICATION
         /*************************** SWAP REDO LOG CONFIG ********************/
         // SWAP REDO LOG
-        NodeList swapRedoLogNL = replPolicyNode.getElementsByTagName(SWAP_REDOLOG_CONFIG);
+        NodeList swapRedoLogNL = replPolicyNode.getElementsByTagName(SWAP_REDOLOG_TAG);
         if (swapRedoLogNL.getLength() > 0) {
             Element swapRedologNode = (Element) swapRedoLogNL.item(0);
 
-            value = getNodeValueIfExists(swapRedologNode, SWAP_REDOLOG_FLUSH_BUFFER_PACKET_COUNT);
-            if (value != null)
-                replPolicy.getSwapRedologPolicy().setFlushBufferPacketsCount(Integer.parseInt(value));
+            //REDO LOG STORAGE TYPE
+            RedoLogSwapStorageType storageType = RedoLogSwapStorageType.BYTE_BUFFER;
+            value = getNodeValueIfExists(swapRedologNode, SWAP_REDOLOG_STORAGE_TYPE);
+            if (value != null) {
+                storageType = RedoLogSwapStorageType.valueOf(value.toUpperCase().replaceAll("-", "_"));
+                replPolicy.getSwapRedologPolicy().setSwapStorageType(storageType);
+            }
+
+            if (storageType.equals(RedoLogSwapStorageType.SQLITE)) {
+                value = getNodeValueIfExists(swapRedologNode, SQLITE_REDO_LOG_FLUSH_BUFFER_PACKET_COUNT);
+                if (value == null) {
+                    replPolicy.getSwapRedologPolicy().setFlushBufferPacketsCount(SwapBacklogConfig.SQLITE_FLUSH_BUFFER_PACKETS_COUNT_DEFAULT);
+                } else {
+                    replPolicy.getSwapRedologPolicy().setFlushBufferPacketsCount(Integer.parseInt(value));
+                }
+            } else if (storageType.equals(RedoLogSwapStorageType.BYTE_BUFFER)) {
+                value = getNodeValueIfExists(swapRedologNode, SWAP_REDOLOG_FLUSH_BUFFER_PACKET_COUNT);
+                if (value != null)
+                    replPolicy.getSwapRedologPolicy().setFlushBufferPacketsCount(Integer.parseInt(value));
+            }
 
             value = getNodeValueIfExists(swapRedologNode, SWAP_REDOLOG_FETCH_BUFFER_PACKET_COUNT);
             if (value != null)

@@ -184,6 +184,19 @@ public class IOUtils {
         return new UUID(most, least);
     }
 
+    public static void writeCodeMaps(ObjectOutput out) throws IOException {
+        out.writeObject(_classToCode);
+        out.writeObject(_codeToClass);
+    }
+
+    public static void readCodeMaps(ObjectInput in) throws IOException, ClassNotFoundException {
+        ObjectIntegerMap classToCodeMap = (ObjectIntegerMap) in.readObject();
+        classToCodeMap.flush(_classToCode);
+
+        IntegerObjectMap codeToClassMap = (IntegerObjectMap) in.readObject();
+        codeToClassMap.flush(_codeToClass);
+    }
+
     final public static class NoHeaderObjectOutputStream
             extends ObjectOutputStream {
         public NoHeaderObjectOutputStream(OutputStream out) throws IOException {
@@ -863,13 +876,14 @@ public class IOUtils {
             ClassNotFoundException {
         int classCode = in.readInt();
         Class<?> clazz = getClass(classCode);
+        if (clazz == null) {
+            throw new IllegalArgumentException("No mapping for class with code: " + classCode);
+        }
         try {
             T newInstance = (T) clazz.newInstance();
             newInstance.readFromSwap(in);
             return newInstance;
-        } catch (IOException e) {
-            throw e;
-        } catch (ClassNotFoundException e) {
+        } catch (IOException | ClassNotFoundException e) {
             throw e;
         } catch (Exception e) {
             throw new IOException(e.getMessage(), e);
