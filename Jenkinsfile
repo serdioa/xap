@@ -9,7 +9,6 @@ node('gspaces-builder') {
         )
     ])
     @Library('xap-common@preversion')_
-    cleanWs()
 
     stage('BUILD') {
         xap.xapBuild();
@@ -22,6 +21,4 @@ node('gspaces-builder') {
     stage('DEPLOY') {
         xap.xapDeploy();
     }
-
-    cleanWs()
 }
