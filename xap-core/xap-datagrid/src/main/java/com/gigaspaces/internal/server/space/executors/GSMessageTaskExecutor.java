@@ -362,12 +362,6 @@ public class GSMessageTaskExecutor extends SpaceActionExecutor {
         }
 
         String[] idValues = spaceDocuments.keySet().toArray(new String[0]);
-
-        if( logger.isDebugEnabled() ) {
-            logger.debug("isEntryInDeletedTableOfSpace, deletedObjectsTableName=" +
-                    deletedObjectsTableName + ", id=" + Arrays.toString( idValues ) );
-        }
-
         Object[] readObjects = null;
         try {
             ISpaceProxy clusteredProxy = (ISpaceProxy)singleProxy.getClusteredProxy();
@@ -375,7 +369,8 @@ public class GSMessageTaskExecutor extends SpaceActionExecutor {
                     null, transaction, Modifiers.NONE, QueryResultTypeInternal.DOCUMENT_ENTRY, false, null);
 
             if (logger.isDebugEnabled()){
-                logger.debug("isEntryInDeletedTableOfSpace, result=" + readObjects +
+                logger.debug("getEntriesFromDeletedObjectsTable, deletedObjectsTableName=" +
+                        deletedObjectsTableName + ", id=" + Arrays.toString( idValues ) + ", result=" + readObjects +
                         (readObjects != null ? Arrays.toString(readObjects) : "NULL result array"));
             }
         }
