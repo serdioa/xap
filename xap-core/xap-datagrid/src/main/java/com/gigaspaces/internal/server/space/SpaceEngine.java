@@ -279,9 +279,6 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
     private final int _resultsSizeLimitMemoryCheckBatchSize;
 
     private TieredStorageManager tieredStorageManager;
-    
-    private boolean _isTieredStorageFullMemoryRecoveryEnable = true;
-
 
     public SpaceEngine(SpaceImpl spaceImpl) throws CreateException, RemoteException {
         _logger = LoggerFactory.getLogger(com.gigaspaces.logger.Constants.LOGGER_ENGINE + "." + spaceImpl.getNodeName());
@@ -301,7 +298,6 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
         _allowNonBlockingRead = _configReader.getBooleanSpaceProperty(ENGINE_NON_BLOCKING_READ_PROP, ENGINE_NON_BLOCKING_READ_DEFAULT);
         _useDirtyRead = _configReader.getBooleanSpaceProperty(ENGINE_DIRTY_READ_PROP, ENGINE_DIRTY_READ_DEFAULT);
         _TTL = _configReader.getIntSpaceProperty(SpaceProxy.OldRouter.RETRY_CONNECTION, SpaceProxy.OldRouter.RETRY_CONNECTION_DEFAULT);
-	_isTieredStorageFullMemoryRecoveryEnable = GsEnv.propertyBoolean(SystemProperties.TIERED_STORAGE_FULL_MEMORY_RECOVERY).get(true);
         _entryDataType = initEntryDataType(_configReader, _isLocalCache);
 
         //purpose
@@ -3691,11 +3687,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
     }
 
     public boolean isTieredStorageFullMemoryRecoveryEnable() {
-        return _isTieredStorageFullMemoryRecoveryEnable;
-    }
-    
-     public void setIsTieredStorageFullMemoryRecoveryEnable(boolean isTieredStorageFullMemoryRecoveryEnable) {
-        this._isTieredStorageFullMemoryRecoveryEnable = isTieredStorageFullMemoryRecoveryEnable;
+        return GsEnv.propertyBoolean(SystemProperties.TIERED_STORAGE_FULL_MEMORY_RECOVERY).get(true);
     }
 
     /**
