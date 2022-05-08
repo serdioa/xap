@@ -623,10 +623,6 @@ public class CacheManager extends AbstractCacheManager
                 if (_engine.isTieredStorageFullMemoryRecoveryEnable()) {
                     loadDataFromDB = false;
                 }
-		else {
-                    //define full memory recovery for next recovery, we can only assume one graceful shutdown
-                    _engine.setIsTieredStorageFullMemoryRecoveryEnable(true);
-                }
             }
         }
 
