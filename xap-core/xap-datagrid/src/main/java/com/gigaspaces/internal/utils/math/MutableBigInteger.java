@@ -23,6 +23,7 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.math.RoundingMode;
 
 /**
  * @author Niv Ingberg
@@ -77,7 +78,7 @@ public class MutableBigInteger extends MutableNumber {
 
     @Override
     public Number calcDivision(long count) {
-        return new BigDecimal(value).divide(BigDecimal.valueOf(count));
+        return new BigDecimal(value).divide(BigDecimal.valueOf(count), RoundingMode.HALF_UP);
     }
 
     @Override

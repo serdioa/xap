@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 
 /**
  * @author Niv Ingberg
@@ -68,7 +69,7 @@ public class MutableBigDecimal extends MutableNumber {
     public void divide(Number x) {
         if (x == null)
             return;
-        value = value == null ? null : value.divide((BigDecimal) x);
+        value = value == null ? null : value.divide((BigDecimal) x, RoundingMode.HALF_UP);
     }
 
     private BigDecimal convert(Number x) {
@@ -80,7 +81,7 @@ public class MutableBigDecimal extends MutableNumber {
 
     @Override
     public Number calcDivision(long count) {
-        return value.divide(BigDecimal.valueOf(count));
+        return value.divide(BigDecimal.valueOf(count), RoundingMode.HALF_UP);
     }
 
     @Override
