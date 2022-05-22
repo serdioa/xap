@@ -31,7 +31,6 @@ import com.gigaspaces.internal.server.storage.ITemplateHolder;
 import com.gigaspaces.metadata.index.SpaceIndex;
 import com.gigaspaces.sync.SpaceSynchronizationEndpoint;
 import com.j_spaces.core.cache.context.Context;
-
 import net.jini.core.transaction.server.ServerTransaction;
 
 import java.util.ArrayList;
@@ -78,7 +77,7 @@ public class MemorySA implements IStorageAdapter {
      *                  order to pass primery key fields when GS uid is not saved in an external DB
      * @return IEntryHolder
      */
-    public IEntryHolder getEntry(Context context, Object uid, String classname, IEntryHolder template) throws SAException {
+    public IEntryHolder getEntry(Context context, String uid, String classname, IEntryHolder template) throws SAException {
         return null;
     }
 

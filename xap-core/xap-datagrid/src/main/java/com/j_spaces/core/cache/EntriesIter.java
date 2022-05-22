@@ -21,15 +21,14 @@ import com.gigaspaces.internal.collections.ObjectIntegerMap;
 import com.gigaspaces.internal.metadata.ITypeDesc;
 import com.gigaspaces.internal.server.metadata.IServerTypeDesc;
 import com.gigaspaces.internal.server.space.MatchResult;
-import com.gigaspaces.internal.server.space.tiered_storage.MultiTypedRDBMSISIterator;
 import com.gigaspaces.internal.server.storage.IEntryHolder;
 import com.gigaspaces.internal.server.storage.ITemplateHolder;
 import com.gigaspaces.internal.server.storage.ITransactionalEntryData;
 import com.j_spaces.core.SpaceOperations;
 import com.j_spaces.core.XtnEntry;
 import com.j_spaces.core.XtnStatus;
-import com.j_spaces.core.cache.context.Context;
 import com.j_spaces.core.cache.blobStore.IBlobStoreRefCacheInfo;
+import com.j_spaces.core.cache.context.Context;
 import com.j_spaces.core.cache.context.TemplateMatchTier;
 import com.j_spaces.core.sadapter.ISAdapterIterator;
 import com.j_spaces.core.sadapter.SAException;
@@ -92,28 +91,35 @@ public class EntriesIter extends SAIterBase implements ISAdapterIterator<IEntryH
         _templateServerTypeDesc = serverTypeDesc;
         _doneWithCache = false;  // start with cache, proceed with SA
 
-        if(_cacheManager.isTieredStorage()){
-            if(context.getTemplateTieredState() == null){
-                context.setTemplateTieredState(_cacheManager.getEngine().getTieredStorageManager().guessTemplateTier(template));
+        if (_cacheManager.isTieredStorageCachePolicy()) {
+            TemplateMatchTier templateTieredState = context.getTemplateTieredState();
+            if (templateTieredState == null) {
+                templateTieredState = _cacheManager.getEngine().getTieredStorageManager().guessTemplateTier(template);
+                context.setTemplateTieredState(templateTieredState);
             }
-            boolean isServerIteratorAndTieredByTimeRule = template.isServerIterator() &&
-                    template.getServerIteratorInfo().isTieredByTimeRule();
 
-            if (memoryOnly || template.isMemoryOnlySearch()){
-                _memoryOnly = true;
-            } else {
-                if (context.getTemplateTieredState() == TemplateMatchTier.MATCH_HOT && (!template.isServerIterator()
-                        && !isServerIteratorAndTieredByTimeRule)){
-                    _memoryOnly = true;
-                } else {
-                    _memoryOnly = false;
-                }
-            }
-            if(context.getTemplateTieredState() == TemplateMatchTier.MATCH_COLD){
+            boolean isServerIteratorAndTieredByTimeRule =
+                    template.isServerIterator() && template.getServerIteratorInfo().isTieredByTimeRule();
+
+            //context.getTemplateTieredState() == TemplateMatchTier.MATCH_HOT
+            //  && (!template.isServerIterator() && !isServerIteratorAndTieredByTimeRule)
+            //
+            //
+            // (!template.isServerIterator() && !isServerIteratorAndTieredByTimeRule)
+            // (!template.isServerIterator() && !(template.isServerIterator() && template.getServerIteratorInfo().isTieredByTimeRule())
+            // (!template.isServerIterator() && (!template.isServerIterator() || !template.getServerIteratorInfo().isTieredByTimeRule())
+            // (!template.isServerIterator() && !template.isServerIterator()) ||
+            //                   (!template.isServerIterator() && !template.getServerIteratorInfo().isTieredByTimeRule())
+
+            _memoryOnly = memoryOnly
+                    || template.isMemoryOnlySearch()
+                    || (templateTieredState == TemplateMatchTier.MATCH_HOT && !template.isServerIterator());
+
+            if (templateTieredState == TemplateMatchTier.MATCH_COLD) {
                 _doneWithCache = true;
             }
 
-            if(isServerIteratorAndTieredByTimeRule || context.getTemplateTieredState() == TemplateMatchTier.MATCH_HOT_AND_COLD){
+            if (isServerIteratorAndTieredByTimeRule || templateTieredState == TemplateMatchTier.MATCH_HOT_AND_COLD) {
                 _entriesReturned = new HashSet<>();
             }
 
@@ -122,6 +128,7 @@ public class EntriesIter extends SAIterBase implements ISAdapterIterator<IEntryH
         } else {
             _memoryOnly = template.isMemoryOnlySearch() || memoryOnly;
         }
+
 
         _transientOnly = transientOnly;
         _templateHolder = template;
@@ -217,9 +224,9 @@ public class EntriesIter extends SAIterBase implements ISAdapterIterator<IEntryH
                 _actualClass = getMathRandom(size);
         }
 
-        if(_cacheManager.isTieredStorage() && _doneWithCache){
+        if (_cacheManager.isTieredStorageCachePolicy() && _doneWithCache) {
             //TODO - tiered storage - handle null template
-            _saIter = new MultiTypedRDBMSISIterator(_cacheManager.getEngine().getTieredStorageManager().getInternalStorage(), _context, _types, _templateHolder);
+            _saIter = cacheManager.getStorageAdapter().makeEntriesIter(_templateHolder, _SCNFilter, _leaseFilter, _types);
         }
 
     }
@@ -248,7 +255,7 @@ public class EntriesIter extends SAIterBase implements ISAdapterIterator<IEntryH
     public IEntryHolder next()
             throws SAException {
 
-        if(_cacheManager.isTieredStorage() && _context.getTemplateTieredState() == TemplateMatchTier.MATCH_COLD && _memoryOnly){
+        if (_cacheManager.isTieredStorageCachePolicy() && _context.getTemplateTieredState() == TemplateMatchTier.MATCH_COLD && _memoryOnly) {
             return null;
         }
 
@@ -283,17 +290,19 @@ public class EntriesIter extends SAIterBase implements ISAdapterIterator<IEntryH
                             _SCNFilter, _leaseFilter, _types);
                 }
 
-                if(_cacheManager.isTieredStorage() && _context.getTemplateTieredState() != TemplateMatchTier.MATCH_HOT && _saIter == null && !_memoryOnly){
+                if (_cacheManager.isTieredStorageCachePolicy() && _context.getTemplateTieredState() != TemplateMatchTier.MATCH_HOT && _saIter == null && !_memoryOnly) {
                     //TODO - tiered storage - handle multiple types
-                    _saIter = new MultiTypedRDBMSISIterator(_cacheManager.getEngine().getTieredStorageManager().getInternalStorage(), _context, _types, _templateHolder);
+                    _saIter = _cacheManager.getStorageAdapter().makeEntriesIter(_templateHolder, _SCNFilter,
+                            _leaseFilter, _types);
                 }
 
                 return saIterNext();
             }
 
             //iterate over cache
-            if (((_cacheManager.isEvictableCachePolicy() && !_cacheManager.isMemorySpace()) || _cacheManager.isTieredStorage()) &&
-                    !_currentEntryHolder.isTransient() && !_memoryOnly) {
+            if (((_cacheManager.isEvictableCachePolicy() && !_cacheManager.isMemorySpace()) || _cacheManager.isTieredStorageCachePolicy())
+                    && !_currentEntryHolder.isTransient()
+                    && !_memoryOnly) {
                 if (!(_entriesReturned.add(_currentEntryCacheInfo.getUID())))
                     continue; //already returned
 
@@ -316,9 +325,8 @@ public class EntriesIter extends SAIterBase implements ISAdapterIterator<IEntryH
             IEntryHolder  eh = null;
             pEntry = _cacheManager.getPEntryByUid(uid); //first search in RAM
             if (pEntry == null || invalidEntryCacheInfo(pEntry)) {
-                if (_cacheManager.isTieredStorage() && !_memoryOnly) { // then search in Disk
-                    eh = _cacheManager.getEngine().getTieredStorageManager().getInternalStorage().getEntryByUID(_context,
-                            _typeDesc.getTypeName(), uid, _templateHolder);
+                if (_cacheManager.isTieredStorageCachePolicy() && !_memoryOnly) { // then search in Disk
+                    eh = _cacheManager.getStorageAdapter().getEntry(_context, uid, _typeDesc.getTypeName(), _templateHolder);
                     if (eh == null || !match(eh)) {
                         continue; // continue to the next uid
                     }

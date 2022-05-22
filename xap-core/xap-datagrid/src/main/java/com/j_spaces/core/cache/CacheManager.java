@@ -48,6 +48,7 @@ import com.gigaspaces.internal.server.space.recovery.direct_persistency.DirectPe
 import com.gigaspaces.internal.server.space.recovery.direct_persistency.IStorageConsistency;
 import com.gigaspaces.internal.server.space.recovery.direct_persistency.StorageConsistencyModes;
 import com.gigaspaces.internal.server.space.tiered_storage.CachePredicate;
+import com.gigaspaces.internal.server.space.tiered_storage.InternalRDBMSManager;
 import com.gigaspaces.internal.server.space.tiered_storage.TieredStorageManager;
 import com.gigaspaces.internal.server.storage.*;
 import com.gigaspaces.internal.sync.hybrid.SyncHybridStorageAdapter;
@@ -90,7 +91,6 @@ import com.j_spaces.core.cache.blobStore.storage.BlobStoreHashMock;
 import com.j_spaces.core.cache.context.Context;
 import com.j_spaces.core.cache.context.IndexMetricsContext;
 import com.j_spaces.core.cache.context.TemplateMatchTier;
-import com.j_spaces.core.cache.context.TieredState;
 import com.j_spaces.core.cache.fifoGroup.FifoGroupCacheImpl;
 import com.j_spaces.core.client.*;
 import com.j_spaces.core.cluster.ClusterPolicy;
@@ -229,7 +229,7 @@ public class CacheManager extends AbstractCacheManager
     private final Map<String, QueryExtensionIndexManagerWrapper> queryExtensionManagers;
 
     //TEMP FOR QA
-    private boolean _blobStoreForQa;
+    private boolean _blobStoreForQa; //TODO:@sagiv remove?
 
     private final boolean _forceSpaceIdIndexIfEqual;
 
@@ -270,12 +270,16 @@ public class CacheManager extends AbstractCacheManager
         boolean isCacheExternalDB = sa.supportsExternalDB();
         boolean isMemorySA = !isCacheExternalDB;
 
-	     /* get cache policy:
+        /* get cache policy:
          * If no value was provided or System property wasn't set,
          * the default is ALL_IN_CACHE
          * Note: this behavior was changed in 10.1 . Before that persistent space default policy was LRU
          */
-        setCachePolicy(configReader.getIntSpaceProperty(CACHE_POLICY_PROP, String.valueOf(CACHE_POLICY_ALL_IN_CACHE)));
+        if (engine.isTieredStorage()) { //TODO: @sagiv fix later
+            setCachePolicy(CACHE_POLICY_TIERED_STORAGE);
+        } else {
+            setCachePolicy(configReader.getIntSpaceProperty(CACHE_POLICY_PROP, String.valueOf(CACHE_POLICY_ALL_IN_CACHE)));
+        }
         _emptyAfterInitialLoadStage = true;
 
 //TEMP FOR QA
@@ -348,6 +352,15 @@ public class CacheManager extends AbstractCacheManager
             _storageAdapter = curSa;
             _isMemorySA = false;
             _isCacheExternalDB = false;
+        } else if (isTieredStorageCachePolicy()) {
+            //TODO @sagiv missing handle for isSyncHybrid();
+            final InternalRDBMSManager internalStorageManager = getEngine().getTieredStorageManager().getInternalStorageManager();
+            if (!isMemorySA) {
+                internalStorageManager.setExternalInitialLoadSA(sa);
+            }
+            _storageAdapter = internalStorageManager;
+            _isMemorySA = false;
+            _isCacheExternalDB = true; //TODO: @sagiv false?
         } else {
             _storageAdapter = sa;
             _isMemorySA = isMemorySA;
@@ -369,7 +382,7 @@ public class CacheManager extends AbstractCacheManager
         if (engine.getClusterPolicy() != null) {
             // true if either indicated in cluster-wide property or mirror service is enabled in cluster
             _isClusteredExternalDBEnabled = engine.isClusteredExternalDBEnabled(getStorageAdapter());
-            _isCentralDB = _storageAdapter.supportsExternalDB() && engine.getClusterPolicy().m_CacheLoaderConfig.centralDataSource;
+            _isCentralDB = _storageAdapter.supportsExternalDB() && engine.getClusterPolicy().m_CacheLoaderConfig.centralDataSource && !isTieredStorage();
         } else //set with defaults
         {
             _isClusteredExternalDBEnabled = false;
@@ -610,15 +623,9 @@ public class CacheManager extends AbstractCacheManager
         }
 
 
-        if(isTieredStorage()){
+        if (isTieredStorageCachePolicy()) {
+            loadDataFromDB = true;
             //TODO: @sagiv right now we load the data from backup disk too - !!assuming data is intact!!
-            loadDataFromDB = _engine.getTieredStorageManager().RDBMSContainsData() || getStorageAdapter() != null;
-            if (_engine.getSpaceImpl().isPrimary()) {
-                if(!loadDataFromDB) {
-                    ConsistencyFile consistency = new ConsistencyFile(_engine.getSpaceName(), _engine.getFullSpaceName());
-                    consistency.setStorageState(StorageConsistencyModes.Consistent);
-                }
-            }
             if (_engine.getSpaceImpl().isBackup()) {
                 if (_engine.isTieredStorageFullMemoryRecoveryEnable()) {
                     loadDataFromDB = false;
@@ -820,7 +827,7 @@ public class CacheManager extends AbstractCacheManager
 
     private SpaceEvictionStrategy createEvictionStrategy(SpaceConfigReader configReader, Properties properties)
             throws CreateException {
-        if (isAllInCachePolicy() || isBlobStoreCachePolicy())
+        if (isResidentEntriesCachePolicy())
             return new AllInCacheSpaceEvictionStrategy();
 
         if (getCachePolicy() == CACHE_POLICY_LRU) {
@@ -936,7 +943,7 @@ public class CacheManager extends AbstractCacheManager
      * Load the data from the database
      */
     private void loadDataFromDB(Context context, SpaceConfigReader configReader) throws SAException {
-        if(this.getEngine().getSpaceImpl().getQuiesceHandler().isHorizontalScale()){
+        if (this.getEngine().getSpaceImpl().getQuiesceHandler().isHorizontalScale()) {
             return;
         }
 
@@ -944,27 +951,43 @@ public class CacheManager extends AbstractCacheManager
         if (isBlobStoreCachePolicy())
             initialLoadInfo.setBlobStoreFifoInitialLoader(new BlobStoreFifoInitialLoader());
         context.setInitialLoadInfo(initialLoadInfo);
-        // if cache policy is ALL_IN_CACHE- load all entries to cache from SA
-        if (isResidentEntriesCachePolicy()) {
-            //if RDBMS is not empty init from RDBMS else if has mirror initial load from mirror
-            if(isTieredStorage() && _engine.getTieredStorageManager().RDBMSContainsData()) {
-                _engine.getTieredStorageManager().getInternalStorage().initialLoad(context, _engine, initialLoadInfo);
+
+        if (isTieredStorageCachePolicy()) {
+            //if RDBMS is not empty init from RDBMS, else-if has mirror initial load from mirror
+            if (!getEngine().getTieredStorageManager().RDBMSContainsData()) {
+                //initial load from external SA
+                residentEntriesInitialLoad(context, configReader, initialLoadInfo);
+
+                if (_logger.isInfoEnabled()) {
+                    String formattedErrors = format(initialLoadInfo.getInitialLoadErrors());
+                    _logger.info("Tiered-Storage Data source recovery:\n " +
+                            "\tEntries found in data source: " + initialLoadInfo.getFoundInDatabase() + ".\n" +
+                            "\tEntries inserted to space: " + initialLoadInfo.getInsertedToCache() + ".\n" +
+                            "\tEntries inserted to hot tier: " + initialLoadInfo.getInsertedToHotTier() + ".\n" +
+                            "\tEntries ignored: " + (initialLoadInfo.getFoundInDatabase() - initialLoadInfo.getInsertedToCache()) + ".\n" +
+                            formattedErrors +
+                            "\tTotal Time: " + JSpaceUtilities.formatMillis(SystemTime.timeMillis() - initialLoadInfo.getRecoveryStartTime()) + ".");
+                }
+            } else {
+                //initial load from RDBMS
+                _engine.getTieredStorageManager().getInternalStorageManager().initialLoad(context, _engine, initialLoadInfo);
                 if (_logger.isInfoEnabled()) {
                     _logger.info("Tiered-Storage Data source recovery:\n " +
-                            "\tEntries found in warm tier: " + initialLoadInfo.getFoundInDatabase() + ".\n" +
+                            "\tEntries found in disk: " + initialLoadInfo.getFoundInDatabase() + ".\n" +
                             "\tEntries inserted to hot tier: " + initialLoadInfo.getInsertedToHotTier() + ".\n" +
                             "\tTotal Time: " + JSpaceUtilities.formatMillis(SystemTime.timeMillis() - initialLoadInfo.getRecoveryStartTime()) + ".");
                 }
-                return;
             }
-
-            //special first call to SA- SA will return all classes, not just fifo classes
-            residentEntriesInitialLoad(context, configReader, initialLoadInfo);
-
             // update consistency after finished initial load
             ConsistencyFile consistency = new ConsistencyFile(_engine.getSpaceName(), _engine.getFullSpaceName());
             consistency.setStorageState(StorageConsistencyModes.Consistent);
+            return;
+        }
 
+        // if cache policy is ALL_IN_CACHE- load all entries to cache from SA
+        if (isResidentEntriesCachePolicy()) {
+            //special first call to SA- SA will return all classes, not just fifo classes
+            residentEntriesInitialLoad(context, configReader, initialLoadInfo);
             if (isBlobStoreCachePolicy() && _persistentBlobStore && _engine.getSpaceImpl().isPrimary() && _entries.isEmpty()) {
                 //if persistent blobstore is empty try mirror if applicable
                 if (((IBlobStoreStorageAdapter) _storageAdapter).hasAnotherInitialLoadSource() && _logger.isInfoEnabled())
@@ -975,28 +998,18 @@ public class CacheManager extends AbstractCacheManager
         } //if isResidentEntriesCachePolicy
 
         // if cache policy is LRU- load some entries to cache from SA according to setting
-        if (isEvictableCachePolicy())
+        if (isEvictableCachePolicy()) {//!isResidentEntriesCachePolicy
             evictableEntriesInitialLoad(context, configReader, initialLoadInfo);
-
+        }
 
         if (_logger.isInfoEnabled()) {
             String formattedErrors = format(initialLoadInfo.getInitialLoadErrors());
-            if(isTieredStorage()){
-                _logger.info("Tiered-Storage Data source recovery:\n " +
-                        "\tEntries found in data source: " + initialLoadInfo.getFoundInDatabase() + ".\n" +
-                        "\tEntries inserted to space: " + initialLoadInfo.getInsertedToCache() + ".\n" +
-                        "\tEntries inserted to hot tier: " + initialLoadInfo.getInsertedToHotTier() + ".\n" +
-                        "\tEntries ignored: " + (initialLoadInfo.getFoundInDatabase() - initialLoadInfo.getInsertedToCache()) + ".\n" +
-                        formattedErrors +
-                        "\tTotal Time: " + JSpaceUtilities.formatMillis(SystemTime.timeMillis() - initialLoadInfo.getRecoveryStartTime()) + ".");
-            } else {
-                _logger.info("Data source recovery:\n " +
-                        "\tEntries found in data source: " + initialLoadInfo.getFoundInDatabase() + ".\n" +
-                        "\tEntries inserted to space: " + initialLoadInfo.getInsertedToCache() + ".\n" +
-                        "\tEntries ignored: " + (initialLoadInfo.getFoundInDatabase() - initialLoadInfo.getInsertedToCache()) + ".\n" +
-                        formattedErrors +
-                        "\tTotal Time: " + JSpaceUtilities.formatMillis(SystemTime.timeMillis() - initialLoadInfo.getRecoveryStartTime()) + ".");
-            }
+            _logger.info("Data source recovery:\n " +
+                    "\tEntries found in data source: " + initialLoadInfo.getFoundInDatabase() + ".\n" +
+                    "\tEntries inserted to space: " + initialLoadInfo.getInsertedToCache() + ".\n" +
+                    "\tEntries ignored: " + (initialLoadInfo.getFoundInDatabase() - initialLoadInfo.getInsertedToCache()) + ".\n" +
+                    formattedErrors +
+                    "\tTotal Time: " + JSpaceUtilities.formatMillis(SystemTime.timeMillis() - initialLoadInfo.getRecoveryStartTime()) + ".");
         }
         if (getBlobStoreInternalCache() != null) {
             if (getBlobStoreInternalCache().getBlobStoreInternalCacheFilter() != null) {
@@ -1072,29 +1085,29 @@ public class CacheManager extends AbstractCacheManager
                             EntryCacheInfoFactory.createBlobStoreEntryCacheInfo(eh);
                         }
                     }
-                    boolean insertBlobStoreEntryToCache = true;
-                    // handle initial load entry with embedded sync list
-                    if (eh.isBlobStoreEntry() && isDirectPersistencyEmbeddedtHandlerUsed()) {
-                        insertBlobStoreEntryToCache = _replicationNode.getDirectPesistencySyncHandler().getEmbeddedSyncHandler().getInitialLoadHandler().onLoadingEntry(eh);
-                    }
-                    if (insertBlobStoreEntryToCache) {
-                        if (isTieredStorage()){
-                            context.setEntryTieredState(_engine.getTieredStorageManager().getEntryTieredState(eh));
-                            if (context.isMemoryOnlyEntry() || context.isMemoryAndDiskEntry()){
-                                initialLoadInfo.incrementInsertedToHotTier();
-                                long expiration = _engine.getLeaseManager().getExpirationByTimeRuleOnInitialLoad(eh.getEntryData());
-                                if(expiration != -1){
-                                    eh.updateEntryData(eh.getEntryData(), expiration);
-                                }
+                    if (isTieredStorageCachePolicy()) {
+                        context.setEntryTieredState(_engine.getTieredStorageManager().getEntryTieredState(eh));
+                        if (context.isMemoryOnlyEntry() || context.isMemoryAndDiskEntry()) {
+                            initialLoadInfo.incrementInsertedToHotTier();
+                            long expiration = _engine.getLeaseManager().getExpirationByTimeRuleOnInitialLoad(eh.getEntryData());
+                            if (expiration != -1) {
+                                eh.updateEntryData(eh.getEntryData(), expiration);
                             }
-                            insertEntry(context,eh,false,true,true, InitialLoadOrigin.FROM_NON_BLOBSTORE);
                         }
-                        else {
-                            safeInsertEntryToCache(context, eh, false /* newEntry */, null /*pType*/, false /*pin*/, entryFromBlobStore ? InitialLoadOrigin.FROM_BLOBSTORE : InitialLoadOrigin.FROM_NON_BLOBSTORE /*fromInitialLoad*/);
-                        }
+                        insertEntry(context, eh, false, false, true);
                     } else {
-                        continue;
+                        boolean insertBlobStoreEntryToCache = true;
+                        // handle initial load entry with embedded sync list
+                        if (eh.isBlobStoreEntry() && isDirectPersistencyEmbeddedtHandlerUsed()) {
+                            insertBlobStoreEntryToCache = _replicationNode.getDirectPesistencySyncHandler().getEmbeddedSyncHandler().getInitialLoadHandler().onLoadingEntry(eh);
+                        }
+                        if (insertBlobStoreEntryToCache) {
+                            safeInsertEntryToCache(context, eh, false /* newEntry */, null /*pType*/, false /*pin*/, entryFromBlobStore ? InitialLoadOrigin.FROM_BLOBSTORE : InitialLoadOrigin.FROM_NON_BLOBSTORE /*fromInitialLoad*/);
+                        } else {
+                            continue;
+                        }
                     }
+
                     if (isBlobStoreCachePolicy()) {//kick out the entry main info after writing to blobStore if needed
                         if (!entryFromBlobStore)//no need to rewrite-it
                             ((IBlobStoreEntryHolder) eh).setDirty(this);
@@ -1415,8 +1428,10 @@ public class CacheManager extends AbstractCacheManager
         return _engine.isTieredStorage();
     }
 
-
-    public void insertEntry(Context context, IEntryHolder entryHolder, boolean shouldReplicate, boolean origin, boolean suppliedUid, InitialLoadOrigin initialLoadOrigin)
+    /**
+     * insert an entry to the space.
+     */
+    public void insertEntry(Context context, IEntryHolder entryHolder, boolean shouldReplicate, boolean origin, boolean suppliedUid)
             throws SAException, EntryAlreadyInSpaceException {
 
         validateEntryCanBeWrittenToCache(entryHolder);
@@ -1433,23 +1448,25 @@ public class CacheManager extends AbstractCacheManager
 
         IEntryCacheInfo pE = null;
 
-        if(isTieredStorage()){
-            if(context.getEntryTieredState() == null){
-                throw new IllegalStateException("trying to write entry in tiered mode but context.getEntryTieredState() == null, uid = "+entryHolder.getUID());
+        //TODO: @sagiv only if entryHolder.getXidOriginatedTransaction() == null
+        if (isTieredStorageCachePolicy() && entryHolder.getXidOriginatedTransaction() == null) {
+            if (context.getEntryTieredState() == null) {
+                throw new IllegalStateException("trying to write entry in tiered mode but context.getEntryTieredState() == null, uid = " + entryHolder.getUID());
             }
-            _engine.getTieredStorageManager().getInternalStorage().insertEntry(context, entryHolder, initialLoadOrigin);
+            //TODO: @sagiv write multiple for update in TS is very inefficient right now.
+            _storageAdapter.insertEntry(context, entryHolder, origin, shouldReplicate);
         }
 
-        if (isTieredStorage() && (context.isMemoryOnlyEntry() || context.isMemoryAndDiskEntry()) && initialLoadOrigin == InitialLoadOrigin.FROM_NON_BLOBSTORE) {
+        if (isTieredStorage() && (context.isMemoryOnlyEntry() || context.isMemoryAndDiskEntry()) && !origin) {
             pE = safeInsertEntryToCache(context, entryHolder, false /* newEntry */, null /*pType*/, false /*pin*/,
-                    initialLoadOrigin /*fromInitialLoad*/);
+                    InitialLoadOrigin.FROM_NON_BLOBSTORE /*fromInitialLoad*/);
         } else if (isTieredStorage() && context.isDiskOnlyEntry()) {
-            setContextRecentFifoObject(context, entryHolder, true /* newEntry */ , typeData,
-                    initialLoadOrigin, typeData.isFifoSupport() /* considerFifo */);
+            setContextRecentFifoObject(context, entryHolder, true /* newEntry */, typeData,
+                    InitialLoadOrigin.NON, typeData.isFifoSupport() /* considerFifo */);
             pE = EntryCacheInfoFactory.createEntryCacheInfo(entryHolder);
             //lease in TieredStorage is not supported. result contains persistent entry values.
             context.setWriteResult(new WriteEntryResult(pE.getUID(), pE.getVersion(), pE.getExpirationTime()));
-        } else { // !isTieredStorage() OR (isTieredStorage() && context.isRAMEntry())
+        } else { // !isTieredStorage() OR (isTieredStorage() && (context.isMemoryOnlyEntry() || conext.isMemoryAndDiskEntry()))
             pE = insertEntryToCache(context, entryHolder, true /* newEntry */,
                     typeData, true /*pin*/, InitialLoadOrigin.NON /*fromInitialLoad*/);
         }
@@ -1463,7 +1480,8 @@ public class CacheManager extends AbstractCacheManager
                 if (entryHolder.isBlobStoreEntry() && isDirectPersistencyEmbeddedtHandlerUsed() && context.isActiveBlobStoreBulk())
                     context.setForBulkInsert(entryHolder);
 
-                if(!isTieredStorage()) {
+                //TODO: @sagiv only if entryHolder.getXidOriginatedTransaction() == null
+                if (!isTieredStorageCachePolicy()) {
                     _storageAdapter.insertEntry(context, entryHolder, origin, shouldReplicate);
                 }
 
@@ -1481,13 +1499,6 @@ public class CacheManager extends AbstractCacheManager
 
 
         }//if (entryHolder.m_XidOriginated == null)
-    }
-    /**
-     * insert an entry to the space.
-     */
-    public void insertEntry(Context context, IEntryHolder entryHolder, boolean shouldReplicate, boolean origin, boolean suppliedUid)
-            throws SAException, EntryAlreadyInSpaceException {
-        insertEntry(context,entryHolder,shouldReplicate,origin,suppliedUid,InitialLoadOrigin.NON);
     }
 
     public void handleInsertEntryReplication(Context context, IEntryHolder entryHolder) throws SAException {
@@ -1533,54 +1544,51 @@ public class CacheManager extends AbstractCacheManager
 
         IEntryData originalData = entry.getEntryData();
         try {
-
-            if(isTieredStorage()){
+            if (isTieredStorageCachePolicy() || isAllInCachePolicy()) {
                 pEntry = getPEntryByUid(entry.getUID());
             } else if (entry.isBlobStoreEntry()) {
                 pEntry = ((IBlobStoreEntryHolder) entry).getBlobStoreResidentPart();
                 context.setBlobStoreOriginalEntryInfo(originalData, ((IBlobStoreEntryHolder) entry).getBlobStoreVersion());
-            } else if (isAllInCachePolicy())
-                pEntry = getPEntryByUid(entry.getUID());
+            }
 
             IEntryData newEntryData = template.getUpdatedEntry().getEntryData();
 
-            if (isTieredStorage()) {
+            if (isTieredStorageCachePolicy()) {
                 if (UpdateModifiers.isPartialUpdate(template.getOperationModifiers())) {
                     handlePartialUpdate(context, originalData, newEntryData);
                 }
 
                 IEntryHolder cold_eh = EntryHolderFactory.createEntryHolder(entry.getServerTypeDesc(), (ITransactionalEntryData) newEntryData, entry.getUID(), entry.isTransient());
                 TieredStorageManager tieredStorageManager = _engine.getTieredStorageManager();
-                if(!entry.isTransient()){
-                    tieredStorageManager.getInternalStorage().updateEntry(context, cold_eh);
+                if (!entry.isTransient()) {
+                    _storageAdapter.updateEntry(context, cold_eh, shouldReplicate, origin, null);
                 }
-                boolean isOriginalEntryHot = context.isMemoryOnlyEntry() || context.isMemoryAndDiskEntry();
+                boolean isOriginalEntryInMemory = context.isMemoryOnlyEntry() || context.isMemoryAndDiskEntry();
                 String typeName = newEntryData.getSpaceTypeDescriptor().getTypeName();
-                final TieredState updatedTieredState = tieredStorageManager.getEntryTieredState(template.getUpdatedEntry());
-                context.setEntryTieredState(updatedTieredState);
+                context.setEntryTieredState(tieredStorageManager.getEntryTieredState(template.getUpdatedEntry()));
+                final boolean isUpdatedEntryInMemory = context.isMemoryOnlyEntry() || context.isMemoryAndDiskEntry();
 
-                final boolean isNewEntryHot = context.isMemoryOnlyEntry() || context.isMemoryAndDiskEntry();
-                tieredStorageManager.getInternalStorage().updateRamEntriesCounterAfterTierChange(typeName,isNewEntryHot,isOriginalEntryHot);
+                updateRamEntriesCounterAfterTierChange(typeName, isUpdatedEntryInMemory, isOriginalEntryInMemory);
 
-                if(pEntry != null){ //old is hot or transient
-                    if(isNewEntryHot){
-                        pEntry = updateEntryInCache(context, pEntry,  pEntry.getEntryHolder(this) , newEntryData, newEntryData.getExpirationTime(), template.getOperationModifiers());
+                if (pEntry != null) { //old is hot or transient (in memory)
+                    if (isUpdatedEntryInMemory) {
+                        pEntry = updateEntryInCache(context, pEntry, pEntry.getEntryHolder(this), newEntryData, newEntryData.getExpirationTime(), template.getOperationModifiers());
                     } else {
                         boolean removed = removeEntryFromCache(entry, false, true, pEntry, RecentDeleteCodes.NONE);
+                        assert removed;
                         pEntry = null;
                     }
                 } else {
-                    if(isNewEntryHot){
-                        pEntry = insertEntryToCache(context, cold_eh, false, getTypeData(cold_eh.getServerTypeDesc()), false,  InitialLoadOrigin.NON);
+                    if (isUpdatedEntryInMemory) {
+                        pEntry = insertEntryToCache(context, cold_eh, false, getTypeData(cold_eh.getServerTypeDesc()), false, InitialLoadOrigin.NON);
                     }
                 }
 
-                if(pEntry != null){
+                if (pEntry != null) {
                     new_eh = pEntry.getEntryHolder(this);
                 } else {
                     new_eh = cold_eh;
                 }
-
             } else {
                 pEntry = updateEntryInCache(context, pEntry, pEntry != null ? pEntry.getEntryHolder(this) : entry, newEntryData, newEntryData.getExpirationTime(), template.getOperationModifiers());
                 new_eh = pEntry.getEntryHolder(this);
@@ -1634,6 +1642,20 @@ public class CacheManager extends AbstractCacheManager
 
         return new_eh;
 
+    }
+
+    private void updateRamEntriesCounterAfterTierChange(String type, boolean isUpdatedEntryInMemory,
+                                                        boolean isOriginalEntryInMemory) {
+        TypeCounters typeCounters = getTypeManager().getServerTypeDesc(type).getTypeCounters();
+        //check if the tier of the entry changed due to the update operation
+        if (isOriginalEntryInMemory != isUpdatedEntryInMemory) {
+            //updated entry moved to HOT - increase ram entries counter
+            if (isUpdatedEntryInMemory) {
+                typeCounters.incRamEntriesCounter();
+            } else { //updated entry moved to COLD - decrease ram entries counter
+                typeCounters.decRamEntriesCounter();
+            }
+        }
     }
 
     public void handleUpdateEntryReplication(Context context, IEntryHolder new_eh, IEntryData originalData, Collection<SpaceEntryMutator> mutators) {
@@ -1858,12 +1880,7 @@ public class CacheManager extends AbstractCacheManager
             entry = context.getPrefetchedNonBlobStoreEntries().get(entryHolder.getUID());
             //use space uid
         else {
-
-            if(isTieredStorage()){
-                entry = _engine.getTieredStorageManager().getInternalStorage().getEntryByUID(context, entryHolder.getServerTypeDesc().getTypeName(), entryHolder.getUID(), null);
-            } else {
-                entry = _storageAdapter.getEntry(context, entryHolder.getUID(), entryHolder.getClassName(), entryHolder);
-            }
+            entry = _storageAdapter.getEntry(context, entryHolder.getUID(), entryHolder.getClassName(), entryHolder);
         }
 
         if (entry == null)
@@ -1933,7 +1950,7 @@ public class CacheManager extends AbstractCacheManager
         } //if (pEntry != null)
         if (!isEvictableCachePolicy() || _isMemorySA) {
             if(isTieredStorage()) {
-                if(context.getTemplateTieredState() != TemplateMatchTier.MATCH_HOT_AND_COLD && context.getTemplateTieredState() != TemplateMatchTier.MATCH_COLD ){
+                if (context.getTemplateTieredState() == TemplateMatchTier.MATCH_HOT) {
                     return null;   //no relevant entry found
                 }
             } else {
@@ -1955,13 +1972,8 @@ public class CacheManager extends AbstractCacheManager
         // else locate entry class using the UID, if its external cache DB use the template
         if (!lockedEntry && context.getPrefetchedNonBlobStoreEntries() != null)
             entry = context.getPrefetchedNonBlobStoreEntries().get(uid);
-        else{
-
-            if(isTieredStorage()){
-                entry = _engine.getTieredStorageManager().getInternalStorage().getEntryByUID(context, inputClassName, uid, getTemplate(uid) );
-            } else {
-                entry = _storageAdapter.getEntry(context, uid, inputClassName, template);
-            }
+        else {
+            entry = _storageAdapter.getEntry(context, uid, inputClassName, template);
         }
 
         if (entry == null)
@@ -2064,10 +2076,10 @@ public class CacheManager extends AbstractCacheManager
 
         boolean leaseExpiration = removeReason == EntryRemoveReasonCodes.LEASE_CANCEL || removeReason == EntryRemoveReasonCodes.LEASE_EXPIRED;
         boolean evictByTimeRuleOrByLeaseForTransient = false;
-        if (leaseExpiration && isTieredStorage()){
+        if (leaseExpiration && isTieredStorageCachePolicy()) {
             TieredStorageManager tieredStorageManager = _engine.getTieredStorageManager();
             CachePredicate cachePredicate = tieredStorageManager.getCacheRule(entryHolder.getClassName());
-            if (cachePredicate != null && (cachePredicate.isTransient() || cachePredicate.isTimeRule())){
+            if (cachePredicate != null && (cachePredicate.isTransient() || cachePredicate.isTimeRule())) {
                 evictByTimeRuleOrByLeaseForTransient = true;
             }
         }
@@ -2085,13 +2097,8 @@ public class CacheManager extends AbstractCacheManager
                 if (!disableSAcall) {
                     if (entryHolder.isBlobStoreEntry() && isDirectPersistencyEmbeddedtHandlerUsed() && context.isActiveBlobStoreBulk())
                         context.setForBulkRemove(entryHolder, removeReason);
-                    if(isTieredStorage()){
-                        if (!evictByTimeRuleOrByLeaseForTransient){
-                            if(context.getEntryTieredState() == null ){
-                                throw new IllegalStateException("context.getEntryTieredState() == null in  remove entry ");
-                            }
-                            _engine.getTieredStorageManager().getInternalStorage().removeEntry(context, entryHolder);
-                        }
+                    if (isTieredStorageCachePolicy()) {
+                        _storageAdapter.removeEntry(context, entryHolder, origin, evictByTimeRuleOrByLeaseForTransient, shouldReplicate);
                     } else {
                         _storageAdapter.removeEntry(context, entryHolder, origin, leaseExpiration, shouldReplicate);
                     }
@@ -2114,13 +2121,8 @@ public class CacheManager extends AbstractCacheManager
                     if (!disableSAcall) {
                         if (entryHolder.isBlobStoreEntry() && isDirectPersistencyEmbeddedtHandlerUsed() && context.isActiveBlobStoreBulk())
                             context.setForBulkRemove(entryHolder, removeReason);
-                        if(isTieredStorage()){
-                            if (!evictByTimeRuleOrByLeaseForTransient){
-                                if(context.getEntryTieredState() == null ){
-                                    throw new IllegalStateException("context.getEntryTieredState() == null in  remove entry ");
-                                }
-                                _engine.getTieredStorageManager().getInternalStorage().removeEntry(context, entryHolder);
-                            }
+                        if (isTieredStorageCachePolicy()) {
+                            _storageAdapter.removeEntry(context, entryHolder, origin, evictByTimeRuleOrByLeaseForTransient, actualUpdateRedoLog);
                         } else {
                             _storageAdapter.removeEntry(context, entryHolder, origin, leaseExpiration, actualUpdateRedoLog);
                         }
@@ -2142,7 +2144,7 @@ public class CacheManager extends AbstractCacheManager
 
         RecentDeleteCodes recentDeleteUsage = updated_recent_deletes ? RecentDeleteCodes.INSERT_DUMMY : RecentDeleteCodes.NONE;
         if(isTieredStorage()){
-            if(evictByTimeRuleOrByLeaseForTransient || context.getEntryTieredState() != TieredState.TIERED_COLD ) {
+            if(evictByTimeRuleOrByLeaseForTransient || !context.isDiskOnlyEntry() ) {
                 removeEntryFromCache(entryHolder, false /*initiatedByEvictionStrategy*/, true/*locked*/, pEntry/* pEntry*/, recentDeleteUsage);
             }
         } else if (!entryHolder.isBlobStoreEntry() || context.getBlobStoreBulkInfo() == null || (((IBlobStoreEntryHolder) entryHolder).getBulkInfo() == null
@@ -3586,7 +3588,7 @@ public class CacheManager extends AbstractCacheManager
     /**
      * INITIALLOAD INFO.
      */
-    public static enum InitialLoadOrigin {
+    public static enum InitialLoadOrigin { //TODO: @sagiv renames? FROM_NON_BLOB_OR_TIERED
         NON, FROM_NON_BLOBSTORE, FROM_BLOBSTORE, FROM_TIERED_STORAGE;
     }
 
@@ -4284,17 +4286,19 @@ public class CacheManager extends AbstractCacheManager
             }
         }
 
-        if(_engine.getTieredStorageManager() != null){
-            if(ReadModifiers.isMemoryOnlySearch(template.getOperationModifiers())){
+        if (isTieredStorageCachePolicy()) {
+            if (ReadModifiers.isMemoryOnlySearch(template.getOperationModifiers())) {
                 return null;
             }
-            if(context.getTemplateTieredState() == TemplateMatchTier.MATCH_COLD || context.getTemplateTieredState() == TemplateMatchTier.MATCH_HOT_AND_COLD){
+            if (context.getTemplateTieredState() != TemplateMatchTier.MATCH_HOT) {
                 try {
-                    IEntryHolder entry = _engine.getTieredStorageManager().getInternalStorage().getEntryById(context, currServerTypeDesc.getTypeName(), templateValue, template);
+                    final String typeName = currServerTypeDesc.getTypeName();
+                    //TODO: @sagiv validate it is not already UID
+                    IEntryHolder entry = getStorageAdapter().getEntry(context, SpaceUidFactory.createUidFromTypeAndId(typeName, templateValue.toString()), typeName, template);
                     if (entry != null) {
                         return EntryCacheInfoFactory.createEntryCacheInfo(entry);
                     }
-                } catch (SAException e){
+                } catch (SAException e) {
                     throw new RuntimeException(e);
                 }
             }
@@ -5463,7 +5467,7 @@ public class CacheManager extends AbstractCacheManager
         return _isMemorySA;
     }
 
-    public boolean isResidentCacheEntry(EvictableServerEntry entry) {
+    public boolean isResidentCacheEntry(EvictableServerEntry entry) { //TODO @sagiv what?
         return true;
         //return _evictionStrategy.isVisible(entry);
     }
@@ -6071,7 +6075,7 @@ public class CacheManager extends AbstractCacheManager
         long diskSize = 0;
         try {
             if (getEngine().isTieredStorage()) {
-                diskSize = getEngine().getTieredStorageManager().getInternalStorage().getDiskSize();
+                diskSize = getEngine().getTieredStorageManager().getInternalStorageManager().getDiskSize();
             }
         } catch (SAException | IOException e) {
             _logger.warn("failed to get tiered storage disk size with exception: " , e);
@@ -6080,7 +6084,7 @@ public class CacheManager extends AbstractCacheManager
 
         try {
             if (getEngine().isTieredStorage()) {
-                freeSpace = getEngine().getTieredStorageManager().getInternalStorage().getFreeSpaceSize();
+                freeSpace = getEngine().getTieredStorageManager().getInternalStorageManager().getFreeSpaceSize();
             }
         } catch (SAException | IOException e) {
             _logger.warn("failed to get tiered storage free space size with exception: " , e);
@@ -6125,7 +6129,6 @@ public class CacheManager extends AbstractCacheManager
         ISAdapterIterator<IEntryHolder> entriesIter = null;
         try {
             context = getCacheContext();
-            context.setDisableTieredStorageMetric(true);
             entriesIter = makeEntriesIter(context, template, serverTypeDesc, 0, SystemTime.timeMillis(),memoryOnly || !isTieredStorage());
 
             String curClass = null;

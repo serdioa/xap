@@ -317,13 +317,8 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
 
         _directProxy = spaceImpl.getSingleProxy();
 
-        try {
-            initTieredStorageManager();
-            final TypeDescFactory typeDescFactory = new TypeDescFactory(_directProxy);
-            _typeManager = new SpaceTypeManager(typeDescFactory, _configReader, tieredStorageManager);
-        } catch (IllegalAccessException | InstantiationException | ClassNotFoundException e) {
-            throw new CreateException("Failed to instantiate InternalRDBMS class", e);
-        }
+        final TypeDescFactory typeDescFactory = new TypeDescFactory(_directProxy);
+        _typeManager = new SpaceTypeManager(typeDescFactory, _configReader);
 
         _partitionId = _clusterInfo.getPartitionOfMember(_fullSpaceName);
 
@@ -334,6 +329,13 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
 
         final IStorageAdapter storageAdapter = initStorageAdapter(spaceImpl, this);
         verifySystemTime(storageAdapter);
+
+        try {
+            createTieredStorageManager();
+            _typeManager.setTieredStorageManager(tieredStorageManager);
+        } catch (IllegalAccessException | InstantiationException | ClassNotFoundException e) {
+            throw new CreateException("Failed to instantiate InternalRDBMS class", e);
+        }
 
         if (isBlobStorePersistent() && getClusterInfo().getNumberOfBackups() > 1) {
             throw new CreateException("BlobStore persistency is not allowed with more then a single backup");
@@ -385,9 +387,9 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
     }
 
 
-    private void initTieredStorageManager() throws IllegalAccessException, InstantiationException, ClassNotFoundException {
+    private void createTieredStorageManager() throws IllegalAccessException, InstantiationException, ClassNotFoundException {
         Object tieredStorage = this._clusterInfo.getCustomComponent(SPACE_CLUSTER_INFO_TIERED_STORAGE_COMPONENT_NAME);
-        if(tieredStorage != null ){
+        if (tieredStorage != null) {
             TieredStorageConfig storageConfig = (TieredStorageConfig) tieredStorage;
             validateTieredStorage(storageConfig);
             String className = System.getProperty(TIERED_STORAGE_INTERNAL_RDBMS_CLASS_PROP, TIERED_STORAGE_INTERNAL_RDBMS_CLASS_DEFAULT);
@@ -404,28 +406,42 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
             if(tableConfig.isTransient()){
                 if(tableConfig.getCriteria() != null || tableConfig.getPeriod() != null
                         || tableConfig.getTimeColumn() != null || tableConfig.getRetention() != null){
-                    throw new TieredStorageConfigException("Illegal Config for type "+tableConfig.getName()+": " +
-                            "transient type should have only isTransient = true , actual: "+tableConfig);
+                    throw new TieredStorageConfigException("Illegal Config for type " + tableConfig.getName() + ": " +
+                            "transient type should have only isTransient = true , actual: " + tableConfig);
                 }
             }
 
-            if(tableConfig.getTimeColumn() != null && tableConfig.getPeriod() == null){
-                throw new TieredStorageConfigException("Illegal Config for type "+tableConfig.getName()+": " +
+            if (tableConfig.getTimeColumn() != null && tableConfig.getPeriod() == null) {
+                throw new TieredStorageConfigException("Illegal Config for type " + tableConfig.getName() + ": " +
                         "period can not be null when timeColumn defined");
             }
 
-            if(tableConfig.getPeriod() != null){
-                if(tableConfig.getTimeColumn() == null){
-                    throw new TieredStorageConfigException("Illegal Config for type "+tableConfig.getName()+": " +
-                            "timeColumn can not be null when period = "+tableConfig.getPeriod());
+            if (tableConfig.getPeriod() != null) {
+                if (tableConfig.getTimeColumn() == null) {
+                    throw new TieredStorageConfigException("Illegal Config for type " + tableConfig.getName() + ": " +
+                            "timeColumn can not be null when period = " + tableConfig.getPeriod());
                 }
 
-                if(tableConfig.getCriteria() != null){
-                    throw new TieredStorageConfigException("Illegal Config for type "+tableConfig.getName()+": " +
+                if (tableConfig.getCriteria() != null) {
+                    throw new TieredStorageConfigException("Illegal Config for type " + tableConfig.getName() + ": " +
                             "can not set both period and criteria");
                 }
             }
         }
+//        if ((tableConfig.getTimeColumn() != null && tableConfig.getPeriod() == null )
+//                || (tableConfig.getTimeColumn() == null && tableConfig.getPeriod() != null )) {
+//            throw new IllegalArgumentException("Cannot set time rule without setting values to both period and column name fields");
+//        }
+//
+//        if (tableConfig.isTransient() && (tableConfig.getCriteria() != null || tableConfig.getPeriod() != null)) {
+//            throw new IllegalArgumentException("Cannot set both transient and criteria or time rule");
+//        }
+//
+//        if (tableConfig.getPeriod() != null && tableConfig.getCriteria() != null) {
+//            throw new IllegalArgumentException("Cannot apply both criteria and time rules on same type");
+//        }
+//
+//        return true;
     }
 
 
@@ -527,11 +543,11 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
         return new NullDuplicateOperationIDFilter();
     }
 
-    private static IStorageAdapter initStorageAdapter(SpaceImpl spaceImpl, SpaceEngine spaceEngine) throws CreateException {
+    private static IStorageAdapter initStorageAdapter(SpaceImpl spaceImpl, SpaceEngine spaceEngine) throws CreateException { // todo: why static
         JSpaceAttributes spaceAttributes = spaceImpl.getJspaceAttr();
-        if (!spaceAttributes.isPersistent())
+        if (!spaceAttributes.isPersistent()) {
             return new MemorySA();
-
+        }
         try {
             final SpaceDataSource spaceDataSourceInstance = getSpaceDataSourceInstance(spaceAttributes);
             final SpaceSynchronizationEndpoint synchronizationEndpointInterceptorInstance = getSynchronizationEndpointInstance(spaceAttributes);
@@ -893,16 +909,16 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
         WriteEntryResult writeResult = null;
         EntryAlreadyInSpaceException entryInSpaceEx = null;
         try {
-            if(tieredStorageManager != null) {
+            if (isTieredStorage()) {
                 String typeName = eHolder.getServerTypeDesc().getTypeName();
                 context.setEntryTieredState(tieredStorageManager.getEntryTieredState(eHolder));
-                if(tieredStorageManager.getCacheRule(typeName) != null) {
+                if (tieredStorageManager.getCacheRule(typeName) != null) {
                     eHolder.setTransient(tieredStorageManager.getCacheRule(typeName).isTransient());
                 }
                 // When trying to update a cold entry with MEMORY_ONLY_SEARCH we can get stuck in the following infinite loop:
                 // 1. Attempt to write to disk since the entry is cold and get EntryAlreadyInSpaceException
                 // 2. read from memory, and see that the entry isn't there, goes back to write attempt
-                if (Modifiers.contains(modifiers, WriteModifiers.MEMORY_ONLY_SEARCH.getCode()) && context.getEntryTieredState().equals(TieredState.TIERED_COLD)){
+                if (Modifiers.contains(modifiers, WriteModifiers.MEMORY_ONLY_SEARCH.getCode()) && context.getEntryTieredState().equals(TieredState.TIERED_COLD)) {
                     throw new EngineInternalSpaceException("Failed to write entry. Entry state is COLD while using MEMORY_ONLY_SEARCH");
                 }
             }
@@ -1335,9 +1351,9 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
         }
 
         if (ifExists)
-            _coreProcessor.handleDirectReadIEOrTakeIESA(context, tHolder, fromReplication, origin);
+            _coreProcessor.handleDirectReadIEOrTakeIESA(context, tHolder, fromReplication, origin); //TODO: @sagiv handle
         else
-            _coreProcessor.handleDirectReadOrTakeSA(context, tHolder, fromReplication, origin);
+            _coreProcessor.handleDirectReadTakeOrIPUpdateSA(context, tHolder, fromReplication, origin);
 
         updateTieredRAMObjectTypeReadCounts(tHolder.getServerTypeDesc(), context.getTemplateTieredState());
 
@@ -3704,10 +3720,9 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
                                                     boolean useSCN)
             throws TransactionException, TemplateDeletedException,
             SAException {
-        if(isTieredStorage() && context.getTemplateTieredState() == null) {
+        if (isTieredStorage() && context.getTemplateTieredState() == null) {
             context.setTemplateTieredState(tieredStorageManager.guessTemplateTier(template));
         }
-
 
         // is it an operation by id ?? if so search only for specific entry
         if (template.getUidToOperateBy() != null)
@@ -3937,11 +3952,11 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
         boolean replicatedFromCentralDB = isReplicatedFromCentralDB(context);
 
         IEntryHolder entry = null;
-        if(_cacheManager.isTieredStorage()){
-            if(tieredStorageManager.isTransient(template.getServerTypeDesc().getTypeName())){
+        if (isTieredStorage()) {
+            if (tieredStorageManager.isTransient(template.getServerTypeDesc().getTypeName())) {
                 template.setTransient(true);
             }
-            if(template.isReadOperation() && template.getXidOriginated() == null){
+            if (template.isReadOperation() && template.getXidOriginated() == null) {
                 entry = _cacheManager.getEntry(context, uid, template.getClassName(),
                         template, false /*tryInsertToCache*/, false /*lockedEntry*/, template.isMemoryOnlySearch() || template.isTransient());
             } else {

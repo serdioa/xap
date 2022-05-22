@@ -36,7 +36,7 @@ public class TieredStorageManagerImpl implements TieredStorageManager {
     private boolean containsData;
     private ConcurrentHashMap<String, CachePredicate> hotCacheRules = new ConcurrentHashMap<>();
 
-    private InternalRDBMSManager internalDiskStorage;
+    private final InternalRDBMSManager internalDiskStorage;
     private InternalMetricRegistrator diskSizeRegistrator;
     private InternalMetricRegistrator operationsRegistrator;
 
@@ -53,7 +53,7 @@ public class TieredStorageManagerImpl implements TieredStorageManager {
 
     @Override
     public void initialize(SpaceEngine engine) throws SAException, RemoteException {
-        containsData = getInternalStorage().initialize(engine.getSpaceName(), engine.getFullSpaceName(), engine.getTypeManager(), engine.getSpaceImpl().isBackup());
+        containsData = getInternalStorageManager().initialize(engine.getSpaceName(), engine.getFullSpaceName(), engine.getTypeManager(), engine.getSpaceImpl().isBackup());
     }
 
     @Override
@@ -107,7 +107,7 @@ public class TieredStorageManagerImpl implements TieredStorageManager {
     }
 
     @Override
-    public InternalRDBMSManager getInternalStorage() {
+    public InternalRDBMSManager getInternalStorageManager() {
         return this.internalDiskStorage;
     }
 
@@ -196,7 +196,7 @@ public class TieredStorageManagerImpl implements TieredStorageManager {
             @Override
             public Long getValue() {
                 try {
-                    return getInternalStorage().getDiskSize();
+                    return getInternalStorageManager().getDiskSize();
                 } catch (SAException | IOException e) {
                     logger.warn("failed to get disk size metric with exception: ", e);
                     return null;
@@ -257,7 +257,11 @@ public class TieredStorageManagerImpl implements TieredStorageManager {
         if (operationsRegistrator != null) {
             operationsRegistrator.clear();
         }
-        internalDiskStorage.shutDown();
+        try {
+            internalDiskStorage.shutDown();
+        } catch (Exception e) {
+            logger.debug(e.getMessage(), e);
+        }
     }
 
 

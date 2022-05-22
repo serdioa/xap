@@ -692,16 +692,11 @@ public class Processor implements IConsumerObject<BusPacket<Processor>> {
 
     }
 
-    public void handleDirectReadOrTakeSA(Context context, final ITemplateHolder template, boolean fromReplication, boolean origin) {
-        handleDirectReadTakeOrIPUpdateSA(context, template, fromReplication, origin);
-    }
-
-
-    private void handleDirectReadTakeOrIPUpdateSA(Context context, final ITemplateHolder template, boolean fromReplication, boolean origin) {
+    public void handleDirectReadTakeOrIPUpdateSA(Context context, final ITemplateHolder template,
+                                                 boolean fromReplication, boolean origin) {
         ILockObject templateLock = null;
 
         try {
-
             context.setFromReplication(fromReplication);
             context.setOrigin(origin);
             context.setTemplateInitialSearchThread();

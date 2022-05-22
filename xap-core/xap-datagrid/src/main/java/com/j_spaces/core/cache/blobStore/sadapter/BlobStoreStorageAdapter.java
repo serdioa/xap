@@ -284,9 +284,12 @@ public class BlobStoreStorageAdapter implements IStorageAdapter, IBlobStoreStora
         //1. locate & setDirty to the relevant entries
         for (IEntryHolder inputeh : pLocked) {
             IEntryHolder entryHolder = inputeh.getOriginalEntryHolder();
+            if (entryHolder == null) {
+                continue;
+            }
             if (!entryHolder.isBlobStoreEntry())
                 continue;
-            if (entryHolder == null || entryHolder.isDeleted()
+            if (entryHolder.isDeleted()
                     || entryHolder.getWriteLockTransaction() == null
                     || !entryHolder.getWriteLockTransaction().equals(xtn))
                 continue;
@@ -391,7 +394,7 @@ public class BlobStoreStorageAdapter implements IStorageAdapter, IBlobStoreStora
     }
 
     @Override
-    public IEntryHolder getEntry(Context context, Object uid, String classname,
+    public IEntryHolder getEntry(Context context, String uid, String classname,
                                  IEntryHolder template) throws SAException {
         // TODO Auto-generated method stub
         IEntryHolder eh = context.getBlobStoreOpEntryHolder();

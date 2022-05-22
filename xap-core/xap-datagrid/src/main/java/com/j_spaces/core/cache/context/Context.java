@@ -247,8 +247,6 @@ public class Context {
     //tiered storage
     private TieredState entryTieredState;
     private TemplateMatchTier templateTieredState;
-    private Object suppliedEntryIdForColdTier;
-    private boolean disableTieredStorageMetric;
 
     public Context() {
     }
@@ -373,14 +371,6 @@ public class Context {
         _lastRawmatchTemplate = template;
     }
 
-    public boolean isDisableTieredStorageMetric() {
-        return disableTieredStorageMetric;
-    }
-
-    public void setDisableTieredStorageMetric(boolean disableTieredStorageMetric) {
-        this.disableTieredStorageMetric = disableTieredStorageMetric;
-    }
-
     public void setRawmatchResult(ITransactionalEntryData entryData, MatchResult res, IEntryHolder entry, ITemplateHolder template) {
         _matchResult = res;
         _lastRawMatchSnapshot = entryData;
@@ -493,8 +483,6 @@ public class Context {
         _fromClustered = false;
         entryTieredState = null;
         templateTieredState = null;
-        suppliedEntryIdForColdTier = null;
-        disableTieredStorageMetric = false;
     }
 
     public void setOnMatchUid(String uid)
