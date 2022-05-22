@@ -12,4 +12,8 @@ public class MessageParsingException extends NonRetriableException {
     public MessageParsingException(String message, Exception e) {
         super(message, e);
     }
+
+    public MessageParsingException(String message) {
+        super(message);
+    }
 }
