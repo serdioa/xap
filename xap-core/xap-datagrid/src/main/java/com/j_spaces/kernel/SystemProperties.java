@@ -723,7 +723,7 @@ public class SystemProperties extends CommonSystemProperties {
 
     public final static String BOUNDED_QUERY_CACHE_EXPIRATION_TIME_IN_MINUTES = "com.gs.queryCache.expirationTime.minutes";
 
-    public final static Long BOUNDED_QUERY_CACHE_EXPIRATION_TIME_IN_MINUTES_DEFAULT = 45L;
+    public final static Long BOUNDED_QUERY_CACHE_EXPIRATION_TIME_IN_MINUTES_DEFAULT = 60L;
 
     /**
      * disable quiesce mode- false means quiesce command will be rejected
