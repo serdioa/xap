@@ -1449,7 +1449,7 @@ public class CacheManager extends AbstractCacheManager
             pE = EntryCacheInfoFactory.createEntryCacheInfo(entryHolder);
             //lease in TieredStorage is not supported. result contains persistent entry values.
             context.setWriteResult(new WriteEntryResult(pE.getUID(), pE.getVersion(), pE.getExpirationTime()));
-        } else { // !isTieredStorage() OR (isTieredStorage() && context.isRAMEntry())
+        } else { // !isTieredStorage() OR (isTieredStorage() && (context.isMemeoryOnlyEntry() || conext.isMemoryAndDisk())
             pE = insertEntryToCache(context, entryHolder, true /* newEntry */,
                     typeData, true /*pin*/, InitialLoadOrigin.NON /*fromInitialLoad*/);
         }
