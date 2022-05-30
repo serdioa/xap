@@ -816,7 +816,6 @@ public class SystemProperties extends CommonSystemProperties {
     public static final long QUERY_PROCESSOR_CLUSTER_LOOKUP_TIMEOUT_DEFAULT = 15000; //in milliseconds
 
     public static final String QUERY_PLAN_CBO_ENABLE = "com.gs.queryPlan.cbo.enable";
-    public static final Boolean QUERY_PLAN_CBO_ENABLE_DEFAULT_VALUE = true;
 
     public static final String JETTY_LAUNCHER_REQUEST_HEADER_SIZE = "com.gs.jetty-launcher.request-header-size";
 
