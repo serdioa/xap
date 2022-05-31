@@ -13,11 +13,9 @@ node('gspaces-builder') {
     stage('BUILD') {
         xap.xapBuild();
     }
-
     stage('TEST') {
         xap.xapTest();
     }
-
     stage('DEPLOY') {
         xap.xapDeploy();
     }
