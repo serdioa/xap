@@ -18,7 +18,6 @@ package com.gigaspaces.internal.query.explainplan;
 import com.gigaspaces.internal.utils.StringUtils;
 
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.stream.Stream;
 
 /**
@@ -30,7 +29,7 @@ public class TextReportFormatter {
     private static final String INDENTATION = "  ";
     private final StringBuilder sb;
     private String currentIndentation = "";
-    private String firstLinePrefix;
+    private String prefix = "";
 
     public TextReportFormatter() {
         this(new StringBuilder());
@@ -54,10 +53,8 @@ public class TextReportFormatter {
 
     public TextReportFormatter line(String s) {
         sb.append(currentIndentation);
-        if (firstLinePrefix != null) {
-            sb.append(firstLinePrefix).append(" ");
-            currentIndentation = currentIndentation + String.join("", Collections.nCopies(firstLinePrefix.length() + 1, " "));
-            firstLinePrefix = null;
+        if (!prefix.isEmpty()) {
+            sb.append(prefix);
         }
         sb.append(s);
         sb.append(StringUtils.NEW_LINE);
@@ -76,6 +73,16 @@ public class TextReportFormatter {
         return this;
     }
 
+    public TextReportFormatter startLineWithPrefix(String prefix) {
+        this.prefix = prefix;
+        return this;
+    }
+
+    public TextReportFormatter removeLinePrefix() {
+        this.prefix = "";
+        return this;
+    }
+
     public TextReportFormatter unindent() {
         currentIndentation = currentIndentation.substring(0, currentIndentation.length() - INDENTATION.length());
         return this;
@@ -85,21 +92,6 @@ public class TextReportFormatter {
         indent();
         function.run();
         unindent();
-    }
-
-    public void withFirstLine(String firstLinePrefix, Runnable function) {
-        String orgIndenation = currentIndentation;
-        this.firstLinePrefix = firstLinePrefix;
-        function.run();
-        this.currentIndentation = orgIndenation;
-    }
-
-    public void withPrefix(String prefix, Runnable function) {
-        String orgIndentation = currentIndentation;
-        currentIndentation = currentIndentation + prefix;
-        function.run();
-        currentIndentation = orgIndentation;
-
     }
 
     /**

@@ -20,6 +20,7 @@ import com.gigaspaces.async.AsyncResult;
 import com.gigaspaces.internal.io.IOUtils;
 import com.gigaspaces.internal.space.requests.RegisterTypeDescriptorRequestInfo;
 import com.gigaspaces.internal.space.requests.SpaceRequestInfo;
+import com.gigaspaces.internal.space.requests.UnregisterTypeDescriptorRequestInfo;
 import com.gigaspaces.internal.space.responses.RegisterTypeDescriptorResponseInfo;
 
 import java.io.IOException;
@@ -32,6 +33,10 @@ public class RegisterTypeDescriptorTask extends SystemDistributedTask<RegisterTy
     private static final long serialVersionUID = 1L;
 
     private RegisterTypeDescriptorRequestInfo _actionInfo;
+
+    public RegisterTypeDescriptorTask(RegisterTypeDescriptorRequestInfo actionInfo) {
+        this._actionInfo = actionInfo;
+    }
 
     @Override
     public String toString() {
