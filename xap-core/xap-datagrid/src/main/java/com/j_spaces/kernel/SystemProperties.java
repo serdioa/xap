@@ -721,10 +721,6 @@ public class SystemProperties extends CommonSystemProperties {
      */
     public final static long BOUNDED_QUERY_CACHE_SIZE_DEFAULT = 1000L;
 
-    public final static String BOUNDED_QUERY_CACHE_EXPIRATION_TIME_IN_MINUTES = "com.gs.queryCache.expirationTime.minutes";
-
-    public final static Long BOUNDED_QUERY_CACHE_EXPIRATION_TIME_IN_MINUTES_DEFAULT = 60L;
-
     /**
      * disable quiesce mode- false means quiesce command will be rejected
      */
@@ -814,8 +810,6 @@ public class SystemProperties extends CommonSystemProperties {
 
     public static final String QUERY_PROCESSOR_CLUSTER_LOOKUP_TIMEOUT = "com.gs.queryProcessor.cluster-lookup-timeout";
     public static final long QUERY_PROCESSOR_CLUSTER_LOOKUP_TIMEOUT_DEFAULT = 15000; //in milliseconds
-
-    public static final String QUERY_PLAN_CBO_ENABLE = "com.gs.queryPlan.cbo.enable";
 
     public static final String JETTY_LAUNCHER_REQUEST_HEADER_SIZE = "com.gs.jetty-launcher.request-header-size";
 
