@@ -794,6 +794,11 @@ public class SpaceTypeDescriptorBuilder {
         if(_broadcast)
             validateBroadcast();
 
+        if (_tieredStorageTableConfig != null) {
+            validateTableConfig(_tieredStorageTableConfig);
+            _tieredStorageTableConfig.setName(_typeName);
+        }
+
         return new TypeDesc(
                 _typeName,
                 codeBase,
@@ -970,6 +975,20 @@ public class SpaceTypeDescriptorBuilder {
             throw new IllegalArgumentException("Auto generated id and broadcast table cannot be used together.");
     }
 
+    private void validateTableConfig(TieredStorageTableConfig tableConfig) {
+        if ((tableConfig.getTimeColumn() != null && tableConfig.getPeriod() == null )
+                || (tableConfig.getTimeColumn() == null && tableConfig.getPeriod() != null )) {
+            throw new IllegalArgumentException("Cannot set time rule without setting values to both period and column name fields");
+        }
+
+        if (tableConfig.isTransient() && (tableConfig.getCriteria() != null || tableConfig.getPeriod() != null)) {
+            throw new IllegalArgumentException("Cannot set both transient and criteria or time rule");
+        }
+
+        if (tableConfig.getPeriod() != null && tableConfig.getCriteria() != null) {
+            throw new IllegalArgumentException("Cannot apply both criteria and time rules on same type");
+        }
+    }
 
 
     private static String[] getSuperTypesNames(String typeName, SpaceTypeDescriptor superTypeDescriptor) {
@@ -997,8 +1016,6 @@ public class SpaceTypeDescriptorBuilder {
         if (name.indexOf(SpaceCollectionIndex.COLLECTION_INDICATOR) != -1 || name.indexOf(".") != -1)
             throw new IllegalArgumentException("[" + name + "] collection/path cannot be sequence number property");
     }
-
-
     private static PropertyInfo[] initFixedProperties(SortedMap<String, PropertyInfo.Builder> properties,
                                                       SpaceTypeDescriptor superTypeDesc, StorageType defaultStorageType,
                                                       boolean binaryClassStorage, Set<String> indexesNames) {

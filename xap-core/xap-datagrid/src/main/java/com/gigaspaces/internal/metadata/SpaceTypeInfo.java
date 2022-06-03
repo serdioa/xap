@@ -60,6 +60,7 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.time.Duration;
 import java.util.*;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
@@ -811,6 +812,17 @@ public class SpaceTypeInfo implements SmartExternalizable {
             _blobstoreEnabled = classAnnotation.blobstoreEnabled();
             _broadcast = classAnnotation.broadcast();
         }
+
+        SpaceTieredStorageTableConfig tieredStorageAnnotation = _type.getAnnotation(SpaceTieredStorageTableConfig.class);
+        if (tieredStorageAnnotation != null) {
+            _tieredStorageTableConfig = new TieredStorageTableConfig()
+                .setName(_type.getName())
+                .setTransient(tieredStorageAnnotation.isTransient())
+                .setCriteria(evalFieldAnnotation(tieredStorageAnnotation.criteria()))
+                .setTimeColumn(evalFieldAnnotation(tieredStorageAnnotation.timeColumn()))
+                .setPeriod(tieredStorageAnnotation.period().isEmpty()? null :Duration.parse(tieredStorageAnnotation.period()));
+        }
+
         SpaceSystemClass systemClassAnnotation = _type.getAnnotation(SpaceSystemClass.class);
         if (systemClassAnnotation != null) {
             _systemClass = true;
@@ -1434,8 +1446,11 @@ public class SpaceTypeInfo implements SmartExternalizable {
                 continue;
 
             validateGetterSetter(_spaceProperties[i], "Space", ConstructorPropertyValidation.REQUIERS_CONSTRUCTOR_PARAM);
-        }       
-        
+        }
+        if (_tieredStorageTableConfig != null) {
+            validateTableConfig(_tieredStorageTableConfig);
+        }
+
 		/*
         if (_logger.isWarnEnabled() && _superTypeInfo != null)
 			validateWarnings();
@@ -1930,5 +1945,28 @@ public class SpaceTypeInfo implements SmartExternalizable {
 
     private static <T> T toSingleOrEmptyItem(List<T> list) {
         return list.isEmpty() ? null : list.get(0);
+    }
+    private String evalFieldAnnotation(String field)
+    {
+        if(field.isEmpty())
+            return null;
+        return field;
+    }
+    private boolean validateTableConfig(TieredStorageTableConfig tableConfig) {
+
+        if ((tableConfig.getTimeColumn() != null && tableConfig.getPeriod() == null )
+                || (tableConfig.getTimeColumn() == null && tableConfig.getPeriod() != null )) {
+            throw new IllegalArgumentException("Cannot set time rule without setting values to both period and column name fields");
+        }
+
+        if (tableConfig.isTransient() && (tableConfig.getCriteria() != null || tableConfig.getPeriod() != null)) {
+            throw new IllegalArgumentException("Cannot set both transient and criteria or time rule");
+        }
+
+        if (tableConfig.getPeriod() != null && tableConfig.getCriteria() != null) {
+            throw new IllegalArgumentException("Cannot apply both criteria and time rules on same type");
+        }
+
+        return true;
     }
 }
