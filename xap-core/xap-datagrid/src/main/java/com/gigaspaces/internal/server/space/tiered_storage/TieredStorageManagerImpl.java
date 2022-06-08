@@ -52,7 +52,7 @@ public class TieredStorageManagerImpl implements TieredStorageManager {
 
     @Override
     public void initialize(SpaceEngine engine) throws SAException, RemoteException {
-        containsData = getInternalStorage().initialize(engine.getSpaceName(), engine.getFullSpaceName(), engine.getTypeManager(), engine.getSpaceImpl().isBackup());
+        containsData = getInternalStorageManager().initialize(engine.getSpaceName(), engine.getFullSpaceName(), engine.getTypeManager(), engine.getSpaceImpl().isBackup());
     }
 
     @Override
@@ -106,7 +106,7 @@ public class TieredStorageManagerImpl implements TieredStorageManager {
     }
 
     @Override
-    public InternalRDBMSManager getInternalStorage() {
+    public InternalRDBMSManager getInternalStorageManager() {
         return this.internalDiskStorage;
     }
 
@@ -195,7 +195,7 @@ public class TieredStorageManagerImpl implements TieredStorageManager {
             @Override
             public Long getValue() {
                 try {
-                    return getInternalStorage().getDiskSize();
+                    return getInternalStorageManager().getDiskSize();
                 } catch (SAException | IOException e) {
                     logger.warn("failed to get disk size metric with exception: ", e);
                     return null;

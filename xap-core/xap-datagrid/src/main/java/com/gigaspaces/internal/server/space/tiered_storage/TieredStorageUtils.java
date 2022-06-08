@@ -99,9 +99,9 @@ public class TieredStorageUtils {
 
         try {
             if (typeDesc.getTypeDesc().isAutoGenerateId()) {
-                coldEntryHolder = space.getTieredStorageManager().getInternalStorage().getEntryByUID(context, typeDesc.getTypeName(), (String) id, null);
+                coldEntryHolder = space.getTieredStorageManager().getInternalStorageManager().getEntryByUID(context, typeDesc.getTypeName(), (String) id, null);
             } else {
-                coldEntryHolder = space.getTieredStorageManager().getInternalStorage().getEntryById(context, typeDesc.getTypeName(), id, null);
+                coldEntryHolder = space.getTieredStorageManager().getInternalStorageManager().getEntryById(context, typeDesc.getTypeName(), id, null);
             }
         } catch (SAException e) { //entry doesn't exist in cold tier
         }

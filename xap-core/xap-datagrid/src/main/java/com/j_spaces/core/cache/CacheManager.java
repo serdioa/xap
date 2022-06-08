@@ -369,7 +369,7 @@ public class CacheManager extends AbstractCacheManager
         if (engine.getClusterPolicy() != null) {
             // true if either indicated in cluster-wide property or mirror service is enabled in cluster
             _isClusteredExternalDBEnabled = engine.isClusteredExternalDBEnabled(getStorageAdapter());
-            _isCentralDB = _storageAdapter.supportsExternalDB() && engine.getClusterPolicy().m_CacheLoaderConfig.centralDataSource;
+            _isCentralDB = _storageAdapter.supportsExternalDB() && engine.getClusterPolicy().m_CacheLoaderConfig.centralDataSource && !isTieredStorage();
         } else //set with defaults
         {
             _isClusteredExternalDBEnabled = false;
@@ -948,7 +948,7 @@ public class CacheManager extends AbstractCacheManager
         if (isResidentEntriesCachePolicy()) {
             //if RDBMS is not empty init from RDBMS else if has mirror initial load from mirror
             if(isTieredStorage() && _engine.getTieredStorageManager().RDBMSContainsData()) {
-                _engine.getTieredStorageManager().getInternalStorage().initialLoad(context, _engine, initialLoadInfo);
+                _engine.getTieredStorageManager().getInternalStorageManager().initialLoad(context, _engine, initialLoadInfo);
                 if (_logger.isInfoEnabled()) {
                     _logger.info("Tiered-Storage Data source recovery:\n " +
                             "\tEntries found in warm tier: " + initialLoadInfo.getFoundInDatabase() + ".\n" +
@@ -1437,7 +1437,7 @@ public class CacheManager extends AbstractCacheManager
             if(context.getEntryTieredState() == null){
                 throw new IllegalStateException("trying to write entry in tiered mode but context.getEntryTieredState() == null, uid = "+entryHolder.getUID());
             }
-            _engine.getTieredStorageManager().getInternalStorage().insertEntry(context, entryHolder, initialLoadOrigin);
+            _engine.getTieredStorageManager().getInternalStorageManager().insertEntry(context, entryHolder, initialLoadOrigin);
         }
 
         if (isTieredStorage() && (context.isMemoryOnlyEntry() || context.isMemoryAndDiskEntry()) && initialLoadOrigin == InitialLoadOrigin.FROM_NON_BLOBSTORE) {
@@ -1552,7 +1552,7 @@ public class CacheManager extends AbstractCacheManager
                 IEntryHolder cold_eh = EntryHolderFactory.createEntryHolder(entry.getServerTypeDesc(), (ITransactionalEntryData) newEntryData, entry.getUID(), entry.isTransient());
                 TieredStorageManager tieredStorageManager = _engine.getTieredStorageManager();
                 if(!entry.isTransient()){
-                    tieredStorageManager.getInternalStorage().updateEntry(context, cold_eh);
+                    tieredStorageManager.getInternalStorageManager().updateEntry(context, cold_eh);
                 }
                 boolean isOriginalEntryHot = context.isMemoryOnlyEntry() || context.isMemoryAndDiskEntry();
                 String typeName = newEntryData.getSpaceTypeDescriptor().getTypeName();
@@ -1560,7 +1560,7 @@ public class CacheManager extends AbstractCacheManager
                 context.setEntryTieredState(updatedTieredState);
 
                 final boolean isNewEntryHot = context.isMemoryOnlyEntry() || context.isMemoryAndDiskEntry();
-                tieredStorageManager.getInternalStorage().updateRamEntriesCounterAfterTierChange(typeName,isNewEntryHot,isOriginalEntryHot);
+                tieredStorageManager.getInternalStorageManager().updateRamEntriesCounterAfterTierChange(typeName,isNewEntryHot,isOriginalEntryHot);
 
                 if(pEntry != null){ //old is hot or transient
                     if(isNewEntryHot){
@@ -1860,7 +1860,7 @@ public class CacheManager extends AbstractCacheManager
         else {
 
             if(isTieredStorage()){
-                entry = _engine.getTieredStorageManager().getInternalStorage().getEntryByUID(context, entryHolder.getServerTypeDesc().getTypeName(), entryHolder.getUID(), null);
+                entry = _engine.getTieredStorageManager().getInternalStorageManager().getEntryByUID(context, entryHolder.getServerTypeDesc().getTypeName(), entryHolder.getUID(), null);
             } else {
                 entry = _storageAdapter.getEntry(context, entryHolder.getUID(), entryHolder.getClassName(), entryHolder);
             }
@@ -1958,7 +1958,7 @@ public class CacheManager extends AbstractCacheManager
         else{
 
             if(isTieredStorage()){
-                entry = _engine.getTieredStorageManager().getInternalStorage().getEntryByUID(context, inputClassName, uid, getTemplate(uid) );
+                entry = _engine.getTieredStorageManager().getInternalStorageManager().getEntryByUID(context, inputClassName, uid, getTemplate(uid) );
             } else {
                 entry = _storageAdapter.getEntry(context, uid, inputClassName, template);
             }
@@ -2090,7 +2090,7 @@ public class CacheManager extends AbstractCacheManager
                             if(context.getEntryTieredState() == null ){
                                 throw new IllegalStateException("context.getEntryTieredState() == null in  remove entry ");
                             }
-                            _engine.getTieredStorageManager().getInternalStorage().removeEntry(context, entryHolder);
+                            _engine.getTieredStorageManager().getInternalStorageManager().removeEntry(context, entryHolder);
                         }
                     } else {
                         _storageAdapter.removeEntry(context, entryHolder, origin, leaseExpiration, shouldReplicate);
@@ -2119,7 +2119,7 @@ public class CacheManager extends AbstractCacheManager
                                 if(context.getEntryTieredState() == null ){
                                     throw new IllegalStateException("context.getEntryTieredState() == null in  remove entry ");
                                 }
-                                _engine.getTieredStorageManager().getInternalStorage().removeEntry(context, entryHolder);
+                                _engine.getTieredStorageManager().getInternalStorageManager().removeEntry(context, entryHolder);
                             }
                         } else {
                             _storageAdapter.removeEntry(context, entryHolder, origin, leaseExpiration, actualUpdateRedoLog);
@@ -2142,7 +2142,7 @@ public class CacheManager extends AbstractCacheManager
 
         RecentDeleteCodes recentDeleteUsage = updated_recent_deletes ? RecentDeleteCodes.INSERT_DUMMY : RecentDeleteCodes.NONE;
         if(isTieredStorage()){
-            if(evictByTimeRuleOrByLeaseForTransient || context.getEntryTieredState() != TieredState.TIERED_COLD ) {
+            if(evictByTimeRuleOrByLeaseForTransient || !context.isDiskOnlyEntry() ) {
                 removeEntryFromCache(entryHolder, false /*initiatedByEvictionStrategy*/, true/*locked*/, pEntry/* pEntry*/, recentDeleteUsage);
             }
         } else if (!entryHolder.isBlobStoreEntry() || context.getBlobStoreBulkInfo() == null || (((IBlobStoreEntryHolder) entryHolder).getBulkInfo() == null
@@ -4290,7 +4290,7 @@ public class CacheManager extends AbstractCacheManager
             }
             if(context.getTemplateTieredState() == TemplateMatchTier.MATCH_COLD || context.getTemplateTieredState() == TemplateMatchTier.MATCH_HOT_AND_COLD){
                 try {
-                    IEntryHolder entry = _engine.getTieredStorageManager().getInternalStorage().getEntryById(context, currServerTypeDesc.getTypeName(), templateValue, template);
+                    IEntryHolder entry = _engine.getTieredStorageManager().getInternalStorageManager().getEntryById(context, currServerTypeDesc.getTypeName(), templateValue, template);
                     if (entry != null) {
                         return EntryCacheInfoFactory.createEntryCacheInfo(entry);
                     }
@@ -6071,7 +6071,7 @@ public class CacheManager extends AbstractCacheManager
         long diskSize = 0;
         try {
             if (getEngine().isTieredStorage()) {
-                diskSize = getEngine().getTieredStorageManager().getInternalStorage().getDiskSize();
+                diskSize = getEngine().getTieredStorageManager().getInternalStorageManager().getDiskSize();
             }
         } catch (SAException | IOException e) {
             _logger.warn("failed to get tiered storage disk size with exception: " , e);
@@ -6080,7 +6080,7 @@ public class CacheManager extends AbstractCacheManager
 
         try {
             if (getEngine().isTieredStorage()) {
-                freeSpace = getEngine().getTieredStorageManager().getInternalStorage().getFreeSpaceSize();
+                freeSpace = getEngine().getTieredStorageManager().getInternalStorageManager().getFreeSpaceSize();
             }
         } catch (SAException | IOException e) {
             _logger.warn("failed to get tiered storage free space size with exception: " , e);

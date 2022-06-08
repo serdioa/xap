@@ -527,11 +527,14 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
         return new NullDuplicateOperationIDFilter();
     }
 
-    private static IStorageAdapter initStorageAdapter(SpaceImpl spaceImpl, SpaceEngine spaceEngine) throws CreateException {
+    private static IStorageAdapter initStorageAdapter(SpaceImpl spaceImpl, SpaceEngine spaceEngine) throws CreateException { // todo: why static
         JSpaceAttributes spaceAttributes = spaceImpl.getJspaceAttr();
-        if (!spaceAttributes.isPersistent())
+        if (!spaceAttributes.isPersistent() && !spaceEngine.isTieredStorage()) {
             return new MemorySA();
-
+        }
+        if (spaceEngine.isTieredStorage()){
+            return spaceEngine.getTieredStorageManager().getInternalStorageManager();
+        }
         try {
             final SpaceDataSource spaceDataSourceInstance = getSpaceDataSourceInstance(spaceAttributes);
             final SpaceSynchronizationEndpoint synchronizationEndpointInterceptorInstance = getSynchronizationEndpointInstance(spaceAttributes);

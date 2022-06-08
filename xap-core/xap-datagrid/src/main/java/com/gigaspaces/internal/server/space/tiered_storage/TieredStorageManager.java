@@ -25,7 +25,7 @@ public interface TieredStorageManager {
 
     void removeTableConfig(String typeName);
 
-    InternalRDBMSManager getInternalStorage();
+    InternalRDBMSManager getInternalStorageManager();
 
     TieredState getEntryTieredState(IEntryHolder entryHolder);
 

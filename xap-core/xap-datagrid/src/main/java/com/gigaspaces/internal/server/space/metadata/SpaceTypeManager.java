@@ -307,8 +307,8 @@ public class SpaceTypeManager {
         validateTieredStorage(typeDesc);
         if (!tieredStorageManager.isTransient(typeDesc.getTypeName())) {
             try {
-                tieredStorageManager.getInternalStorage().persistType(typeDesc);
-                tieredStorageManager.getInternalStorage().createTable(typeDesc);
+                tieredStorageManager.getInternalStorageManager().persistType(typeDesc);
+                tieredStorageManager.getInternalStorageManager().createTable(typeDesc);
 
                 TieredStorageTableConfig config = typeDesc.getTieredStorageTableConfig();
                 if (config != null) {
@@ -325,8 +325,8 @@ public class SpaceTypeManager {
         final String typeName = typeDesc.getTypeName();
         if (!tieredStorageManager.isTransient(typeName)) {
             try {
-                tieredStorageManager.getInternalStorage().unpersistType(typeDesc);
-                tieredStorageManager.getInternalStorage().dropTable(typeDesc);
+                tieredStorageManager.getInternalStorageManager().unpersistType(typeDesc);
+                tieredStorageManager.getInternalStorageManager().dropTable(typeDesc);
             } catch (SAException e) {
                 throw new RuntimeException(e);
             }

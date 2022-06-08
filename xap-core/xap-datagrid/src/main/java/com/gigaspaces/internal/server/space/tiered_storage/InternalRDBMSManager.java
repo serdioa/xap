@@ -1,21 +1,28 @@
 package com.gigaspaces.internal.server.space.tiered_storage;
 
 import com.gigaspaces.internal.metadata.ITypeDesc;
+import com.gigaspaces.internal.server.metadata.IServerTypeDesc;
 import com.gigaspaces.internal.server.metadata.TypeCounters;
 import com.gigaspaces.internal.server.space.SpaceEngine;
 import com.gigaspaces.internal.server.space.metadata.SpaceTypeManager;
 import com.gigaspaces.internal.server.storage.IEntryHolder;
 import com.gigaspaces.internal.server.storage.ITemplateHolder;
+import com.gigaspaces.metadata.index.SpaceIndex;
+import com.gigaspaces.sync.SpaceSynchronizationEndpoint;
 import com.j_spaces.core.cache.CacheManager;
 import com.j_spaces.core.cache.InitialLoadInfo;
 import com.j_spaces.core.cache.context.Context;
 import com.j_spaces.core.cache.context.TieredState;
 import com.j_spaces.core.sadapter.ISAdapterIterator;
+import com.j_spaces.core.sadapter.IStorageAdapter;
 import com.j_spaces.core.sadapter.SAException;
+import net.jini.core.transaction.server.ServerTransaction;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Map;
 
-public class InternalRDBMSManager {
+public class InternalRDBMSManager implements IStorageAdapter {
 
     InternalRDBMS internalRDBMS;
 
@@ -142,9 +149,110 @@ public class InternalRDBMSManager {
         return internalRDBMS.isKnownType(name);
     }
 
+    @Override
+    public void initialize() throws SAException {
+
+    }
+
+    @Override
+    public ISAdapterIterator initialLoad(Context context, ITemplateHolder template) throws SAException {
+        return null;
+    }
+
+    @Override
+    public void insertEntry(Context context, IEntryHolder entryHolder, boolean origin, boolean shouldReplicate) throws SAException {
+
+    }
+
+    @Override
+    public void updateEntry(Context context, IEntryHolder updatedEntry, boolean updateRedoLog, boolean origin, boolean[] partialUpdateValuesIndicators) throws SAException {
+
+    }
+
+    @Override
+    public void removeEntry(Context context, IEntryHolder entryHolder, boolean origin, boolean fromLeaseExpiration, boolean shouldReplicate) throws SAException {
+
+    }
+
+    @Override
+    public void prepare(Context context, ServerTransaction xtn, ArrayList<IEntryHolder> pLocked, boolean singleParticipant, Map<String, Object> partialUpdatesAndInPlaceUpdatesInfo, boolean shouldReplicate) throws SAException {
+
+    }
+
+    @Override
+    public void rollback(ServerTransaction xtn, boolean anyUpdates) throws SAException {
+
+    }
+
+    @Override
+    public IEntryHolder getEntry(Context context, Object uid, String classname, IEntryHolder template) throws SAException {
+        return null;
+    }
+
+    @Override
+    public Map<String, IEntryHolder> getEntries(Context context, Object[] ids, String typeName, IEntryHolder[] templates) throws SAException {
+        return null;
+    }
+
+    @Override
+    public ISAdapterIterator<IEntryHolder> makeEntriesIter(ITemplateHolder template, long SCNFilter, long leaseFilter, IServerTypeDesc[] subClasses) throws SAException {
+        return null;
+    }
+
+    @Override
+    public void commit(ServerTransaction xtn, boolean anyUpdates) throws SAException {
+
+    }
+
+    @Override
+    public int count(ITemplateHolder template, String[] subClasses) throws SAException {
+        return 0;
+    }
+
     public void shutDown(){
         internalRDBMS.shutDown();
     }
+
+    @Override
+    public boolean isReadOnly() {
+        return false;
+    }
+
+    @Override
+    public boolean supportsExternalDB() {
+        return true;
+    }
+
+    @Override
+    public boolean supportsPartialUpdate() {
+        return false;
+    }
+
+    @Override
+    public boolean supportsGetEntries() {
+        return false;
+    }
+
+    @Override
+    public void introduceDataType(ITypeDesc typeDesc) {
+
+    }
+
+    @Override
+    public SpaceSynchronizationEndpoint getSynchronizationInterceptor() {
+        return null;
+    }
+
+    @Override
+    public Class<?> getDataClass() {
+        return null;
+    }
+
+    @Override
+    public void addIndexes(String typeName, SpaceIndex[] indexes) {
+
+    }
+
 
     public void deleteData() throws SAException {
         internalRDBMS.deleteData();

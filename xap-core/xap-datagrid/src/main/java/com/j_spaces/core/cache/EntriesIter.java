@@ -28,8 +28,8 @@ import com.gigaspaces.internal.server.storage.ITransactionalEntryData;
 import com.j_spaces.core.SpaceOperations;
 import com.j_spaces.core.XtnEntry;
 import com.j_spaces.core.XtnStatus;
-import com.j_spaces.core.cache.context.Context;
 import com.j_spaces.core.cache.blobStore.IBlobStoreRefCacheInfo;
+import com.j_spaces.core.cache.context.Context;
 import com.j_spaces.core.cache.context.TemplateMatchTier;
 import com.j_spaces.core.sadapter.ISAdapterIterator;
 import com.j_spaces.core.sadapter.SAException;
@@ -219,7 +219,7 @@ public class EntriesIter extends SAIterBase implements ISAdapterIterator<IEntryH
 
         if(_cacheManager.isTieredStorage() && _doneWithCache){
             //TODO - tiered storage - handle null template
-            _saIter = new MultiTypedRDBMSISIterator(_cacheManager.getEngine().getTieredStorageManager().getInternalStorage(), _context, _types, _templateHolder);
+            _saIter = new MultiTypedRDBMSISIterator(_cacheManager.getEngine().getTieredStorageManager().getInternalStorageManager(), _context, _types, _templateHolder);
         }
 
     }
@@ -285,7 +285,7 @@ public class EntriesIter extends SAIterBase implements ISAdapterIterator<IEntryH
 
                 if(_cacheManager.isTieredStorage() && _context.getTemplateTieredState() != TemplateMatchTier.MATCH_HOT && _saIter == null && !_memoryOnly){
                     //TODO - tiered storage - handle multiple types
-                    _saIter = new MultiTypedRDBMSISIterator(_cacheManager.getEngine().getTieredStorageManager().getInternalStorage(), _context, _types, _templateHolder);
+                    _saIter = new MultiTypedRDBMSISIterator(_cacheManager.getEngine().getTieredStorageManager().getInternalStorageManager(), _context, _types, _templateHolder);
                 }
 
                 return saIterNext();
@@ -317,7 +317,7 @@ public class EntriesIter extends SAIterBase implements ISAdapterIterator<IEntryH
             pEntry = _cacheManager.getPEntryByUid(uid); //first search in RAM
             if (pEntry == null || invalidEntryCacheInfo(pEntry)) {
                 if (_cacheManager.isTieredStorage() && !_memoryOnly) { // then search in Disk
-                    eh = _cacheManager.getEngine().getTieredStorageManager().getInternalStorage().getEntryByUID(_context,
+                    eh = _cacheManager.getEngine().getTieredStorageManager().getInternalStorageManager().getEntryByUID(_context,
                             _typeDesc.getTypeName(), uid, _templateHolder);
                     if (eh == null || !match(eh)) {
                         continue; // continue to the next uid
