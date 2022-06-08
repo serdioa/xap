@@ -635,8 +635,8 @@ public class SpaceProxyImpl extends AbstractDirectSpaceProxy implements SameProx
     }
 
     /**
-     *
-     * @return webs server
+     * Is used for readiness and liveness probes for stateless services
+     * @return http server instance
      * @throws CreateException
      */
     public HttpServer initWebServer() throws CreateException {
