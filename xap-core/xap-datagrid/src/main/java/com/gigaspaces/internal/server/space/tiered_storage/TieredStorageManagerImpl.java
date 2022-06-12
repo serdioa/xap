@@ -16,6 +16,8 @@ import com.j_spaces.core.client.sql.ReadQueryParser;
 import com.j_spaces.core.sadapter.SAException;
 import com.j_spaces.jdbc.AbstractDMLQuery;
 import com.j_spaces.jdbc.builder.QueryTemplatePacket;
+import com.j_spaces.jdbc.builder.UnionTemplatePacket;
+import com.j_spaces.jdbc.builder.range.ComposedRange;
 import com.j_spaces.jdbc.builder.range.Range;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,7 +26,6 @@ import java.io.IOException;
 import java.rmi.RemoteException;
 import java.sql.SQLException;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -273,15 +274,8 @@ public class TieredStorageManagerImpl implements TieredStorageManager {
                 result = new AllPredicate(tableConfig.getName());
             } else {
                 QueryTemplatePacket template = getQueryTemplatePacketFromCriteria(tableConfig, typeManager);
-                HashMap<String, Range> ranges = template.getRanges();
-                if (ranges.size() > 1) {
-                    throw new IllegalArgumentException("currently only single range is supported");
-                }
-                Iterator<String> iterator = ranges.keySet().iterator();
-                if (iterator.hasNext()) {
-                    Range range = ranges.get(iterator.next());
-                    result = new CriteriaRangePredicate(template.getTypeName(), range);
-                }
+                result = new CriteriaRangePredicate(template.getTypeName(), getRanges(template));
+
             }
         }
 
@@ -290,6 +284,29 @@ public class TieredStorageManagerImpl implements TieredStorageManager {
         }
 
         return result;
+    }
+
+    private Range getRanges(QueryTemplatePacket templatePacket) {
+        ComposedRange compositeRange = null;
+        boolean isUnion = false;
+        if (templatePacket.getRanges().size() == 1) {
+            return templatePacket.getRanges().get(templatePacket.getRanges().keySet().toArray()[0]);
+        }
+        if (templatePacket instanceof UnionTemplatePacket) {
+            compositeRange = new ComposedRange(true);
+            for (QueryTemplatePacket packet : ((UnionTemplatePacket) templatePacket).getPackets()) {
+                compositeRange.add(getRanges(packet));
+
+            }
+        } else {
+            compositeRange = new ComposedRange(false);
+            for (Range range : templatePacket.getRanges().values()) {
+                compositeRange.add(range);
+            }
+        }
+
+
+        return compositeRange;
     }
 
 
