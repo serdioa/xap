@@ -48,6 +48,7 @@ import com.gigaspaces.internal.server.space.recovery.direct_persistency.DirectPe
 import com.gigaspaces.internal.server.space.recovery.direct_persistency.IStorageConsistency;
 import com.gigaspaces.internal.server.space.recovery.direct_persistency.StorageConsistencyModes;
 import com.gigaspaces.internal.server.space.tiered_storage.CachePredicate;
+import com.gigaspaces.internal.server.space.tiered_storage.InternalRDBMSManager;
 import com.gigaspaces.internal.server.space.tiered_storage.TieredStorageManager;
 import com.gigaspaces.internal.server.storage.*;
 import com.gigaspaces.internal.sync.hybrid.SyncHybridStorageAdapter;
@@ -229,7 +230,7 @@ public class CacheManager extends AbstractCacheManager
     private final Map<String, QueryExtensionIndexManagerWrapper> queryExtensionManagers;
 
     //TEMP FOR QA
-    private boolean _blobStoreForQa;
+    private boolean _blobStoreForQa; //TODO:@sagiv remove?
 
     private final boolean _forceSpaceIdIndexIfEqual;
 
@@ -270,12 +271,16 @@ public class CacheManager extends AbstractCacheManager
         boolean isCacheExternalDB = sa.supportsExternalDB();
         boolean isMemorySA = !isCacheExternalDB;
 
-	     /* get cache policy:
+        /* get cache policy:
          * If no value was provided or System property wasn't set,
          * the default is ALL_IN_CACHE
          * Note: this behavior was changed in 10.1 . Before that persistent space default policy was LRU
          */
-        setCachePolicy(configReader.getIntSpaceProperty(CACHE_POLICY_PROP, String.valueOf(CACHE_POLICY_ALL_IN_CACHE)));
+        if (engine.isTieredStorage()) {
+            setCachePolicy(CACHE_POLICY_TIERED_STORAGE);
+        } else {
+            setCachePolicy(configReader.getIntSpaceProperty(CACHE_POLICY_PROP, String.valueOf(CACHE_POLICY_ALL_IN_CACHE)));
+        }
         _emptyAfterInitialLoadStage = true;
 
 //TEMP FOR QA
@@ -348,6 +353,15 @@ public class CacheManager extends AbstractCacheManager
             _storageAdapter = curSa;
             _isMemorySA = false;
             _isCacheExternalDB = false;
+        } else if (isTieredStorageCachePolicy()) {
+            //TODO @sagiv missing handle for isSyncHybrid();
+            final InternalRDBMSManager internalStorageManager = getEngine().getTieredStorageManager().getInternalStorageManager();
+            if (!isMemorySA) {
+                internalStorageManager.setPossibleRecoverySA(sa);
+            }
+            _storageAdapter = internalStorageManager;
+            _isMemorySA = false;
+            _isCacheExternalDB = true; //TODO: @sagiv false?
         } else {
             _storageAdapter = sa;
             _isMemorySA = isMemorySA;
@@ -612,7 +626,7 @@ public class CacheManager extends AbstractCacheManager
 
         if(isTieredStorage()){
             //TODO: @sagiv right now we load the data from backup disk too - !!assuming data is intact!!
-            loadDataFromDB = _engine.getTieredStorageManager().RDBMSContainsData() || getStorageAdapter() != null;
+            loadDataFromDB = /*_engine.getTieredStorageManager().RDBMSContainsData() ||*/ getStorageAdapter() != null;
             if (_engine.getSpaceImpl().isPrimary()) {
                 if(!loadDataFromDB) {
                     ConsistencyFile consistency = new ConsistencyFile(_engine.getSpaceName(), _engine.getFullSpaceName());
@@ -820,7 +834,7 @@ public class CacheManager extends AbstractCacheManager
 
     private SpaceEvictionStrategy createEvictionStrategy(SpaceConfigReader configReader, Properties properties)
             throws CreateException {
-        if (isAllInCachePolicy() || isBlobStoreCachePolicy())
+        if (isResidentEntriesCachePolicy())
             return new AllInCacheSpaceEvictionStrategy();
 
         if (getCachePolicy() == CACHE_POLICY_LRU) {
@@ -936,7 +950,7 @@ public class CacheManager extends AbstractCacheManager
      * Load the data from the database
      */
     private void loadDataFromDB(Context context, SpaceConfigReader configReader) throws SAException {
-        if(this.getEngine().getSpaceImpl().getQuiesceHandler().isHorizontalScale()){
+        if (this.getEngine().getSpaceImpl().getQuiesceHandler().isHorizontalScale()) {
             return;
         }
 
@@ -944,52 +958,58 @@ public class CacheManager extends AbstractCacheManager
         if (isBlobStoreCachePolicy())
             initialLoadInfo.setBlobStoreFifoInitialLoader(new BlobStoreFifoInitialLoader());
         context.setInitialLoadInfo(initialLoadInfo);
-        // if cache policy is ALL_IN_CACHE- load all entries to cache from SA
-        if (isResidentEntriesCachePolicy()) {
-            //if RDBMS is not empty init from RDBMS else if has mirror initial load from mirror
-            if(isTieredStorage() && _engine.getTieredStorageManager().RDBMSContainsData()) {
-                _engine.getTieredStorageManager().getInternalStorageManager().initialLoad(context, _engine, initialLoadInfo);
+
+        if (isTieredStorageCachePolicy()) {
+            if (!getEngine().getTieredStorageManager().RDBMSContainsData()) {
+                //special first call to SA- SA will return all classes, not just fifo classes
+                residentEntriesInitialLoad(context, configReader, initialLoadInfo);
+
+                // update consistency after finished initial load
+                ConsistencyFile consistency = new ConsistencyFile(_engine.getSpaceName(), _engine.getFullSpaceName());
+                consistency.setStorageState(StorageConsistencyModes.Consistent);
+
                 if (_logger.isInfoEnabled()) {
+                    String formattedErrors = format(initialLoadInfo.getInitialLoadErrors());
                     _logger.info("Tiered-Storage Data source recovery:\n " +
-                            "\tEntries found in warm tier: " + initialLoadInfo.getFoundInDatabase() + ".\n" +
+                            "\tEntries found in data source: " + initialLoadInfo.getFoundInDatabase() + ".\n" +
+                            "\tEntries inserted to space: " + initialLoadInfo.getInsertedToCache() + ".\n" +
                             "\tEntries inserted to hot tier: " + initialLoadInfo.getInsertedToHotTier() + ".\n" +
+                            "\tEntries ignored: " + (initialLoadInfo.getFoundInDatabase() - initialLoadInfo.getInsertedToCache()) + ".\n" +
+                            formattedErrors +
                             "\tTotal Time: " + JSpaceUtilities.formatMillis(SystemTime.timeMillis() - initialLoadInfo.getRecoveryStartTime()) + ".");
+                } else {
+                    //if RDBMS is not empty init from RDBMS, else-if has mirror initial load from mirror
+                    // TODO:@sagiv init  from mirror handle in?
+                    _engine.getTieredStorageManager().getInternalStorageManager().initialLoad(context, _engine, initialLoadInfo);
+                    if (_logger.isInfoEnabled()) {
+                        _logger.info("Tiered-Storage Data source recovery:\n " +
+                                "\tEntries found in warm tier: " + initialLoadInfo.getFoundInDatabase() + ".\n" +
+                                "\tEntries inserted to hot tier: " + initialLoadInfo.getInsertedToHotTier() + ".\n" +
+                                "\tTotal Time: " + JSpaceUtilities.formatMillis(SystemTime.timeMillis() - initialLoadInfo.getRecoveryStartTime()) + ".");
+                    }
                 }
                 return;
             }
 
-            //special first call to SA- SA will return all classes, not just fifo classes
-            residentEntriesInitialLoad(context, configReader, initialLoadInfo);
-
-            // update consistency after finished initial load
-            ConsistencyFile consistency = new ConsistencyFile(_engine.getSpaceName(), _engine.getFullSpaceName());
-            consistency.setStorageState(StorageConsistencyModes.Consistent);
-
-            if (isBlobStoreCachePolicy() && _persistentBlobStore && _engine.getSpaceImpl().isPrimary() && _entries.isEmpty()) {
-                //if persistent blobstore is empty try mirror if applicable
-                if (((IBlobStoreStorageAdapter) _storageAdapter).hasAnotherInitialLoadSource() && _logger.isInfoEnabled())
-                    _logger.info("persistent blob store is empty, trying the mirror initial load source");
+            // if cache policy is ALL_IN_CACHE- load all entries to cache from SA
+            if (isResidentEntriesCachePolicy()) {
+                //special first call to SA- SA will return all classes, not just fifo classes
                 residentEntriesInitialLoad(context, configReader, initialLoadInfo);
-            }
+                if (isBlobStoreCachePolicy() && _persistentBlobStore && _engine.getSpaceImpl().isPrimary() && _entries.isEmpty()) {
+                    //if persistent blobstore is empty try mirror if applicable
+                    if (((IBlobStoreStorageAdapter) _storageAdapter).hasAnotherInitialLoadSource() && _logger.isInfoEnabled())
+                        _logger.info("persistent blob store is empty, trying the mirror initial load source");
+                    residentEntriesInitialLoad(context, configReader, initialLoadInfo);
+                }
 
-        } //if isResidentEntriesCachePolicy
+            } //if isResidentEntriesCachePolicy
 
-        // if cache policy is LRU- load some entries to cache from SA according to setting
-        if (isEvictableCachePolicy())
-            evictableEntriesInitialLoad(context, configReader, initialLoadInfo);
+            // if cache policy is LRU- load some entries to cache from SA according to setting
+            if (isEvictableCachePolicy()) //!isResidentEntriesCachePolicy
+                evictableEntriesInitialLoad(context, configReader, initialLoadInfo);
 
-
-        if (_logger.isInfoEnabled()) {
-            String formattedErrors = format(initialLoadInfo.getInitialLoadErrors());
-            if(isTieredStorage()){
-                _logger.info("Tiered-Storage Data source recovery:\n " +
-                        "\tEntries found in data source: " + initialLoadInfo.getFoundInDatabase() + ".\n" +
-                        "\tEntries inserted to space: " + initialLoadInfo.getInsertedToCache() + ".\n" +
-                        "\tEntries inserted to hot tier: " + initialLoadInfo.getInsertedToHotTier() + ".\n" +
-                        "\tEntries ignored: " + (initialLoadInfo.getFoundInDatabase() - initialLoadInfo.getInsertedToCache()) + ".\n" +
-                        formattedErrors +
-                        "\tTotal Time: " + JSpaceUtilities.formatMillis(SystemTime.timeMillis() - initialLoadInfo.getRecoveryStartTime()) + ".");
-            } else {
+            if (_logger.isInfoEnabled()) {
+                String formattedErrors = format(initialLoadInfo.getInitialLoadErrors());
                 _logger.info("Data source recovery:\n " +
                         "\tEntries found in data source: " + initialLoadInfo.getFoundInDatabase() + ".\n" +
                         "\tEntries inserted to space: " + initialLoadInfo.getInsertedToCache() + ".\n" +
@@ -997,13 +1017,13 @@ public class CacheManager extends AbstractCacheManager
                         formattedErrors +
                         "\tTotal Time: " + JSpaceUtilities.formatMillis(SystemTime.timeMillis() - initialLoadInfo.getRecoveryStartTime()) + ".");
             }
-        }
-        if (getBlobStoreInternalCache() != null) {
-            if (getBlobStoreInternalCache().getBlobStoreInternalCacheFilter() != null) {
-                if (_logger.isInfoEnabled()) {
-                    _logger.info("BlobStore internal cache recovery:\n " +
-                            "\tblob-store-queries: " + getBlobStoreInternalCache().getBlobStoreInternalCacheFilter().getSqlQueries() + ".\n" +
-                            "\tEntries inserted to blobstore cache: " + getBlobStoreInternalCache().getBlobStoreInternalCacheFilter().getInsertedToBlobStoreInternalCacheOnInitialLoad() + ".\n");
+            if (getBlobStoreInternalCache() != null) {
+                if (getBlobStoreInternalCache().getBlobStoreInternalCacheFilter() != null) {
+                    if (_logger.isInfoEnabled()) {
+                        _logger.info("BlobStore internal cache recovery:\n " +
+                                "\tblob-store-queries: " + getBlobStoreInternalCache().getBlobStoreInternalCacheFilter().getSqlQueries() + ".\n" +
+                                "\tEntries inserted to blobstore cache: " + getBlobStoreInternalCache().getBlobStoreInternalCacheFilter().getInsertedToBlobStoreInternalCacheOnInitialLoad() + ".\n");
+                    }
                 }
             }
         }
@@ -1023,7 +1043,7 @@ public class CacheManager extends AbstractCacheManager
 
         ISAdapterIterator<IEntryHolder> entriesIterSA = null;
         try {
-            context.setInInitialLoad(true);
+            context.setInInitialLoad(true);//TODO @sagiv here!!
             entriesIterSA = _storageAdapter.initialLoad(context, th);
             if (entriesIterSA != null) {
                 IServerTypeDesc serverTypeDesc = null;
@@ -1077,24 +1097,22 @@ public class CacheManager extends AbstractCacheManager
                     if (eh.isBlobStoreEntry() && isDirectPersistencyEmbeddedtHandlerUsed()) {
                         insertBlobStoreEntryToCache = _replicationNode.getDirectPesistencySyncHandler().getEmbeddedSyncHandler().getInitialLoadHandler().onLoadingEntry(eh);
                     }
-                    if (insertBlobStoreEntryToCache) {
-                        if (isTieredStorage()){
-                            context.setEntryTieredState(_engine.getTieredStorageManager().getEntryTieredState(eh));
-                            if (context.isMemoryOnlyEntry() || context.isMemoryAndDiskEntry()){
-                                initialLoadInfo.incrementInsertedToHotTier();
-                                long expiration = _engine.getLeaseManager().getExpirationByTimeRuleOnInitialLoad(eh.getEntryData());
-                                if(expiration != -1){
-                                    eh.updateEntryData(eh.getEntryData(), expiration);
-                                }
+                    if (insertBlobStoreEntryToCache && !isTieredStorageCachePolicy()) {
+                        safeInsertEntryToCache(context, eh, false /* newEntry */, null /*pType*/, false /*pin*/, entryFromBlobStore ? InitialLoadOrigin.FROM_BLOBSTORE : InitialLoadOrigin.FROM_NON_BLOBSTORE /*fromInitialLoad*/);
+                    } else if (isTieredStorageCachePolicy()) {
+                        context.setEntryTieredState(_engine.getTieredStorageManager().getEntryTieredState(eh));
+                        if (context.isMemoryOnlyEntry() || context.isMemoryAndDiskEntry()) {
+                            initialLoadInfo.incrementInsertedToHotTier();
+                            long expiration = _engine.getLeaseManager().getExpirationByTimeRuleOnInitialLoad(eh.getEntryData());
+                            if (expiration != -1) {
+                                eh.updateEntryData(eh.getEntryData(), expiration);
                             }
-                            insertEntry(context,eh,false,true,true, InitialLoadOrigin.FROM_NON_BLOBSTORE);
                         }
-                        else {
-                            safeInsertEntryToCache(context, eh, false /* newEntry */, null /*pType*/, false /*pin*/, entryFromBlobStore ? InitialLoadOrigin.FROM_BLOBSTORE : InitialLoadOrigin.FROM_NON_BLOBSTORE /*fromInitialLoad*/);
-                        }
+                        insertEntry(context, eh, false, true, true, InitialLoadOrigin.FROM_NON_BLOBSTORE);
                     } else {
                         continue;
                     }
+
                     if (isBlobStoreCachePolicy()) {//kick out the entry main info after writing to blobStore if needed
                         if (!entryFromBlobStore)//no need to rewrite-it
                             ((IBlobStoreEntryHolder) eh).setDirty(this);

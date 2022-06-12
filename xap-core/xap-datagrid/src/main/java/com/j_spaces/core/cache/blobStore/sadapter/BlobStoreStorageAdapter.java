@@ -284,9 +284,12 @@ public class BlobStoreStorageAdapter implements IStorageAdapter, IBlobStoreStora
         //1. locate & setDirty to the relevant entries
         for (IEntryHolder inputeh : pLocked) {
             IEntryHolder entryHolder = inputeh.getOriginalEntryHolder();
+            if (entryHolder == null) {
+                continue;
+            }
             if (!entryHolder.isBlobStoreEntry())
                 continue;
-            if (entryHolder == null || entryHolder.isDeleted()
+            if (entryHolder.isDeleted()
                     || entryHolder.getWriteLockTransaction() == null
                     || !entryHolder.getWriteLockTransaction().equals(xtn))
                 continue;

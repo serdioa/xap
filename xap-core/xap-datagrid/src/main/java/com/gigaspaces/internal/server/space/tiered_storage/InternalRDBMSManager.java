@@ -24,21 +24,28 @@ import java.util.Map;
 
 public class InternalRDBMSManager implements IStorageAdapter {
 
-    InternalRDBMS internalRDBMS;
+    private final InternalRDBMS internalRDBMS;
+    private IStorageAdapter possibleRecoverySA;
+
+    private boolean localStoreRecoveryPerformed = false;
 
     public InternalRDBMSManager(InternalRDBMS internalRDBMS) {
         this.internalRDBMS = internalRDBMS;
     }
 
-    public boolean initialize(String spaceName, String fullMemberName, SpaceTypeManager typeManager, boolean isBackup) throws SAException{
+    public void setPossibleRecoverySA(IStorageAdapter possibleRecoverySA) {
+        this.possibleRecoverySA = possibleRecoverySA;
+    }
+
+    public boolean initialize(String spaceName, String fullMemberName, SpaceTypeManager typeManager, boolean isBackup) throws SAException {
         return internalRDBMS.initialize(spaceName, fullMemberName, typeManager, isBackup);
     }
 
-    public long getDiskSize() throws SAException, IOException{
+    public long getDiskSize() throws SAException, IOException {
         return internalRDBMS.getDiskSize();
     }
 
-    public long getFreeSpaceSize() throws SAException, IOException{
+    public long getFreeSpaceSize() throws SAException, IOException {
         return internalRDBMS.getFreeSpaceSize();
     }
 
@@ -151,12 +158,72 @@ public class InternalRDBMSManager implements IStorageAdapter {
 
     @Override
     public void initialize() throws SAException {
-
+        if (possibleRecoverySA != null)
+            possibleRecoverySA.initialize();
     }
 
     @Override
     public ISAdapterIterator initialLoad(Context context, ITemplateHolder template) throws SAException {
-        return null;
+        return possibleRecoverySA != null ? possibleRecoverySA.initialLoad(context, template) : null;
+//        if (_localBlobStoreRecoveryPerformed || !_persistentBlobStore) {
+//            if (_engine.getSpaceImpl().isBackup()) {
+//                //if persistent="false" and Backup - recover only from Primary Space
+//                return null;
+//            } else {
+//                //local blob store tried. now try recovery from mirror if exist
+//                return _possibleRecoverySA != null ? _possibleRecoverySA.initialLoad(context, template) : null;
+//            }
+//        }
+//        //first always try our local blob store
+//        _localBlobStoreRecoveryPerformed = true;
+//        //load metadata first
+//        final BlobStoreMetaDataIterator metadataIterator = new BlobStoreMetaDataIterator(_engine);
+//        Map<String, BlobStoreStorageAdapterClassInfo> classesInfo = metadataIterator.getClassesInfo();
+//
+//
+//        try {
+//            while (true) {
+//                final ITypeDesc typeDescriptor = (ITypeDesc) metadataIterator.next();
+//                if (typeDescriptor == null)
+//                    break;
+//                final String[] superClassesNames = typeDescriptor.getRestrictSuperClassesNames();
+//                if (superClassesNames != null) {
+//                    for (String superClassName : superClassesNames) {
+//                        if (_typeManager.getServerTypeDesc(superClassName) == null)
+//                            throw new IllegalArgumentException("Missing super class type descriptor ["
+//                                    + superClassName
+//                                    + "] for type ["
+//                                    + typeDescriptor.getTypeName() + "]");
+//                    }
+//                }
+//                _classes.put(typeDescriptor.getTypeName(), classesInfo.get(typeDescriptor.getTypeName()));
+//                _typeManager.addTypeDesc(typeDescriptor);
+//            }
+//        } catch (Exception e) {
+//            if (_logger.isDebugEnabled())
+//                LogUtils.throwing(_logger, getClass(), "Initial Metadata Load", e);
+//            throw new SAException(e);
+//        } finally {
+//            metadataIterator.close();
+//        }
+//
+//        //get all the loaded types and verify we have proper index setting (do we have to do this check ???)
+//        Iterator<String> iter = classesInfo.keySet().iterator();
+//        while (iter.hasNext()) {
+//            String className = iter.next();
+//            //check contains, if not then call introduce type
+//            TypeData typeData = _engine.getCacheManager().getTypeData(_engine.getTypeManager().getServerTypeDesc(className));
+//            if (typeData != null) {
+//
+//                BlobStoreStorageAdapterClassInfo cur = _classes.get(className);
+//                if (!_classes.isContained(className, typeData)) {
+//                    introduceDataType_impl(_engine.getTypeManager().getTypeDesc(className));
+//                }
+//            }
+//        }
+//
+//
+//        return new BlobStoreInitialLoadDataIterator(_engine);
     }
 
     @Override

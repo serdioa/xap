@@ -317,13 +317,8 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
 
         _directProxy = spaceImpl.getSingleProxy();
 
-        try {
-            initTieredStorageManager();
-            final TypeDescFactory typeDescFactory = new TypeDescFactory(_directProxy);
-            _typeManager = new SpaceTypeManager(typeDescFactory, _configReader, tieredStorageManager);
-        } catch (IllegalAccessException | InstantiationException | ClassNotFoundException e) {
-            throw new CreateException("Failed to instantiate InternalRDBMS class", e);
-        }
+        final TypeDescFactory typeDescFactory = new TypeDescFactory(_directProxy);
+        _typeManager = new SpaceTypeManager(typeDescFactory, _configReader);
 
         _partitionId = _clusterInfo.getPartitionOfMember(_fullSpaceName);
 
@@ -334,6 +329,13 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
 
         final IStorageAdapter storageAdapter = initStorageAdapter(spaceImpl, this);
         verifySystemTime(storageAdapter);
+
+        try {
+            initTieredStorageManager();
+            _typeManager.setTieredStorageManager(tieredStorageManager);
+        } catch (IllegalAccessException | InstantiationException | ClassNotFoundException e) {
+            throw new CreateException("Failed to instantiate InternalRDBMS class", e);
+        }
 
         if (isBlobStorePersistent() && getClusterInfo().getNumberOfBackups() > 1) {
             throw new CreateException("BlobStore persistency is not allowed with more then a single backup");
@@ -404,28 +406,42 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
             if(tableConfig.isTransient()){
                 if(tableConfig.getCriteria() != null || tableConfig.getPeriod() != null
                         || tableConfig.getTimeColumn() != null || tableConfig.getRetention() != null){
-                    throw new TieredStorageConfigException("Illegal Config for type "+tableConfig.getName()+": " +
-                            "transient type should have only isTransient = true , actual: "+tableConfig);
+                    throw new TieredStorageConfigException("Illegal Config for type " + tableConfig.getName() + ": " +
+                            "transient type should have only isTransient = true , actual: " + tableConfig);
                 }
             }
 
-            if(tableConfig.getTimeColumn() != null && tableConfig.getPeriod() == null){
-                throw new TieredStorageConfigException("Illegal Config for type "+tableConfig.getName()+": " +
+            if (tableConfig.getTimeColumn() != null && tableConfig.getPeriod() == null) {
+                throw new TieredStorageConfigException("Illegal Config for type " + tableConfig.getName() + ": " +
                         "period can not be null when timeColumn defined");
             }
 
-            if(tableConfig.getPeriod() != null){
-                if(tableConfig.getTimeColumn() == null){
-                    throw new TieredStorageConfigException("Illegal Config for type "+tableConfig.getName()+": " +
-                            "timeColumn can not be null when period = "+tableConfig.getPeriod());
+            if (tableConfig.getPeriod() != null) {
+                if (tableConfig.getTimeColumn() == null) {
+                    throw new TieredStorageConfigException("Illegal Config for type " + tableConfig.getName() + ": " +
+                            "timeColumn can not be null when period = " + tableConfig.getPeriod());
                 }
 
-                if(tableConfig.getCriteria() != null){
-                    throw new TieredStorageConfigException("Illegal Config for type "+tableConfig.getName()+": " +
+                if (tableConfig.getCriteria() != null) {
+                    throw new TieredStorageConfigException("Illegal Config for type " + tableConfig.getName() + ": " +
                             "can not set both period and criteria");
                 }
             }
         }
+//        if ((tableConfig.getTimeColumn() != null && tableConfig.getPeriod() == null )
+//                || (tableConfig.getTimeColumn() == null && tableConfig.getPeriod() != null )) {
+//            throw new IllegalArgumentException("Cannot set time rule without setting values to both period and column name fields");
+//        }
+//
+//        if (tableConfig.isTransient() && (tableConfig.getCriteria() != null || tableConfig.getPeriod() != null)) {
+//            throw new IllegalArgumentException("Cannot set both transient and criteria or time rule");
+//        }
+//
+//        if (tableConfig.getPeriod() != null && tableConfig.getCriteria() != null) {
+//            throw new IllegalArgumentException("Cannot apply both criteria and time rules on same type");
+//        }
+//
+//        return true;
     }
 
 
@@ -529,12 +545,12 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
 
     private static IStorageAdapter initStorageAdapter(SpaceImpl spaceImpl, SpaceEngine spaceEngine) throws CreateException { // todo: why static
         JSpaceAttributes spaceAttributes = spaceImpl.getJspaceAttr();
-        if (!spaceAttributes.isPersistent() && !spaceEngine.isTieredStorage()) {
+        if (!spaceAttributes.isPersistent()/* && !spaceEngine.isTieredStorage()*/) {
             return new MemorySA();
         }
-        if (spaceEngine.isTieredStorage()){
-            return spaceEngine.getTieredStorageManager().getInternalStorageManager();
-        }
+//        if (spaceEngine.isTieredStorage()) {
+//            return spaceEngine.getTieredStorageManager().getInternalStorageManager();
+//        }
         try {
             final SpaceDataSource spaceDataSourceInstance = getSpaceDataSourceInstance(spaceAttributes);
             final SpaceSynchronizationEndpoint synchronizationEndpointInterceptorInstance = getSynchronizationEndpointInstance(spaceAttributes);

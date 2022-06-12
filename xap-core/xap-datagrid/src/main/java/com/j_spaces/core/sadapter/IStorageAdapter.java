@@ -30,7 +30,6 @@ import com.gigaspaces.internal.server.storage.ITemplateHolder;
 import com.gigaspaces.metadata.index.SpaceIndex;
 import com.gigaspaces.sync.SpaceSynchronizationEndpoint;
 import com.j_spaces.core.cache.context.Context;
-
 import net.jini.core.transaction.server.ServerTransaction;
 
 import java.util.ArrayList;

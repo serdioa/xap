@@ -16,15 +16,7 @@
 
 package com.gigaspaces.internal.sync;
 
-import com.gigaspaces.datasource.BulkItem;
-import com.gigaspaces.datasource.DataIterator;
-import com.gigaspaces.datasource.DataSourceException;
-import com.gigaspaces.datasource.DataSourceIdQueryImpl;
-import com.gigaspaces.datasource.DataSourceIdsQueryImpl;
-import com.gigaspaces.datasource.DataSourceQuery;
-import com.gigaspaces.datasource.DataSourceQueryImpl;
-import com.gigaspaces.datasource.ManagedDataSource;
-import com.gigaspaces.datasource.SpaceDataSource;
+import com.gigaspaces.datasource.*;
 import com.gigaspaces.datasource.concurrentaccess.SharedIteratorSpaceDataSourceDecorator;
 import com.gigaspaces.internal.datasource.EDSAdapterSpaceDataSource;
 import com.gigaspaces.internal.datasource.EDSAdapterSynchronizationEndpoint;
@@ -53,26 +45,17 @@ import com.j_spaces.core.sadapter.SAException;
 import com.j_spaces.kernel.ClassLoaderHelper;
 import com.j_spaces.kernel.ResourceLoader;
 import com.j_spaces.sadapter.datasource.*;
-
 import net.jini.core.transaction.server.ServerTransaction;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Properties;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import java.util.*;
 
 import static com.j_spaces.core.Constants.DataAdapter.DATA_CLASS_PROP;
-import static com.j_spaces.core.Constants.LeaseManager.LM_EXPIRATION_TIME_RECENT_DELETES_DEFAULT;
-import static com.j_spaces.core.Constants.LeaseManager.LM_EXPIRATION_TIME_RECENT_DELETES_PROP;
-import static com.j_spaces.core.Constants.LeaseManager.LM_EXPIRATION_TIME_RECENT_UPDATES_DEFAULT;
-import static com.j_spaces.core.Constants.LeaseManager.LM_EXPIRATION_TIME_RECENT_UPDATES_PROP;
+import static com.j_spaces.core.Constants.LeaseManager.*;
 
 /**
  * @author idan
@@ -125,7 +108,7 @@ public class SynchronizationStorageAdapter implements IStorageAdapter {
         this._queryBuilder = (SQLQueryBuilder) ClassLoaderHelper.loadClass(spaceAttr.getQueryBuilderClass()).newInstance();
         this._converter = new EntryPacketDataConverter(_typeManager, _dataClass);
         this._conversionAdapter = new EntryAdapter(_converter);
-        this._centralDataSource = engine.getClusterPolicy() != null ? engine.getClusterPolicy().m_CacheLoaderConfig.centralDataSource : false;
+        this._centralDataSource = engine.getClusterPolicy() != null && engine.getClusterPolicy().m_CacheLoaderConfig.centralDataSource;
     }
 
     @Override

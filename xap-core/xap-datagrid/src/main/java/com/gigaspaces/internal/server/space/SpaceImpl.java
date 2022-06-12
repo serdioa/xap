@@ -878,8 +878,8 @@ public class SpaceImpl extends AbstractService implements IRemoteSpace, IInterna
 
                 _engine = new SpaceEngine(this);
                 initReplicationStateBasedOnActiveElection();
-                initTieredStorage();
                 _engine.init(isWarmInit, isRestart);
+                initTieredStorage();
                 _statistics = (JSpaceStatistics) getFilterObject(Constants.Statistics.STATISTICS_FILTER_NAME);
 
 

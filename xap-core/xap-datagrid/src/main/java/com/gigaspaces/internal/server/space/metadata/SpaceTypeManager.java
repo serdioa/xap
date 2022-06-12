@@ -74,13 +74,13 @@ public class SpaceTypeManager {
     private final Object _typeDescLock = new Object();
     private final AtomicInteger _typeIdGenerator;
     private final Set<IServerTypeDescListener> _typeDescListeners;
-    private final TieredStorageManager tieredStorageManager;
+    private TieredStorageManager tieredStorageManager;
 
     public SpaceTypeManager(SpaceConfigReader configReader) {
-        this(new TypeDescFactory(), configReader, null);
+        this(new TypeDescFactory(), configReader);
     }
 
-    public SpaceTypeManager(TypeDescFactory typeDescFactory, SpaceConfigReader configReader, TieredStorageManager tieredStorageManager) {
+    public SpaceTypeManager(TypeDescFactory typeDescFactory, SpaceConfigReader configReader) {
         logEnter("SpaceTypeManager.ctor", "spaceName", configReader.getFullSpaceName());
 
         this._typeDescFactory = typeDescFactory;
@@ -92,7 +92,6 @@ public class SpaceTypeManager {
         IServerTypeDesc rootTypeDesc = createServerTypeDescInstance(IServerTypeDesc.ROOT_TYPE_NAME, objectTypeDesc, null, _typeMap);
         _typeMap.put(null, rootTypeDesc);
         createServerTypeDescInstance(IServerTypeDesc.ROOT_SYSTEM_TYPE_NAME, null, null, _typeMap);
-        this.tieredStorageManager = tieredStorageManager;
         logExit("SpaceTypeManager.ctor", "spaceName", configReader.getFullSpaceName());
     }
 
@@ -108,6 +107,11 @@ public class SpaceTypeManager {
 
     public Object getTypeDescLock() {
         return _typeDescLock;
+    }
+
+    public SpaceTypeManager setTieredStorageManager(TieredStorageManager tieredStorageManager) {
+        this.tieredStorageManager = tieredStorageManager;
+        return this;
     }
 
     public ITypeDesc[] addIndexes(String typeName, SpaceIndex[] newIndexes) {
@@ -345,6 +349,7 @@ public class SpaceTypeManager {
 
     /** @see Constants.TieredStorage#SUPPORT_DYNAMIC_PROPERTIES */
     private void validateTieredStorage(ITypeDesc typeDesc) {
+        assert tieredStorageManager != null;
         String typeName = typeDesc.getTypeName();
         if (tieredStorageManager.isTransient(typeName)) {
             return; // Transient Types are never written to InternalRDBMS , supports all features
