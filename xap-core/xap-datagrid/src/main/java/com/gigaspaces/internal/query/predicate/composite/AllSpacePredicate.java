@@ -17,7 +17,6 @@
 package com.gigaspaces.internal.query.predicate.composite;
 
 import com.gigaspaces.internal.query.predicate.ISpacePredicate;
-import com.gigaspaces.utils.Pair;
 
 import java.util.List;
 
@@ -54,13 +53,16 @@ public class AllSpacePredicate extends MultipleCompositeSpacePredicate {
 
     @Override
     protected boolean execute(Object target, ISpacePredicate[] operands) {
-        Integer i = (Integer) ((Pair) target).getSecond();
-        final Object criteria = ((Pair) target).getFirst();
+        final int length = operands.length;
 
-        if (!operands[i].execute(criteria)) {
-            return false;
+        for (int i = 0; i < length; i++) {
+            if (operands[i].requiresCacheManagerForExecution()) {
+                operands[i].setCacheManagerForExecution(_cacheManager);
+            }
+            if (!operands[i].execute(target)) {
+                return false;
+            }
         }
-
         return true;
     }
 }
