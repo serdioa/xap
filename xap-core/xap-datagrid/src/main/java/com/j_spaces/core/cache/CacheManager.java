@@ -1978,12 +1978,7 @@ public class CacheManager extends AbstractCacheManager
         if (!lockedEntry && context.getPrefetchedNonBlobStoreEntries() != null)
             entry = context.getPrefetchedNonBlobStoreEntries().get(uid);
         else {
-
-            if (isTieredStorage()) {
-                entry = _engine.getTieredStorageManager().getInternalStorageManager().getEntryByUID(context, inputClassName, uid, getTemplate(uid));
-            } else {
-                entry = _storageAdapter.getEntry(context, uid, inputClassName, template);
-            }
+            entry = _storageAdapter.getEntry(context, uid, inputClassName, template);
         }
 
         if (entry == null)

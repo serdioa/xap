@@ -134,9 +134,7 @@ public class InternalRDBMSManager implements IStorageAdapter {
     public IEntryHolder getEntryByUID(Context context, String typeName, String uid, ITemplateHolder templateHolder) throws SAException {
         IEntryHolder entryByUID = internalRDBMS.getEntryByUID(context, typeName, uid);
         if (templateHolder != null && templateHolder.isReadOperation()) {
-            Thread.dumpStack();
-            throw new RuntimeException("Im here!");
-//            templateHolder.getServerTypeDesc().getTypeCounters().incDiskReadCounter();
+            templateHolder.getServerTypeDesc().getTypeCounters().incDiskReadCounter();
         }
         return entryByUID;
     }
@@ -253,8 +251,10 @@ public class InternalRDBMSManager implements IStorageAdapter {
 
     @Override
     public IEntryHolder getEntry(Context context, String uid, String classname, IEntryHolder template) throws SAException {
+        if (template instanceof ITemplateHolder) {
+            return getEntryByUID(context, classname, uid, (ITemplateHolder) template);
+        }
         return getEntryByUID(context, classname, uid, null);
-//        return null;
     }
 
     @Override
