@@ -122,21 +122,21 @@ public class InternalRDBMSManager implements IStorageAdapter {
         }
     }
 
-    public IEntryHolder getEntryById(Context context, String typeName, Object id, ITemplateHolder templateHolder) throws SAException{
+    public IEntryHolder getEntryById(Context context, String typeName, Object id, ITemplateHolder templateHolder) throws SAException {
         IEntryHolder entryById = internalRDBMS.getEntryById(context, typeName, id);
-
-        if (templateHolder != null && templateHolder.isReadOperation()){
+        if (templateHolder != null && templateHolder.isReadOperation()) {
             templateHolder.getServerTypeDesc().getTypeCounters().incDiskReadCounter();
         }
 
         return entryById;
     }
 
-    public IEntryHolder getEntryByUID(Context context, String typeName, String uid, ITemplateHolder templateHolder) throws SAException{
+    public IEntryHolder getEntryByUID(Context context, String typeName, String uid, ITemplateHolder templateHolder) throws SAException {
         IEntryHolder entryByUID = internalRDBMS.getEntryByUID(context, typeName, uid);
-
-        if (templateHolder != null && templateHolder.isReadOperation()){
-            templateHolder.getServerTypeDesc().getTypeCounters().incDiskReadCounter();
+        if (templateHolder != null && templateHolder.isReadOperation()) {
+            Thread.dumpStack();
+            throw new RuntimeException("Im here!");
+//            templateHolder.getServerTypeDesc().getTypeCounters().incDiskReadCounter();
         }
         return entryByUID;
     }
@@ -252,8 +252,9 @@ public class InternalRDBMSManager implements IStorageAdapter {
     }
 
     @Override
-    public IEntryHolder getEntry(Context context, Object uid, String classname, IEntryHolder template) throws SAException {
-        return null;
+    public IEntryHolder getEntry(Context context, String uid, String classname, IEntryHolder template) throws SAException {
+        return getEntryByUID(context, classname, uid, null);
+//        return null;
     }
 
     @Override

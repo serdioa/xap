@@ -878,7 +878,7 @@ public class SpaceImpl extends AbstractService implements IRemoteSpace, IInterna
 
                 _engine = new SpaceEngine(this);
                 initReplicationStateBasedOnActiveElection();
-                initTieredStorage();//TODO: @sagiv move 1 down?
+                initTieredStorage();
                 _engine.init(isWarmInit, isRestart);
                 _statistics = (JSpaceStatistics) getFilterObject(Constants.Statistics.STATISTICS_FILTER_NAME);
 
@@ -3413,7 +3413,7 @@ public class SpaceImpl extends AbstractService implements IRemoteSpace, IInterna
 
     }
 
-    //prerequisite - _engine initialized, type manager initialized, metric manager initialized
+    //prerequisite - _engine created, type manager initialized, metric manager initialized
     private void initTieredStorage() throws SAException, RemoteException {
         if (_engine.isTieredStorage()) {
             _engine.getTieredStorageManager().initialize(_engine);

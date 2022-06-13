@@ -406,14 +406,11 @@ public class SynchronizationStorageAdapter implements IStorageAdapter {
     }
 
     @Override
-    public IEntryHolder getEntry(Context context, Object uid, String typeName,
-                                 IEntryHolder template) throws SAException {
-        return
-                getEntry_impl(uid, typeName, template);
+    public IEntryHolder getEntry(Context context, String uid, String typeName, IEntryHolder template) throws SAException {
+        return getEntry_impl(typeName, template);
     }
 
-    private IEntryHolder getEntry_impl(Object uid, String typeName,
-                                       IEntryHolder template) throws SAException {
+    private IEntryHolder getEntry_impl(String typeName, IEntryHolder template) throws SAException {
         try {
             final IServerTypeDesc serverTypeDesc = getServerType(typeName);
             final ITypeDesc typeDescriptor = serverTypeDesc.getTypeDesc();
@@ -456,7 +453,7 @@ public class SynchronizationStorageAdapter implements IStorageAdapter {
                 return null;
 
             if (template.isIdQuery()) {
-                final IEntryHolder idQueryResult = getEntry_impl(template.getUID(), template.getClassName(), template);
+                final IEntryHolder idQueryResult = getEntry_impl(template.getClassName(), template);
                 if (idQueryResult == null)
                     return null;
 

@@ -17,23 +17,22 @@ import com.gigaspaces.metadata.index.SpaceIndex;
 import com.gigaspaces.sync.SpaceSynchronizationEndpoint;
 import com.j_spaces.core.SpaceOperations;
 import com.j_spaces.core.cache.CacheManager;
-import com.j_spaces.core.cache.blobStore.sadapter.BlobStoreStorageAdapter;
-import com.j_spaces.core.cache.context.Context;
 import com.j_spaces.core.cache.blobStore.IBlobStoreEntryHolder;
 import com.j_spaces.core.cache.blobStore.errors.BlobStoreErrorsHandler;
+import com.j_spaces.core.cache.blobStore.sadapter.BlobStoreStorageAdapter;
 import com.j_spaces.core.cache.blobStore.sadapter.BlobStoreStorageAdapterClassInfo;
 import com.j_spaces.core.cache.blobStore.sadapter.IBlobStoreStorageAdapter;
+import com.j_spaces.core.cache.context.Context;
 import com.j_spaces.core.sadapter.ISAdapterIterator;
 import com.j_spaces.core.sadapter.IStorageAdapter;
 import com.j_spaces.core.sadapter.MemorySA;
 import com.j_spaces.core.sadapter.SAException;
 import net.jini.core.transaction.server.ServerTransaction;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Map;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * @author yaeln
@@ -172,7 +171,7 @@ public class SyncHybridStorageAdapter implements IStorageAdapter, IBlobStoreStor
     }
 
     @Override
-    public IEntryHolder getEntry(Context context, Object uid, String classname, IEntryHolder template) throws SAException {
+    public IEntryHolder getEntry(Context context, String uid, String classname, IEntryHolder template) throws SAException {
         return blobStoreStorageAdapter.getEntry(context, uid, classname, template);
     }
 

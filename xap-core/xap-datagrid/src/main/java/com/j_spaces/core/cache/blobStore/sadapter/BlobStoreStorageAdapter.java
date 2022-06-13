@@ -394,7 +394,7 @@ public class BlobStoreStorageAdapter implements IStorageAdapter, IBlobStoreStora
     }
 
     @Override
-    public IEntryHolder getEntry(Context context, Object uid, String classname,
+    public IEntryHolder getEntry(Context context, String uid, String classname,
                                  IEntryHolder template) throws SAException {
         // TODO Auto-generated method stub
         IEntryHolder eh = context.getBlobStoreOpEntryHolder();
