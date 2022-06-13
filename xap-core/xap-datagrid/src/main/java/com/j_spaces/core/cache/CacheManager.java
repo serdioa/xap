@@ -4301,13 +4301,15 @@ public class CacheManager extends AbstractCacheManager
             }
         }
 
-        if (isTieredStorage()) {
+        if (isTieredStorageCachePolicy()) {
             if (ReadModifiers.isMemoryOnlySearch(template.getOperationModifiers())) {
                 return null;
             }
             if (context.getTemplateTieredState() == TemplateMatchTier.MATCH_COLD || context.getTemplateTieredState() == TemplateMatchTier.MATCH_HOT_AND_COLD) {
                 try {
-                    IEntryHolder entry = _engine.getTieredStorageManager().getInternalStorageManager().getEntryById(context, currServerTypeDesc.getTypeName(), templateValue, template);
+                    final String typeName = currServerTypeDesc.getTypeName();
+                    //TODO: @sagiv validate it is not already UID
+                    IEntryHolder entry = getStorageAdapter().getEntry(context, SpaceUidFactory.createUidFromTypeAndId(typeName, templateValue.toString()), typeName, template);
                     if (entry != null) {
                         return EntryCacheInfoFactory.createEntryCacheInfo(entry);
                     }

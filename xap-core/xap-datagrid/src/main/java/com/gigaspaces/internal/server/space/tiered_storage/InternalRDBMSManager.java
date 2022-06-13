@@ -109,28 +109,18 @@ public class InternalRDBMSManager implements IStorageAdapter {
     public void updateRamEntriesCounterAfterTierChange(String type, boolean isUpdatedEntryInHotTier, boolean isOriginEntryInHotTier){
         TypeCounters typeCounters = getTypeManager().getServerTypeDesc(type).getTypeCounters();
         //check if the tier of the entry changed due to the update operation
-        if(isOriginEntryInHotTier != isUpdatedEntryInHotTier){
+        if (isOriginEntryInHotTier != isUpdatedEntryInHotTier) {
             //updated enrty moved to HOT - increase ram entries counter
-            if(isUpdatedEntryInHotTier){
+            if (isUpdatedEntryInHotTier) {
                 typeCounters.incRamEntriesCounter();
-            }
-            else{ //updated entry moved to COLD - decrease ram entries counter
+            } else { //updated entry moved to COLD - decrease ram entries counter
                 typeCounters.decRamEntriesCounter();
             }
         }
     }
 
-    public IEntryHolder getEntryById(Context context, String typeName, Object id, ITemplateHolder templateHolder) throws SAException {
-        IEntryHolder entryById = internalRDBMS.getEntryById(context, typeName, id);
-        if (templateHolder != null && templateHolder.isReadOperation()) {
-            templateHolder.getServerTypeDesc().getTypeCounters().incDiskReadCounter();
-        }
-
-        return entryById;
-    }
-
-    public IEntryHolder getEntryByUID(Context context, String typeName, String uid, ITemplateHolder templateHolder) throws SAException {
-        IEntryHolder entryByUID = internalRDBMS.getEntryByUID(context, typeName, uid);
+    public IEntryHolder getEntryByUID(String typeName, String uid, ITemplateHolder templateHolder) throws SAException {
+        IEntryHolder entryByUID = internalRDBMS.getEntryByUID(typeName, uid);
         if (templateHolder != null && templateHolder.isReadOperation()) { //TODO: @sagiv !context.isDisableTieredStorageMetric()?
             templateHolder.getServerTypeDesc().getTypeCounters().incDiskReadCounter();
         }
@@ -190,9 +180,9 @@ public class InternalRDBMSManager implements IStorageAdapter {
     @Override
     public IEntryHolder getEntry(Context context, String uid, String classname, IEntryHolder template) throws SAException {
         if (template instanceof ITemplateHolder) {
-            return getEntryByUID(context, classname, uid, (ITemplateHolder) template);
+            return getEntryByUID(classname, uid, (ITemplateHolder) template);
         }
-        return getEntryByUID(context, classname, uid, null);
+        return getEntryByUID(classname, uid, null);
     }
 
     @Override
