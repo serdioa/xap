@@ -63,7 +63,7 @@ public interface InternalRDBMS {
 
     IEntryHolder getEntryByUID(Context context, String typeName, String uid) throws SAException;
 
-    ISAdapterIterator<IEntryHolder> makeEntriesIter(Context context, String typeName, ITemplateHolder templateHolder) throws SAException;
+    ISAdapterIterator<IEntryHolder> makeEntriesIter(String typeName, ITemplateHolder templateHolder) throws SAException;
 
     boolean isKnownType(String name);
 

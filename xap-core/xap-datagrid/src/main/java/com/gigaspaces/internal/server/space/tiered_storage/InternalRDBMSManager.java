@@ -27,8 +27,6 @@ public class InternalRDBMSManager implements IStorageAdapter {
     private final InternalRDBMS internalRDBMS;
     private IStorageAdapter possibleRecoverySA;
 
-    private boolean localStoreRecoveryPerformed = false;
-
     public InternalRDBMSManager(InternalRDBMS internalRDBMS) {
         this.internalRDBMS = internalRDBMS;
     }
@@ -133,24 +131,23 @@ public class InternalRDBMSManager implements IStorageAdapter {
 
     public IEntryHolder getEntryByUID(Context context, String typeName, String uid, ITemplateHolder templateHolder) throws SAException {
         IEntryHolder entryByUID = internalRDBMS.getEntryByUID(context, typeName, uid);
-        if (templateHolder != null && templateHolder.isReadOperation()) {
+        if (templateHolder != null && templateHolder.isReadOperation()) { //TODO: @sagiv !context.isDisableTieredStorageMetric()?
             templateHolder.getServerTypeDesc().getTypeCounters().incDiskReadCounter();
         }
         return entryByUID;
     }
 
-    public ISAdapterIterator<IEntryHolder> makeEntriesIter(Context context, String typeName, ITemplateHolder templateHolder) throws SAException{
-        ISAdapterIterator<IEntryHolder> iEntryHolderISAdapterIterator = internalRDBMS.makeEntriesIter(context, typeName, templateHolder);
+    public ISAdapterIterator<IEntryHolder> makeEntriesIter(String typeName, ITemplateHolder templateHolder) throws SAException {
+        ISAdapterIterator<IEntryHolder> iEntryHolderISAdapterIterator = internalRDBMS.makeEntriesIter(typeName, templateHolder);
 
-        if (templateHolder != null && templateHolder.isReadOperation() && !context.isDisableTieredStorageMetric()){
+        if (templateHolder != null && templateHolder.isReadOperation()) {
             templateHolder.getServerTypeDesc().getTypeCounters().incDiskReadCounter();
         }
-
 
         return iEntryHolderISAdapterIterator;
     }
 
-    public boolean isKnownType(String name){
+    public boolean isKnownType(String name) {
         return internalRDBMS.isKnownType(name);
     }
 
@@ -163,65 +160,6 @@ public class InternalRDBMSManager implements IStorageAdapter {
     @Override
     public ISAdapterIterator initialLoad(Context context, ITemplateHolder template) throws SAException {
         return possibleRecoverySA != null ? possibleRecoverySA.initialLoad(context, template) : null;
-//        if (_localBlobStoreRecoveryPerformed || !_persistentBlobStore) {
-//            if (_engine.getSpaceImpl().isBackup()) {
-//                //if persistent="false" and Backup - recover only from Primary Space
-//                return null;
-//            } else {
-//                //local blob store tried. now try recovery from mirror if exist
-//                return _possibleRecoverySA != null ? _possibleRecoverySA.initialLoad(context, template) : null;
-//            }
-//        }
-//        //first always try our local blob store
-//        _localBlobStoreRecoveryPerformed = true;
-//        //load metadata first
-//        final BlobStoreMetaDataIterator metadataIterator = new BlobStoreMetaDataIterator(_engine);
-//        Map<String, BlobStoreStorageAdapterClassInfo> classesInfo = metadataIterator.getClassesInfo();
-//
-//
-//        try {
-//            while (true) {
-//                final ITypeDesc typeDescriptor = (ITypeDesc) metadataIterator.next();
-//                if (typeDescriptor == null)
-//                    break;
-//                final String[] superClassesNames = typeDescriptor.getRestrictSuperClassesNames();
-//                if (superClassesNames != null) {
-//                    for (String superClassName : superClassesNames) {
-//                        if (_typeManager.getServerTypeDesc(superClassName) == null)
-//                            throw new IllegalArgumentException("Missing super class type descriptor ["
-//                                    + superClassName
-//                                    + "] for type ["
-//                                    + typeDescriptor.getTypeName() + "]");
-//                    }
-//                }
-//                _classes.put(typeDescriptor.getTypeName(), classesInfo.get(typeDescriptor.getTypeName()));
-//                _typeManager.addTypeDesc(typeDescriptor);
-//            }
-//        } catch (Exception e) {
-//            if (_logger.isDebugEnabled())
-//                LogUtils.throwing(_logger, getClass(), "Initial Metadata Load", e);
-//            throw new SAException(e);
-//        } finally {
-//            metadataIterator.close();
-//        }
-//
-//        //get all the loaded types and verify we have proper index setting (do we have to do this check ???)
-//        Iterator<String> iter = classesInfo.keySet().iterator();
-//        while (iter.hasNext()) {
-//            String className = iter.next();
-//            //check contains, if not then call introduce type
-//            TypeData typeData = _engine.getCacheManager().getTypeData(_engine.getTypeManager().getServerTypeDesc(className));
-//            if (typeData != null) {
-//
-//                BlobStoreStorageAdapterClassInfo cur = _classes.get(className);
-//                if (!_classes.isContained(className, typeData)) {
-//                    introduceDataType_impl(_engine.getTypeManager().getTypeDesc(className));
-//                }
-//            }
-//        }
-//
-//
-//        return new BlobStoreInitialLoadDataIterator(_engine);
     }
 
     @Override
@@ -264,7 +202,7 @@ public class InternalRDBMSManager implements IStorageAdapter {
 
     @Override
     public ISAdapterIterator<IEntryHolder> makeEntriesIter(ITemplateHolder template, long SCNFilter, long leaseFilter, IServerTypeDesc[] subClasses) throws SAException {
-        return null;
+        return new MultiTypedRDBMSISIterator(this, subClasses, template);
     }
 
     @Override
@@ -341,5 +279,7 @@ public class InternalRDBMSManager implements IStorageAdapter {
     public SpaceTypeManager getTypeManager() {
         return internalRDBMS.getTypeManager();
     }
+
+    //TODO: @sagiv count API
 }
 

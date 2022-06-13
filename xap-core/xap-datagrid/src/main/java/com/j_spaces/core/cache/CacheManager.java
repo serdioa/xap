@@ -6142,7 +6142,6 @@ public class CacheManager extends AbstractCacheManager
         ISAdapterIterator<IEntryHolder> entriesIter = null;
         try {
             context = getCacheContext();
-            context.setDisableTieredStorageMetric(true);
             entriesIter = makeEntriesIter(context, template, serverTypeDesc, 0, SystemTime.timeMillis(),memoryOnly || !isTieredStorage());
 
             String curClass = null;

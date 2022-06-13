@@ -3,23 +3,20 @@ package com.gigaspaces.internal.server.space.tiered_storage;
 import com.gigaspaces.internal.server.metadata.IServerTypeDesc;
 import com.gigaspaces.internal.server.storage.IEntryHolder;
 import com.gigaspaces.internal.server.storage.ITemplateHolder;
-import com.j_spaces.core.cache.context.Context;
 import com.j_spaces.core.sadapter.ISAdapterIterator;
 import com.j_spaces.core.sadapter.SAException;
 
 public class MultiTypedRDBMSISIterator implements ISAdapterIterator<IEntryHolder> {
 
     private final InternalRDBMSManager internalRDBMS;
-    private final Context context;
     private final IServerTypeDesc[] types;
     private final ITemplateHolder templateHolder;
     private ISAdapterIterator<IEntryHolder> currentTypeIterator;
     private int currentTypeIndex;
     private boolean finished;
 
-    public MultiTypedRDBMSISIterator(InternalRDBMSManager internalRDBMS, Context context, IServerTypeDesc[] types, ITemplateHolder templateHolder) {
+    public MultiTypedRDBMSISIterator(InternalRDBMSManager internalRDBMS, IServerTypeDesc[] types, ITemplateHolder templateHolder) {
         this.internalRDBMS = internalRDBMS;
-        this.context = context;
         this.types = types;
         this.templateHolder = templateHolder;
         this.currentTypeIndex = 0;
@@ -64,7 +61,7 @@ public class MultiTypedRDBMSISIterator implements ISAdapterIterator<IEntryHolder
         }
 
         if (foundType) {
-            return internalRDBMS.makeEntriesIter(context, types[currentTypeIndex].getTypeName(), templateHolder);
+            return internalRDBMS.makeEntriesIter(types[currentTypeIndex].getTypeName(), templateHolder);
         } else {
             return null;
         }
