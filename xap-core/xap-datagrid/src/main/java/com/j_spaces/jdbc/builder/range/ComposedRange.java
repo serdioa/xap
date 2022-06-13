@@ -20,9 +20,9 @@ public class ComposedRange extends Range {
 
 
     // list of ranges that will be used to filter the results
-    private LinkedList<Range> _ranges = new LinkedList<Range>();
+    private List<Range> _ranges = new ArrayList<Range>();
 
-    private ArrayList _PathList = new ArrayList<ArrayList>();
+    private List _PathList = new ArrayList<ArrayList>();
 
     boolean isUnion = false;
 
@@ -49,9 +49,7 @@ public class ComposedRange extends Range {
         if (range instanceof ComposedRange) {
             _PathList.add(((ComposedRange) range).getPaths());
         } else {
-            ArrayList arr = new ArrayList();
-            arr.add(range.getPath());
-            _PathList.add(arr);
+            _PathList.add(range.getPath());
         }
         return this;
 
@@ -62,7 +60,7 @@ public class ComposedRange extends Range {
         return _PathList.toString();
     }
 
-    public ArrayList<ArrayList> getPaths() {
+    public List<String> getPaths() {
         return _PathList;
     }
 
@@ -127,7 +125,7 @@ public class ComposedRange extends Range {
     public void toEntryPacket(QueryTemplatePacket e, int index) {
 
         // Use the first range as the query range - the others will be filtered later
-        _ranges.getFirst().toEntryPacket(e, index);
+        _ranges.get(0).toEntryPacket(e, index);
     }
 
     /* (non-Javadoc)
@@ -213,7 +211,7 @@ public class ComposedRange extends Range {
         return new SQLQuery(typeDesc.getTypeName(), b.toString(), preparedValues.toArray());
     }
 
-    public LinkedList<Range> get_ranges() {
+    public List<Range> getRanges() {
         return _ranges;
     }
 }
