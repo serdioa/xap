@@ -23,6 +23,7 @@ import com.gigaspaces.internal.query.predicate.ISpacePredicate;
 import com.gigaspaces.internal.query.valuegetter.ISpaceValueGetter;
 import com.gigaspaces.internal.query.valuegetter.SpaceEntryPathGetter;
 import com.gigaspaces.internal.query.valuegetter.SpaceEntryPropertyGetter;
+import com.gigaspaces.internal.server.storage.IEntryData;
 import com.gigaspaces.internal.version.PlatformLogicalVersion;
 import com.gigaspaces.lrmi.LRMIInvocationContext;
 import com.gigaspaces.query.sql.functions.SqlFunction;
@@ -310,5 +311,12 @@ public abstract class Range extends AbstractCustomQuery {
         return hasFunctionCallDescription(range) && !hasFunctionCallDescription(range1) ||
                 !hasFunctionCallDescription(range) && hasFunctionCallDescription(range1);
     }
+
+    public boolean evaluatePredicate(IEntryData entryData) {
+        Object value = (entryData.getFixedPropertyValue(entryData.getSpaceTypeDescriptor().getFixedPropertyPosition((getPath()))));
+        return getPredicate().execute(value);
+
+    }
+
 
 }
