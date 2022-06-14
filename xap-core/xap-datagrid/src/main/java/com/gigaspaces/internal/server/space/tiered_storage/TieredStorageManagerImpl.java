@@ -290,7 +290,7 @@ public class TieredStorageManagerImpl implements TieredStorageManager {
         ComposedRange compositeRange = null;
         boolean isUnion = false;
         if (templatePacket.getRanges().size() == 1) {
-            return templatePacket.getRanges().get(templatePacket.getRanges().keySet().toArray()[0]);
+            return templatePacket.getRanges().values().iterator().next();
         }
         if (templatePacket instanceof UnionTemplatePacket) {
             compositeRange = new ComposedRange(true);

@@ -21,9 +21,6 @@ public class ComposedRange extends Range {
 
     // list of ranges that will be used to filter the results
     private List<Range> _ranges = new ArrayList<Range>();
-
-    private List _PathList = new ArrayList<ArrayList>();
-
     boolean isUnion = false;
 
 
@@ -46,22 +43,7 @@ public class ComposedRange extends Range {
      */
     public ComposedRange add(Range range) {
         _ranges.add(range);
-        if (range instanceof ComposedRange) {
-            _PathList.add(((ComposedRange) range).getPaths());
-        } else {
-            _PathList.add(range.getPath());
-        }
         return this;
-
-    }
-
-    @Override
-    public String getPath() {
-        return _PathList.toString();
-    }
-
-    public List<String> getPaths() {
-        return _PathList;
     }
 
     /* (non-Javadoc)
