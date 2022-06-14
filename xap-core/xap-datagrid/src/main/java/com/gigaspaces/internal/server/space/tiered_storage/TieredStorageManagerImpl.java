@@ -17,7 +17,7 @@ import com.j_spaces.core.sadapter.SAException;
 import com.j_spaces.jdbc.AbstractDMLQuery;
 import com.j_spaces.jdbc.builder.QueryTemplatePacket;
 import com.j_spaces.jdbc.builder.UnionTemplatePacket;
-import com.j_spaces.jdbc.builder.range.ComposedRange;
+import com.j_spaces.jdbc.builder.range.CriteriaRange;
 import com.j_spaces.jdbc.builder.range.Range;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -287,26 +287,25 @@ public class TieredStorageManagerImpl implements TieredStorageManager {
     }
 
     private Range getRanges(QueryTemplatePacket templatePacket) {
-        ComposedRange compositeRange = null;
+        CriteriaRange criteriaRange = null;
         boolean isUnion = false;
         if (templatePacket.getRanges().size() == 1) {
             return templatePacket.getRanges().values().iterator().next();
         }
         if (templatePacket instanceof UnionTemplatePacket) {
-            compositeRange = new ComposedRange(true);
+            criteriaRange = new CriteriaRange(true);
             for (QueryTemplatePacket packet : ((UnionTemplatePacket) templatePacket).getPackets()) {
-                compositeRange.add(getRanges(packet));
+                criteriaRange.add(getRanges(packet));
 
             }
         } else {
-            compositeRange = new ComposedRange(false);
+            criteriaRange = new CriteriaRange(false);
             for (Range range : templatePacket.getRanges().values()) {
-                compositeRange.add(range);
+                criteriaRange.add(range);
             }
         }
 
-
-        return compositeRange;
+        return criteriaRange;
     }
 
 

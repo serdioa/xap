@@ -12,7 +12,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @com.gigaspaces.api.InternalApi
-public class ComposedRange extends Range {
+public class CriteriaRange extends Range {
     // serialVersionUID should never be changed.
     private static final long serialVersionUID = 1L;
 
@@ -22,7 +22,7 @@ public class ComposedRange extends Range {
     // list of ranges that will be used to filter the results
     private final List<Range> _ranges = new ArrayList<>();
 
-    public ComposedRange(boolean isUnion) {
+    public CriteriaRange(boolean isUnion) {
         this.isUnion = isUnion;
     }
 
@@ -38,7 +38,7 @@ public class ComposedRange extends Range {
     /**
      * Add a range to the composite ranges
      */
-    public ComposedRange add(Range range) {
+    public CriteriaRange add(Range range) {
         _ranges.add(range);
         return this;
     }
