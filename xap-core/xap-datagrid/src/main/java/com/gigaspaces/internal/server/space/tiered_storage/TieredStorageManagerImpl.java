@@ -256,7 +256,11 @@ public class TieredStorageManagerImpl implements TieredStorageManager {
         if (operationsRegistrator != null) {
             operationsRegistrator.clear();
         }
-        internalDiskStorage.shutDown();
+        try {
+            internalDiskStorage.shutDown();
+        } catch (Exception e) {
+            logger.debug(e.getMessage(), e);
+        }
     }
 
 

@@ -42,10 +42,4 @@ public interface TieredStorageManager {
     void initialize(SpaceEngine engine) throws SAException, RemoteException;
 
     boolean RDBMSContainsData();
-
-
-
-    // For the future when we would want to support warm layer
-    //    CachePredicate getCacheRule(String typeName, String tier);
-    //    Map<String,CachePredicate> getCacheRulesForTiers(String typeName);
 }

@@ -25,14 +25,15 @@ import java.util.Map;
 public class InternalRDBMSManager implements IStorageAdapter {
 
     private final InternalRDBMS internalRDBMS;
-    private IStorageAdapter possibleRecoverySA;
+    private IStorageAdapter externalInitialLoadSA;
+    private boolean loadedFromMirror = false;
 
     public InternalRDBMSManager(InternalRDBMS internalRDBMS) {
         this.internalRDBMS = internalRDBMS;
     }
 
-    public void setPossibleRecoverySA(IStorageAdapter possibleRecoverySA) {
-        this.possibleRecoverySA = possibleRecoverySA;
+    public void setExternalInitialLoadSA(IStorageAdapter externalInitialLoadSA) {
+        this.externalInitialLoadSA = externalInitialLoadSA;
     }
 
     public boolean initialize(String spaceName, String fullMemberName, SpaceTypeManager typeManager, boolean isBackup) throws SAException {
@@ -143,13 +144,17 @@ public class InternalRDBMSManager implements IStorageAdapter {
 
     @Override
     public void initialize() throws SAException {
-        if (possibleRecoverySA != null)
-            possibleRecoverySA.initialize();
+        if (externalInitialLoadSA != null)
+            externalInitialLoadSA.initialize();
     }
 
     @Override
     public ISAdapterIterator initialLoad(Context context, ITemplateHolder template) throws SAException {
-        return possibleRecoverySA != null ? possibleRecoverySA.initialLoad(context, template) : null;
+        if (!loadedFromMirror && externalInitialLoadSA != null) {
+            loadedFromMirror = true;
+            return externalInitialLoadSA.initialLoad(context, template);
+        }
+        return null;
     }
 
     @Override
@@ -205,8 +210,11 @@ public class InternalRDBMSManager implements IStorageAdapter {
         return 0;
     }
 
-    public void shutDown(){
+    @Override
+    public void shutDown() throws SAException {
         internalRDBMS.shutDown();
+        if (externalInitialLoadSA != null)
+            externalInitialLoadSA.shutDown();
     }
 
     @Override

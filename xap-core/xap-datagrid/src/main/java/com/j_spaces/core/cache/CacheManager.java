@@ -357,7 +357,7 @@ public class CacheManager extends AbstractCacheManager
             //TODO @sagiv missing handle for isSyncHybrid();
             final InternalRDBMSManager internalStorageManager = getEngine().getTieredStorageManager().getInternalStorageManager();
             if (!isMemorySA) {
-                internalStorageManager.setPossibleRecoverySA(sa);
+                internalStorageManager.setExternalInitialLoadSA(sa);
             }
             _storageAdapter = internalStorageManager;
             _isMemorySA = false;
@@ -1881,11 +1881,6 @@ public class CacheManager extends AbstractCacheManager
             //use space uid
         else {
             entry = _storageAdapter.getEntry(context, entryHolder.getUID(), entryHolder.getClassName(), entryHolder);
-//            if(isTieredStorage()){
-//                entry = _engine.getTieredStorageManager().getInternalStorageManager().getEntryByUID(context, entryHolder.getServerTypeDesc().getTypeName(), entryHolder.getUID(), null);
-//            } else {
-//                entry = _storageAdapter.getEntry(context, entryHolder.getUID(), entryHolder.getClassName(), entryHolder);
-//            }
         }
 
         if (entry == null)
@@ -4305,7 +4300,7 @@ public class CacheManager extends AbstractCacheManager
             if (ReadModifiers.isMemoryOnlySearch(template.getOperationModifiers())) {
                 return null;
             }
-            if (context.getTemplateTieredState() == TemplateMatchTier.MATCH_COLD || context.getTemplateTieredState() == TemplateMatchTier.MATCH_HOT_AND_COLD) {
+            if (context.getTemplateTieredState() != TemplateMatchTier.MATCH_HOT) {
                 try {
                     final String typeName = currServerTypeDesc.getTypeName();
                     //TODO: @sagiv validate it is not already UID
