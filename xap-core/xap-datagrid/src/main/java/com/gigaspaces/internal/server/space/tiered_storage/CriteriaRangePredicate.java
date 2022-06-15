@@ -35,6 +35,7 @@ public class CriteriaRangePredicate implements CachePredicate, InternalCachePred
     }
 
 
+    @Override
     public boolean evaluate(IEntryData entryData) {
         return criteria.evaluatePredicate(entryData);
     }
