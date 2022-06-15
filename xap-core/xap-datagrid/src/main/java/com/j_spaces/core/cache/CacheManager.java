@@ -627,12 +627,6 @@ public class CacheManager extends AbstractCacheManager
         if (isTieredStorageCachePolicy()) {
             loadDataFromDB = true;
             //TODO: @sagiv right now we load the data from backup disk too - !!assuming data is intact!!
-            if (_engine.getSpaceImpl().isPrimary()) {
-                if (!_engine.getTieredStorageManager().RDBMSContainsData()) {
-                    ConsistencyFile consistency = new ConsistencyFile(_engine.getSpaceName(), _engine.getFullSpaceName());
-                    consistency.setStorageState(StorageConsistencyModes.Consistent);
-                }
-            }
             if (_engine.getSpaceImpl().isBackup()) {
                 if (_engine.isTieredStorageFullMemoryRecoveryEnable()) {
                     loadDataFromDB = false;
@@ -960,13 +954,10 @@ public class CacheManager extends AbstractCacheManager
         context.setInitialLoadInfo(initialLoadInfo);
 
         if (isTieredStorageCachePolicy()) {
+            //if RDBMS is not empty init from RDBMS, else-if has mirror initial load from mirror
             if (!getEngine().getTieredStorageManager().RDBMSContainsData()) {
-                //special first call to SA- SA will return all classes, not just fifo classes
+                //initial load from external SA
                 residentEntriesInitialLoad(context, configReader, initialLoadInfo);
-
-                // update consistency after finished initial load
-                ConsistencyFile consistency = new ConsistencyFile(_engine.getSpaceName(), _engine.getFullSpaceName());
-                consistency.setStorageState(StorageConsistencyModes.Consistent);
 
                 if (_logger.isInfoEnabled()) {
                     String formattedErrors = format(initialLoadInfo.getInitialLoadErrors());
@@ -979,16 +970,18 @@ public class CacheManager extends AbstractCacheManager
                             "\tTotal Time: " + JSpaceUtilities.formatMillis(SystemTime.timeMillis() - initialLoadInfo.getRecoveryStartTime()) + ".");
                 }
             } else {
-                //if RDBMS is not empty init from RDBMS, else-if has mirror initial load from mirror
-                // TODO:@sagiv init  from mirror handle in?
+                //initial load from RDBMS
                 _engine.getTieredStorageManager().getInternalStorageManager().initialLoad(context, _engine, initialLoadInfo);
                 if (_logger.isInfoEnabled()) {
                     _logger.info("Tiered-Storage Data source recovery:\n " +
-                            "\tEntries found in warm tier: " + initialLoadInfo.getFoundInDatabase() + ".\n" +
+                            "\tEntries found in disk: " + initialLoadInfo.getFoundInDatabase() + ".\n" +
                             "\tEntries inserted to hot tier: " + initialLoadInfo.getInsertedToHotTier() + ".\n" +
                             "\tTotal Time: " + JSpaceUtilities.formatMillis(SystemTime.timeMillis() - initialLoadInfo.getRecoveryStartTime()) + ".");
                 }
             }
+            // update consistency after finished initial load
+            ConsistencyFile consistency = new ConsistencyFile(_engine.getSpaceName(), _engine.getFullSpaceName());
+            consistency.setStorageState(StorageConsistencyModes.Consistent);
             return;
         }
 
