@@ -9,19 +9,11 @@ import com.j_spaces.jdbc.builder.range.Range;
 public class CriteriaRangePredicate implements CachePredicate, InternalCachePredicate {
     private final String typeName;
     private final Range criteria;
-    private final boolean isUnion;
 
     public CriteriaRangePredicate(String typeName, Range criteria) {
-        this(typeName, criteria, false);
-
-    }
-
-    public CriteriaRangePredicate(String typeName, Range criteria, boolean isUnion) {
         this.typeName = typeName;
         this.criteria = criteria;
-        this.isUnion = isUnion;
     }
-
     public String getTypeName() {
         return typeName;
     }
