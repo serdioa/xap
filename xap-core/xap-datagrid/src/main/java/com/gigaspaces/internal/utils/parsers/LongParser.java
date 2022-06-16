@@ -32,7 +32,7 @@ public class LongParser extends AbstractParser {
     @Override
     public Object parse(String s, Class<?> fromType) throws SQLException {
         if (fromType == Double.class) {
-            return new Double(s).longValue();
+            return Math.round(new Double(s));
         }
         return parse(s);
     }
