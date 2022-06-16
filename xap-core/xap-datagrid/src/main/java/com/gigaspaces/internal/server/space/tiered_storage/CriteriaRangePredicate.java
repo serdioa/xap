@@ -14,7 +14,6 @@ public class CriteriaRangePredicate implements CachePredicate, InternalCachePred
         this.typeName = typeName;
         this.criteria = criteria;
     }
-
     public String getTypeName() {
         return typeName;
     }
@@ -35,9 +34,10 @@ public class CriteriaRangePredicate implements CachePredicate, InternalCachePred
         return SqliteUtils.getTemplateMatchTier(criteria, packet, null);
     }
 
+
     @Override
     public boolean evaluate(IEntryData entryData) {
-        return criteria.getPredicate().execute(entryData.getFixedPropertyValue(entryData.getSpaceTypeDescriptor().getFixedPropertyPosition(criteria.getPath())));
+        return criteria.evaluatePredicate(entryData);
     }
 
     @Override
@@ -47,4 +47,6 @@ public class CriteriaRangePredicate implements CachePredicate, InternalCachePred
                 ", criteria='" + criteria + '\'' +
                 '}';
     }
+
+
 }
