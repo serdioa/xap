@@ -392,20 +392,31 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
         if (tieredStorage != null) {
             TieredStorageConfig storageConfig = (TieredStorageConfig) tieredStorage;
             validateTieredStorage(storageConfig);
-            String className = System.getProperty(TIERED_STORAGE_INTERNAL_RDBMS_CLASS_PROP, TIERED_STORAGE_INTERNAL_RDBMS_CLASS_DEFAULT);
-            InternalRDBMS rdbms = ClassLoaderHelper.newInstance(className);
-            rdbms.setLogger(_fullSpaceName);
-            InternalRDBMSManager internalRDBMSManager = new InternalRDBMSManager(rdbms);
-            this.tieredStorageManager = new TieredStorageManagerImpl(storageConfig, internalRDBMSManager, _fullSpaceName);
+            createTieredStorageManagerConfiguration(storageConfig);
+        } else {
+            boolean isTieredStorage = _configReader.getIntSpaceProperty(CACHE_POLICY_PROP, String.valueOf(CACHE_POLICY_ALL_IN_CACHE)) == CACHE_POLICY_TIERED_STORAGE;
+            if (isTieredStorage) {
+                TieredStorageConfig storageConfig = new TieredStorageConfig();
+                storageConfig.setTables(new HashMap<>());
+                createTieredStorageManagerConfiguration(storageConfig);
+            }
         }
+    }
+
+    private void createTieredStorageManagerConfiguration(TieredStorageConfig storageConfig) throws ClassNotFoundException, IllegalAccessException, InstantiationException {
+        String className = System.getProperty(TIERED_STORAGE_INTERNAL_RDBMS_CLASS_PROP, TIERED_STORAGE_INTERNAL_RDBMS_CLASS_DEFAULT);
+        InternalRDBMS rdbms = ClassLoaderHelper.newInstance(className);
+        rdbms.setLogger(_fullSpaceName);
+        InternalRDBMSManager internalRDBMSManager = new InternalRDBMSManager(rdbms);
+        this.tieredStorageManager = new TieredStorageManagerImpl(storageConfig, internalRDBMSManager, _fullSpaceName);
     }
 
 
     private void validateTieredStorage(TieredStorageConfig storageConfig) {
         for (TieredStorageTableConfig tableConfig : storageConfig.getTables().values()) {
-            if(tableConfig.isTransient()){
-                if(tableConfig.getCriteria() != null || tableConfig.getPeriod() != null
-                        || tableConfig.getTimeColumn() != null || tableConfig.getRetention() != null){
+            if (tableConfig.isTransient()) {
+                if (tableConfig.getCriteria() != null || tableConfig.getPeriod() != null
+                        || tableConfig.getTimeColumn() != null || tableConfig.getRetention() != null) {
                     throw new TieredStorageConfigException("Illegal Config for type " + tableConfig.getName() + ": " +
                             "transient type should have only isTransient = true , actual: " + tableConfig);
                 }
