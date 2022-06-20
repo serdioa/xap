@@ -20,7 +20,6 @@ import com.gigaspaces.internal.server.space.tiered_storage.TieredStorageConfig;
 import com.gigaspaces.internal.server.space.tiered_storage.TieredStorageTableConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.support.BeanDefinitionBuilder;
 import org.w3c.dom.Element;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
@@ -36,7 +35,7 @@ public class TieredStorageDefinitionsParser {
     private static final String TABLES = "os-core:tables";
     private static final String TABLE = "os-core:table";
 
-    public static void parseXml(Element tieredStorageElement, BeanDefinitionBuilder builder) {
+    public static TieredStorageConfig parseXml(Element tieredStorageElement) {
         TieredStorageConfig tieredStorageConfig = new TieredStorageConfig();
         NodeList tableNodesList = tieredStorageElement.getElementsByTagName(TABLES);
         if (tableNodesList.getLength() > 0) {
@@ -75,8 +74,8 @@ public class TieredStorageDefinitionsParser {
         else {
             logger.error("no tables entity found in tiered storage");
         }
-        builder.addPropertyValue("tieredStorageConfig", tieredStorageConfig);
 
+        return tieredStorageConfig;
     }
 
     private static Duration getDurationAttribute(String attName, NamedNodeMap attributes){

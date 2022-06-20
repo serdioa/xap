@@ -28,22 +28,8 @@ import com.gigaspaces.internal.cluster.node.impl.config.ReplicationNodeConfig;
 import com.gigaspaces.internal.cluster.node.impl.config.ReplicationNodeConfigBuilder;
 import com.gigaspaces.internal.cluster.node.impl.directPersistency.DirectPersistencySyncHandler;
 import com.gigaspaces.internal.cluster.node.impl.groups.AllSpaceItemGroupsExtractor;
-import com.gigaspaces.internal.cluster.node.impl.handlers.AbstractSpaceReplicationEntryEventHandler;
-import com.gigaspaces.internal.cluster.node.impl.handlers.ActiveActiveSpaceReplicationEntryEventHandler;
-import com.gigaspaces.internal.cluster.node.impl.handlers.BlobstorePrimaryBackupSpaceReplicationEntryEventHandler;
-import com.gigaspaces.internal.cluster.node.impl.handlers.PrimaryBackupSpaceReplicationEntryEventHandler;
-import com.gigaspaces.internal.cluster.node.impl.handlers.PrimaryBackupSpaceReplicationEvictionProtectionEntryEventHandler;
-import com.gigaspaces.internal.cluster.node.impl.handlers.SpaceReplicationEntryLeaseEventHandler;
-import com.gigaspaces.internal.cluster.node.impl.handlers.SpaceReplicationMetadataEventHandler;
-import com.gigaspaces.internal.cluster.node.impl.handlers.SpaceReplicationTemplateEventHandler;
-import com.gigaspaces.internal.cluster.node.impl.handlers.SpaceReplicationTransactionEventHandler;
-import com.gigaspaces.internal.cluster.node.impl.packets.data.BlobstoreReplicationPacketDataConsumer;
-import com.gigaspaces.internal.cluster.node.impl.packets.data.BlobstoreReplicationPacketDataProducer;
-import com.gigaspaces.internal.cluster.node.impl.packets.data.IReplicationPacketDataProducer;
-import com.gigaspaces.internal.cluster.node.impl.packets.data.ReplicationPacketDataConsumer;
-import com.gigaspaces.internal.cluster.node.impl.packets.data.ReplicationPacketDataMediator;
-import com.gigaspaces.internal.cluster.node.impl.packets.data.ReplicationPacketDataProducer;
-import com.gigaspaces.internal.cluster.node.impl.packets.data.SpaceEngineFixFacade;
+import com.gigaspaces.internal.cluster.node.impl.handlers.*;
+import com.gigaspaces.internal.cluster.node.impl.packets.data.*;
 import com.gigaspaces.internal.cluster.node.impl.processlog.IReplicationProcessLogBuilder;
 import com.gigaspaces.internal.cluster.node.impl.processlog.globalorder.GlobalOrderProcessLogBuilder;
 import com.gigaspaces.internal.cluster.node.impl.processlog.multibucketsinglefile.MultiBucketSingleFileProcessLogBuilder;
@@ -51,11 +37,7 @@ import com.gigaspaces.internal.cluster.node.impl.processlog.multisourcesinglefil
 import com.gigaspaces.internal.cluster.node.impl.replica.SpaceReplicaDataConsumer;
 import com.gigaspaces.internal.cluster.node.impl.replica.SpaceReplicaDataProducerBuilder;
 import com.gigaspaces.internal.extension.XapExtensions;
-import com.gigaspaces.internal.server.space.SpaceConfigReader;
-import com.gigaspaces.internal.server.space.SpaceEngine;
-import com.gigaspaces.internal.server.space.SpaceEngineReplicaConsumerFacade;
-import com.gigaspaces.internal.server.space.SpaceEngineReplicaDirectPersistencySyncConsumerFacade;
-import com.gigaspaces.internal.server.space.SpaceImpl;
+import com.gigaspaces.internal.server.space.*;
 import com.gigaspaces.internal.server.space.metadata.SpaceTypeManager;
 import com.gigaspaces.internal.sync.mirror.MirrorConfig;
 import com.gigaspaces.internal.sync.mirror.MirrorService;
@@ -66,18 +48,12 @@ import com.j_spaces.core.cluster.ClusterPolicy;
 import com.j_spaces.core.cluster.ReplicationProcessingType;
 import com.j_spaces.core.sadapter.IStorageAdapter;
 import com.j_spaces.kernel.SystemProperties;
-
-import java.rmi.RemoteException;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static com.j_spaces.core.Constants.CacheManager.CACHE_POLICY_ALL_IN_CACHE;
-import static com.j_spaces.core.Constants.CacheManager.CACHE_POLICY_BLOB_STORE;
-import static com.j_spaces.core.Constants.CacheManager.CACHE_POLICY_LRU;
-import static com.j_spaces.core.Constants.CacheManager.CACHE_POLICY_PROP;
-import static com.j_spaces.core.Constants.CacheManager.FULL_CACHE_MANAGER_BLOBSTORE_PERSISTENT_PROP;
-import static com.j_spaces.core.Constants.CacheManager.FULL_CACHE_MANAGER_USE_BLOBSTORE_BULKS_PROP;
+import java.rmi.RemoteException;
+
+import static com.j_spaces.core.Constants.CacheManager.*;
 
 /**
  * Encapsulates initialization of replication-related components.
@@ -262,16 +238,20 @@ public class SpaceReplicationInitializer {
     private AbstractSpaceReplicationEntryEventHandler getEntryHandler() {
         AbstractSpaceReplicationEntryEventHandler entryHandler;
         // we duplicate the cache manager logic here because it is null at this point
+        // _storageAdapter.supportsExternalDB() true if mirror, false otherwise
         final boolean isCentralAndExternalDB =
                 _storageAdapter.supportsExternalDB() &&
                         _spaceEngine.getClusterPolicy().m_CacheLoaderConfig.centralDataSource;
 
-        final boolean allInCache = _spaceEngine.getConfigReader().getIntSpaceProperty(CACHE_POLICY_PROP, !_storageAdapter.supportsExternalDB() ?
-                String.valueOf(CACHE_POLICY_ALL_IN_CACHE) : String.valueOf(CACHE_POLICY_LRU)) == CACHE_POLICY_ALL_IN_CACHE;
-        final boolean blobStore = !allInCache && _spaceEngine.getConfigReader().getIntSpaceProperty(CACHE_POLICY_PROP, !_storageAdapter.supportsExternalDB() ?
-                String.valueOf(CACHE_POLICY_ALL_IN_CACHE) : String.valueOf(CACHE_POLICY_LRU)) == CACHE_POLICY_BLOB_STORE;
+        final String cachePolicyDefaultValue = _storageAdapter.supportsExternalDB() ?
+                String.valueOf(CACHE_POLICY_LRU) : String.valueOf(CACHE_POLICY_ALL_IN_CACHE);
+
+        final boolean lruCachePolicy = _spaceEngine.getConfigReader().getIntSpaceProperty(CACHE_POLICY_PROP, cachePolicyDefaultValue) == CACHE_POLICY_LRU;
+        final boolean customLruCachePolicy = _spaceEngine.getConfigReader().getIntSpaceProperty(CACHE_POLICY_PROP, cachePolicyDefaultValue) == CACHE_POLICY_PLUGGED_EVICTION;
+
+        // if this is LRU, required eviction
         final boolean requiresEvictionReplicationProtection = _spaceEngine.hasMirror() && _storageAdapter.supportsExternalDB() &&
-                !allInCache && !blobStore;
+                (lruCachePolicy || customLruCachePolicy);
 
         if (_clusterPolicy.isPrimaryElectionAvailable()) {
             if (requiresEvictionReplicationProtection) {
