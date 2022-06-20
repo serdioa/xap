@@ -828,7 +828,7 @@ public class CacheManager extends AbstractCacheManager
     private SpaceEvictionStrategy createEvictionStrategy(SpaceConfigReader configReader, Properties properties)
             throws CreateException {
         if (isResidentEntriesCachePolicy())
-            return new AllInCacheSpaceEvictionStrategy();
+            return new AllInCacheSpaceEvictionStrategy(); //TODO @moran if tiered-storage, isResidentEntriesCachePolicy == true, and we return this
 
         if (getCachePolicy() == CACHE_POLICY_LRU) {
             int touchThreashold = configReader.getIntSpaceProperty(CACHE_MANAGER_LRU_TOUCH_THRESHOLD_PROP,

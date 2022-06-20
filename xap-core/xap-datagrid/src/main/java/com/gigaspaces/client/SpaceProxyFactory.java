@@ -209,6 +209,7 @@ public class SpaceProxyFactory {
             }
         }
 
+        //TODO @moran if cache-policy for tiered-storage is already defined, do we need to check and skip this section?
         //if tiered storage is enabled using sys prop/ env variable/ space property, and not already configured using configurer
         if (isTieredStoragePropertyEnabled(props)) {
             if (spaceInstanceConfig != null) {

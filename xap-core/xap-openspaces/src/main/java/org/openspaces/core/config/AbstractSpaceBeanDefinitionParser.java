@@ -16,11 +16,13 @@
 
 package org.openspaces.core.config;
 
+import com.gigaspaces.internal.server.space.tiered_storage.TieredStorageConfig;
 import org.openspaces.core.config.xmlparser.SecurityDefinitionsParser;
 import org.openspaces.core.config.xmlparser.TieredStorageDefinitionsParser;
 import org.openspaces.core.space.AllInCachePolicy;
 import org.openspaces.core.space.CachePolicy;
 import org.openspaces.core.space.LruCachePolicy;
+import org.openspaces.core.space.TieredStorageCachePolicy;
 import org.springframework.beans.factory.config.RuntimeBeanReference;
 import org.springframework.beans.factory.support.BeanDefinitionBuilder;
 import org.springframework.beans.factory.support.ManagedList;
@@ -39,7 +41,6 @@ import java.util.List;
 public abstract class AbstractSpaceBeanDefinitionParser extends AbstractSimpleBeanDefinitionParser {
 
     private static final String PROPERTIES = "properties";
-    private static final String TIERED_STORAGE = "tiered-storage";
     private static final String SECURITY = "security";
     private static final String DATA_SOURCE = "external-data-source";
     private static final String SPACE_DATA_SOURCE = "space-data-source";
@@ -72,11 +73,6 @@ public abstract class AbstractSpaceBeanDefinitionParser extends AbstractSimpleBe
                 builder.addPropertyValue("secured", Boolean.parseBoolean(secured));
             }
         }
-        Element tieredStorageElement = DomUtils.getChildElementByTagName(element, TIERED_STORAGE);
-        if (tieredStorageElement != null) {
-            TieredStorageDefinitionsParser.parseXml(tieredStorageElement, builder);
-        }
-
     }
 
     protected void parseServerComponents(Element element, ParserContext parserContext, BeanDefinitionBuilder builder) {
@@ -134,6 +130,13 @@ public abstract class AbstractSpaceBeanDefinitionParser extends AbstractSimpleBe
         if (allInCacheEle != null) {
             cachePolicy = new AllInCachePolicy();
         }
+        //TODO @moran change tag to tiered-storage-policy, affects all pu.xml using tiered-storage
+        Element tieredStorageElement = DomUtils.getChildElementByTagName(element, "tiered-storage");
+        if (tieredStorageElement != null) {
+            TieredStorageConfig tieredStorageConfig = TieredStorageDefinitionsParser.parseXml(tieredStorageElement);
+            cachePolicy = new TieredStorageCachePolicy(tieredStorageConfig);
+        }
+
         Element lruCacheEle = DomUtils.getChildElementByTagName(element, "lru-cache-policy");
         if (lruCacheEle != null) {
             cachePolicy = new LruCachePolicy();
