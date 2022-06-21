@@ -28,18 +28,13 @@ import com.gigaspaces.security.directory.DefaultCredentialsProvider;
 import com.gigaspaces.security.directory.UserDetails;
 import com.gigaspaces.sync.SpaceSynchronizationEndpoint;
 import com.j_spaces.core.IJSpace;
-
 import org.openspaces.core.cluster.ClusterInfo;
 import org.openspaces.core.config.TieredStorageConfigurer;
 import org.openspaces.core.space.filter.FilterProviderFactory;
 import org.openspaces.core.space.filter.replication.ReplicationFilterProviderFactory;
 import org.springframework.util.StringUtils;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
+import java.util.*;
 
 /**
  * A simple configurer helper to create {@link IJSpace} instances. The configurer wraps {@link
@@ -374,7 +369,7 @@ public class UrlSpaceConfigurer implements SpaceConfigurer {
     }
 
     public void tieredStorage(TieredStorageConfigurer tieredStorageConfigurer) {
-        urlSpaceFactoryBean.setCustomComponent(tieredStorageConfigurer);
+        urlSpaceFactoryBean.setCustomComponent(tieredStorageConfigurer); //TODO @moran remove support for TS custom component
     }
 
     /**
