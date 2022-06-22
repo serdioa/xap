@@ -15,7 +15,7 @@
         <junit.version>4.12</junit.version>
         <jetty.version>9.4.44.v20210927</jetty.version>
         <jetty.mortbay.jasper.version>9.0.52</jetty.mortbay.jasper.version>
-        <gs.build-name>16.1.1-m1-ci-0</gs.build-name>
+        <gs.build-name>16.1.2-m1-ci-0</gs.build-name>
         <gs.git-tag>Unspecified</gs.git-tag>
         <gs.git-sha.xap>unspecified</gs.git-sha.xap>
         <xap.git.branch>master</xap.git.branch>
