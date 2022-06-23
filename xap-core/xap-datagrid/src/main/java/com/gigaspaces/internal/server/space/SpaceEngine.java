@@ -390,7 +390,8 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
     private void createTieredStorageManager() throws IllegalAccessException, InstantiationException, ClassNotFoundException {
         Object tieredStorage = this._clusterInfo.getCustomComponent(SPACE_CLUSTER_INFO_TIERED_STORAGE_COMPONENT_NAME);
         if (tieredStorage != null) {
-            //TODO @moran/@sapir this path is still used by tgrid tests as custom component config
+            //TODO @moran/@sapir this path is still used by tgrid tests as custom component config - see EmbeddedSpaceConfigurer.tieredStorage,
+            //also used by InternalService.scala
             TieredStorageConfig storageConfig = (TieredStorageConfig) tieredStorage;
             validateTieredStorage(storageConfig);
             createTieredStorageManagerConfiguration(storageConfig);
