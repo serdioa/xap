@@ -418,7 +418,7 @@ public class SpaceProxyImpl extends AbstractDirectSpaceProxy implements SameProx
     }
 
     public void beforeSpaceAction(CommonProxyActionInfo action) {
-        if(action.txn != null && this.getSpaceClusterInfo().isTieredStorage()){
+        if (action.txn != null && this.getProxySettings().getSpaceAttributes().isTieredStorageCachePolicy()) {
 //           throw new TieredStorageOperationException("Transactions are not supported with tiered storage at this stage");
         }
         action.txn = _transactionManager.beforeSpaceAction(action.txn);

@@ -305,13 +305,17 @@ public class SpaceClusterInfo implements SmartExternalizable {
         return spaceName + "_container" + member + ":" + spaceName;
     }
 
-    public boolean isTieredStorage(){
+    @Deprecated
+    //TODO @moran/@sapir called from InternalService.scala ?!!
+    public boolean isTieredStorage() {
         return customComponents.get(Constants.TieredStorage.SPACE_CLUSTER_INFO_TIERED_STORAGE_COMPONENT_NAME) != null;
     }
 
-    public Map<String, TieredStorageTableConfig> tieredStorageConfigString (){
+    @Deprecated
+    //TODO @moran/@sapir called from InternalService.scala ?!!
+    public Map<String, TieredStorageTableConfig> tieredStorageConfigString() {
         TieredStorageConfig tieredStorageConfig = (TieredStorageConfig) customComponents.get(Constants.TieredStorage.SPACE_CLUSTER_INFO_TIERED_STORAGE_COMPONENT_NAME);
-       return tieredStorageConfig.getTables();
+        return tieredStorageConfig.getTables();
     }
 
     @Override
