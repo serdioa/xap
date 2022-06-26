@@ -51,7 +51,7 @@ public abstract class ObjectConverter {
         if (parser == null)
             throw new SQLException("Failed converting [" + obj + "] from '" + obj.getClass().getName() + "' to '" + type.getName() + "' - converter not found.");
         try {
-            obj = parser.parse(obj.toString());
+            obj = parser.parse(obj.toString(), obj.getClass());
             return obj;
         } catch (RuntimeException e) {
             throw new SQLException("Failed converting [" + obj + "] from '"
