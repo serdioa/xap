@@ -24,4 +24,8 @@ import java.sql.SQLException;
  */
 public abstract class AbstractParser {
     public abstract Object parse(String s) throws SQLException;
+
+    public Object parse(String s, Class<?> fromType) throws SQLException {
+        return parse(s);
+    }
 }
