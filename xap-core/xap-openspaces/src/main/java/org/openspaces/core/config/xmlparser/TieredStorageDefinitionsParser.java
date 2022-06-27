@@ -56,20 +56,19 @@ public class TieredStorageDefinitionsParser {
                     tableConfig.setTransient(Boolean.parseBoolean(sTransient));
                 }
                 NodeList cacheRulesList = ((Element) tableNode).getElementsByTagName("os-core:cache-rule");
-                if (cacheRulesList.getLength() > 0){
+                if (cacheRulesList.getLength() > 0) {
                     Node cacheRuleNode = cacheRulesList.item(0);
                     NamedNodeMap cacheRuleNodeAttributes = cacheRuleNode.getAttributes();
-                    tableConfig.setCriteria(getAttribute("criteria",cacheRuleNodeAttributes));
+                    tableConfig.setCriteria(getAttribute("criteria", cacheRuleNodeAttributes));
                     tableConfig.setPeriod(getDurationAttribute("period", cacheRuleNodeAttributes));
+                } else {
+                    logger.debug("no cache-rule for table " + tableConfig.getName());
                 }
-                else {
-                    logger.debug("no cache-rule for table "+tableConfig.getName());
+                if (logger.isDebugEnabled() && tieredStorageConfig.getTables().containsKey(tableConfig.getName())) {
+                    logger.debug("table " + tableConfig.getName() + " appears more than once");
                 }
-                if (tablesMap.putIfAbsent(tableConfig.getName(), tableConfig) != null){
-                    logger.debug("table "+tableConfig.getName() + " appears more than once");
-                }
+                tieredStorageConfig.addTable(tableConfig);
             }
-            tieredStorageConfig.setTables(tablesMap);
         }
         else {
             logger.error("no tables entity found in tiered storage");

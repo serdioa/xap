@@ -27,7 +27,6 @@ import com.gigaspaces.security.directory.CredentialsProvider;
 import com.gigaspaces.security.directory.DefaultCredentialsProvider;
 import com.gigaspaces.sync.SpaceSynchronizationEndpoint;
 import com.j_spaces.core.IJSpace;
-
 import org.openspaces.core.cluster.ClusterInfo;
 import org.openspaces.core.config.BlobStoreDataPolicyConfigurer;
 import org.openspaces.core.config.BlobStoreDataPolicyFactoryBean;
@@ -256,6 +255,7 @@ public class EmbeddedSpaceConfigurer extends AbstractSpaceConfigurer {
         return this;
     }
 
+    //TODO @moran/@sapir remove usage
     public EmbeddedSpaceConfigurer tieredStorage(TieredStorageConfigurer tieredStorageConfigurer) {
         validate();
         factoryBean.setCustomComponent(tieredStorageConfigurer);

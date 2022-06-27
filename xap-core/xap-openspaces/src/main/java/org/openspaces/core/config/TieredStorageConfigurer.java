@@ -17,6 +17,7 @@ import java.util.Map;
  * @author Yael Nahon
  * @since 16.0
  */
+@Deprecated //TODO @moran remove this usage
 public class TieredStorageConfigurer implements SpaceCustomComponentFactoryBean, SmartExternalizable {
     static final long serialVersionUID = 8399147971664655711L;
 
@@ -24,7 +25,9 @@ public class TieredStorageConfigurer implements SpaceCustomComponentFactoryBean,
 
     @Override
     public SpaceCustomComponent createSpaceComponent() {
-        return new TieredStorageConfig().setTables(tables);
+        TieredStorageConfig tieredStorageConfig = new TieredStorageConfig();
+        tables.values().forEach(tieredStorageConfig::addTable);
+        return tieredStorageConfig;
     }
 
     public TieredStorageConfigurer addTable(TieredStorageTableConfig tableConfig) {

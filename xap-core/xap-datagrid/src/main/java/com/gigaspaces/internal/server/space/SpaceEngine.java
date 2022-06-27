@@ -406,7 +406,6 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
                     createTieredStorageManagerConfiguration(tieredStorageConfig);
                 } else {
                     TieredStorageConfig storageConfig = new TieredStorageConfig();
-                    storageConfig.setTables(new HashMap<>()); //empty table
                     createTieredStorageManagerConfiguration(storageConfig);
                 }
             }
