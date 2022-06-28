@@ -42,7 +42,6 @@ import com.gigaspaces.internal.server.space.IClusterInfoChangedListener;
 import com.gigaspaces.internal.server.space.IRemoteSpace;
 import com.gigaspaces.internal.server.space.SpaceImpl;
 import com.gigaspaces.internal.server.space.tiered_storage.error.TieredStorageMetadataException;
-import com.gigaspaces.internal.server.space.tiered_storage.error.TieredStorageOperationException;
 import com.gigaspaces.internal.transport.ITemplatePacket;
 import com.gigaspaces.internal.version.PlatformLogicalVersion;
 import com.gigaspaces.logger.Constants;
@@ -419,8 +418,8 @@ public class SpaceProxyImpl extends AbstractDirectSpaceProxy implements SameProx
     }
 
     public void beforeSpaceAction(CommonProxyActionInfo action) {
-        if (action.txn != null && this.getProxySettings().getSpaceAttributes().isTieredStorageCachePolicy()) {
-           throw new TieredStorageOperationException("Transactions are not supported with tiered storage at this stage");
+        if(action.txn != null && this.getProxySettings().getSpaceAttributes().isTieredStorageCachePolicy()){
+//           throw new TieredStorageOperationException("Transactions are not supported with tiered storage at this stage");
         }
         action.txn = _transactionManager.beforeSpaceAction(action.txn);
     }
