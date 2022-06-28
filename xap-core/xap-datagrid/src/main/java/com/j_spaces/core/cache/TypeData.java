@@ -162,7 +162,7 @@ public class TypeData {
         return "TypeData: " + this._className;
     }
 
-    public TypeData(IServerTypeDesc serverTypeDesc, TypeDataFactory typeDataFactory, boolean isLocalCache, boolean isResidentEntriesCachePolicy) {
+    public TypeData(IServerTypeDesc serverTypeDesc, TypeDataFactory typeDataFactory, boolean isLocalCache) {
         if (serverTypeDesc == null)
             throw new IllegalArgumentException("Argument cannot be null - 'serverTypeDesc'.");
         if (serverTypeDesc.isInactive())
@@ -204,7 +204,7 @@ public class TypeData {
         boolean[] indexesRelatedFixedProperties = new boolean[_properties.length];
         HashSet<String> indexesRelatedDynamicProperties = new HashSet<String>();
 
-        _isBlobStoreClass = typeDataFactory.getCcheManager().isblobStoreDataSpace() && serverTypeDesc.getTypeDesc().isBlobstoreEnabled();
+        _isBlobStoreClass = typeDataFactory.getCcheManager().isBlobStoreCachePolicy() && serverTypeDesc.getTypeDesc().isBlobstoreEnabled();
 
         if (serverTypeDesc.getTypeDesc().hasSequenceNumber()) {
             if (_cacheManager.isEvictableCachePolicy() && !_cacheManager.isMemorySpace())
@@ -228,7 +228,7 @@ public class TypeData {
                     if (idProperties.size() != 1 || !idProperties.get(0).equals(u.getName())) {
                         if (isLocalCache)
                             u.setUnique(false); //no uniques in local cache-view  just the id
-                        else if (!isResidentEntriesCachePolicy)
+                        else if (_cacheManager.isEvictableCachePolicy())
                             throw new UnsupportedOperationException("unique indices not supported for evictable cache policy=" + serverTypeDesc.getTypeName() + " index=" + u.getName());
                     }
                 }
@@ -284,7 +284,7 @@ public class TypeData {
                     ISpaceIndex u = (ISpaceIndex) spaceIndex;
                     if (isLocalCache)
                         u.setUnique(false); //no uniques in local cache-view  just the id
-                    else if (!isResidentEntriesCachePolicy)
+                    else if (_cacheManager.isEvictableCachePolicy())
                         throw new UnsupportedOperationException("unique indices not supported for non All-In_cache policy type=" + serverTypeDesc.getTypeName() + " index=" + u.getName());
                 }
 

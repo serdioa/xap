@@ -2,6 +2,7 @@ package com.gigaspaces.internal.server.space.tiered_storage;
 
 import com.gigaspaces.internal.server.space.SpaceEngine;
 import com.gigaspaces.internal.server.space.SpaceImpl;
+import com.gigaspaces.internal.server.space.tiered_storage.error.TieredStorageConfigException;
 import com.gigaspaces.internal.server.storage.IEntryHolder;
 import com.gigaspaces.internal.server.storage.ITemplateHolder;
 import com.gigaspaces.metrics.MetricManager;
@@ -25,7 +26,7 @@ public interface TieredStorageManager {
 
     void removeTableConfig(String typeName);
 
-    InternalRDBMSManager getInternalStorage();
+    TieredStorageSA getTieredStorageSA();
 
     TieredState getEntryTieredState(IEntryHolder entryHolder);
 
@@ -35,17 +36,34 @@ public interface TieredStorageManager {
 
     void close();
 
-    void setCacheRule(String typeName, CachePredicate newRule); // dynamically change rule
-
-    void removeCacheRule(String typeName);
-
-    void initialize(SpaceEngine engine) throws SAException, RemoteException;
+    void initializeInternalRDBMS(SpaceEngine engine) throws SAException, RemoteException;
 
     boolean RDBMSContainsData();
 
+    static void validateTieredStorageConfig(TieredStorageConfig storageConfig) {
+        for (TieredStorageTableConfig tableConfig : storageConfig.getTables().values()) {
+            if (tableConfig.isTransient()
+                    && (tableConfig.getCriteria() != null
+                    || tableConfig.getPeriod() != null
+                    || tableConfig.getTimeColumn() != null
+                    || tableConfig.getRetention() != null)) {
+                throw new TieredStorageConfigException("Illegal Config for type " + tableConfig.getName() + ": " +
+                        "Transient type should only set isTransient = true , actual: " + tableConfig);
 
+            }
 
-    // For the future when we would want to support warm layer
-    //    CachePredicate getCacheRule(String typeName, String tier);
-    //    Map<String,CachePredicate> getCacheRulesForTiers(String typeName);
+            if ((tableConfig.getTimeColumn() != null && tableConfig.getPeriod() == null)
+                    || (tableConfig.getTimeColumn() == null && tableConfig.getPeriod() != null)) {
+                throw new IllegalArgumentException("Illegal Config for type " + tableConfig.getName() +
+                        ": Cannot set time rule without setting values to both period and column name fields");
+            }
+
+            if (tableConfig.getTimeColumn() != null
+                    && tableConfig.getPeriod() != null
+                    && tableConfig.getCriteria() != null) {
+                throw new TieredStorageConfigException("Illegal Config for type " + tableConfig.getName() +
+                        ": Cannot apply both criteria and time rules on same type");
+            }
+        }
+    }
 }

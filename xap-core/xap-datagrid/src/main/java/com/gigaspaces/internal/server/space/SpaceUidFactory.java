@@ -85,14 +85,14 @@ public class SpaceUidFactory {
         return generateUid(typeDesc.getTypeUidPrefix(), id);
     }
 
-    public static String getIdStringFromUID(String typePrefix, String uid) {
-        return uid.substring(uid.indexOf(typePrefix) + typePrefix.length(), uid.lastIndexOf(SUFFIX));
-    }
-
     public static String createUidFromTypeAndId(String typeName, String id) {
         if (id.indexOf(SEPARATOR) != -1)
             throw new RuntimeException("Invalid UID creation request: UID can not contains the character '" + SEPARATOR + "'.");
         return generateUid(generateTypePrefix(typeName), id);
+    }
+
+    public static String getIdStringFromUID(String typePrefix, String uid) {
+        return uid.substring(typePrefix.length(), uid.length() - SUFFIX.length());
     }
 
     public static Integer extractPartitionId(String uid) {

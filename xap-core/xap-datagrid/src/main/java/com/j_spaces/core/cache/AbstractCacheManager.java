@@ -16,9 +16,7 @@
 
 package com.j_spaces.core.cache;
 
-import static com.j_spaces.core.Constants.CacheManager.CACHE_POLICY_ALL_IN_CACHE;
-import static com.j_spaces.core.Constants.CacheManager.CACHE_POLICY_BLOB_STORE;
-import static com.j_spaces.core.Constants.CacheManager.CACHE_POLICY_PLUGGED_EVICTION;
+import static com.j_spaces.core.Constants.CacheManager.*;
 
 
 abstract public class AbstractCacheManager {
@@ -55,6 +53,7 @@ abstract public class AbstractCacheManager {
         this._cachePolicy = cachePolicy;
     }
 
+    //TODO @moran check isTieredStorageCachePolicy()
     public boolean isResidentEntriesCachePolicy() {
         return isAllInCachePolicy() || isBlobStoreCachePolicy();
     }
@@ -64,14 +63,18 @@ abstract public class AbstractCacheManager {
     }
 
     public boolean isEvictableCachePolicy() {
-        return !isResidentEntriesCachePolicy();
+        return !isResidentEntriesCachePolicy() && !isTieredStorageCachePolicy();
     }
 
     public boolean isAllInCachePolicy() {
         return getCachePolicy() == CACHE_POLICY_ALL_IN_CACHE;
     }
 
-    public abstract boolean isTieredStorage();
+    public boolean isTieredStorageCachePolicy() {
+        return getCachePolicy() == CACHE_POLICY_TIERED_STORAGE;
+    }
+
+    public abstract boolean isTieredStorage(); //TODO: @sagiv remove it
 
     public boolean isPluggedEvictionPolicy() {
         return getCachePolicy() == CACHE_POLICY_PLUGGED_EVICTION;

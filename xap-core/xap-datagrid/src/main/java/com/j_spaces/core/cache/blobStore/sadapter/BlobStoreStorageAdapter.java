@@ -29,6 +29,7 @@ import com.gigaspaces.metadata.index.SpaceIndex;
 import com.gigaspaces.server.blobstore.*;
 import com.gigaspaces.sync.SpaceSynchronizationEndpoint;
 import com.j_spaces.core.SpaceOperations;
+import com.j_spaces.core.cache.InitialLoadInfo;
 import com.j_spaces.core.cache.TypeData;
 import com.j_spaces.core.cache.blobStore.BlobStoreRefEntryCacheInfo;
 import com.j_spaces.core.cache.blobStore.IBlobStoreEntryHolder;
@@ -93,7 +94,7 @@ public class BlobStoreStorageAdapter implements IStorageAdapter, IBlobStoreStora
 
 
     @Override
-    public ISAdapterIterator initialLoad(Context context, ITemplateHolder template)
+    public ISAdapterIterator initialLoad(Context context, ITemplateHolder template, InitialLoadInfo initialLoadInfo)
             throws SAException {
         if (_localBlobStoreRecoveryPerformed || !_persistentBlobStore) {
             if (_engine.getSpaceImpl().isBackup()) {
@@ -101,7 +102,7 @@ public class BlobStoreStorageAdapter implements IStorageAdapter, IBlobStoreStora
                 return null;
             } else {
                 //local blob store tried. now try recovery from mirror if exist
-                return _possibleRecoverySA != null ? _possibleRecoverySA.initialLoad(context, template) : null;
+                return _possibleRecoverySA != null ? _possibleRecoverySA.initialLoad(context, template, null) : null;
             }
         }
 
@@ -284,9 +285,12 @@ public class BlobStoreStorageAdapter implements IStorageAdapter, IBlobStoreStora
         //1. locate & setDirty to the relevant entries
         for (IEntryHolder inputeh : pLocked) {
             IEntryHolder entryHolder = inputeh.getOriginalEntryHolder();
+            if (entryHolder == null) {
+                continue;
+            }
             if (!entryHolder.isBlobStoreEntry())
                 continue;
-            if (entryHolder == null || entryHolder.isDeleted()
+            if (entryHolder.isDeleted()
                     || entryHolder.getWriteLockTransaction() == null
                     || !entryHolder.getWriteLockTransaction().equals(xtn))
                 continue;
@@ -391,7 +395,7 @@ public class BlobStoreStorageAdapter implements IStorageAdapter, IBlobStoreStora
     }
 
     @Override
-    public IEntryHolder getEntry(Context context, Object uid, String classname,
+    public IEntryHolder getEntry(Context context, String uid, String classname,
                                  IEntryHolder template) throws SAException {
         // TODO Auto-generated method stub
         IEntryHolder eh = context.getBlobStoreOpEntryHolder();

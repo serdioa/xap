@@ -47,32 +47,25 @@ import com.gigaspaces.internal.transport.TemplatePacket;
 import com.gigaspaces.internal.utils.concurrent.GSThread;
 import com.gigaspaces.time.SystemTime;
 import com.j_spaces.core.cache.CacheManager.RecentDeleteCodes;
-import com.j_spaces.core.cache.IEntryCacheInfo;
-import com.j_spaces.core.cache.ILeasedEntryCacheInfo;
-import com.j_spaces.core.cache.TemplateCacheInfo;
+import com.j_spaces.core.cache.*;
 import com.j_spaces.core.cache.TerminatingFifoXtnsInfo.FifoXtnEntryInfo;
-import com.j_spaces.core.cache.TypeData;
-import com.j_spaces.core.cache.TypeDataIndex;
-import com.j_spaces.core.cache.context.Context;
 import com.j_spaces.core.cache.blobStore.IBlobStoreEntryHolder;
+import com.j_spaces.core.cache.context.Context;
 import com.j_spaces.core.cluster.ReplicationOperationType;
 import com.j_spaces.core.cluster.ReplicationPolicy;
 import com.j_spaces.core.sadapter.SAException;
 import com.j_spaces.core.server.processor.Processor;
 import com.j_spaces.core.transaction.Prepared2PCXtnInfo;
 import com.j_spaces.core.transaction.TransactionHandler;
-import com.j_spaces.kernel.IObjectInfo;
-import com.j_spaces.kernel.IStoredList;
-import com.j_spaces.kernel.IStoredListIterator;
-import com.j_spaces.kernel.JSpaceUtilities;
-import com.j_spaces.kernel.StoredListFactory;
+import com.j_spaces.kernel.*;
 import com.j_spaces.kernel.locks.ILockObject;
-
 import net.jini.core.lease.Lease;
 import net.jini.core.lease.UnknownLeaseException;
 import net.jini.core.transaction.UnknownTransactionException;
 import net.jini.core.transaction.server.ServerTransaction;
 import net.jini.space.InternalSpaceException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.security.SecureRandom;
 import java.util.ArrayList;
@@ -81,31 +74,8 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import static com.j_spaces.core.Constants.Engine.UPDATE_NO_LEASE;
-import static com.j_spaces.core.Constants.LeaseManager.LM_BACKUP_EXPIRATION_DELAY_DEFAULT;
-import static com.j_spaces.core.Constants.LeaseManager.LM_BACKUP_EXPIRATION_DELAY_PROP;
-import static com.j_spaces.core.Constants.LeaseManager.LM_CHECK_TIME_MARKERS_REPOSITORY_DEFAULT;
-import static com.j_spaces.core.Constants.LeaseManager.LM_DISABLE_ENTRIES_LEASES_DEFAULT;
-import static com.j_spaces.core.Constants.LeaseManager.LM_DISABLE_ENTRIES_LEASES_PROP;
-import static com.j_spaces.core.Constants.LeaseManager.LM_EXPIRATION_TIME_FIFOENTRY_XTNINFO;
-import static com.j_spaces.core.Constants.LeaseManager.LM_EXPIRATION_TIME_INTERVAL_DEFAULT;
-import static com.j_spaces.core.Constants.LeaseManager.LM_EXPIRATION_TIME_INTERVAL_PROP;
-import static com.j_spaces.core.Constants.LeaseManager.LM_EXPIRATION_TIME_PENDING_ANSWERS_DEFAULT;
-import static com.j_spaces.core.Constants.LeaseManager.LM_EXPIRATION_TIME_RECENT_DELETES_CHECK_DEFAULT;
-import static com.j_spaces.core.Constants.LeaseManager.LM_EXPIRATION_TIME_RECENT_DELETES_DEFAULT;
-import static com.j_spaces.core.Constants.LeaseManager.LM_EXPIRATION_TIME_RECENT_DELETES_PROP;
-import static com.j_spaces.core.Constants.LeaseManager.LM_EXPIRATION_TIME_RECENT_UPDATES_CHECK_DEFAULT;
-import static com.j_spaces.core.Constants.LeaseManager.LM_EXPIRATION_TIME_RECENT_UPDATES_DEFAULT;
-import static com.j_spaces.core.Constants.LeaseManager.LM_EXPIRATION_TIME_RECENT_UPDATES_PROP;
-import static com.j_spaces.core.Constants.LeaseManager.LM_EXPIRATION_TIME_STALE_REPLICAS_DEFAULT;
-import static com.j_spaces.core.Constants.LeaseManager.LM_EXPIRATION_TIME_STALE_REPLICAS_PROP;
-import static com.j_spaces.core.Constants.LeaseManager.LM_SEGMEENTS_PER_EXPIRATION_CELL_DEFAULT;
-import static com.j_spaces.core.Constants.LeaseManager.LM_SEGMEENTS_PER_EXPIRATION_CELL_PROP;
-import static com.j_spaces.core.Constants.LeaseManager.TIERED_STORAGE_EVICTION_GRACE_PERIOD;
-import static com.j_spaces.core.Constants.LeaseManager.TIERED_STORAGE_EVICTION_GRACE_PERIOD_DEFAULT;
+import static com.j_spaces.core.Constants.LeaseManager.*;
 
 
 /**
@@ -186,7 +156,7 @@ public class LeaseManager {
 
         _expirationTimeInterval = getLongValue(configReader, LM_EXPIRATION_TIME_INTERVAL_PROP, LM_EXPIRATION_TIME_INTERVAL_DEFAULT);
         _backupSpaceLeasesDelay = getLongValue(configReader, LM_BACKUP_EXPIRATION_DELAY_PROP, LM_BACKUP_EXPIRATION_DELAY_DEFAULT);
-        _segmentsPerExpirationCell = _cacheManager.isblobStoreDataSpace() ? 1 : getIntValue(configReader, LM_SEGMEENTS_PER_EXPIRATION_CELL_PROP, LM_SEGMEENTS_PER_EXPIRATION_CELL_DEFAULT);
+        _segmentsPerExpirationCell = _cacheManager.isBlobStoreCachePolicy() ? 1 : getIntValue(configReader, LM_SEGMEENTS_PER_EXPIRATION_CELL_PROP, LM_SEGMEENTS_PER_EXPIRATION_CELL_DEFAULT);
         _expirationTimeRecentDeletes = getLongValue(configReader, LM_EXPIRATION_TIME_RECENT_DELETES_PROP, LM_EXPIRATION_TIME_RECENT_DELETES_DEFAULT);
         _expirationTimeRecentUpdates = getLongValue(configReader, LM_EXPIRATION_TIME_RECENT_UPDATES_PROP, LM_EXPIRATION_TIME_RECENT_UPDATES_DEFAULT);
         _staleReplicaExpirationTime = getLongValue(configReader, LM_EXPIRATION_TIME_STALE_REPLICAS_PROP, LM_EXPIRATION_TIME_STALE_REPLICAS_DEFAULT);
@@ -1274,7 +1244,7 @@ public class LeaseManager {
                         boolean isEntry = currentIter == entriesUids;
                         IEntryHolder iter_entry = currentIter.next();
                         if (iter_entry == null) {
-                            if (isEntry && _cacheManager.isblobStoreDataSpace())
+                            if (isEntry && _cacheManager.isBlobStoreCachePolicy())
                                 detached++; //in off heap we can't get a "deleted" entry in case of detached
                             continue;
                         }
@@ -2253,7 +2223,7 @@ public class LeaseManager {
             public IEntryHolder next() {
                 IEntryHolder sl_res = null;
                 Object val = _pos.getSubject();
-                if (_engine.getCacheManager().isblobStoreDataSpace() && val != null && (val instanceof String)) {
+                if (_engine.getCacheManager().isBlobStoreCachePolicy() && val != null && (val instanceof String)) {
                     sl_res = _engine.getCacheManager().getEntryByUidFromPureCache((String) val);
                 } else
                     sl_res = (IEntryHolder) val;
