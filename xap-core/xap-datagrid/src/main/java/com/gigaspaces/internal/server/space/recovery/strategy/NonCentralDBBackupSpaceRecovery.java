@@ -39,9 +39,6 @@ public class NonCentralDBBackupSpaceRecovery extends BackupSpaceRecovery {
         // only transient entries should be copied from the target space because all persistent entries
         // were retrieved from the DB.
         boolean transientOnly = !_space.getEngine().isColdStart();
-        if (_space.getEngine().isTieredStorage() && !_space.getEngine().isTieredStorageFullMemoryRecoveryEnable()) {
-            return recoverTransientFromPrimary();
-        }
         return recoverFromPrimary(transientOnly, transientOnly);
     }
 

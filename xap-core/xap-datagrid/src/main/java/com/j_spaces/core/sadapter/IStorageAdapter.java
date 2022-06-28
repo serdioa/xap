@@ -29,8 +29,8 @@ import com.gigaspaces.internal.server.storage.IEntryHolder;
 import com.gigaspaces.internal.server.storage.ITemplateHolder;
 import com.gigaspaces.metadata.index.SpaceIndex;
 import com.gigaspaces.sync.SpaceSynchronizationEndpoint;
+import com.j_spaces.core.cache.InitialLoadInfo;
 import com.j_spaces.core.cache.context.Context;
-
 import net.jini.core.transaction.server.ServerTransaction;
 
 import java.util.ArrayList;
@@ -57,7 +57,7 @@ public interface IStorageAdapter {
     void initialize() throws SAException;
 
 
-    ISAdapterIterator initialLoad(Context context, ITemplateHolder template) throws SAException;
+    ISAdapterIterator initialLoad(Context context, ITemplateHolder template, InitialLoadInfo initialLoadInfo) throws SAException;
 
     /**
      * Inserts a new entry to the SA storage.
@@ -114,7 +114,7 @@ public interface IStorageAdapter {
      *                  order to pass primery key fields when GS uid is not saved in an external DB
      * @return IEntryHolder
      */
-    IEntryHolder getEntry(Context context, Object uid, String classname, IEntryHolder template) throws SAException;
+    IEntryHolder getEntry(Context context, String uid, String classname, IEntryHolder template) throws SAException;
 
     /**
      * Gets a map of entries from the storage adapter

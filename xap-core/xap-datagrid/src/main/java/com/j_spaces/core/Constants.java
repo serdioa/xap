@@ -638,8 +638,9 @@ public interface Constants {
         int CACHE_POLICY_ALL_IN_CACHE = 1;
         int CACHE_POLICY_PLUGGED_EVICTION = 2;
         int CACHE_POLICY_BLOB_STORE = 3;
+        int CACHE_POLICY_TIERED_STORAGE = 4;
 
-        int MAX_CACHE_POLICY_VALUE = CACHE_POLICY_BLOB_STORE;
+        int MAX_CACHE_POLICY_VALUE = CACHE_POLICY_TIERED_STORAGE;
 
         String CACHE_MANAGER_SIZE_DEFAULT = "100000";
 
@@ -941,17 +942,20 @@ public interface Constants {
     }
 
     public interface TieredStorage {
-        /** Space property for enabling tiered storage by other means than pu.xml or TieredStorageConfigurer
+        /**
+         * Space property for enabling tiered storage by other means than pu.xml or TieredStorageConfigurer
          * or enable using a system property:
-         * @see SystemProperties#TIERED_STORAGE_ENABLED */
+         *
+         * @see SystemProperties#TIERED_STORAGE_ENABLED
+         */
         String SPACE_TIERED_STORAGE_ENABLED = "space.tiered-storage.enabled";
-        String SPACE_CLUSTER_INFO_TIERED_STORAGE_COMPONENT_NAME="TieredStorage";
+        String SPACE_CLUSTER_INFO_TIERED_STORAGE_COMPONENT_NAME = "TieredStorage";
         String CACHE_MANAGER_TIERED_STORAGE_LOCKS_SIZE_PROP = "engine.TieredStorage.LocksSize";
         String CACHE_MANAGER_TIERED_STORAGE_LOCKS_SIZE_DEFAULT = "10000";
         String TIERED_STORAGE_INTERNAL_RDBMS_CLASS_PROP = "engine.TieredStorage.RDBMSClass";
         String TIERED_STORAGE_INTERNAL_RDBMS_CLASS_DEFAULT = "com.gigaspaces.internal.server.space.tiered_storage.SqliteRDBMS";
         CachePredicate TRANSIENT_ALL_CACHE_PREDICATE = new TransientPredicate();
-        String TIERED_STORAGE_LOGGER_NAME = "com.gigaspaces.internal.server.space.tiered_storage.InternalRDBMS";
+
         String UID_DB_FIELD_NAME = "UID$GS";
         String VERSION_DB_FIELD_NAME = "VERSION$GS";
         String TIERED_STORAGE_TYPES_TABLE = "com.gs.types.meta_data";
@@ -959,9 +963,6 @@ public interface Constants {
         //TODO: Tiered storage doesn't support dynamic properties yet.
         boolean SUPPORT_DYNAMIC_PROPERTIES = !Boolean.getBoolean(SystemProperties.TIERED_STORAGE_ENABLED);
 
-        static String getLoggerName(String memberName){
-         return TIERED_STORAGE_LOGGER_NAME+"_"+memberName;
-        }
     }
 
     public interface Scale{

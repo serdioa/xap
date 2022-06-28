@@ -16,15 +16,7 @@
 
 package com.gigaspaces.internal.sync;
 
-import com.gigaspaces.datasource.BulkItem;
-import com.gigaspaces.datasource.DataIterator;
-import com.gigaspaces.datasource.DataSourceException;
-import com.gigaspaces.datasource.DataSourceIdQueryImpl;
-import com.gigaspaces.datasource.DataSourceIdsQueryImpl;
-import com.gigaspaces.datasource.DataSourceQuery;
-import com.gigaspaces.datasource.DataSourceQueryImpl;
-import com.gigaspaces.datasource.ManagedDataSource;
-import com.gigaspaces.datasource.SpaceDataSource;
+import com.gigaspaces.datasource.*;
 import com.gigaspaces.datasource.concurrentaccess.SharedIteratorSpaceDataSourceDecorator;
 import com.gigaspaces.internal.datasource.EDSAdapterSpaceDataSource;
 import com.gigaspaces.internal.datasource.EDSAdapterSynchronizationEndpoint;
@@ -46,6 +38,7 @@ import com.gigaspaces.sync.*;
 import com.j_spaces.core.Constants;
 import com.j_spaces.core.JSpaceAttributes;
 import com.j_spaces.core.SpaceOperations;
+import com.j_spaces.core.cache.InitialLoadInfo;
 import com.j_spaces.core.cache.context.Context;
 import com.j_spaces.core.sadapter.ISAdapterIterator;
 import com.j_spaces.core.sadapter.IStorageAdapter;
@@ -53,26 +46,17 @@ import com.j_spaces.core.sadapter.SAException;
 import com.j_spaces.kernel.ClassLoaderHelper;
 import com.j_spaces.kernel.ResourceLoader;
 import com.j_spaces.sadapter.datasource.*;
-
 import net.jini.core.transaction.server.ServerTransaction;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Properties;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import java.util.*;
 
 import static com.j_spaces.core.Constants.DataAdapter.DATA_CLASS_PROP;
-import static com.j_spaces.core.Constants.LeaseManager.LM_EXPIRATION_TIME_RECENT_DELETES_DEFAULT;
-import static com.j_spaces.core.Constants.LeaseManager.LM_EXPIRATION_TIME_RECENT_DELETES_PROP;
-import static com.j_spaces.core.Constants.LeaseManager.LM_EXPIRATION_TIME_RECENT_UPDATES_DEFAULT;
-import static com.j_spaces.core.Constants.LeaseManager.LM_EXPIRATION_TIME_RECENT_UPDATES_PROP;
+import static com.j_spaces.core.Constants.LeaseManager.*;
 
 /**
  * @author idan
@@ -125,7 +109,7 @@ public class SynchronizationStorageAdapter implements IStorageAdapter {
         this._queryBuilder = (SQLQueryBuilder) ClassLoaderHelper.loadClass(spaceAttr.getQueryBuilderClass()).newInstance();
         this._converter = new EntryPacketDataConverter(_typeManager, _dataClass);
         this._conversionAdapter = new EntryAdapter(_converter);
-        this._centralDataSource = engine.getClusterPolicy() != null ? engine.getClusterPolicy().m_CacheLoaderConfig.centralDataSource : false;
+        this._centralDataSource = engine.getClusterPolicy() != null && engine.getClusterPolicy().m_CacheLoaderConfig.centralDataSource;
     }
 
     @Override
@@ -188,7 +172,7 @@ public class SynchronizationStorageAdapter implements IStorageAdapter {
     }
 
     @Override
-    public ISAdapterIterator<?> initialLoad(Context context, ITemplateHolder template)
+    public ISAdapterIterator<?> initialLoad(Context context, ITemplateHolder template, InitialLoadInfo initialLoadInfo)
             throws SAException {
         //  if template is transient - don't refer to the external-data-source
         if (template.isTransient() || _mirrorService)
@@ -423,14 +407,11 @@ public class SynchronizationStorageAdapter implements IStorageAdapter {
     }
 
     @Override
-    public IEntryHolder getEntry(Context context, Object uid, String typeName,
-                                 IEntryHolder template) throws SAException {
-        return
-                getEntry_impl(uid, typeName, template);
+    public IEntryHolder getEntry(Context context, String uid, String typeName, IEntryHolder template) throws SAException {
+        return getEntry_impl(typeName, template);
     }
 
-    private IEntryHolder getEntry_impl(Object uid, String typeName,
-                                       IEntryHolder template) throws SAException {
+    private IEntryHolder getEntry_impl(String typeName, IEntryHolder template) throws SAException {
         try {
             final IServerTypeDesc serverTypeDesc = getServerType(typeName);
             final ITypeDesc typeDescriptor = serverTypeDesc.getTypeDesc();
@@ -473,7 +454,7 @@ public class SynchronizationStorageAdapter implements IStorageAdapter {
                 return null;
 
             if (template.isIdQuery()) {
-                final IEntryHolder idQueryResult = getEntry_impl(template.getUID(), template.getClassName(), template);
+                final IEntryHolder idQueryResult = getEntry_impl(template.getClassName(), template);
                 if (idQueryResult == null)
                     return null;
 

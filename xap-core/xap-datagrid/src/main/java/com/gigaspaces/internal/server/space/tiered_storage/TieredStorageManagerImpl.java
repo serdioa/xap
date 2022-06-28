@@ -36,13 +36,13 @@ public class TieredStorageManagerImpl implements TieredStorageManager {
     private boolean containsData;
     private ConcurrentHashMap<String, CachePredicate> hotCacheRules = new ConcurrentHashMap<>();
 
-    private InternalRDBMSManager internalDiskStorage;
+    private final TieredStorageSA tieredStorageSA;
     private InternalMetricRegistrator diskSizeRegistrator;
     private InternalMetricRegistrator operationsRegistrator;
 
-    public TieredStorageManagerImpl(TieredStorageConfig storageConfig, InternalRDBMSManager internalDiskStorage, String fullSpaceName) {
-        this.logger = LoggerFactory.getLogger(Constants.TieredStorage.getLoggerName(fullSpaceName));
-        this.internalDiskStorage = internalDiskStorage;
+    public TieredStorageManagerImpl(TieredStorageConfig storageConfig, TieredStorageSA tieredStorageSA, String fullSpaceName) {
+        this.logger = LoggerFactory.getLogger(TieredStorageManagerImpl.class.getName() + "_" + fullSpaceName);
+        this.tieredStorageSA = tieredStorageSA;
         this.storageConfig = storageConfig;
     }
 
@@ -52,8 +52,8 @@ public class TieredStorageManagerImpl implements TieredStorageManager {
     }
 
     @Override
-    public void initialize(SpaceEngine engine) throws SAException, RemoteException {
-        containsData = getInternalStorage().initialize(engine.getSpaceName(), engine.getFullSpaceName(), engine.getTypeManager(), engine.getSpaceImpl().isBackup());
+    public void initializeInternalRDBMS(SpaceEngine engine) throws SAException {
+        containsData = getTieredStorageSA().initializeInternalRDBMS(engine.getSpaceName(), engine.getFullSpaceName(), engine.getTypeManager(), engine.getSpaceImpl().isBackup());
     }
 
     @Override
@@ -70,7 +70,7 @@ public class TieredStorageManagerImpl implements TieredStorageManager {
     public CachePredicate getCacheRule(String typeName) {
         if (hasCacheRule(typeName)) {
             try {
-                return hotCacheRules.computeIfAbsent(typeName, typeName1 -> createCacheRule(storageConfig.getTables().get(typeName1), internalDiskStorage.getTypeManager()));
+                return hotCacheRules.computeIfAbsent(typeName, typeName1 -> createCacheRule(storageConfig.getTables().get(typeName1), tieredStorageSA.getTypeManager()));
             } catch (RuntimeException e) {
                 logger.error("failed to compute cache rule", e);
                 throw e;
@@ -97,18 +97,8 @@ public class TieredStorageManagerImpl implements TieredStorageManager {
     }
 
     @Override
-    public void setCacheRule(String typeName, CachePredicate newRule) {
-        hotCacheRules.put(typeName, newRule); //TODO - handle update (shuffle / evict)
-    }
-
-    @Override
-    public void removeCacheRule(String typeName) {
-        hotCacheRules.remove(typeName); //called on drop type
-    }
-
-    @Override
-    public InternalRDBMSManager getInternalStorage() {
-        return this.internalDiskStorage;
+    public TieredStorageSA getTieredStorageSA() {
+        return this.tieredStorageSA;
     }
 
     @Override
@@ -166,7 +156,7 @@ public class TieredStorageManagerImpl implements TieredStorageManager {
             @Override
             public long getCount(){
                 long sum = 0;
-                for (IServerTypeDesc desc : internalDiskStorage.getTypeManager().getSafeTypeTable().values()){
+                for (IServerTypeDesc desc : tieredStorageSA.getTypeManager().getSafeTypeTable().values()) {
                     sum += desc.getTypeCounters().getDiskReadAccessCounter().getCount();
                 }
                 return sum;
@@ -176,7 +166,7 @@ public class TieredStorageManagerImpl implements TieredStorageManager {
             @Override
             public long getCount(){
                 long sum = 0;
-                for (IServerTypeDesc desc : internalDiskStorage.getTypeManager().getSafeTypeTable().values()){
+                for (IServerTypeDesc desc : tieredStorageSA.getTypeManager().getSafeTypeTable().values()) {
                     sum += desc.getTypeCounters().getDiskModifyCounter().getCount();
                 }
                 return sum;
@@ -196,7 +186,7 @@ public class TieredStorageManagerImpl implements TieredStorageManager {
             @Override
             public Long getValue() {
                 try {
-                    return getInternalStorage().getDiskSize();
+                    return getTieredStorageSA().getDiskSize();
                 } catch (SAException | IOException e) {
                     logger.warn("failed to get disk size metric with exception: ", e);
                     return null;
@@ -257,7 +247,11 @@ public class TieredStorageManagerImpl implements TieredStorageManager {
         if (operationsRegistrator != null) {
             operationsRegistrator.clear();
         }
-        internalDiskStorage.shutDown();
+        try {
+            tieredStorageSA.shutDown();
+        } catch (Exception e) {
+            logger.debug("caught exception while shutting down internal disk", e);
+        }
     }
 
 

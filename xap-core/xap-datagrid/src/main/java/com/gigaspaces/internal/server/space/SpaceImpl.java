@@ -3413,10 +3413,10 @@ public class SpaceImpl extends AbstractService implements IRemoteSpace, IInterna
 
     }
 
-    //prerequisite - _engine initialized, type manager initialized, metric manager initialized
+    //prerequisite - _engine created, type manager initialized, metric manager initialized
     private void initTieredStorage() throws SAException, RemoteException {
         if (_engine.isTieredStorage()) {
-            _engine.getTieredStorageManager().initialize(_engine);
+            _engine.getTieredStorageManager().initializeInternalRDBMS(_engine);
             _engine.getTieredStorageManager().initTieredStorageMetrics(this, _engine.getMetricManager());
         }
     }

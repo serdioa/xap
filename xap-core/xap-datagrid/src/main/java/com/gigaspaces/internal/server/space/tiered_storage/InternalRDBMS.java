@@ -59,11 +59,9 @@ public interface InternalRDBMS {
      */
     boolean removeEntry(Context context, IEntryHolder entryHolder) throws SAException;
 
-    IEntryHolder getEntryById(Context context, String typeName, Object id) throws SAException;
+    IEntryHolder getEntryByUID(String typeName, String uid) throws SAException;
 
-    IEntryHolder getEntryByUID(Context context, String typeName, String uid) throws SAException;
-
-    ISAdapterIterator<IEntryHolder> makeEntriesIter(Context context, String typeName, ITemplateHolder templateHolder) throws SAException;
+    ISAdapterIterator<IEntryHolder> makeEntriesIter(String typeName, ITemplateHolder templateHolder) throws SAException;
 
     boolean isKnownType(String name);
 
@@ -78,5 +76,7 @@ public interface InternalRDBMS {
     void initialLoad(Context context, SpaceEngine engine, InitialLoadInfo initialLoadInfo) throws SAException;
 
     SpaceTypeManager getTypeManager();
+
+    //TODO: @sagiv executeBulk
 }
 

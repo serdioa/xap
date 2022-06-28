@@ -19,14 +19,7 @@ package com.gigaspaces.internal.server.space.metadata;
 import com.gigaspaces.internal.server.metadata.IServerTypeDesc;
 import com.gigaspaces.internal.server.space.SpaceConfigReader;
 import com.gigaspaces.metadata.index.ISpaceIndex;
-import com.j_spaces.core.cache.CacheManager;
-import com.j_spaces.core.cache.CompoundCustomTypeDataIndex;
-import com.j_spaces.core.cache.CompoundIndexSegmentTypeData;
-import com.j_spaces.core.cache.CustomMultiValueTypeDataIndex;
-import com.j_spaces.core.cache.CustomTypeDataIndex;
-import com.j_spaces.core.cache.MultiValueTypeDataIndex;
-import com.j_spaces.core.cache.TypeData;
-import com.j_spaces.core.cache.TypeDataIndex;
+import com.j_spaces.core.cache.*;
 
 import static com.j_spaces.core.Constants.CacheManager.CACHE_MANAGER_USE_ECONOMY_HASHMAP_DEFAULT;
 import static com.j_spaces.core.Constants.CacheManager.CACHE_MANAGER_USE_ECONOMY_HASHMAP_PROP;
@@ -54,7 +47,7 @@ public class TypeDataFactory {
     }
 
     public TypeData createTypeData(IServerTypeDesc serverTypeDesc) {
-        return new TypeData(serverTypeDesc, this, _cacheManager.getEngine().isLocalCache(), _cacheManager.isResidentEntriesCachePolicy());
+        return new TypeData(serverTypeDesc, this, _cacheManager.getEngine().isLocalCache());
     }
 
     /*

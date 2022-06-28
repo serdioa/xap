@@ -832,8 +832,6 @@ public class SystemProperties extends CommonSystemProperties {
      * or enable using a Space property:
      * @see Constants.TieredStorage#SPACE_TIERED_STORAGE_ENABLED */
     public static final String TIERED_STORAGE_ENABLED = "com.gs.tiered-storage.enabled";
-    public static final String TIERED_STORAGE_FULL_MEMORY_RECOVERY = "com.gs.tiered-storage.full-memory-recovery";
-
 
     private static final Map<String, String> defaultValues = initDefaultValues();
 
