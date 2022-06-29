@@ -16,6 +16,7 @@
 
 package com.j_spaces.core.client;
 
+import com.gigaspaces.admin.ManagerClusterType;
 import com.gigaspaces.internal.client.spaceproxy.ISpaceProxy;
 import com.gigaspaces.internal.client.spaceproxy.SpaceProxyImpl;
 import com.gigaspaces.internal.extension.XapExtensions;
@@ -28,6 +29,7 @@ import com.gigaspaces.security.SecurityException;
 import com.gigaspaces.security.directory.CredentialsProvider;
 import com.gigaspaces.security.directory.CredentialsProviderHelper;
 import com.gigaspaces.security.directory.DefaultCredentialsProvider;
+import com.gigaspaces.start.SystemInfo;
 import com.gigaspaces.start.SystemLocations;
 import com.j_spaces.core.Constants;
 import com.j_spaces.core.CreateException;
@@ -463,9 +465,10 @@ public class SpaceFinder {
             if (Boolean.parseBoolean(property))
                 directProxy.setGatewayProxy();
 
+            ManagerClusterType managerClusterType = SystemInfo.singleton().getManagerClusterInfo().getManagerClusterType();
             // Stateless services requires to have endpoints for kubernetes probes
-            if (spaceURL.isJiniProtocol()) {
-                directProxy.initWebServer();
+            if (managerClusterType == ManagerClusterType.KUBERNETES && spaceURL.isJiniProtocol()) {
+                directProxy.initWebServerIfEnabled();
             }
         }
 

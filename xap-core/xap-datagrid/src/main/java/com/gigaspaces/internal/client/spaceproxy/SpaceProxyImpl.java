@@ -639,9 +639,16 @@ public class SpaceProxyImpl extends AbstractDirectSpaceProxy implements SameProx
      * @return http server instance
      * @throws CreateException
      */
-    public HttpServer initWebServer() throws CreateException {
+    public HttpServer initWebServerIfEnabled() throws CreateException {
         final Logger logger = LoggerFactory.getLogger(this.getClass().getSimpleName());
-        int port = 8090;
+
+        // run param -Dcom.gs.space.rest...
+        final String prefix = "com.gs.space.rest";
+        boolean enabled = Boolean.getBoolean(prefix + ".enabled");
+        if (!enabled)
+            return null;
+
+        int port = Integer.getInteger(prefix + ".port", 8089);
 
         try {
             HttpServer server = HttpServer.create(new InetSocketAddress(port), 0);
