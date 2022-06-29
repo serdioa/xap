@@ -501,12 +501,14 @@ public class SpaceProxyTypeManager implements ISpaceProxyTypeManager {
         String typeName = object.getClass().getTypeName();
 
         TieredStorageConfig tieredStorageConfig = _proxy.getProxySettings().getSpaceAttributes().getTieredStorageConfig();
-        if (tieredStorageConfig.hasCacheRule(typeName)) {
-            TieredStorageTableConfig tieredStorageTableConfig = tieredStorageConfig.getTables().get(typeName);
-            if (tieredStorageTableConfig.isTimeRule()) {
-                String timeColumn = tieredStorageTableConfig.getTimeColumn();
-                if (packet.getPropertyValue(timeColumn) == null) {
-                    throw new SpaceMetadataException("property which set as time rule cannot be null.");
+        if (tieredStorageConfig != null) {
+            if (tieredStorageConfig.hasCacheRule(typeName)) {
+                TieredStorageTableConfig tieredStorageTableConfig = tieredStorageConfig.getTables().get(typeName);
+                if (tieredStorageTableConfig.isTimeRule()) {
+                    String timeColumn = tieredStorageTableConfig.getTimeColumn();
+                    if (packet.getPropertyValue(timeColumn) == null) {
+                        throw new SpaceMetadataException("property which set as time rule cannot be null.");
+                    }
                 }
             }
         }
