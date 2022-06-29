@@ -81,6 +81,11 @@ public class TieredStorageManagerImpl implements TieredStorageManager {
     }
 
     @Override
+    public TieredStorageConfig getTieredStorageConfig() {
+        return storageConfig;
+    }
+
+    @Override
     public TieredStorageTableConfig getTableConfig(String typeName) {
         return storageConfig.getTables().get(typeName);
     }

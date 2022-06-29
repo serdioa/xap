@@ -400,7 +400,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
             // _spaceImpl.getJspaceAttr().getCustomProperties().get(Constants.SPACE_CONFIG_PREFIX+CACHE_POLICY_PROP) == CACHE_POLICY_TIERED_STORAGE;
             boolean isTieredStorage = _configReader.getIntSpaceProperty(CACHE_POLICY_PROP, "-1") == CACHE_POLICY_TIERED_STORAGE;
             if (isTieredStorage) {
-                TieredStorageConfig tieredStorageConfig = (TieredStorageConfig) _spaceImpl.getJspaceAttr().getCustomProperties().get(FULL_TIERED_STORAGE_TABLE_CONFIG_INSTANCE_PROP);
+                TieredStorageConfig tieredStorageConfig = _spaceImpl.getJspaceAttr().getTieredStorageConfig();
                 //TODO @moran/@sapir make this work: TieredStorageConfig tieredStorageConfig = _configReader.getObjectSpaceProperty(TIERED_STORAGE_TABLE_CONFIG_INSTANCE_PROP);
                 if (tieredStorageConfig != null) {
                     createTieredStorageManagerConfiguration(tieredStorageConfig);

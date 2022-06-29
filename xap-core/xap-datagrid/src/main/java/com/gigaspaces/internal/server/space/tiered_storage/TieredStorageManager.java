@@ -19,6 +19,8 @@ public interface TieredStorageManager {
 
     CachePredicate getCacheRule(String typeName); // get cache rule for a specific type
 
+    TieredStorageConfig getTieredStorageConfig();
+
     TieredStorageTableConfig getTableConfig(String typeName);
 
     void addTableConfig(TieredStorageTableConfig config);

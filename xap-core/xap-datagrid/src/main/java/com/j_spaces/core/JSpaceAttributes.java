@@ -21,6 +21,7 @@ import com.gigaspaces.datasource.SpaceDataSource;
 import com.gigaspaces.internal.cluster.ClusterTopology;
 import com.gigaspaces.internal.cluster.SpaceClusterInfo;
 import com.gigaspaces.internal.server.space.SpaceInstanceConfig;
+import com.gigaspaces.internal.server.space.tiered_storage.TieredStorageConfig;
 import com.gigaspaces.internal.utils.StringUtils;
 import com.gigaspaces.internal.version.PlatformLogicalVersion;
 import com.gigaspaces.lrmi.LRMIInvocationContext;
@@ -60,6 +61,7 @@ import static com.j_spaces.core.Constants.Schemas.FULL_SCHEMA_ELEMENT;
 import static com.j_spaces.core.Constants.Space.FULL_SPACE_STATE;
 import static com.j_spaces.core.Constants.StorageAdapter.FULL_STORAGE_PERSISTENT_ENABLED_PROP;
 import static com.j_spaces.core.Constants.StorageAdapter.PERSISTENT_ENABLED_DEFAULT;
+import static com.j_spaces.core.Constants.TieredStorage.FULL_TIERED_STORAGE_TABLE_CONFIG_INSTANCE_PROP;
 
 /**
  * JSpaceAttributes that contains all information per space.
@@ -1280,6 +1282,16 @@ public class JSpaceAttributes
     public boolean isTieredStorageCachePolicy() {
         String cachePolicyValue = getProperty(FULL_CACHE_POLICY_PROP, _customProperties.getProperty(FULL_CACHE_POLICY_PROP));
         return String.valueOf(Constants.CacheManager.CACHE_POLICY_TIERED_STORAGE).equals(cachePolicyValue);
+    }
+
+    public void setTieredStorageConfig(TieredStorageConfig tieredStorageConfig) {
+        put(FULL_TIERED_STORAGE_TABLE_CONFIG_INSTANCE_PROP, tieredStorageConfig);
+    }
+
+    public TieredStorageConfig getTieredStorageConfig() {
+        return ((TieredStorageConfig) getOrDefault(FULL_TIERED_STORAGE_TABLE_CONFIG_INSTANCE_PROP,
+                _customProperties.get(FULL_TIERED_STORAGE_TABLE_CONFIG_INSTANCE_PROP)));
+
     }
 
     /**

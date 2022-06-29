@@ -3107,13 +3107,17 @@ public class SpaceImpl extends AbstractService implements IRemoteSpace, IInterna
             //FIX for GS-11826
             //Cause to SpaceConfig initialization if cachePolicy is BlobStore and devices still were not initialized
             if (_spaceConfig != null
+                    //TODO: this equals always returns false - int equals vs string
                     && _spaceConfig.getCachePolicy().equals(CACHE_POLICY_BLOB_STORE)
                     && _spaceConfig.getBlobStoreDevices() == null) {
                 _spaceConfig = null;
             }
 
-            if (_spaceConfig != null)
+            if (_spaceConfig != null) {
+                // load dynamically tiered storage configuration
+                createOrUpdateTieredStorageConfig();
                 return _spaceConfig;
+            }
 
             final Properties spaceProps = JProperties.getSpaceProperties(_configReader.getFullSpaceName());
             _spaceConfig = new SpaceConfig(_spaceName, spaceProps, _containerName, "");
@@ -3122,13 +3126,20 @@ public class SpaceImpl extends AbstractService implements IRemoteSpace, IInterna
             _spaceConfig.setLoadOnStartup(_jspaceAttr.isLoadOnStartup());
             _spaceConfig.setSpaceState(String.valueOf(_spaceState.getState()));
             final String schemaFilePath = spaceProps.getProperty(Constants.Schemas.SCHEMA_FILE_PATH);
-            if (schemaFilePath != null)
+            if (schemaFilePath != null) {
                 _spaceConfig.setSchemaPath(schemaFilePath);
+            }
             initSpaceConfig(_spaceConfig, _configReader, schemaFilePath);
             this.registerToClusterInfoChangedEvent(_spaceConfig);
         }
 
         return _spaceConfig;
+    }
+
+    private void createOrUpdateTieredStorageConfig() {
+        if (_spaceConfig.isTieredStorageCachePolicy() && _engine != null && _engine.getTieredStorageManager() != null) {
+            _spaceConfig.setTieredStorageConfig(_engine.getTieredStorageManager().getTieredStorageConfig());
+        }
     }
 
     private void initSpaceConfig(SpaceConfig spaceConfig, SpaceConfigReader configReader, String schemaFilePath) {
