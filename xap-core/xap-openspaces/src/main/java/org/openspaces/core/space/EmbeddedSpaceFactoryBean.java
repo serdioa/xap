@@ -80,8 +80,15 @@ public class EmbeddedSpaceFactoryBean extends AbstractSpaceFactoryBean implement
         factory.setSecurityConfig(securityConfig);
     }
 
-    public void setTieredStorageConfig(TieredStorageConfig tieredStorageConfig){
-        factory.getFactory().setTieredStorageConfig(tieredStorageConfig);
+    /**
+     * use the {@link #setCachePolicy(CachePolicy)}
+     *
+     * @since 16.2
+     * @deprecated
+     */
+    @Deprecated //TODO PIC-771 remove usage
+    public void setTieredStorageConfig(TieredStorageConfig tieredStorageConfig) {
+        factory.setCachePolicy(new TieredStorageCachePolicy(tieredStorageConfig));
     }
 
     public void setProperties(Properties properties) {
