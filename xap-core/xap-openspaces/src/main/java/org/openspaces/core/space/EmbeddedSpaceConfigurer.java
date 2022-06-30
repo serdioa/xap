@@ -31,7 +31,6 @@ import org.openspaces.core.cluster.ClusterInfo;
 import org.openspaces.core.config.BlobStoreDataPolicyConfigurer;
 import org.openspaces.core.config.BlobStoreDataPolicyFactoryBean;
 import org.openspaces.core.config.CustomCachePolicyFactoryBean;
-import org.openspaces.core.config.TieredStorageConfigurer;
 import org.openspaces.core.extension.SpaceCustomComponentFactoryBean;
 import org.openspaces.core.space.filter.FilterProviderFactory;
 import org.openspaces.core.space.filter.replication.ReplicationFilterProviderFactory;
@@ -255,10 +254,4 @@ public class EmbeddedSpaceConfigurer extends AbstractSpaceConfigurer {
         return this;
     }
 
-    //TODO @moran/@sapir remove usage
-    public EmbeddedSpaceConfigurer tieredStorage(TieredStorageConfigurer tieredStorageConfigurer) {
-        validate();
-        factoryBean.setCustomComponent(tieredStorageConfigurer);
-        return this;
-    }
 }
