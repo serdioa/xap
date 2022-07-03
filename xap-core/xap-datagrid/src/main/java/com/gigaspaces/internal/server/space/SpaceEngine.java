@@ -168,7 +168,8 @@ import java.util.concurrent.TimeUnit;
 
 import static com.j_spaces.core.Constants.CacheManager.*;
 import static com.j_spaces.core.Constants.Engine.*;
-import static com.j_spaces.core.Constants.TieredStorage.*;
+import static com.j_spaces.core.Constants.TieredStorage.TIERED_STORAGE_INTERNAL_RDBMS_CLASS_DEFAULT;
+import static com.j_spaces.core.Constants.TieredStorage.TIERED_STORAGE_INTERNAL_RDBMS_CLASS_PROP;
 import static com.j_spaces.kernel.SystemProperties.REPLICATION_REPLICA_PROGRESS_TIMEOUT;
 
 @com.gigaspaces.api.InternalApi
@@ -388,26 +389,15 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
 
 
     private void createTieredStorageManager() throws IllegalAccessException, InstantiationException, ClassNotFoundException {
-        Object tieredStorage = this._clusterInfo.getCustomComponent(SPACE_CLUSTER_INFO_TIERED_STORAGE_COMPONENT_NAME);
-        if (tieredStorage != null) {
-            //TODO @moran/@sapir this path is still used by tgrid tests as custom component config - see EmbeddedSpaceConfigurer.tieredStorage,
-            //also used by InternalService.scala
-            TieredStorageConfig storageConfig = (TieredStorageConfig) tieredStorage;
-            validateTieredStorage(storageConfig);
-            createTieredStorageManagerConfiguration(storageConfig);
-        } else {
-            //_spaceImpl.getJspaceAttr().getCustomProperties().get(Constants.TieredStorage.TIERED_STORAGE_CACHE_POLICY_PROP)
-            // _spaceImpl.getJspaceAttr().getCustomProperties().get(Constants.SPACE_CONFIG_PREFIX+CACHE_POLICY_PROP) == CACHE_POLICY_TIERED_STORAGE;
-            boolean isTieredStorage = _configReader.getIntSpaceProperty(CACHE_POLICY_PROP, "-1") == CACHE_POLICY_TIERED_STORAGE;
-            if (isTieredStorage) {
-                TieredStorageConfig tieredStorageConfig = _spaceImpl.getJspaceAttr().getTieredStorageConfig();
-                //TODO @moran/@sapir make this work: TieredStorageConfig tieredStorageConfig = _configReader.getObjectSpaceProperty(TIERED_STORAGE_TABLE_CONFIG_INSTANCE_PROP);
-                if (tieredStorageConfig != null) {
-                    createTieredStorageManagerConfiguration(tieredStorageConfig);
-                } else {
-                    TieredStorageConfig storageConfig = new TieredStorageConfig();
-                    createTieredStorageManagerConfiguration(storageConfig);
-                }
+        final boolean isTieredStorage = String.valueOf(CACHE_POLICY_TIERED_STORAGE).equals(
+                _spaceImpl.getJspaceAttr().getCustomProperties().get(Constants.SPACE_CONFIG_PREFIX + CACHE_POLICY_PROP));
+        if (isTieredStorage) {
+            TieredStorageConfig tieredStorageConfig = _spaceImpl.getJspaceAttr().getTieredStorageConfig();
+            if (tieredStorageConfig == null) {
+                createTieredStorageManagerConfiguration(new TieredStorageConfig()); //create an empty configuration
+            } else {
+                validateTieredStorage(tieredStorageConfig);
+                createTieredStorageManagerConfiguration(tieredStorageConfig);
             }
         }
     }

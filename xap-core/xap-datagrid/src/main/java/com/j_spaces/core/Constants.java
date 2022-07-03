@@ -942,7 +942,6 @@ public interface Constants {
     }
 
     public interface TieredStorage {
-        String SPACE_CLUSTER_INFO_TIERED_STORAGE_COMPONENT_NAME = "TieredStorage";
         String FULL_TIERED_STORAGE_TABLE_CONFIG_INSTANCE_PROP = SPACE_CONFIG_PREFIX + "engine.TieredStorage.table-config";
         String CACHE_MANAGER_TIERED_STORAGE_LOCKS_SIZE_PROP = "engine.TieredStorage.LocksSize";
         String CACHE_MANAGER_TIERED_STORAGE_LOCKS_SIZE_DEFAULT = "10000";

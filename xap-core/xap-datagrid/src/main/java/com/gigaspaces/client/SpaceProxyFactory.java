@@ -403,8 +403,4 @@ public class SpaceProxyFactory {
     public void setAttributeStore(AttributeStore attributeStore) {
         this.attributeStore = attributeStore;
     }
-
-    public void setTieredStorageConfig(TieredStorageConfig tieredStorageConfig) {
-        customComponents.add(tieredStorageConfig);
-    }
 }

@@ -1,7 +1,6 @@
 package com.gigaspaces.internal.server.space.tiered_storage;
 
 import com.gigaspaces.serialization.SmartExternalizable;
-import com.gigaspaces.server.SpaceCustomComponent;
 
 import java.io.IOException;
 import java.io.ObjectInput;
@@ -9,26 +8,18 @@ import java.io.ObjectOutput;
 import java.util.HashMap;
 import java.util.Map;
 
-import static com.j_spaces.core.Constants.TieredStorage.SPACE_CLUSTER_INFO_TIERED_STORAGE_COMPONENT_NAME;
-
-public class TieredStorageConfig extends SpaceCustomComponent implements SmartExternalizable {
-    static final long serialVersionUID = -3215994702053002031L;
+public class TieredStorageConfig implements SmartExternalizable {
+    static final long serialVersionUID = -3215994702053002032L;
 
     private Map<String, TieredStorageTableConfig> tables = new HashMap<>();
 
-    @Override
-    public String getSpaceComponentKey() {
-        return SPACE_CLUSTER_INFO_TIERED_STORAGE_COMPONENT_NAME;
+    public TieredStorageConfig() {
     }
 
-    @Override
-    public String getServiceDetailAttributeName() {
-        return SPACE_CLUSTER_INFO_TIERED_STORAGE_COMPONENT_NAME;
-    }
-
-    @Override
-    public Object getServiceDetailAttributeValue() {
-        return true;
+    public TieredStorageConfig(TieredStorageTableConfig... tables) {
+        for (TieredStorageTableConfig table : tables) {
+            addTable(table);
+        }
     }
 
     public Map<String, TieredStorageTableConfig> getTables() {
