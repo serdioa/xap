@@ -58,19 +58,21 @@ public class TieredStorageManagerImpl implements TieredStorageManager {
 
     @Override
     public boolean hasCacheRule(String typeName) {
-        return storageConfig.getTables().get(typeName) != null;
+        return storageConfig.hasCacheRule(typeName);
     }
 
     @Override
     public boolean isTransient(String typeName) {
-        return storageConfig.getTables().get(typeName) != null && storageConfig.getTables().get(typeName).isTransient();
+        TieredStorageTableConfig tieredStorageTableConfig = storageConfig.getTable(typeName);
+        return tieredStorageTableConfig != null && tieredStorageTableConfig.isTransient();
     }
 
     @Override
     public CachePredicate getCacheRule(String typeName) {
         if (hasCacheRule(typeName)) {
             try {
-                return hotCacheRules.computeIfAbsent(typeName, typeName1 -> createCacheRule(storageConfig.getTables().get(typeName1), internalDiskStorage.getTypeManager()));
+                return hotCacheRules.computeIfAbsent(typeName, t ->
+                        createCacheRule(storageConfig.getTable(t), internalDiskStorage.getTypeManager()));
             } catch (RuntimeException e) {
                 logger.error("failed to compute cache rule", e);
                 throw e;
@@ -87,7 +89,7 @@ public class TieredStorageManagerImpl implements TieredStorageManager {
 
     @Override
     public TieredStorageTableConfig getTableConfig(String typeName) {
-        return storageConfig.getTables().get(typeName);
+        return storageConfig.getTable(typeName);
     }
 
     @Override

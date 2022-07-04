@@ -503,7 +503,7 @@ public class SpaceProxyTypeManager implements ISpaceProxyTypeManager {
         TieredStorageConfig tieredStorageConfig = _proxy.getProxySettings().getSpaceAttributes().getTieredStorageConfig();
         if (tieredStorageConfig != null) {
             if (tieredStorageConfig.hasCacheRule(typeName)) {
-                TieredStorageTableConfig tieredStorageTableConfig = tieredStorageConfig.getTables().get(typeName);
+                TieredStorageTableConfig tieredStorageTableConfig = tieredStorageConfig.getTable(typeName);
                 if (tieredStorageTableConfig.isTimeRule()) {
                     String timeColumn = tieredStorageTableConfig.getTimeColumn();
                     if (packet.getPropertyValue(timeColumn) == null) {

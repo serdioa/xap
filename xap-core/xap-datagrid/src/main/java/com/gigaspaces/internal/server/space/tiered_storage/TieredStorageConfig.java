@@ -5,6 +5,7 @@ import com.gigaspaces.serialization.SmartExternalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -22,20 +23,24 @@ public class TieredStorageConfig implements SmartExternalizable {
         }
     }
 
-    public Map<String, TieredStorageTableConfig> getTables() {
-        return tables;
+    public Collection<TieredStorageTableConfig> getTables() {
+        return tables.values();
     }
 
-    public TieredStorageTableConfig addTable(TieredStorageTableConfig config) {
-        return tables.putIfAbsent(config.getName(), config);
+    public void addTable(TieredStorageTableConfig config) {
+        tables.putIfAbsent(config.getName(), config);
+    }
+
+    public TieredStorageTableConfig getTable(String typeName) {
+        return tables.get(typeName);
     }
 
     public void removeTable(String typeName) {
         tables.remove(typeName);
     }
 
-    public boolean hasCacheRule(String type){
-        return getTables().get(type) != null;
+    public boolean hasCacheRule(String typeName) {
+        return tables.containsKey(typeName);
     }
 
     @Override

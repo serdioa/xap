@@ -64,7 +64,7 @@ public class TieredStorageDefinitionsParser {
                 } else {
                     logger.debug("no cache-rule for table " + tableConfig.getName());
                 }
-                if (logger.isDebugEnabled() && tieredStorageConfig.getTables().containsKey(tableConfig.getName())) {
+                if (logger.isDebugEnabled() && tieredStorageConfig.hasCacheRule(tableConfig.getName())) {
                     logger.debug("table " + tableConfig.getName() + " appears more than once");
                 }
                 tieredStorageConfig.addTable(tableConfig);

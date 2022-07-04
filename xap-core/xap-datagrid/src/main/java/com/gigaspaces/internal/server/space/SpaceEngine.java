@@ -412,7 +412,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
 
 
     private void validateTieredStorage(TieredStorageConfig storageConfig) {
-        for (TieredStorageTableConfig tableConfig : storageConfig.getTables().values()) {
+        for (TieredStorageTableConfig tableConfig : storageConfig.getTables()) {
             if (tableConfig.isTransient()) {
                 if (tableConfig.getCriteria() != null || tableConfig.getPeriod() != null
                         || tableConfig.getTimeColumn() != null || tableConfig.getRetention() != null) {
