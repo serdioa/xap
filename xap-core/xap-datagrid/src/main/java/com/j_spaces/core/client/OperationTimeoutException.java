@@ -48,8 +48,8 @@ public class OperationTimeoutException
     /**
      * override fillInStackTrace() and do nothing
      */
-//    @Override
-//    public Throwable fillInStackTrace() {
-//        return null;
-//    }
+    @Override
+    public Throwable fillInStackTrace() {
+        return null;
+    }
 }

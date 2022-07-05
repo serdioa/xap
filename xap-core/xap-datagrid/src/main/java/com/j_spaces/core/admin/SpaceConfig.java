@@ -112,7 +112,6 @@ public class SpaceConfig extends JSpaceAttributes implements IClusterInfoChanged
         return _fullSpaceName;
     }
 
-
     /**
      * Returns space schema file path
      *
