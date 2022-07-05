@@ -3133,6 +3133,7 @@ public class SpaceImpl extends AbstractService implements IRemoteSpace, IInterna
             this.registerToClusterInfoChangedEvent(_spaceConfig);
         }
 
+
         return _spaceConfig;
     }
 

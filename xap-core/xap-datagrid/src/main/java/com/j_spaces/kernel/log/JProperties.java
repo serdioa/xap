@@ -34,26 +34,17 @@ import com.j_spaces.core.exception.SpaceConfigurationException;
 import com.j_spaces.kernel.JSpaceUtilities;
 import com.j_spaces.kernel.ResourceLoader;
 import com.j_spaces.kernel.SystemProperties;
-
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.Collection;
-import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.Hashtable;
-import java.util.Map;
-import java.util.Properties;
-import java.util.Set;
-import java.util.Stack;
-
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.ParserConfigurationException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.*;
 
 import static com.j_spaces.core.Constants.SystemTime.SYSTEM_TIME_PROVIDER_PROP;
 
@@ -309,18 +300,18 @@ public class JProperties {
         if (customProps != null) {
             for (Enumeration e = customProps.propertyNames(); e.hasMoreElements(); ) {
                 String propName = (String) e.nextElement();
-                String propValue = customProps.getProperty(propName);
+                Object propValue = customProps.get(propName);
                 String spacePropKey = spaceName == null ? propName : spaceName + "." + propName;
 
-				/*
+                /*
                  * When the key to be overwritten is a space config key, i.e. starts
-				 * with space-config, we set its new value. 
-				 * 
-				 * Note: previously, we only set the value if the spaceAttrib contained the key
-				 * to be overwritten. Now, we set it regardless. see APP-50
-				 */
-                if (propName.startsWith(Constants.SPACE_CONFIG_PREFIX))
-                    spaceAttrib.setProperty(spacePropKey, propValue);
+                 * with space-config, we set its new value.
+                 *
+                 * Note: previously, we only set the value if the spaceAttrib contained the key
+                 * to be overwritten. Now, we set it regardless. see APP-50
+                 */
+                if (propValue != null && propName.startsWith(Constants.SPACE_CONFIG_PREFIX))
+                    spaceAttrib.put(spacePropKey, propValue);
             }
         }
     }
