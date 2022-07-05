@@ -20,7 +20,6 @@ package org.openspaces.core.space;
 import com.gigaspaces.attribute_store.AttributeStore;
 import com.gigaspaces.datasource.ManagedDataSource;
 import com.gigaspaces.datasource.SpaceDataSource;
-import com.gigaspaces.internal.server.space.tiered_storage.TieredStorageConfig;
 import com.gigaspaces.metadata.SpaceTypeDescriptor;
 import com.gigaspaces.query.extension.QueryExtensionProvider;
 import com.gigaspaces.sync.SpaceSynchronizationEndpoint;
@@ -78,17 +77,6 @@ public class EmbeddedSpaceFactoryBean extends AbstractSpaceFactoryBean implement
     public void setSecurityConfig(SecurityConfig securityConfig) {
         super.setSecurityConfig(securityConfig);
         factory.setSecurityConfig(securityConfig);
-    }
-
-    /**
-     * use the {@link #setCachePolicy(CachePolicy)}
-     *
-     * @since 16.2
-     * @deprecated
-     */
-    @Deprecated //TODO PIC-771 remove usage
-    public void setTieredStorageConfig(TieredStorageConfig tieredStorageConfig) {
-        factory.setCachePolicy(new TieredStorageCachePolicy(tieredStorageConfig));
     }
 
     public void setProperties(Properties properties) {
