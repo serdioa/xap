@@ -12,6 +12,7 @@ public class TieredStorageTableConfig implements SmartExternalizable {
     static final long serialVersionUID = 9148050446035037648L;
     private String name;
     private String timeColumn;
+    @Deprecated
     private Duration retention;
     private Duration period;
     private String criteria;
@@ -38,10 +39,12 @@ public class TieredStorageTableConfig implements SmartExternalizable {
         return this;
     }
 
+    @Deprecated
     public Duration getRetention() {
         return retention;
     }
 
+    @Deprecated
     public TieredStorageTableConfig setRetention(Duration retention) {
         this.retention = retention;
         return this;

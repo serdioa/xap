@@ -30,8 +30,6 @@ import java.io.ObjectOutput;
 import java.rmi.UnmarshalException;
 import java.util.Arrays;
 import java.util.Properties;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 
 /**
  * This structure contains all information about space configuration. <code>SpaceConfig</code>
@@ -47,8 +45,6 @@ public class SpaceConfig extends JSpaceAttributes implements IClusterInfoChanged
     private String _containerName;
     private String _fullSpaceName;
     private String _schemaPath = "";
-
-    private final ConcurrentMap extraProperties = new ConcurrentHashMap<String, Object>();
 
     private static final long serialVersionUID = 1L;
     private static final int SERIAL_VERSION = 1;
@@ -253,9 +249,6 @@ public class SpaceConfig extends JSpaceAttributes implements IClusterInfoChanged
         return flags;
     }
 
-    public ConcurrentMap getExtraProperties() {
-        return extraProperties;
-    }
 
     @Override
     public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {

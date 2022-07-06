@@ -21,13 +21,12 @@ import org.jini.rio.boot.ServiceClassLoader;
 import org.openspaces.core.space.AbstractSpaceFactoryBean;
 import org.openspaces.core.space.EmbeddedSpaceFactoryBean;
 import org.openspaces.core.space.EmbeddedSpaceFactoryBeanConfigurer;
+import org.openspaces.core.space.TieredStorageCachePolicy;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.env.Environment;
 import org.springframework.core.env.PropertyResolver;
 
 import javax.annotation.Resource;
-
-import static com.j_spaces.core.Constants.TieredStorage.SPACE_TIERED_STORAGE_ENABLED;
 
 /**
  * @author Niv Ingberg
@@ -47,7 +46,7 @@ public class EmbeddedSpaceBeansConfig extends AbstractSpaceBeansConfig {
     @Value("${space.mirrored:false}")
     private boolean mirrored;
 
-    @Value("${"+SPACE_TIERED_STORAGE_ENABLED+":false}")
+    @Value("${space.tiered-storage:false}")
     private boolean tieredStorage;
 
     @Resource
@@ -67,7 +66,7 @@ public class EmbeddedSpaceBeansConfig extends AbstractSpaceBeansConfig {
         if (mirrored)
             factoryBean.setMirrored(mirrored);
         if (tieredStorage) {
-            factoryBean.setTieredStorageConfig(new TieredStorageConfig());
+            factoryBean.setCachePolicy(new TieredStorageCachePolicy(new TieredStorageConfig()));
         }
         for (CustomConfigurer customConfigurer : customConfigurers) {
             customConfigurer.configureIfNeeded(factoryBean, environment);
