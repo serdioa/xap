@@ -47,6 +47,8 @@ import net.jini.core.entry.UnusableEntryException;
 
 import java.util.Map;
 
+import static com.j_spaces.core.Constants.TieredStorage.FULL_TIERED_STORAGE_TABLE_CONFIG_INSTANCE_PROP;
+
 /**
  * Manages EntryPacket construction and TypeDescription
  *
@@ -500,7 +502,7 @@ public class SpaceProxyTypeManager implements ISpaceProxyTypeManager {
     private void validateTimeValueNotNull(Object object, IEntryPacket packet) {
         String typeName = object.getClass().getTypeName();
 
-        TieredStorageConfig tieredStorageConfig = _proxy.getProxySettings().getSpaceAttributes().getTieredStorageConfig();
+        TieredStorageConfig tieredStorageConfig = (TieredStorageConfig) _proxy.getProxySettings().getCustomProperties().get(FULL_TIERED_STORAGE_TABLE_CONFIG_INSTANCE_PROP);
         if (tieredStorageConfig != null) {
             if (tieredStorageConfig.hasCacheRule(typeName)) {
                 TieredStorageTableConfig tieredStorageTableConfig = tieredStorageConfig.getTable(typeName);

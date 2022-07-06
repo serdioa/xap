@@ -510,10 +510,6 @@ public class JProperties {
         return false;
     }
 
-    public static Properties getCustomProperties() {
-        return m_customProperties;
-    }
-
     /**
      * Returns Properties of certain space.
      *

@@ -826,11 +826,7 @@ public class SystemProperties extends CommonSystemProperties {
 
     public static final String OPS_UI_DEV_MODE = "com.gs.ops-ui.dev-mode";
     public static final String KAFKA_URL = "com.gs.dih.kafka.url";
-
-    /**
-     * Set system property to enable tiered storage when not configured using xml/configurer
-     * or enable using a Space property:
-     * @see Constants.TieredStorage#SPACE_TIERED_STORAGE_ENABLED */
+    
     public static final String TIERED_STORAGE_ENABLED = "com.gs.tiered-storage.enabled";
     public static final String TIERED_STORAGE_FULL_MEMORY_RECOVERY = "com.gs.tiered-storage.full-memory-recovery";
 

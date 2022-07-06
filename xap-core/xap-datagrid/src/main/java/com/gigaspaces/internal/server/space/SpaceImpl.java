@@ -3113,15 +3113,8 @@ public class SpaceImpl extends AbstractService implements IRemoteSpace, IInterna
                 _spaceConfig = null;
             }
 
-            if (_spaceConfig != null) {
-                // load dynamically tiered storage configuration
-                createOrUpdateTieredStorageConfig();
-                return _spaceConfig;
-            }
-
             final Properties spaceProps = JProperties.getSpaceProperties(_configReader.getFullSpaceName());
             _spaceConfig = new SpaceConfig(_spaceName, spaceProps, _containerName, "");
-            _spaceConfig.setCustomProperties(JProperties.getCustomProperties());
             _spaceConfig.setClusterPolicy(_clusterPolicy);
             _spaceConfig.setClusterInfo(_clusterInfo);
             _spaceConfig.setLoadOnStartup(_jspaceAttr.isLoadOnStartup());
@@ -3135,12 +3128,6 @@ public class SpaceImpl extends AbstractService implements IRemoteSpace, IInterna
         }
 
         return _spaceConfig;
-    }
-
-    private void createOrUpdateTieredStorageConfig() {
-        if (_spaceConfig.isTieredStorageCachePolicy() && _engine != null && _engine.getTieredStorageManager() != null) {
-            _spaceConfig.setTieredStorageConfig(_engine.getTieredStorageManager().getTieredStorageConfig());
-        }
     }
 
     private void initSpaceConfig(SpaceConfig spaceConfig, SpaceConfigReader configReader, String schemaFilePath) {
