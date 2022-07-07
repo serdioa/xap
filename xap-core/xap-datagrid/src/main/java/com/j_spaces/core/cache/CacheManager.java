@@ -275,12 +275,7 @@ public class CacheManager extends AbstractCacheManager
          * the default is ALL_IN_CACHE
          * Note: this behavior was changed in 10.1 . Before that persistent space default policy was LRU
          */
-        //TODO: @moran/@sapir should only be taken from configReader.getIntSpaceProperty(CACHE_POLICY_PROP... but tests need to align
-        if (engine.isTieredStorage()) { //TODO: @sagiv fix later
-            setCachePolicy(CACHE_POLICY_TIERED_STORAGE);
-        } else {
-            setCachePolicy(configReader.getIntSpaceProperty(CACHE_POLICY_PROP, String.valueOf(CACHE_POLICY_ALL_IN_CACHE)));
-        }
+        setCachePolicy(configReader.getIntSpaceProperty(CACHE_POLICY_PROP, String.valueOf(CACHE_POLICY_ALL_IN_CACHE)));
         _emptyAfterInitialLoadStage = true;
 
 //TEMP FOR QA
