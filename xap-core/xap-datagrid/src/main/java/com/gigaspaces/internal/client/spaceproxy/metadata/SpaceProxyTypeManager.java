@@ -499,6 +499,7 @@ public class SpaceProxyTypeManager implements ISpaceProxyTypeManager {
         return _requiredConsistencyLevel;
     }
 
+    //TODO PIC-771 move validation to server
     private void validateTimeValueNotNull(Object object, IEntryPacket packet) {
         String typeName = object.getClass().getTypeName();
 

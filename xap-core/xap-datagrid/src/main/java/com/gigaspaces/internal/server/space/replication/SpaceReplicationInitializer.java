@@ -238,7 +238,7 @@ public class SpaceReplicationInitializer {
     private AbstractSpaceReplicationEntryEventHandler getEntryHandler() {
         AbstractSpaceReplicationEntryEventHandler entryHandler;
         // we duplicate the cache manager logic here because it is null at this point
-        // _storageAdapter.supportsExternalDB() true if mirror, false otherwise
+        // _storageAdapter.supportsExternalDB() false when memorySA or variation of blob-store
         final boolean isCentralAndExternalDB =
                 _storageAdapter.supportsExternalDB() &&
                         _spaceEngine.getClusterPolicy().m_CacheLoaderConfig.centralDataSource;
