@@ -22,9 +22,7 @@ import com.gigaspaces.datasource.SpaceDataSource;
 import com.gigaspaces.internal.client.spaceproxy.ISpaceProxy;
 import com.gigaspaces.internal.lookup.SpaceUrlUtils;
 import com.gigaspaces.internal.server.space.SpaceInstanceConfig;
-import com.gigaspaces.internal.server.space.tiered_storage.TieredStorageConfig;
 import com.gigaspaces.internal.sync.mirror.MirrorDistributedTxnConfig;
-import com.gigaspaces.internal.utils.GsEnv;
 import com.gigaspaces.internal.utils.StringUtils;
 import com.gigaspaces.metadata.SpaceTypeDescriptor;
 import com.gigaspaces.query.extension.QueryExtensionProvider;
@@ -41,16 +39,11 @@ import com.j_spaces.core.client.SpaceURL;
 import com.j_spaces.core.client.SpaceURLParser;
 import com.j_spaces.core.cluster.ReplicationFilterProvider;
 import com.j_spaces.core.filters.FilterProvider;
-import com.j_spaces.kernel.SystemProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.MalformedURLException;
 import java.util.*;
-
-import static com.j_spaces.core.Constants.CacheManager.CACHE_POLICY_TIERED_STORAGE;
-import static com.j_spaces.core.Constants.CacheManager.FULL_CACHE_POLICY_PROP;
-import static com.j_spaces.core.Constants.TieredStorage.FULL_TIERED_STORAGE_TABLE_CONFIG_INSTANCE_PROP;
 
 /**
  * @author Niv Ingberg
@@ -209,15 +202,6 @@ public class SpaceProxyFactory {
             for (SpaceCustomComponent component : customComponents) {
                 spaceInstanceConfig.addCustomComponent(component);
             }
-        }
-
-        //TODO PIC-771 remove configuration of system property which is mainly used by tests
-        //if tiered storage is enabled using sys prop
-        if (GsEnv.propertyBoolean(SystemProperties.TIERED_STORAGE_ENABLED).get(false)) {
-            //TODO PIC-771 duplication should be refactored
-            props.setProperty(FULL_CACHE_POLICY_PROP, String.valueOf(CACHE_POLICY_TIERED_STORAGE));
-            props.setProperty(Constants.TieredStorage.AUTO_GENERATE_SLA_PROP, "true");
-            props.put(FULL_TIERED_STORAGE_TABLE_CONFIG_INSTANCE_PROP, new TieredStorageConfig());
         }
 
         if (mirrorDistributedTxnConfig != null) {

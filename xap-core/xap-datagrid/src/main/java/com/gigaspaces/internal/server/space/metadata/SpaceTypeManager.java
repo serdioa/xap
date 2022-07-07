@@ -346,7 +346,6 @@ public class SpaceTypeManager {
         return tieredStorageManager != null && tieredStorageManager.isTransient(typeDesc.getTypeName());
     }
 
-    /** @see Constants.TieredStorage#SUPPORT_DYNAMIC_PROPERTIES */
     private void validateTieredStorage(ITypeDesc typeDesc) {
         assert tieredStorageManager != null;
         String typeName = typeDesc.getTypeName();
