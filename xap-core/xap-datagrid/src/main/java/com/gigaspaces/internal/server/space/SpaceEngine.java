@@ -1512,6 +1512,10 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
         Context context = null;
         WriteEntriesResult result = new WriteEntriesResult(entryPackets.length);
         List<Integer> unknownTypePositions = null;
+        if (isTieredStorage()) {
+            for (IEntryPacket packet : entryPackets) {
+            }
+        }
 
         OperationID[] opIDs = new OperationID[entryPackets.length];
         boolean anyFifoClass = false;
@@ -1540,6 +1544,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
                 }
             }
         }
+
         if (unknownTypePositions != null) {
             // some of the tte are missing, request from the proxy to repeat the request with full EP for the
             // following indices.
@@ -7535,11 +7540,12 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
         _serverIteratorsManager.closeServerIterator(uuid);
     }
 
-    public void renewServerIteratorLease(UUID uuid){
+    public void renewServerIteratorLease(UUID uuid) {
         _serverIteratorsManager.tryRenewServerIteratorLease(uuid);
     }
 
     public Logger getLogger() {
         return _logger;
     }
+
 }

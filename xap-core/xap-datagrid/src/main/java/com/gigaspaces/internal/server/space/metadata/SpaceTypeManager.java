@@ -33,6 +33,7 @@ import com.gigaspaces.internal.server.space.tiered_storage.TieredStorageManager;
 import com.gigaspaces.internal.server.space.tiered_storage.TieredStorageTableConfig;
 import com.gigaspaces.internal.server.space.tiered_storage.TieredStorageUtils;
 import com.gigaspaces.internal.server.space.tiered_storage.error.TieredStorageMetadataException;
+import com.gigaspaces.internal.transport.ITemplatePacket;
 import com.gigaspaces.internal.transport.ITransportPacket;
 import com.gigaspaces.internal.utils.GsEnv;
 import com.gigaspaces.logger.LogLevel;
@@ -228,9 +229,10 @@ public class SpaceTypeManager {
                 serverTypeDesc = result.getServerTypeDesc();
             }
         }
-
         validateChecksum(typeName, packet, serverTypeDesc.getTypeDesc());
+
         packet.setTypeDesc(serverTypeDesc.getTypeDesc(), false);
+        validateTimeValueNotNull(packet);
 
         logExit("loadServerTypeDesc", "typeName", typeName);
         return serverTypeDesc;
@@ -753,5 +755,17 @@ public class SpaceTypeManager {
         }
     }
 
+    private void validateTimeValueNotNull(ITransportPacket packet) {
+        if (tieredStorageManager == null) return;
+        String typeName = packet.getTypeDescriptor().getTypeName();
+        TieredStorageTableConfig tieredStorageTableConfig = tieredStorageManager.getTableConfig(typeName);
+        if (tieredStorageTableConfig != null && tieredStorageTableConfig.isTimeRule()) {
+            String timeColumn = tieredStorageTableConfig.getTimeColumn();
+            if (packet.getPropertyValue(timeColumn) == null
+                    && !(packet instanceof ITemplatePacket)) {
+                throw new SpaceMetadataException("property which set as time rule cannot be null.");
+            }
+        }
+    }
 
 }

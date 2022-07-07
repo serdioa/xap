@@ -42,30 +42,35 @@ public interface TieredStorageManager {
 
     boolean RDBMSContainsData();
 
+    static void validateTieredStorageConfigTable(TieredStorageTableConfig tieredStorageTableConfig) {
+        if (tieredStorageTableConfig.isTransient()
+                && (tieredStorageTableConfig.getCriteria() != null
+                || tieredStorageTableConfig.getPeriod() != null
+                || tieredStorageTableConfig.getTimeColumn() != null
+                || tieredStorageTableConfig.getRetention() != null)) {
+            throw new TieredStorageConfigException("Illegal Config for type " + tieredStorageTableConfig.getName() + ": " +
+                    "Transient type should only set isTransient = true , actual: " + tieredStorageTableConfig);
+
+        }
+
+        if ((tieredStorageTableConfig.getTimeColumn() != null && tieredStorageTableConfig.getPeriod() == null)
+                || (tieredStorageTableConfig.getTimeColumn() == null && tieredStorageTableConfig.getPeriod() != null)) {
+            throw new IllegalArgumentException("Illegal Config for type " + tieredStorageTableConfig.getName() +
+                    ": Cannot set time rule without setting values to both period and column name fields");
+        }
+
+        if (tieredStorageTableConfig.getTimeColumn() != null
+                && tieredStorageTableConfig.getPeriod() != null
+                && tieredStorageTableConfig.getCriteria() != null) {
+            throw new TieredStorageConfigException("Illegal Config for type " + tieredStorageTableConfig.getName() +
+                    ": Cannot apply both criteria and time rules on same type");
+        }
+
+    }
+
     static void validateTieredStorageConfig(TieredStorageConfig storageConfig) {
         for (TieredStorageTableConfig tableConfig : storageConfig.getTables()) {
-            if (tableConfig.isTransient()
-                    && (tableConfig.getCriteria() != null
-                    || tableConfig.getPeriod() != null
-                    || tableConfig.getTimeColumn() != null
-                    || tableConfig.getRetention() != null)) {
-                throw new TieredStorageConfigException("Illegal Config for type " + tableConfig.getName() + ": " +
-                        "Transient type should only set isTransient = true , actual: " + tableConfig);
-
-            }
-
-            if ((tableConfig.getTimeColumn() != null && tableConfig.getPeriod() == null)
-                    || (tableConfig.getTimeColumn() == null && tableConfig.getPeriod() != null)) {
-                throw new IllegalArgumentException("Illegal Config for type " + tableConfig.getName() +
-                        ": Cannot set time rule without setting values to both period and column name fields");
-            }
-
-            if (tableConfig.getTimeColumn() != null
-                    && tableConfig.getPeriod() != null
-                    && tableConfig.getCriteria() != null) {
-                throw new TieredStorageConfigException("Illegal Config for type " + tableConfig.getName() +
-                        ": Cannot apply both criteria and time rules on same type");
-            }
+            validateTieredStorageConfigTable(tableConfig);
         }
     }
 }
