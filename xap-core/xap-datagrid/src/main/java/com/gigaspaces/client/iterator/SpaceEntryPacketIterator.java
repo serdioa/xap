@@ -31,16 +31,14 @@ import com.gigaspaces.logger.Constants;
 import com.gigaspaces.query.aggregators.AggregationSet;
 import com.j_spaces.core.UidQueryPacket;
 import com.j_spaces.jdbc.builder.SQLQueryTemplatePacket;
-
 import net.jini.core.entry.UnusableEntryException;
 import net.jini.core.transaction.Transaction;
 import net.jini.core.transaction.TransactionException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.rmi.RemoteException;
 import java.util.Iterator;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * @author Niv Ingberg
@@ -78,7 +76,7 @@ public class SpaceEntryPacketIterator implements IEntryPacketIterator {
         this._readModifiers = modifiers;
         this._queryPacket = toTemplatePacket(query);
         this._queryResultType = _queryPacket.getQueryResultType();
-        this._isTiered = _spaceProxy.getDirectProxy().getSpaceClusterInfo().isTieredStorage();
+        this._isTiered = _spaceProxy.getDirectProxy().getProxySettings().getSpaceAttributes().isTieredStorageCachePolicy();
         this._iteratorResult = initialize();
         this._bufferIterator = _iteratorResult.getEntries().iterator();
     }

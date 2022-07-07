@@ -20,7 +20,6 @@ import com.gigaspaces.internal.server.space.tiered_storage.TieredStorageConfig;
 import com.gigaspaces.internal.server.space.tiered_storage.TieredStorageTableConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.support.BeanDefinitionBuilder;
 import org.w3c.dom.Element;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
@@ -36,7 +35,7 @@ public class TieredStorageDefinitionsParser {
     private static final String TABLES = "os-core:tables";
     private static final String TABLE = "os-core:table";
 
-    public static void parseXml(Element tieredStorageElement, BeanDefinitionBuilder builder) {
+    public static TieredStorageConfig parseXml(Element tieredStorageElement) {
         TieredStorageConfig tieredStorageConfig = new TieredStorageConfig();
         NodeList tableNodesList = tieredStorageElement.getElementsByTagName(TABLES);
         if (tableNodesList.getLength() > 0) {
@@ -53,30 +52,35 @@ public class TieredStorageDefinitionsParser {
                 tableConfig.setTimeColumn(getAttribute("time-column",attributes));
                 tableConfig.setRetention(getDurationAttribute("retention", attributes));
                 String sTransient = getAttribute("transient", attributes);
-                if (sTransient != null){
+                if (sTransient != null) {
                     tableConfig.setTransient(Boolean.parseBoolean(sTransient));
                 }
                 NodeList cacheRulesList = ((Element) tableNode).getElementsByTagName("os-core:cache-rule");
-                if (cacheRulesList.getLength() > 0){
+                if (cacheRulesList.getLength() > 0) {
                     Node cacheRuleNode = cacheRulesList.item(0);
                     NamedNodeMap cacheRuleNodeAttributes = cacheRuleNode.getAttributes();
-                    tableConfig.setCriteria(getAttribute("criteria",cacheRuleNodeAttributes));
+                    tableConfig.setCriteria(getAttribute("criteria", cacheRuleNodeAttributes));
                     tableConfig.setPeriod(getDurationAttribute("period", cacheRuleNodeAttributes));
                 }
-                else {
-                    logger.debug("no cache-rule for table "+tableConfig.getName());
+
+                if (logger.isDebugEnabled()) {
+                    if (cacheRulesList.getLength() == 0) {
+                        logger.debug("no cache-rule defined for table " + tableConfig.getName());
+                    }
+
+                    if (tieredStorageConfig.hasCacheRule(tableConfig.getName())) {
+                        logger.debug("table " + tableConfig.getName() + " appears more than once");
+                    }
                 }
-                if (tablesMap.putIfAbsent(tableConfig.getName(), tableConfig) != null){
-                    logger.debug("table "+tableConfig.getName() + " appears more than once");
-                }
+
+                tieredStorageConfig.addTable(tableConfig);
             }
-            tieredStorageConfig.setTables(tablesMap);
         }
         else {
             logger.error("no tables entity found in tiered storage");
         }
-        builder.addPropertyValue("tieredStorageConfig", tieredStorageConfig);
 
+        return tieredStorageConfig;
     }
 
     private static Duration getDurationAttribute(String attName, NamedNodeMap attributes){

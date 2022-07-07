@@ -20,6 +20,8 @@ public interface TieredStorageManager {
 
     CachePredicate getCacheRule(String typeName); // get cache rule for a specific type
 
+    TieredStorageConfig getTieredStorageConfig();
+
     TieredStorageTableConfig getTableConfig(String typeName);
 
     void addTableConfig(TieredStorageTableConfig config);
@@ -41,7 +43,7 @@ public interface TieredStorageManager {
     boolean RDBMSContainsData();
 
     static void validateTieredStorageConfig(TieredStorageConfig storageConfig) {
-        for (TieredStorageTableConfig tableConfig : storageConfig.getTables().values()) {
+        for (TieredStorageTableConfig tableConfig : storageConfig.getTables()) {
             if (tableConfig.isTransient()
                     && (tableConfig.getCriteria() != null
                     || tableConfig.getPeriod() != null

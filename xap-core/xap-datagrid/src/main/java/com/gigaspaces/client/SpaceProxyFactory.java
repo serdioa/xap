@@ -48,7 +48,9 @@ import org.slf4j.LoggerFactory;
 import java.net.MalformedURLException;
 import java.util.*;
 
-import static com.j_spaces.core.Constants.TieredStorage.SPACE_CLUSTER_INFO_TIERED_STORAGE_COMPONENT_NAME;
+import static com.j_spaces.core.Constants.CacheManager.CACHE_POLICY_TIERED_STORAGE;
+import static com.j_spaces.core.Constants.CacheManager.FULL_CACHE_POLICY_PROP;
+import static com.j_spaces.core.Constants.TieredStorage.FULL_TIERED_STORAGE_TABLE_CONFIG_INSTANCE_PROP;
 
 /**
  * @author Niv Ingberg
@@ -209,22 +211,13 @@ public class SpaceProxyFactory {
             }
         }
 
-        //if tiered storage is enabled using sys prop/ env variable/ space property, and not already configured using configurer
-        if (isTieredStoragePropertyEnabled(props)) {
-            if (spaceInstanceConfig != null) {
-                    if (spaceInstanceConfig.getCustomComponents().containsKey(SPACE_CLUSTER_INFO_TIERED_STORAGE_COMPONENT_NAME)) {
-                        //only add if does not already exist
-                        if (!props.containsKey(Constants.TieredStorage.AUTO_GENERATE_SLA_PROP)) {
-                            props.setProperty(Constants.TieredStorage.AUTO_GENERATE_SLA_PROP, "true");
-                        } //else skip
-                    } else {
-                        //add  if configuration doesn't exist
-                        TieredStorageConfig config = new TieredStorageConfig();
-                        config.setTables(new HashMap<>());
-                        spaceInstanceConfig.addCustomComponent(config);
-                        props.setProperty(Constants.TieredStorage.AUTO_GENERATE_SLA_PROP, "true");
-                    }
-            }
+        //TODO PIC-771 remove configuration of system property which is mainly used by tests
+        //if tiered storage is enabled using sys prop
+        if (GsEnv.propertyBoolean(SystemProperties.TIERED_STORAGE_ENABLED).get(false)) {
+            //TODO PIC-771 duplication should be refactored
+            props.setProperty(FULL_CACHE_POLICY_PROP, String.valueOf(CACHE_POLICY_TIERED_STORAGE));
+            props.setProperty(Constants.TieredStorage.AUTO_GENERATE_SLA_PROP, "true");
+            props.put(FULL_TIERED_STORAGE_TABLE_CONFIG_INSTANCE_PROP, new TieredStorageConfig());
         }
 
         if (mirrorDistributedTxnConfig != null) {
@@ -286,16 +279,6 @@ public class SpaceProxyFactory {
         }
 
         return props;
-    }
-
-    /**
-     * Tiered storage can be enabled using system property / env variable / space property
-     * @param props properties passed to the Space
-     * @return true if configured via property; false otherwise (may be configured using xml/configurer)
-     */
-    private boolean isTieredStoragePropertyEnabled(Properties props) {
-        return GsEnv.propertyBoolean(SystemProperties.TIERED_STORAGE_ENABLED).get(false)
-                || Boolean.parseBoolean(props.getProperty(Constants.TieredStorage.SPACE_TIERED_STORAGE_ENABLED));
     }
 
     private static void assertEmbedded(boolean isRemote, String componentName) {
@@ -419,9 +402,5 @@ public class SpaceProxyFactory {
 
     public void setAttributeStore(AttributeStore attributeStore) {
         this.attributeStore = attributeStore;
-    }
-
-    public void setTieredStorageConfig(TieredStorageConfig tieredStorageConfig) {
-        customComponents.add(tieredStorageConfig);
     }
 }

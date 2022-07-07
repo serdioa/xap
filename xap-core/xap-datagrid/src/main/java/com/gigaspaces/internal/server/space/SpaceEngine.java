@@ -167,7 +167,8 @@ import java.util.concurrent.TimeUnit;
 
 import static com.j_spaces.core.Constants.CacheManager.*;
 import static com.j_spaces.core.Constants.Engine.*;
-import static com.j_spaces.core.Constants.TieredStorage.*;
+import static com.j_spaces.core.Constants.TieredStorage.TIERED_STORAGE_INTERNAL_RDBMS_CLASS_DEFAULT;
+import static com.j_spaces.core.Constants.TieredStorage.TIERED_STORAGE_INTERNAL_RDBMS_CLASS_PROP;
 import static com.j_spaces.kernel.SystemProperties.REPLICATION_REPLICA_PROGRESS_TIMEOUT;
 
 @com.gigaspaces.api.InternalApi
@@ -387,16 +388,25 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
 
 
     private void createTieredStorageManager() throws IllegalAccessException, InstantiationException, ClassNotFoundException {
-        Object tieredStorage = this._clusterInfo.getCustomComponent(SPACE_CLUSTER_INFO_TIERED_STORAGE_COMPONENT_NAME);
-        if (tieredStorage != null) {
-            TieredStorageConfig storageConfig = (TieredStorageConfig) tieredStorage;
-            TieredStorageManager.validateTieredStorageConfig(storageConfig);
-            String className = System.getProperty(TIERED_STORAGE_INTERNAL_RDBMS_CLASS_PROP, TIERED_STORAGE_INTERNAL_RDBMS_CLASS_DEFAULT);
-            InternalRDBMS rdbms = ClassLoaderHelper.newInstance(className);
-            rdbms.setLogger(_fullSpaceName);
-            TieredStorageSA tieredStorageSA = new TieredStorageSA(rdbms, this);
-            this.tieredStorageManager = new TieredStorageManagerImpl(storageConfig, tieredStorageSA, _fullSpaceName);
+        final boolean isTieredStorage = String.valueOf(CACHE_POLICY_TIERED_STORAGE)
+                .equals(_spaceImpl.getJspaceAttr().getCustomProperties().get(FULL_CACHE_POLICY_PROP));
+        if (isTieredStorage) {
+            TieredStorageConfig tieredStorageConfig = _spaceImpl.getJspaceAttr().getTieredStorageConfig();
+            if (tieredStorageConfig == null) {
+                createTieredStorageManagerConfiguration(new TieredStorageConfig()); //create an empty configuration
+            } else {
+                TieredStorageManager.validateTieredStorageConfig(tieredStorageConfig);
+                createTieredStorageManagerConfiguration(tieredStorageConfig);
+            }
         }
+    }
+
+    private void createTieredStorageManagerConfiguration(TieredStorageConfig storageConfig) throws ClassNotFoundException, IllegalAccessException, InstantiationException {
+        String className = System.getProperty(TIERED_STORAGE_INTERNAL_RDBMS_CLASS_PROP, TIERED_STORAGE_INTERNAL_RDBMS_CLASS_DEFAULT);
+        InternalRDBMS rdbms = ClassLoaderHelper.newInstance(className);
+        rdbms.setLogger(_fullSpaceName);
+        TieredStorageSA tieredStorageSA = new TieredStorageSA(rdbms, this);
+        this.tieredStorageManager = new TieredStorageManagerImpl(storageConfig, tieredStorageSA, _fullSpaceName);
     }
 
     public TieredStorageManager getTieredStorageManager() {

@@ -33,7 +33,6 @@ import com.gigaspaces.internal.server.space.operations.WriteEntryResult;
 import com.gigaspaces.internal.server.space.tiered_storage.TieredStorageConfig;
 import com.gigaspaces.internal.server.space.tiered_storage.TieredStorageTableConfig;
 import com.gigaspaces.internal.transport.*;
-import com.gigaspaces.internal.utils.ObjectUtils;
 import com.gigaspaces.lrmi.classloading.LRMIClassLoadersHolder;
 import com.gigaspaces.metadata.SpaceMetadataException;
 import com.gigaspaces.query.IdQuery;
@@ -48,7 +47,7 @@ import net.jini.core.entry.UnusableEntryException;
 
 import java.util.Map;
 
-import static com.j_spaces.core.Constants.TieredStorage.SPACE_CLUSTER_INFO_TIERED_STORAGE_COMPONENT_NAME;
+import static com.j_spaces.core.Constants.TieredStorage.FULL_TIERED_STORAGE_TABLE_CONFIG_INSTANCE_PROP;
 
 /**
  * Manages EntryPacket construction and TypeDescription
@@ -288,25 +287,11 @@ public class SpaceProxyTypeManager implements ISpaceProxyTypeManager {
         //disable version only for real objects - not internal (local cache/local view)
         if (objectType != ObjectType.ENTRY_PACKET)
             disablePacketVersionIfNotSupported(packet);
-
-        if(_proxy.getSpaceClusterInfo() != null && _proxy.getSpaceClusterInfo().isTieredStorage()){
+        if (_proxy.getProxySettings().getSpaceAttributes().isTieredStorageCachePolicy()) {
             validateTimeValueNotNull(object, packet);
         }
-        return packet;
-    }
 
-    private void validateTimeValueNotNull(Object object, IEntryPacket packet){
-        String typeName = object.getClass().getTypeName();
-        TieredStorageConfig tieredStorageConfig = _proxy.getSpaceClusterInfo().getCustomComponent(SPACE_CLUSTER_INFO_TIERED_STORAGE_COMPONENT_NAME);
-        if (tieredStorageConfig.hasCacheRule(typeName)){
-            TieredStorageTableConfig tieredStorageTableConfig = tieredStorageConfig.getTables().get(typeName);
-            if (tieredStorageTableConfig.isTimeRule()){
-                String timeColumn = tieredStorageTableConfig.getTimeColumn();
-                if (packet.getPropertyValue(timeColumn) == null){
-                    throw new SpaceMetadataException("property which set as time rule cannot be null.");
-                }
-            }
-        }
+        return packet;
     }
 
     public ITemplatePacket getTemplatePacketFromObject(Object object, ObjectType objectType) {
@@ -505,11 +490,33 @@ public class SpaceProxyTypeManager implements ISpaceProxyTypeManager {
         if (writeResult.getSyncReplicationLevel() + 1 < requiredConsistencyLevel()) {
             throw new WriteConsistencyLevelCompromisedException(writeResult.getSyncReplicationLevel() + 1, objectSpaceEntryLease);
         }
+
+
         return objectSpaceEntryLease;
     }
 
     public static int requiredConsistencyLevel() {
         return _requiredConsistencyLevel;
     }
+
+    //TODO PIC-771 move validation to server
+    private void validateTimeValueNotNull(Object object, IEntryPacket packet) {
+        String typeName = object.getClass().getTypeName();
+
+        TieredStorageConfig tieredStorageConfig = (TieredStorageConfig) _proxy.getProxySettings().getCustomProperties().get(FULL_TIERED_STORAGE_TABLE_CONFIG_INSTANCE_PROP);
+        if (tieredStorageConfig != null) {
+            if (tieredStorageConfig.hasCacheRule(typeName)) {
+                TieredStorageTableConfig tieredStorageTableConfig = tieredStorageConfig.getTable(typeName);
+                if (tieredStorageTableConfig.isTimeRule()) {
+                    String timeColumn = tieredStorageTableConfig.getTimeColumn();
+                    if (packet.getPropertyValue(timeColumn) == null) {
+                        throw new SpaceMetadataException("property which set as time rule cannot be null.");
+                    }
+                }
+            }
+        }
+
+    }
+
 
 }
