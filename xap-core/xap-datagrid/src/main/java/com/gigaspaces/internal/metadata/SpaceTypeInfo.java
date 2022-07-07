@@ -34,6 +34,7 @@ import com.gigaspaces.internal.reflection.IConstructor;
 import com.gigaspaces.internal.reflection.IParamsConstructor;
 import com.gigaspaces.internal.reflection.IProperties;
 import com.gigaspaces.internal.reflection.ReflectionUtil;
+import com.gigaspaces.internal.server.space.tiered_storage.TieredStorageManager;
 import com.gigaspaces.internal.server.space.tiered_storage.TieredStorageTableConfig;
 import com.gigaspaces.internal.utils.ObjectUtils;
 import com.gigaspaces.internal.utils.ReflectionUtils;
@@ -1448,6 +1449,7 @@ public class SpaceTypeInfo implements SmartExternalizable {
             validateGetterSetter(_spaceProperties[i], "Space", ConstructorPropertyValidation.REQUIERS_CONSTRUCTOR_PARAM);
         }
         if (_tieredStorageTableConfig != null) {
+            TieredStorageManager.validateTieredStorageConfigTable(_tieredStorageTableConfig);
             validateTableConfig(_tieredStorageTableConfig);
         }
 
