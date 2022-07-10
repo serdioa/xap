@@ -333,16 +333,9 @@ public class SqliteUtils {
 
     static TemplateMatchTier evaluateByMatchTier(ITemplateHolder template, TemplateMatchTier templateMatchTier) {
         if (templateMatchTier == TemplateMatchTier.MATCH_HOT_AND_COLD) {
-            if (template.isMemoryOnlySearch()) {
-                return TemplateMatchTier.MATCH_HOT;
-            } else if (template.isMaybeUnderXtn()) {
-                return TemplateMatchTier.MATCH_HOT_AND_COLD;
-            } else if (template.getBatchOperationContext() != null
-                    && template.getBatchOperationContext().getMaxEntries() == Integer.MAX_VALUE) {
-                return TemplateMatchTier.MATCH_COLD;
-            } else {
-                return TemplateMatchTier.MATCH_HOT_AND_COLD;
-            }
+            return template.isMemoryOnlySearch() ? TemplateMatchTier.MATCH_HOT :
+                    (template.getBatchOperationContext() != null && template.getBatchOperationContext().getMaxEntries() < Integer.MAX_VALUE ?
+                            templateMatchTier : TemplateMatchTier.MATCH_COLD);
         }
         return templateMatchTier;
     }

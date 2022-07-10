@@ -31,10 +31,10 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class TieredStorageManagerImpl implements TieredStorageManager {
 
-    private final Logger logger;
-    private final TieredStorageConfig storageConfig;
+    private Logger logger;
+    private TieredStorageConfig storageConfig;
     private boolean containsData;
-    private final ConcurrentHashMap<String, CachePredicate> hotCacheRules = new ConcurrentHashMap<>();
+    private ConcurrentHashMap<String, CachePredicate> hotCacheRules = new ConcurrentHashMap<>();
 
     private final TieredStorageSA tieredStorageSA;
     private InternalMetricRegistrator diskSizeRegistrator;

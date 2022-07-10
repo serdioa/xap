@@ -4,19 +4,14 @@ import com.gigaspaces.api.InternalApi;
 import com.gigaspaces.internal.metadata.ITypeDesc;
 import com.gigaspaces.internal.server.space.SpaceEngine;
 import com.gigaspaces.internal.server.space.metadata.SpaceTypeManager;
-import com.gigaspaces.internal.server.space.tiered_storage.transaction.TieredStorageBulkOperationRequest;
-import com.gigaspaces.internal.server.space.tiered_storage.transaction.TieredStorageBulkOperationResult;
 import com.gigaspaces.internal.server.storage.IEntryHolder;
 import com.gigaspaces.internal.server.storage.ITemplateHolder;
 import com.j_spaces.core.cache.InitialLoadInfo;
 import com.j_spaces.core.cache.context.Context;
 import com.j_spaces.core.sadapter.ISAdapterIterator;
 import com.j_spaces.core.sadapter.SAException;
-import net.jini.core.transaction.server.ServerTransaction;
 
 import java.io.IOException;
-import java.sql.SQLException;
-import java.util.List;
 
 @InternalApi
 public interface InternalRDBMS {
@@ -64,7 +59,7 @@ public interface InternalRDBMS {
      */
     boolean removeEntry(Context context, IEntryHolder entryHolder) throws SAException;
 
-    IEntryHolder getEntryByUID(String typeName, String uid, boolean isUnderTransaction) throws SAException;
+    IEntryHolder getEntryByUID(String typeName, String uid) throws SAException;
 
     ISAdapterIterator<IEntryHolder> makeEntriesIter(String typeName, ITemplateHolder templateHolder) throws SAException;
 
@@ -82,8 +77,6 @@ public interface InternalRDBMS {
 
     SpaceTypeManager getTypeManager();
 
-    List<TieredStorageBulkOperationResult> executeBulk(List<TieredStorageBulkOperationRequest> operationRequests, ServerTransaction xtn) throws SQLException, ClassNotFoundException;
-
-    boolean closeConnection(long tnxId) throws SQLException;
+    //TODO: @sagiv executeBulk
 }
 

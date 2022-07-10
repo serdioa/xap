@@ -14,21 +14,18 @@ public class SingleTypeRDBMSIterator implements ISAdapterIterator<IEntryHolder> 
     private final RDBMSResult result;
     private final String typeName;
     private final SpaceTypeManager typeManager;
-    private final boolean isMaybeUnderTransaction;
 
-    public SingleTypeRDBMSIterator(RDBMSResult result, ITypeDesc typeDesc, SpaceTypeManager typeManager,
-                                   boolean isMaybeUnderTransaction) {
+    public SingleTypeRDBMSIterator(RDBMSResult result, ITypeDesc typeDesc, SpaceTypeManager typeManager) {
         this.result = result;
         this.typeManager = typeManager;
         this.typeName = typeDesc.getTypeName();
-        this.isMaybeUnderTransaction = isMaybeUnderTransaction;
     }
 
     @Override
     public IEntryHolder next() throws SAException {
         try {
             if (result.next()) {
-                return TieredStorageUtils.getEntryHolderFromRow(typeManager.getServerTypeDesc(typeName), result.getResultSet(), isMaybeUnderTransaction);
+                return TieredStorageUtils.getEntryHolderFromRow(typeManager.getServerTypeDesc(typeName), result.getResultSet());
             } else {
                 return null;
             }
