@@ -1450,7 +1450,6 @@ public class SpaceTypeInfo implements SmartExternalizable {
         }
         if (_tieredStorageTableConfig != null) {
             TieredStorageManager.validateTieredStorageConfigTable(_tieredStorageTableConfig);
-            validateTableConfig(_tieredStorageTableConfig);
         }
 
 		/*
@@ -1948,27 +1947,10 @@ public class SpaceTypeInfo implements SmartExternalizable {
     private static <T> T toSingleOrEmptyItem(List<T> list) {
         return list.isEmpty() ? null : list.get(0);
     }
-    private String evalFieldAnnotation(String field)
-    {
-        if(field.isEmpty())
+
+    private String evalFieldAnnotation(String field) {
+        if (field.isEmpty())
             return null;
         return field;
-    }
-    private boolean validateTableConfig(TieredStorageTableConfig tableConfig) {
-
-        if ((tableConfig.getTimeColumn() != null && tableConfig.getPeriod() == null )
-                || (tableConfig.getTimeColumn() == null && tableConfig.getPeriod() != null )) {
-            throw new IllegalArgumentException("Cannot set time rule without setting values to both period and column name fields");
-        }
-
-        if (tableConfig.isTransient() && (tableConfig.getCriteria() != null || tableConfig.getPeriod() != null)) {
-            throw new IllegalArgumentException("Cannot set both transient and criteria or time rule");
-        }
-
-        if (tableConfig.getPeriod() != null && tableConfig.getCriteria() != null) {
-            throw new IllegalArgumentException("Cannot apply both criteria and time rules on same type");
-        }
-
-        return true;
     }
 }
