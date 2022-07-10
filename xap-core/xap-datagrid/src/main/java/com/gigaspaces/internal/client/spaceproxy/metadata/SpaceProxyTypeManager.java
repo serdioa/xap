@@ -30,11 +30,8 @@ import com.gigaspaces.internal.metadata.SpaceTypeInfoRepository;
 import com.gigaspaces.internal.query.PropertiesQuery;
 import com.gigaspaces.internal.server.space.SpaceUidFactory;
 import com.gigaspaces.internal.server.space.operations.WriteEntryResult;
-import com.gigaspaces.internal.server.space.tiered_storage.TieredStorageConfig;
-import com.gigaspaces.internal.server.space.tiered_storage.TieredStorageTableConfig;
 import com.gigaspaces.internal.transport.*;
 import com.gigaspaces.lrmi.classloading.LRMIClassLoadersHolder;
-import com.gigaspaces.metadata.SpaceMetadataException;
 import com.gigaspaces.query.IdQuery;
 import com.gigaspaces.query.IdsQuery;
 import com.j_spaces.core.IGSEntry;
@@ -46,8 +43,6 @@ import com.j_spaces.kernel.SystemProperties;
 import net.jini.core.entry.UnusableEntryException;
 
 import java.util.Map;
-
-import static com.j_spaces.core.Constants.TieredStorage.FULL_TIERED_STORAGE_TABLE_CONFIG_INSTANCE_PROP;
 
 /**
  * Manages EntryPacket construction and TypeDescription
@@ -287,10 +282,6 @@ public class SpaceProxyTypeManager implements ISpaceProxyTypeManager {
         //disable version only for real objects - not internal (local cache/local view)
         if (objectType != ObjectType.ENTRY_PACKET)
             disablePacketVersionIfNotSupported(packet);
-        if (_proxy.getProxySettings().getSpaceAttributes().isTieredStorageCachePolicy()) {
-            validateTimeValueNotNull(object, packet);
-        }
-
         return packet;
     }
 
@@ -498,25 +489,4 @@ public class SpaceProxyTypeManager implements ISpaceProxyTypeManager {
     public static int requiredConsistencyLevel() {
         return _requiredConsistencyLevel;
     }
-
-    //TODO PIC-771 move validation to server
-    private void validateTimeValueNotNull(Object object, IEntryPacket packet) {
-        String typeName = object.getClass().getTypeName();
-
-        TieredStorageConfig tieredStorageConfig = (TieredStorageConfig) _proxy.getProxySettings().getCustomProperties().get(FULL_TIERED_STORAGE_TABLE_CONFIG_INSTANCE_PROP);
-        if (tieredStorageConfig != null) {
-            if (tieredStorageConfig.hasCacheRule(typeName)) {
-                TieredStorageTableConfig tieredStorageTableConfig = tieredStorageConfig.getTable(typeName);
-                if (tieredStorageTableConfig.isTimeRule()) {
-                    String timeColumn = tieredStorageTableConfig.getTimeColumn();
-                    if (packet.getPropertyValue(timeColumn) == null) {
-                        throw new SpaceMetadataException("property which set as time rule cannot be null.");
-                    }
-                }
-            }
-        }
-
-    }
-
-
 }

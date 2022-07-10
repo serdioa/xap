@@ -1540,6 +1540,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
                 }
             }
         }
+
         if (unknownTypePositions != null) {
             // some of the tte are missing, request from the proxy to repeat the request with full EP for the
             // following indices.
@@ -7535,11 +7536,12 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
         _serverIteratorsManager.closeServerIterator(uuid);
     }
 
-    public void renewServerIteratorLease(UUID uuid){
+    public void renewServerIteratorLease(UUID uuid) {
         _serverIteratorsManager.tryRenewServerIteratorLease(uuid);
     }
 
     public Logger getLogger() {
         return _logger;
     }
+
 }

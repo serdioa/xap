@@ -34,6 +34,7 @@ import com.gigaspaces.internal.reflection.IConstructor;
 import com.gigaspaces.internal.reflection.IParamsConstructor;
 import com.gigaspaces.internal.reflection.IProperties;
 import com.gigaspaces.internal.reflection.ReflectionUtil;
+import com.gigaspaces.internal.server.space.tiered_storage.TieredStorageManager;
 import com.gigaspaces.internal.server.space.tiered_storage.TieredStorageTableConfig;
 import com.gigaspaces.internal.utils.ObjectUtils;
 import com.gigaspaces.internal.utils.ReflectionUtils;
@@ -1448,7 +1449,7 @@ public class SpaceTypeInfo implements SmartExternalizable {
             validateGetterSetter(_spaceProperties[i], "Space", ConstructorPropertyValidation.REQUIERS_CONSTRUCTOR_PARAM);
         }
         if (_tieredStorageTableConfig != null) {
-            validateTableConfig(_tieredStorageTableConfig);
+            TieredStorageManager.validateTieredStorageConfigTable(_tieredStorageTableConfig);
         }
 
 		/*
@@ -1946,27 +1947,10 @@ public class SpaceTypeInfo implements SmartExternalizable {
     private static <T> T toSingleOrEmptyItem(List<T> list) {
         return list.isEmpty() ? null : list.get(0);
     }
-    private String evalFieldAnnotation(String field)
-    {
-        if(field.isEmpty())
+
+    private String evalFieldAnnotation(String field) {
+        if (field.isEmpty())
             return null;
         return field;
-    }
-    private boolean validateTableConfig(TieredStorageTableConfig tableConfig) {
-
-        if ((tableConfig.getTimeColumn() != null && tableConfig.getPeriod() == null )
-                || (tableConfig.getTimeColumn() == null && tableConfig.getPeriod() != null )) {
-            throw new IllegalArgumentException("Cannot set time rule without setting values to both period and column name fields");
-        }
-
-        if (tableConfig.isTransient() && (tableConfig.getCriteria() != null || tableConfig.getPeriod() != null)) {
-            throw new IllegalArgumentException("Cannot set both transient and criteria or time rule");
-        }
-
-        if (tableConfig.getPeriod() != null && tableConfig.getCriteria() != null) {
-            throw new IllegalArgumentException("Cannot apply both criteria and time rules on same type");
-        }
-
-        return true;
     }
 }

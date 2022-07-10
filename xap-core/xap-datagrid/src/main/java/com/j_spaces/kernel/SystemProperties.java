@@ -827,8 +827,6 @@ public class SystemProperties extends CommonSystemProperties {
     public static final String OPS_UI_DEV_MODE = "com.gs.ops-ui.dev-mode";
     public static final String KAFKA_URL = "com.gs.dih.kafka.url";
     
-    public static final String TIERED_STORAGE_ENABLED = "com.gs.tiered-storage.enabled";
-
     private static final Map<String, String> defaultValues = initDefaultValues();
 
     private static Map<String, String> initDefaultValues() {
