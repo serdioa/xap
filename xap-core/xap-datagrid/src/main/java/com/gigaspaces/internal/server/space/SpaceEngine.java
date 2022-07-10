@@ -1512,10 +1512,6 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
         Context context = null;
         WriteEntriesResult result = new WriteEntriesResult(entryPackets.length);
         List<Integer> unknownTypePositions = null;
-        if (isTieredStorage()) {
-            for (IEntryPacket packet : entryPackets) {
-            }
-        }
 
         OperationID[] opIDs = new OperationID[entryPackets.length];
         boolean anyFifoClass = false;
