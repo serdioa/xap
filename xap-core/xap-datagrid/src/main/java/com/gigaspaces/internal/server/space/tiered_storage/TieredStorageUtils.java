@@ -172,15 +172,16 @@ public class TieredStorageUtils {
         throw new IllegalStateException("Should be unreachable");
     }
 
-    public static IEntryHolder getEntryHolderFromRow(IServerTypeDesc serverTypeDesc, ResultSet resultSet) throws SQLException {
+    public static IEntryHolder getEntryHolderFromRow(IServerTypeDesc serverTypeDesc, ResultSet resultSet, boolean isUnderTransaction) throws SQLException {
         ITypeDesc typeDesc = serverTypeDesc.getTypeDesc();
         PropertyInfo[] properties = typeDesc.getProperties();
         Object[] values = new Object[properties.length];
         for (int i = 0; i < properties.length; i++) {
             values[i] = getPropertyValue(resultSet, properties[i].getType(), properties[i].getOriginalIndex() + 1);
         }
+        long lease = isUnderTransaction ? 100 : Lease.FOREVER;
         FlatEntryData data = new FlatEntryData(values, null, typeDesc.getEntryTypeDesc(EntryType.DOCUMENT_JAVA),
-                getVersionValue(resultSet), Lease.FOREVER, null);
+                getVersionValue(resultSet), lease, null);
         String uid;
         List<String> idPropertiesNames = typeDesc.getIdPropertiesNames();
         if (typeDesc.isAutoGenerateId()) {

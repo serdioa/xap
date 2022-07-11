@@ -87,7 +87,6 @@ public class BlobStoreStorageAdapter implements IStorageAdapter, IBlobStoreStora
 
     @Override
     public void initialize() throws SAException {
-        // TODO Auto-generated method stub
         if (_possibleRecoverySA != null)
             _possibleRecoverySA.initialize();
     }
@@ -111,7 +110,6 @@ public class BlobStoreStorageAdapter implements IStorageAdapter, IBlobStoreStora
         //load metadata first
         final BlobStoreMetaDataIterator metadataIterator = new BlobStoreMetaDataIterator(_engine);
         Map<String, BlobStoreStorageAdapterClassInfo> classesInfo = metadataIterator.getClassesInfo();
-
 
         try {
             while (true) {
@@ -154,7 +152,6 @@ public class BlobStoreStorageAdapter implements IStorageAdapter, IBlobStoreStora
             }
         }
 
-
         return new BlobStoreInitialLoadDataIterator(_engine);
     }
 
@@ -172,7 +169,6 @@ public class BlobStoreStorageAdapter implements IStorageAdapter, IBlobStoreStora
     @Override
     public void insertEntry(Context context, IEntryHolder entryHolder,
                             boolean origin, boolean shouldReplicate) throws SAException {
-        // TODO Auto-generated method stub
         if (!entryHolder.isBlobStoreEntry())
             return;
         context.setDelayedReplicationForbulkOpUsed(false);
@@ -206,7 +202,6 @@ public class BlobStoreStorageAdapter implements IStorageAdapter, IBlobStoreStora
     public void updateEntry(Context context, IEntryHolder updatedEntry,
                             boolean shouldReplicate, boolean origin,
                             boolean[] partialUpdateValuesIndicators) throws SAException {
-        // TODO Auto-generated method stub
         if (!updatedEntry.isBlobStoreEntry())
             return;
         context.setDelayedReplicationForbulkOpUsed(false);
@@ -237,7 +232,6 @@ public class BlobStoreStorageAdapter implements IStorageAdapter, IBlobStoreStora
     @Override
     public void removeEntry(Context context, IEntryHolder entryHolder,
                             boolean origin, boolean fromLeaseExpiration, boolean shouldReplicate) throws SAException {
-        // TODO Auto-generated method stub
         if (!entryHolder.isBlobStoreEntry())
             return;
         context.setDelayedReplicationForbulkOpUsed(false);
@@ -271,11 +265,8 @@ public class BlobStoreStorageAdapter implements IStorageAdapter, IBlobStoreStora
                         ArrayList<IEntryHolder> pLocked, boolean singleParticipant,
                         Map<String, Object> partialUpdatesAndInPlaceUpdatesInfo, boolean shouldReplicate)
             throws SAException {
-        // TODO Auto-generated method stub
-
         //note- all relevant off-heap entries are pinned and logically locked by the txn
         //since they are all pinned concurrent readers can retrieve the entry without reading from blobStore
-
 
         HashMap<String, IEntryHolder> ohEntries = new HashMap<String, IEntryHolder>();
         List<String> uids = (shouldReplicate && _engine.getReplicationNode().getDirectPesistencySyncHandler() != null) ?
@@ -329,7 +320,7 @@ public class BlobStoreStorageAdapter implements IStorageAdapter, IBlobStoreStora
                 if (!ohEntries.containsKey(inputeh.getUID()))
                     continue;
                 IEntryHolder entryHolder = inputeh.getOriginalEntryHolder();
-                 BlobStoreRefEntryCacheInfo entryCacheInfo = ((IBlobStoreEntryHolder) entryHolder).getBlobStoreResidentPart();
+                BlobStoreRefEntryCacheInfo entryCacheInfo = ((IBlobStoreEntryHolder) entryHolder).getBlobStoreResidentPart();
                 switch (entryHolder.getWriteLockOperation()) {
                     case SpaceOperations.WRITE:
                         operations.add(new BlobStoreAddBulkOperationRequest(entryCacheInfo.getStorageKey(), entryCacheInfo.getEntryLayout(_engine.getCacheManager()), entryCacheInfo));
@@ -343,10 +334,10 @@ public class BlobStoreStorageAdapter implements IStorageAdapter, IBlobStoreStora
                         boolean phantom = ((IBlobStoreEntryHolder) entryHolder).isPhantom();
                         if (!phantom) { //actual remove
                             operations.add(new BlobStoreRemoveBulkOperationRequest(entryCacheInfo.getStorageKey(), entryCacheInfo.getBlobStoreStoragePos(), entryCacheInfo));
-                        }
-                        else //update
+                        } else {//update
                             operations.add(new BlobStoreReplaceBulkOperationRequest(entryCacheInfo.getStorageKey(),
                                     entryCacheInfo.getEntryLayout(_engine.getCacheManager()), entryCacheInfo.getBlobStoreStoragePos(), entryCacheInfo));
+                        }
                         break;
                     default:
                         throw new UnsupportedOperationException("uid=" + entryHolder.getUID() + " operation=" + entryHolder.getWriteLockOperation());
@@ -368,11 +359,11 @@ public class BlobStoreStorageAdapter implements IStorageAdapter, IBlobStoreStora
                 switch (entryHolder.getWriteLockOperation()) {
                     case SpaceOperations.WRITE:
                     case SpaceOperations.UPDATE:
-                        ((IBlobStoreEntryHolder) entryHolder).getBlobStoreResidentPart().flushedFromBulk(context,_engine.getCacheManager(), res.getPosition(), false/*removed*/,true /*onXtnEnd*/);
+                        ((IBlobStoreEntryHolder) entryHolder).getBlobStoreResidentPart().flushedFromBulk(context, _engine.getCacheManager(), res.getPosition(), false/*removed*/, true /*onXtnEnd*/);
                         break;
                     case SpaceOperations.TAKE:
                     case SpaceOperations.TAKE_IE:
-                        ((IBlobStoreEntryHolder) entryHolder).getBlobStoreResidentPart().flushedFromBulk(context,_engine.getCacheManager(), null, true/*removed*/,true /*onXtnEnd*/);
+                        ((IBlobStoreEntryHolder) entryHolder).getBlobStoreResidentPart().flushedFromBulk(context, _engine.getCacheManager(), null, true/*removed*/, true /*onXtnEnd*/);
                         break;
                 }
             }
@@ -383,21 +374,16 @@ public class BlobStoreStorageAdapter implements IStorageAdapter, IBlobStoreStora
 
         if (needDirectPersistencySync)
             reportOpPersisted(context);
-
-
     }
 
     @Override
     public void rollback(ServerTransaction xtn, boolean anyUpdates)
             throws SAException {
-        // TODO Auto-generated method stub
-
     }
 
     @Override
     public IEntryHolder getEntry(Context context, String uid, String classname,
                                  IEntryHolder template) throws SAException {
-        // TODO Auto-generated method stub
         IEntryHolder eh = context.getBlobStoreOpEntryHolder();
         if (eh == null && context.getBlobStoreOpEntryCacheInfo() == null)
             throw new UnsupportedOperationException();
@@ -411,7 +397,7 @@ public class BlobStoreStorageAdapter implements IStorageAdapter, IBlobStoreStora
             return null;
         if (context.getOptimizedBlobStoreReadEnabled() == null) {
             return ((IBlobStoreEntryHolder) eh).getLatestEntryVersion(_engine.getCacheManager(), context.getBlobStoreOpPin(), context);
-        }else {
+        } else {
             return ((IBlobStoreEntryHolder) eh).getBlobStoreResidentPart().getLatestEntryVersion(_engine.getCacheManager(), context.getBlobStoreOpPin(), (IBlobStoreEntryHolder) eh, context, context.getOptimizedBlobStoreReadEnabled());
         }
     }
@@ -420,7 +406,6 @@ public class BlobStoreStorageAdapter implements IStorageAdapter, IBlobStoreStora
     @Override
     public Map<String, IEntryHolder> getEntries(Context context, Object[] ids,
                                                 String typeName, IEntryHolder[] templates) throws SAException {
-        // TODO Auto-generated method stub
         return null;
     }
 
@@ -428,61 +413,47 @@ public class BlobStoreStorageAdapter implements IStorageAdapter, IBlobStoreStora
     public ISAdapterIterator<IEntryHolder> makeEntriesIter(
             ITemplateHolder template, long SCNFilter, long leaseFilter,
             IServerTypeDesc[] subClasses) throws SAException {
-        // TODO Auto-generated method stub
         return null;
     }
 
     @Override
-    public void commit(ServerTransaction xtn, boolean anyUpdates)
-            throws SAException {
-        // TODO Auto-generated method stub
-
+    public void commit(ServerTransaction xtn, boolean anyUpdates) throws SAException {
     }
 
     @Override
-    public int count(ITemplateHolder template, String[] subClasses)
-            throws SAException {
-        // TODO Auto-generated method stub
+    public int count(ITemplateHolder template, String[] subClasses) throws SAException {
         return 0;
     }
 
     @Override
     public void shutDown() throws SAException {
-        // TODO Auto-generated method stub
         _engine.getCacheManager().getBlobStoreStorageHandler().close();
         if (_possibleRecoverySA != null)
             _possibleRecoverySA.shutDown();
-
     }
 
     @Override
     public boolean isReadOnly() {
-        // TODO Auto-generated method stub
         return false;
     }
 
     @Override
     public boolean supportsExternalDB() {
-        // TODO Auto-generated method stub
         return false;
     }
 
     @Override
     public boolean supportsPartialUpdate() {
-        // TODO Auto-generated method stub
         return false;
     }
 
     @Override
     public boolean supportsGetEntries() {
-        // TODO Auto-generated method stub
         return false;
     }
 
     @Override
     public void introduceDataType(ITypeDesc typeDesc) {
-        // TODO Auto-generated method stub
-
         String typeName = typeDesc.getTypeName();
         if (typeName.equals(Object.class.getName()))
             return; //skip root
@@ -530,19 +501,16 @@ public class BlobStoreStorageAdapter implements IStorageAdapter, IBlobStoreStora
 
     @Override
     public SpaceSynchronizationEndpoint getSynchronizationInterceptor() {
-        // TODO Auto-generated method stub
         return null;
     }
 
     @Override
     public Class<?> getDataClass() {
-        // TODO Auto-generated method stub
         return null;
     }
 
     @Override
     public void addIndexes(String typeName, SpaceIndex[] indexes) {
-        // TODO Auto-generated method stub
         if (typeName.equals(Object.class.getName()))
             return; //skip root
 
@@ -552,7 +520,6 @@ public class BlobStoreStorageAdapter implements IStorageAdapter, IBlobStoreStora
         synchronized (_classesLock) {
             introduceDataType_impl(typeDesc);
         }
-
     }
 
     private ITypeDesc getType(String typeName) {
@@ -571,7 +538,7 @@ public class BlobStoreStorageAdapter implements IStorageAdapter, IBlobStoreStora
         return true;
     }
 
-    //handle consistenct between primary and backup in case of reloading
+    //handle consistency between primary and backup in case of reloading
     private boolean handleDirectPersistencyConsistency(Context context, List<String> uids, boolean shouldReplicate, Set<String> removedUids, Map<String, IEntryHolder> entryHolderMap) {
         if (!useDirectPersistencySync(shouldReplicate))
             return false;
@@ -585,12 +552,10 @@ public class BlobStoreStorageAdapter implements IStorageAdapter, IBlobStoreStora
 
     private boolean useDirectPersistencySync(boolean shouldReplicate) {
         return (shouldReplicate && _engine.getReplicationNode().getDirectPesistencySyncHandler() != null && _engine.getSpaceImpl().isPrimary());
-
     }
 
     private boolean useEmbeddedSyncOnPrimary(boolean directPersistencySyncUsed) {
         return (directPersistencySyncUsed && _engine.getReplicationNode().getDirectPesistencySyncHandler().isEmbeddedListUsed());
-
     }
 
     private void reportOpPersisted(Context context) {

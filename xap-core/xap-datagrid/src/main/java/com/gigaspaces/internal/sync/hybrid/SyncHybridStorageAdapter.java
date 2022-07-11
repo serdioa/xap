@@ -98,7 +98,7 @@ public class SyncHybridStorageAdapter implements IStorageAdapter, IBlobStoreStor
 
     @Override
     public ISAdapterIterator initialLoad(Context context, ITemplateHolder template, InitialLoadInfo initialLoadInfo) throws SAException {
-        return synchronizationStorageAdapter.initialLoad(context, template, null);
+        return synchronizationStorageAdapter.initialLoad(context, template, initialLoadInfo);
     }
 
     @Override

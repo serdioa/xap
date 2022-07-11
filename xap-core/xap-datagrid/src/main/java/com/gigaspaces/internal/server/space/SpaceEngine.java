@@ -5041,7 +5041,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
             // the following associates the entry with the template Xtn,
             // but only if the entry should not be deleted (this
             // occurs when the entry was written under the same Xtn as
-            // the Take/TakeIE
+            // the Take/TakeIE)
             if (entry.getXidOriginatedTransaction() == null ||
                     !template.getXidOriginatedTransaction().equals(entry.getXidOriginatedTransaction()))
                 _cacheManager.associateEntryWithXtn(context, entry, template, template.getXidOriginated(), null);
@@ -6903,10 +6903,6 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
         return _replicationManager.isMirrorService();
     }
 
-    public boolean isTransactionalSA() {
-        return false;
-    }
-
     /**
      * If chunk-size of multiple operations reached, perform synchronize replication, otherwise do
      * nothing. In most cases this method will be invoked from multiple operations like clear with
@@ -7010,7 +7006,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
      * @return <code>true</code> if external data-source is a central data-source (and not
      * transient); <code>false</code> otherwise.
      */
-    private boolean isReplicatedFromCentralDB(Context ctx) { //TODO: @sagiv TS not sending replication
+    private boolean isReplicatedFromCentralDB(Context ctx) {
         return _cacheManager.isCacheExternalDB() &&
                 _cacheManager.isCentralDB() && ctx.isFromReplication();
     }
@@ -7396,7 +7392,9 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
     }
 
     public boolean isExpiredEntryStayInSpace(IEntryHolder entry) {
-        return  (_cacheManager.isTieredStorage() && !entry.isTransient()) || (_cacheManager.isEvictableCachePolicy() && !entry.isTransient() && !_cacheManager.isMemorySpace());
+        return !entry.isTransient() &&
+                (_cacheManager.isTieredStorageCachePolicy()
+                        || (_cacheManager.isEvictableCachePolicy() && !_cacheManager.isMemorySpace()));
     }
 
     public boolean isFailOverDuringRecovery() {

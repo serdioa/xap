@@ -47,7 +47,6 @@ import com.gigaspaces.internal.server.space.recovery.direct_persistency.Consiste
 import com.gigaspaces.internal.server.space.recovery.direct_persistency.DirectPersistencyRecoveryException;
 import com.gigaspaces.internal.server.space.recovery.direct_persistency.IStorageConsistency;
 import com.gigaspaces.internal.server.space.recovery.direct_persistency.StorageConsistencyModes;
-import com.gigaspaces.internal.server.space.tiered_storage.CachePredicate;
 import com.gigaspaces.internal.server.space.tiered_storage.TieredStorageManager;
 import com.gigaspaces.internal.server.space.tiered_storage.TieredStorageSA;
 import com.gigaspaces.internal.server.storage.*;
@@ -722,7 +721,7 @@ public class CacheManager extends AbstractCacheManager
     }
 
     public boolean needReReadAfterEntryLock() {
-        return isEvictableCachePolicy() || isBlobStoreCachePolicy();
+        return isEvictableCachePolicy() || isBlobStoreCachePolicy() || isTieredStorageCachePolicy();
     }
 
     public boolean mayNeedEntriesUnpinning() {
@@ -1454,11 +1453,17 @@ public class CacheManager extends AbstractCacheManager
             pE = safeInsertEntryToCache(context, entryHolder, false /* newEntry */, null /*pType*/, false /*pin*/,
                     InitialLoadOrigin.FROM_EXTERNAL_DATA_SOURCE /*fromInitialLoad*/);
         } else if (isTieredStorage() && context.isDiskOnlyEntry()) {
-            setContextRecentFifoObject(context, entryHolder, true /* newEntry */, typeData,
-                    InitialLoadOrigin.NON, typeData.isFifoSupport() /* considerFifo */);
-            pE = EntryCacheInfoFactory.createEntryCacheInfo(entryHolder);
-            //lease in TieredStorage is not supported. result contains persistent entry values.
-            context.setWriteResult(new WriteEntryResult(pE.getUID(), pE.getVersion(), pE.getExpirationTime()));
+            if (entryHolder.getXidOriginated() != null) {
+                entryHolder.setExpirationTime(100); // set lease for eviction later
+                pE = insertEntryToCache(context, entryHolder, true /* newEntry */,
+                        typeData, true /*pin*/, InitialLoadOrigin.NON /*fromInitialLoad*/);
+            } else {
+                setContextRecentFifoObject(context, entryHolder, true /* newEntry */, typeData,
+                        InitialLoadOrigin.NON, typeData.isFifoSupport() /* considerFifo */);
+                pE = EntryCacheInfoFactory.createEntryCacheInfo(entryHolder);
+                //lease in TieredStorage is not supported. result contains persistent entry values.
+                context.setWriteResult(new WriteEntryResult(pE.getUID(), pE.getVersion(), pE.getExpirationTime()));
+            }
         } else { // !isTieredStorage() OR (isTieredStorage() && (context.isMemoryOnlyEntry() || conext.isMemoryAndDiskEntry()))
             pE = insertEntryToCache(context, entryHolder, true /* newEntry */,
                     typeData, true /*pin*/, InitialLoadOrigin.NON /*fromInitialLoad*/);
@@ -2062,15 +2067,6 @@ public class CacheManager extends AbstractCacheManager
         }
 
         boolean leaseExpiration = removeReason == EntryRemoveReasonCodes.LEASE_CANCEL || removeReason == EntryRemoveReasonCodes.LEASE_EXPIRED;
-        boolean evictByTimeRuleOrByLeaseForTransient = false;
-        if (leaseExpiration && isTieredStorageCachePolicy()) {
-            TieredStorageManager tieredStorageManager = _engine.getTieredStorageManager();
-            CachePredicate cachePredicate = tieredStorageManager.getCacheRule(entryHolder.getClassName());
-            if (cachePredicate != null && (cachePredicate.isTransient() || cachePredicate.isTimeRule())) {
-                evictByTimeRuleOrByLeaseForTransient = true;
-            }
-        }
-
         try {
             if (is_writing_xtn) {
                 xtnEntry = entryHolder.getXidOriginated();
@@ -2082,18 +2078,15 @@ public class CacheManager extends AbstractCacheManager
                     updated_recent_deletes = true;
                 }
                 if (!disableSAcall) {
-                    if (entryHolder.isBlobStoreEntry() && isDirectPersistencyEmbeddedtHandlerUsed() && context.isActiveBlobStoreBulk())
+                    if (entryHolder.isBlobStoreEntry() && isDirectPersistencyEmbeddedtHandlerUsed() && context.isActiveBlobStoreBulk()) {
                         context.setForBulkRemove(entryHolder, removeReason);
-                    if (isTieredStorageCachePolicy()) {
-                        _storageAdapter.removeEntry(context, entryHolder, origin, evictByTimeRuleOrByLeaseForTransient, shouldReplicate);
-                    } else {
-                        _storageAdapter.removeEntry(context, entryHolder, origin, leaseExpiration, shouldReplicate);
                     }
-                    if (shouldReplicate && !context.isDelayedReplicationForbulkOpUsed())
+                    _storageAdapter.removeEntry(context, entryHolder, origin, leaseExpiration, shouldReplicate);
+                    if (shouldReplicate && !context.isDelayedReplicationForbulkOpUsed()) {
                         handleRemoveEntryReplication(context, entryHolder, removeReason);
+                    }
                 }
-            } else//if (!is_writing_xtn)
-            {
+            } else { //if (!is_writing_xtn)
                 if (xtnEntry.m_AlreadyPrepared) {
                     if (useRecentDeletes() && !entryHolder.isTransient() && !(leaseExpiration && isCacheExternalDB())) {
                         insertToRecentDeletes(entryHolder, requiresEvictionReplicationProtection() ? Long.MAX_VALUE : 0, context.getCommittingXtn());
@@ -2105,16 +2098,14 @@ public class CacheManager extends AbstractCacheManager
                             actualUpdateRedoLog = false;
 
                     }
-                    if (!disableSAcall) {
-                        if (entryHolder.isBlobStoreEntry() && isDirectPersistencyEmbeddedtHandlerUsed() && context.isActiveBlobStoreBulk())
+                    if (!disableSAcall) { //TODO: @sagiv/@tomer PIC-809 maybe redundant
+                        if (entryHolder.isBlobStoreEntry() && isDirectPersistencyEmbeddedtHandlerUsed() && context.isActiveBlobStoreBulk()){
                             context.setForBulkRemove(entryHolder, removeReason);
-                        if (isTieredStorageCachePolicy()) {
-                            _storageAdapter.removeEntry(context, entryHolder, origin, evictByTimeRuleOrByLeaseForTransient, actualUpdateRedoLog);
-                        } else {
-                            _storageAdapter.removeEntry(context, entryHolder, origin, leaseExpiration, actualUpdateRedoLog);
                         }
-                        if (actualUpdateRedoLog && !context.isDelayedReplicationForbulkOpUsed())
+                        _storageAdapter.removeEntry(context, entryHolder, origin, leaseExpiration, actualUpdateRedoLog);
+                        if (actualUpdateRedoLog && !context.isDelayedReplicationForbulkOpUsed()) {
                             handleRemoveEntryReplication(context, entryHolder, removeReason);
+                        }
                     }
                 }
             }
@@ -2130,8 +2121,8 @@ public class CacheManager extends AbstractCacheManager
         }
 
         RecentDeleteCodes recentDeleteUsage = updated_recent_deletes ? RecentDeleteCodes.INSERT_DUMMY : RecentDeleteCodes.NONE;
-        if(isTieredStorage()){
-            if(evictByTimeRuleOrByLeaseForTransient || !context.isDiskOnlyEntry() ) {
+        if(isTieredStorageCachePolicy()){
+            if(leaseExpiration || !context.isDiskOnlyEntry() || xtnEntry != null) {
                 removeEntryFromCache(entryHolder, false /*initiatedByEvictionStrategy*/, true/*locked*/, pEntry/* pEntry*/, recentDeleteUsage);
             }
         } else if (!entryHolder.isBlobStoreEntry() || context.getBlobStoreBulkInfo() == null || (((IBlobStoreEntryHolder) entryHolder).getBulkInfo() == null
@@ -2756,12 +2747,8 @@ public class CacheManager extends AbstractCacheManager
     public void commit(Context context, XtnEntry xtnEntry, boolean singleParticipant, boolean anyUpdates, boolean supportsTwoPhaseReplication) throws SAException {
         ServerTransaction xtn = xtnEntry.m_Transaction;
 
-        boolean call_sa = !singleParticipant || !_engine.isTransactionalSA();
-
-        if (call_sa) {
-            if (!_isMemorySA)
-                _storageAdapter.commit(xtn, anyUpdates);
-        }
+        if (!_isMemorySA)
+            _storageAdapter.commit(xtn, anyUpdates);
 
         final boolean needsToBeReplicated = _engine.isReplicated() && !xtnEntry.isFromReplication();
 
@@ -3072,7 +3059,8 @@ public class CacheManager extends AbstractCacheManager
 
         int writeLockOperation = xtnWriteLock != null ? ehData.getWriteLockOperation() : 0;
 
-        if (ehData.isExpired() && !slaveLeaseManager)
+        if (ehData.isExpired() && !slaveLeaseManager
+                && (!isTieredStorageCachePolicy() || (isTieredStorageCachePolicy() && xtnWriteLock == null)))
             return; //ignore expired entries
 
         if (xtnWriteLock == null && !original_shadow) /* xtn not active, ignore*/ {
@@ -3617,8 +3605,8 @@ public class CacheManager extends AbstractCacheManager
                 //IMPORTANT NOTE- !!!!!!!
                 //FOR MEMORY BASED SPACE WE INSERT THE NEW ENTRY WITHOUT PRECHECK
                 //OF EXISTANCE. IF ENTRY IS ALREADY IN WE REMOVE THE NEW INSTANCE
-                // FROM THE EVICTION-STRATEGY, SO REMOVAL & INSERTION IN THE EVICTIONSHOULD NOT
-                //STRATEGY SHOULD NOT BE BASED ON UID BUT ON INSTANCE
+                // FROM THE EVICTION-STRATEGY, SO REMOVAL & INSERTION IN THE EVICTION
+                // STRATEGY SHOULD NOT BE BASED ON UID BUT ON INSTANCE
                 //
                 alreadyIn = true;
 
@@ -4254,7 +4242,10 @@ public class CacheManager extends AbstractCacheManager
         if (template.isFifoSearch() && !typeData.isFifoSupport())
             return null;
 
-        if(context.getTemplateTieredState() != TemplateMatchTier.MATCH_COLD) {//TODO - tiered storage - what if template tiered state == null
+        //TODO - tiered storage - what if template tiered state == null
+        if (context.getTemplateTieredState() != TemplateMatchTier.MATCH_COLD
+                || (context.getTemplateTieredState() == TemplateMatchTier.MATCH_COLD
+                    && template.isMaybeUnderXtn())) {
             // If template has no fields of type has no indexes, skip index optimization:
             if (!typeData.hasIndexes())
                 return null;

@@ -5,12 +5,16 @@ import com.gigaspaces.internal.server.metadata.IServerTypeDesc;
 import com.gigaspaces.internal.server.metadata.TypeCounters;
 import com.gigaspaces.internal.server.space.SpaceEngine;
 import com.gigaspaces.internal.server.space.metadata.SpaceTypeManager;
+import com.gigaspaces.internal.server.space.tiered_storage.transaction.*;
+import com.gigaspaces.internal.server.storage.EntryHolder;
 import com.gigaspaces.internal.server.storage.IEntryHolder;
 import com.gigaspaces.internal.server.storage.ITemplateHolder;
 import com.gigaspaces.metadata.index.SpaceIndex;
 import com.gigaspaces.sync.SpaceSynchronizationEndpoint;
+import com.j_spaces.core.SpaceOperations;
 import com.j_spaces.core.cache.InitialLoadInfo;
 import com.j_spaces.core.cache.context.Context;
+import com.j_spaces.core.cache.context.TieredState;
 import com.j_spaces.core.sadapter.ISAdapterIterator;
 import com.j_spaces.core.sadapter.IStorageAdapter;
 import com.j_spaces.core.sadapter.SAException;
@@ -19,7 +23,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class TieredStorageSA implements IStorageAdapter {
@@ -124,12 +131,12 @@ public class TieredStorageSA implements IStorageAdapter {
             logger.debug("call insertEntry");
         }
         TypeCounters typeCounters = entryHolder.getServerTypeDesc().getTypeCounters();
-        if ((!context.isMemoryOnlyEntry())) {
+        if (!context.isMemoryOnlyEntry()) {
             internalRDBMS.insertEntry(context, entryHolder);
-            typeCounters.incDiskModifyCounter();
+            typeCounters.incDiskModifyCounter(); // TODO: @sagiv move counters out of SA
             typeCounters.incDiskEntriesCounter();
         }
-        if (context.isMemoryOnlyEntry() || context.isMemoryAndDiskEntry()) { // TODO: @sagiv fix it...
+        if (context.isMemoryOnlyEntry() || context.isMemoryAndDiskEntry()) { // TODO: @sagiv move counters out of SA
             typeCounters.incRamEntriesCounter();
         }
     }
@@ -145,11 +152,11 @@ public class TieredStorageSA implements IStorageAdapter {
 
     @Override
     public void removeEntry(Context context, IEntryHolder entryHolder, boolean origin,
-                            boolean evictByTimeRuleOrByLeaseForTransient, boolean shouldReplicate) throws SAException {
+                            boolean fromLeaseExpiration, boolean shouldReplicate) throws SAException {
         if (logger.isDebugEnabled()) {
             logger.debug("call removeEntry");
         }
-        if (evictByTimeRuleOrByLeaseForTransient) {
+        if (fromLeaseExpiration) {
             return;
         }
         boolean removed = false;
@@ -157,7 +164,7 @@ public class TieredStorageSA implements IStorageAdapter {
             removed = internalRDBMS.removeEntry(context, entryHolder);
         }
         TypeCounters typeCounters = entryHolder.getServerTypeDesc().getTypeCounters();
-        if (removed) { // TODO: @sagiv fix it...
+        if (removed) {// TODO: @sagiv move counters out of SA
             typeCounters.decDiskEntriesCounter();
         }
         if (context.isMemoryOnlyEntry() || context.isMemoryAndDiskEntry()) {
@@ -167,6 +174,65 @@ public class TieredStorageSA implements IStorageAdapter {
 
     @Override
     public void prepare(Context context, ServerTransaction xtn, ArrayList<IEntryHolder> pLocked, boolean singleParticipant, Map<String, Object> partialUpdatesAndInPlaceUpdatesInfo, boolean shouldReplicate) throws SAException {
+
+        HashMap<String, IEntryHolder> entriesForBulkOperations = new HashMap<>();
+        //1. locate & setDirty to the relevant entries
+        for (IEntryHolder inputeh : pLocked) {
+            IEntryHolder entryHolder = inputeh.getOriginalEntryHolder();
+
+            if (entryHolder == null
+                    || entryHolder.isDeleted()
+                    || !xtn.equals(entryHolder.getWriteLockTransaction())) {
+                continue;
+            }
+
+            final TieredState entryTieredState = engine.getTieredStorageManager().getEntryTieredState(entryHolder);
+
+            if (TieredState.TIERED_HOT.equals(entryTieredState)) {
+                continue;  //nothing to do, dummy op
+            }
+
+            entriesForBulkOperations.put(entryHolder.getUID(), entryHolder);
+        }
+
+        if (entriesForBulkOperations.isEmpty()) {
+            return;  //nothing to do
+        }
+
+        //call the underlying RDBMS
+        try {
+            List<TieredStorageBulkOperationRequest> operations = new ArrayList<>(entriesForBulkOperations.size());
+            for (IEntryHolder entryHolder : entriesForBulkOperations.values()) {
+                switch (entryHolder.getWriteLockOperation()) {
+                    case SpaceOperations.WRITE:
+                        operations.add(new TieredStorageInsertBulkOperationRequest(entryHolder));
+                        break;
+                    case SpaceOperations.UPDATE:
+                        operations.add(new TieredStorageUpdateBulkOperationRequest(entryHolder));
+                        break;
+                    case SpaceOperations.TAKE:
+                    case SpaceOperations.TAKE_IE: //todo @sagiv handle phantom
+                        operations.add(new TieredStorageRemoveBulkOperationRequest(entryHolder));
+                        break;
+                    default:
+                        throw new UnsupportedOperationException("uid=" + entryHolder.getUID() + " operation=" + entryHolder.getWriteLockOperation());
+                }
+
+            }
+
+            List<TieredStorageBulkOperationResult> results = singleParticipant ?
+                    internalRDBMS.executeBulk(operations, xtn) : new ArrayList<>();
+            //scan and if exception in any result - throw it
+            for (TieredStorageBulkOperationResult res : results) {
+                if (res.getException() != null)
+                    throw res.getException();
+            }
+        } catch (Throwable t) {
+            if (logger.isErrorEnabled()) {
+                logger.error("Get exception on prepare: ", t);
+            }
+            throw new SAException(t);
+        }
     }
 
     @Override
@@ -178,13 +244,22 @@ public class TieredStorageSA implements IStorageAdapter {
         if (logger.isDebugEnabled()) {
             logger.debug("call getEntry");
         }
-        IEntryHolder entryByUID = internalRDBMS.getEntryByUID(classname, uid);
-        if (template instanceof ITemplateHolder) {
+        boolean isMaybeUnderTransaction = false;
+        if (template instanceof  ITemplateHolder){
+            isMaybeUnderTransaction = template.isMaybeUnderXtn();
             ITemplateHolder templateHolder = (ITemplateHolder) template;
             if (templateHolder.isReadOperation()) {
                 templateHolder.getServerTypeDesc().getTypeCounters().incDiskReadCounter();
             }
+        } else if (template instanceof EntryHolder){
+            CachePredicate cachePredicate = engine.getTieredStorageManager().getCacheRule(template.getClassName());
+            if (cachePredicate != null && (cachePredicate.isTimeRule())){
+                isMaybeUnderTransaction = template.isMaybeUnderXtn();
+            } else if (template.getEntryData() != null ) {
+                isMaybeUnderTransaction = template.getEntryData().getExpirationTime() < Long.MAX_VALUE;
+            }
         }
+        IEntryHolder entryByUID = internalRDBMS.getEntryByUID(classname, uid, isMaybeUnderTransaction);
         return entryByUID;
     }
 
@@ -200,6 +275,12 @@ public class TieredStorageSA implements IStorageAdapter {
 
     @Override
     public void commit(ServerTransaction xtn, boolean anyUpdates) throws SAException {
+        //TODO: @sagiv/@tomer PIC-809 right now we call commit in the prepare stage
+        try {
+            internalRDBMS.closeTransactionConnection(xtn.id);
+        } catch (SQLException e) {
+            throw new SAException("Failed to close transaction [" + xtn.id + "] in internal RDBMS", e);
+        }
     }
 
     @Override
@@ -255,7 +336,6 @@ public class TieredStorageSA implements IStorageAdapter {
     @Override
     public void addIndexes(String typeName, SpaceIndex[] indexes) {
     }
-
 
     public void deleteData() throws SAException {
         if (logger.isDebugEnabled()) {
