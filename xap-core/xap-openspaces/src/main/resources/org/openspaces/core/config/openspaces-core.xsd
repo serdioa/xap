@@ -186,7 +186,6 @@
                                 </xsd:sequence>
                                 <xsd:attribute type="xsd:string" name="name" use="optional"/>
                                 <xsd:attribute type="xsd:string" name="time-column" use="optional"/>
-                                <xsd:attribute type="xsd:string" name="retention" use="optional"/>
                                 <xsd:attribute type="xsd:string" name="transient" use="optional"/>
                             </xsd:complexType>
                         </xsd:element>
