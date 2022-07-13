@@ -165,7 +165,11 @@
                     <xsd:sequence>
                         <xsd:element name="table" maxOccurs="unbounded" minOccurs="0">
                             <xsd:annotation>
-                                <xsd:documentation>no cache rule are always cold. cache rule all - always hot persistent.cant have retention policy for always hot data (never deleted). Customers has cache rule all - always hot not persistent. cant have retention policy for transient data</xsd:documentation>
+                                <xsd:documentation>
+                                    Based on a cache rule, data is also in memory for faster access.
+                                    In any case, the data is also persisted to disk, unless it is a transient entry.
+                                    For time rule, data is evicted only from memory after the period has elapsed.
+                                </xsd:documentation>
                             </xsd:annotation>
                             <xsd:complexType mixed="true">
                                 <xsd:sequence>

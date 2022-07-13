@@ -130,7 +130,7 @@ public abstract class AbstractSpaceBeanDefinitionParser extends AbstractSimpleBe
         if (allInCacheEle != null) {
             cachePolicy = new AllInCachePolicy();
         }
-        //TODO @moran change tag to tiered-storage-policy, affects all pu.xml using tiered-storage
+
         Element tieredStorageElement = DomUtils.getChildElementByTagName(element, "tiered-storage-cache-policy");
         if (tieredStorageElement != null) {
             TieredStorageConfig tieredStorageConfig = TieredStorageDefinitionsParser.parseXml(tieredStorageElement);
