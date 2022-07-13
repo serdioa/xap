@@ -4516,15 +4516,13 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
             throws TransactionConflictException, EntryDeletedException,
             TemplateDeletedException, TransactionNotActiveException,
             SAException, NoMatchException, FifoException {
-        if(ent.isBlobStoreEntry() ){
+        if (ent.isBlobStoreEntry()) {
             BlobStoreRefEntryCacheInfo blobStoreRefEntryCacheInfo = ((BlobStoreEntryHolder) ent).getBlobStoreResidentPart();
             BlobStoreOperationOptimizations.isConsiderOptimizedForBlobstore(this, context, tmpl, blobStoreRefEntryCacheInfo);
         }
 
-        if(isTieredStorage()){
-            if(context.getEntryTieredState() == null){
-                context.setEntryTieredState(tieredStorageManager.getEntryTieredState(ent));
-            }
+        if (isTieredStorage()) {
+            context.setEntryTieredState(tieredStorageManager.getEntryTieredState(ent));
         }
 
         boolean needRematch = false;
