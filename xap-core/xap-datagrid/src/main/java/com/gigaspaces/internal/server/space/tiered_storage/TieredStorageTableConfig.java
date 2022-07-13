@@ -12,6 +12,8 @@ public class TieredStorageTableConfig implements SmartExternalizable {
     static final long serialVersionUID = 9148050446035037648L;
     private String name;
     private String timeColumn;
+    @Deprecated
+    private Duration retention;
     private Duration period;
     private String criteria;
     private boolean isTransient;
@@ -34,6 +36,17 @@ public class TieredStorageTableConfig implements SmartExternalizable {
 
     public TieredStorageTableConfig setTimeColumn(String timeColumn) {
         this.timeColumn = timeColumn;
+        return this;
+    }
+
+    @Deprecated
+    public Duration getRetention() {
+        return retention;
+    }
+
+    @Deprecated
+    public TieredStorageTableConfig setRetention(Duration retention) {
+        this.retention = retention;
         return this;
     }
 
@@ -72,6 +85,7 @@ public class TieredStorageTableConfig implements SmartExternalizable {
     public void writeExternal(ObjectOutput out) throws IOException {
         IOUtils.writeString(out, name);
         IOUtils.writeString(out, timeColumn);
+        IOUtils.writeObject(out, retention);
         IOUtils.writeObject(out, period);
         IOUtils.writeString(out, criteria);
         out.writeBoolean(isTransient);
@@ -81,6 +95,7 @@ public class TieredStorageTableConfig implements SmartExternalizable {
     public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         this.name = IOUtils.readString(in);
         this.timeColumn = IOUtils.readString(in);
+        this.retention = IOUtils.readObject(in);
         this.period = IOUtils.readObject(in);
         this.criteria = IOUtils.readString(in);
         this.isTransient = in.readBoolean();
@@ -91,6 +106,7 @@ public class TieredStorageTableConfig implements SmartExternalizable {
         return "TieredStorageTableConfig{" +
                 "name='" + name + '\'' +
                 ", timeColumn='" + timeColumn + '\'' +
+                ", retention=" + retention +
                 ", period=" + period +
                 ", criteria='" + criteria + '\'' +
                 ", isTransient=" + isTransient +
