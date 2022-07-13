@@ -46,8 +46,7 @@ public interface TieredStorageManager {
         if (tieredStorageTableConfig.isTransient()
                 && (tieredStorageTableConfig.getCriteria() != null
                 || tieredStorageTableConfig.getPeriod() != null
-                || tieredStorageTableConfig.getTimeColumn() != null
-                || tieredStorageTableConfig.getRetention() != null)) {
+                || tieredStorageTableConfig.getTimeColumn() != null)) {
             throw new TieredStorageConfigException("Illegal Config for type " + tieredStorageTableConfig.getName() + ": " +
                     "Transient type should only set isTransient = true , actual: " + tieredStorageTableConfig);
 

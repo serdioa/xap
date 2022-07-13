@@ -50,7 +50,6 @@ public class TieredStorageDefinitionsParser {
 
                 tableConfig.setName(getAttribute("name",attributes));
                 tableConfig.setTimeColumn(getAttribute("time-column",attributes));
-                tableConfig.setRetention(getDurationAttribute("retention", attributes));
                 String sTransient = getAttribute("transient", attributes);
                 if (sTransient != null) {
                     tableConfig.setTransient(Boolean.parseBoolean(sTransient));
