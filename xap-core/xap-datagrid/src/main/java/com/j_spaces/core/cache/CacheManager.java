@@ -226,10 +226,6 @@ public class CacheManager extends AbstractCacheManager
     private final boolean _useBlobStoreReplicationBackupBulk;
 
     private final Map<String, QueryExtensionIndexManagerWrapper> queryExtensionManagers;
-
-    //TEMP FOR QA
-    private boolean _blobStoreForQa; //TODO:@sagiv remove?
-
     private final boolean _forceSpaceIdIndexIfEqual;
 
     private SpaceMetricsRegistrationUtils _spaceMetricsRegistrationUtils;
@@ -276,28 +272,6 @@ public class CacheManager extends AbstractCacheManager
          */
         setCachePolicy(configReader.getIntSpaceProperty(CACHE_POLICY_PROP, String.valueOf(CACHE_POLICY_ALL_IN_CACHE)));
         _emptyAfterInitialLoadStage = true;
-
-//TEMP FOR QA
-//+++++++++++++++++ TEMP FOR QA
-        String oh = System.getProperty("com.gs.OffHeapData");
-        if (!_blobStoreForQa)
-            _blobStoreForQa = (oh == null || _engine.isLocalCache()) ? false : Boolean.parseBoolean(oh);
-        if (_blobStoreForQa && !isSyncHybrid()) {
-            persistentBlobStore = true;
-        }
-        if (_blobStoreForQa && isEvictableCachePolicy()) {
-            _blobStoreForQa = false;
-        }
-        if (_blobStoreForQa && _engine.isLocalCache()) {
-            _blobStoreForQa = false;
-        }
-        if (_blobStoreForQa)
-            setCachePolicy(CACHE_POLICY_BLOB_STORE);
-        if (_blobStoreForQa && !isMemorySA && !sa.isReadOnly() && !isSyncHybrid()) {
-            _blobStoreForQa = false;
-            setCachePolicy(CACHE_POLICY_ALL_IN_CACHE);
-        }
-//------------------ TEMP FOR QA
 
         Boolean forceSpaceIdIndexIfEqualDefault = !isBlobStoreCachePolicy();
         _forceSpaceIdIndexIfEqual = engine.getConfigReader().getBooleanSpaceProperty(
@@ -858,12 +832,6 @@ public class CacheManager extends AbstractCacheManager
 
             //user defined class name blobStore handler
             String oh = (String) properties.get(CACHE_MANAGER_BLOBSTORE_STORAGE_HANDLER_CLASS_PROP);
-
-//TEMP for QA
-            if (_blobStoreForQa && (oh == null || oh.length() == 0))
-                oh = BlobStoreHashMock.class.getName();
-//oh = BlobStoreNoSerializationHashMock.class.getName();
-
             if (oh == null || oh.length() == 0)
                 throw new RuntimeException("invalid blob-store storage handler value specified " + oh);
             if (oh.indexOf("BlobStoreStorageHashMock") != -1) {
