@@ -21,11 +21,10 @@ import com.j_spaces.core.cache.AbstractCacheManager;
 import com.j_spaces.javax.cache.Cache;
 import com.j_spaces.javax.cache.EvictionStrategy;
 import com.j_spaces.map.eviction.AbstractEvictionStrategy;
-
-import java.lang.ref.WeakReference;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.lang.ref.WeakReference;
 
 public class EvictionCacheManager extends AbstractCacheManager {
     private EvictionStrategy _evictionStrategy;
@@ -63,11 +62,6 @@ public class EvictionCacheManager extends AbstractCacheManager {
         if (_evictionStrategy instanceof AbstractEvictionStrategy) {
             ((AbstractEvictionStrategy) _evictionStrategy).setBatchSize(evictionQuota);
         }
-    }
-
-    @Override
-    public boolean isTieredStorage() {
-        return false;
     }
 }
 
