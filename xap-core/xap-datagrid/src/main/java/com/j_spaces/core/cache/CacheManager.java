@@ -86,7 +86,6 @@ import com.j_spaces.core.cache.blobStore.recovery.BlobStoreRecoveryHelperWrapper
 import com.j_spaces.core.cache.blobStore.sadapter.BlobStoreFifoInitialLoader;
 import com.j_spaces.core.cache.blobStore.sadapter.BlobStoreStorageAdapter;
 import com.j_spaces.core.cache.blobStore.sadapter.IBlobStoreStorageAdapter;
-import com.j_spaces.core.cache.blobStore.storage.BlobStoreHashMock;
 import com.j_spaces.core.cache.context.Context;
 import com.j_spaces.core.cache.context.IndexMetricsContext;
 import com.j_spaces.core.cache.context.TemplateMatchTier;
@@ -834,10 +833,6 @@ public class CacheManager extends AbstractCacheManager
             String oh = (String) properties.get(CACHE_MANAGER_BLOBSTORE_STORAGE_HANDLER_CLASS_PROP);
             if (oh == null || oh.length() == 0)
                 throw new RuntimeException("invalid blob-store storage handler value specified " + oh);
-            if (oh.indexOf("BlobStoreStorageHashMock") != -1) {
-                res = new BlobStoreHashMock();
-                return res;
-            }
 
             try {
                 Class<?> ohClass = ClassLoaderHelper.loadClass(oh);
