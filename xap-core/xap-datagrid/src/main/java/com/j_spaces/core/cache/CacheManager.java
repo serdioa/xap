@@ -483,7 +483,7 @@ public class CacheManager extends AbstractCacheManager
 
         //create the lock manager
         _lockManager = isBlobStoreCachePolicy() ? new BlobStoreLockManager() :
-                (isTieredStorage() ? new TieredStorageLockManager<>(configReader) :
+                (isTieredStorageCachePolicy() ? new TieredStorageLockManager<>(configReader) :
                         (isAllInCachePolicy() ? new AllInCacheLockManager<>() : new BasicEvictableLockManager<>(configReader)));
 
 		/* get min extd' index activation size  */
@@ -1415,11 +1415,6 @@ public class CacheManager extends AbstractCacheManager
         return _evictionStrategy.evict(evictionQuota);
     }
 
-    @Override
-    public boolean isTieredStorage() {
-        return _engine.isTieredStorage();
-    }
-
     /**
      * insert an entry to the space.
      */
@@ -1449,10 +1444,10 @@ public class CacheManager extends AbstractCacheManager
             _storageAdapter.insertEntry(context, entryHolder, origin, shouldReplicate);
         }
 
-        if (isTieredStorage() && (context.isMemoryOnlyEntry() || context.isMemoryAndDiskEntry()) && !origin) {
+        if (isTieredStorageCachePolicy() && (context.isMemoryOnlyEntry() || context.isMemoryAndDiskEntry()) && !origin) {
             pE = safeInsertEntryToCache(context, entryHolder, false /* newEntry */, null /*pType*/, false /*pin*/,
                     InitialLoadOrigin.FROM_EXTERNAL_DATA_SOURCE /*fromInitialLoad*/);
-        } else if (isTieredStorage() && context.isDiskOnlyEntry()) {
+        } else if (isTieredStorageCachePolicy() && context.isDiskOnlyEntry()) {
             if (entryHolder.getXidOriginated() != null) {
                 entryHolder.setExpirationTime(100); // set lease for eviction later
                 pE = insertEntryToCache(context, entryHolder, true /* newEntry */,
@@ -1601,7 +1596,7 @@ public class CacheManager extends AbstractCacheManager
             if (ex instanceof DuplicateIndexValueException)
                 throw (RuntimeException) ex; //mending inconsistent state already tried in update-references
 
-            if(isTieredStorage()) {
+            if (isTieredStorageCachePolicy()) {
                 if (ex instanceof SAException)
                     throw (SAException) ex;
 
@@ -1854,8 +1849,8 @@ public class CacheManager extends AbstractCacheManager
                 return pEntry.getEntryHolder(this);
         } //if (pEntry != null)
         if (!isEvictableCachePolicy() || _isMemorySA) {
-            if(isTieredStorage()) {
-                if(context.isMemoryOnlyEntry()){
+            if (isTieredStorageCachePolicy()) {
+                if (context.isMemoryOnlyEntry()) {
                     return null;   //no relevant entry found
                 }
             } else {
@@ -1941,7 +1936,7 @@ public class CacheManager extends AbstractCacheManager
 
         } //if (pEntry != null)
         if (!isEvictableCachePolicy() || _isMemorySA) {
-            if(isTieredStorage()) {
+            if (isTieredStorageCachePolicy()) {
                 if (context.getTemplateTieredState() == TemplateMatchTier.MATCH_HOT) {
                     return null;   //no relevant entry found
                 }
@@ -2964,7 +2959,7 @@ public class CacheManager extends AbstractCacheManager
 
     public int count(Context context, ITemplateHolder template, final XtnEntry xtnFilter)
             throws SAException {
-        final boolean memoryOnly = isTieredStorage() ? template.isMemoryOnlySearch() :
+        final boolean memoryOnly = isTieredStorageCachePolicy() ? template.isMemoryOnlySearch() :
                 isCacheExternalDB() || _isMemorySA || isResidentEntriesCachePolicy() || template.isMemoryOnlySearch();
         final boolean slaveLeaseManager = _leaseManager.isSlaveLeaseManagerForEntries();
 
@@ -6020,15 +6015,14 @@ public class CacheManager extends AbstractCacheManager
                 continue;
             classes.add(subType.getTypeName());
             TypeCounters typeCounters = subType.getTypeCounters();
-            if (isTieredStorage()) {
+            if (isTieredStorageCachePolicy()) {
                 if (getEngine().getTieredStorageManager().isTransient(subType.getTypeName())) {
                     entries.add((int) typeCounters.getRamEntriesCounter().getCount());
                 } else {
                     entries.add((int) typeCounters.getDiskEntriesCounter().getCount());
                 }
                 ramOnlyEntries.add((int) typeCounters.getRamEntriesCounter().getCount());
-            }
-            else {
+            } else {
                 if (entriesInfo == null) {
                     entries.add(getNumberOfEntries(subType, false));
                 } else {
@@ -6101,7 +6095,7 @@ public class CacheManager extends AbstractCacheManager
         ISAdapterIterator<IEntryHolder> entriesIter = null;
         try {
             context = getCacheContext();
-            entriesIter = makeEntriesIter(context, template, serverTypeDesc, 0, SystemTime.timeMillis(),memoryOnly || !isTieredStorage());
+            entriesIter = makeEntriesIter(context, template, serverTypeDesc, 0, SystemTime.timeMillis(), memoryOnly || !isTieredStorageCachePolicy());
 
             String curClass = null;
             int currCount = 0;

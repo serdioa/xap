@@ -53,7 +53,7 @@ abstract public class AbstractCacheManager {
         this._cachePolicy = cachePolicy;
     }
 
-    //TODO @moran check isTieredStorageCachePolicy()
+    // resident entry cache policy means that the entries always reside in memory and not somewhere else
     public boolean isResidentEntriesCachePolicy() {
         return isAllInCachePolicy() || isBlobStoreCachePolicy();
     }
@@ -73,8 +73,6 @@ abstract public class AbstractCacheManager {
     public boolean isTieredStorageCachePolicy() {
         return getCachePolicy() == CACHE_POLICY_TIERED_STORAGE;
     }
-
-    public abstract boolean isTieredStorage(); //TODO: @sagiv remove it
 
     public boolean isPluggedEvictionPolicy() {
         return getCachePolicy() == CACHE_POLICY_PLUGGED_EVICTION;
