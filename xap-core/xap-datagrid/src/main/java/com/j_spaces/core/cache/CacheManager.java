@@ -279,25 +279,13 @@ public class CacheManager extends AbstractCacheManager
 
 //TEMP FOR QA
 //+++++++++++++++++ TEMP FOR QA
-        String oh = System.getProperty("com.gs.OffHeapData");
-        _blobStoreForQa = (oh == null || _engine.isLocalCache() || isEvictableCachePolicy()) ? false : Boolean.parseBoolean(oh);
-        if (_blobStoreForQa) {
-            persistentBlobStore = true;
-            setCachePolicy(CACHE_POLICY_BLOB_STORE);
+        if (!_engine.isMirrorService()) {
+            extractBlobStoreForQAFlag(isMemorySA, sa);
+            if (_blobStoreForQa) {
+                persistentBlobStore = true;
+                setCachePolicy(CACHE_POLICY_BLOB_STORE);
+            }
         }
-//        if (_blobStoreForQa && !isMemorySA && !sa.isReadOnly() && !isSyncHybrid()) {
-//            _blobStoreForQa = false;
-//            setCachePolicy(CACHE_POLICY_ALL_IN_CACHE);
-//        }
-//        if (_blobStoreForQa && !isSyncHybrid()) {
-//            persistentBlobStore = true;
-//        }
-//        if (_blobStoreForQa && isEvictableCachePolicy()) {
-//            _blobStoreForQa = false;
-//        }
-//        if (_blobStoreForQa && _engine.isLocalCache()) {
-//            _blobStoreForQa = false;
-//        }
 //------------------ TEMP FOR QA
 
         Boolean forceSpaceIdIndexIfEqualDefault = !isBlobStoreCachePolicy();
@@ -417,12 +405,65 @@ public class CacheManager extends AbstractCacheManager
         queryExtensionManagers = initQueryExtensionManagers(customProperties);
     }
 
+    /*
+
+            String oh = System.getProperty("com.gs.OffHeapData");
+        if (!_blobStoreForQa)
+            _blobStoreForQa = (oh == null || _engine.isLocalCache()) ? false : Boolean.parseBoolean(oh);
+        if (_blobStoreForQa && !isSyncHybrid()) {
+            persistentBlobStore = true;
+        }
+        if (_blobStoreForQa && isEvictableCachePolicy()) {
+            _blobStoreForQa = false;
+        }
+        if (_blobStoreForQa && _engine.isLocalCache()) {
+            _blobStoreForQa = false;
+        }
+        if (_blobStoreForQa)
+            setCachePolicy(CACHE_POLICY_BLOB_STORE);
+        if (_blobStoreForQa && !isMemorySA && !sa.isReadOnly() && !isSyncHybrid()) {
+            _blobStoreForQa = false;
+            setCachePolicy(CACHE_POLICY_ALL_IN_CACHE);
+        }
+
+
+     */
+    private void extractBlobStoreForQAFlag(boolean isMemorySA, IStorageAdapter sa) {
+        if (_blobStoreForQa) {
+            throw new AssertionError("_blobStoreForQa already set!");
+        }
+        boolean _blobStoreForQa = Boolean.getBoolean("com.gs.OffHeapData");
+        if (!_blobStoreForQa) {
+            throw new AssertionError("com.gs.OffHeapData should be set!");
+        }
+
+        if (isSyncHybrid()) {
+            throw new AssertionError("UNEXPECTED - isSyncHybrid");
+        }
+
+        if (isEvictableCachePolicy()) {
+            throw new AssertionError("EXCLUDE TEST - isEvictableCachePolicy");
+        }
+
+        if (_engine.isLocalCache()) {
+            throw new AssertionError("EXCLUDE TEST - isLocalCache");
+        }
+
+//MOVED
+//        if (_blobStoreForQa)
+//            setCachePolicy(CACHE_POLICY_BLOB_STORE);
+        if (!isMemorySA && !sa.isReadOnly() && !isSyncHybrid()) {
+            _logger.info("====> isMemorySA=" + isMemorySA + " sa.isReadOnly()=" + sa.isReadOnly() + " isSyncHybrid=" + isSyncHybrid() + " sa=" + sa.getClass().getName());
+            throw new AssertionError("EXCLUDE TEST - ALL IN CACHE");
+        }
+    }
+
     private void setOffHeapProperties(Properties customProperties) {
         if (customProperties.getProperty(BLOBSTORE_OFF_HEAP_MIN_DIFF_TO_ALLOCATE_PROP) != null && !hasBlobStoreOffHeapCache() && !hasBlobStoreOffHeapStore()) {
             _logger.warn(BLOBSTORE_OFF_HEAP_MIN_DIFF_TO_ALLOCATE_PROP + " is set but no off heap memory is used");
         } else {
             long minimalDiffToAllocate = StringUtils.parseStringAsBytes(customProperties.getProperty(BLOBSTORE_OFF_HEAP_MIN_DIFF_TO_ALLOCATE_PROP, BLOBSTORE_OFF_HEAP_MIN_DIFF_TO_ALLOCATE_DEFAULT_VALUE));
-            if(_blobStoreStorageHandler.getOffHeapStore() != null &&  _blobStoreStorageHandler.getOffHeapStore() instanceof OffHeapMemoryPool){
+            if (_blobStoreStorageHandler.getOffHeapStore() != null && _blobStoreStorageHandler.getOffHeapStore() instanceof OffHeapMemoryPool) {
                 ((OffHeapMemoryPool) _blobStoreStorageHandler.getOffHeapStore()).setMinimalDiffToAllocate((int) minimalDiffToAllocate);
             }
             if (_blobStoreStorageHandler.getOffHeapCache() != null) {
