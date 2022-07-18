@@ -434,7 +434,8 @@ public class CacheManager extends AbstractCacheManager
         }
         boolean _blobStoreForQa = Boolean.getBoolean("com.gs.OffHeapData");
         if (!_blobStoreForQa) {
-            throw new AssertionError("com.gs.OffHeapData should be set!");
+            _logger.info("com.gs.OffHeapData NOT set!");
+            return;
         }
 
         if (isSyncHybrid()) {
