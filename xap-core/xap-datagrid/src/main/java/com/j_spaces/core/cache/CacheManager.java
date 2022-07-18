@@ -280,23 +280,24 @@ public class CacheManager extends AbstractCacheManager
 //TEMP FOR QA
 //+++++++++++++++++ TEMP FOR QA
         String oh = System.getProperty("com.gs.OffHeapData");
-        if (!_blobStoreForQa)
-            _blobStoreForQa = (oh == null || _engine.isLocalCache()) ? false : Boolean.parseBoolean(oh);
-        if (_blobStoreForQa && !isSyncHybrid()) {
+        _blobStoreForQa = (oh == null || _engine.isLocalCache() || isEvictableCachePolicy()) ? false : Boolean.parseBoolean(oh);
+        if (_blobStoreForQa) {
             persistentBlobStore = true;
-        }
-        if (_blobStoreForQa && isEvictableCachePolicy()) {
-            _blobStoreForQa = false;
-        }
-        if (_blobStoreForQa && _engine.isLocalCache()) {
-            _blobStoreForQa = false;
-        }
-        if (_blobStoreForQa)
             setCachePolicy(CACHE_POLICY_BLOB_STORE);
-        if (_blobStoreForQa && !isMemorySA && !sa.isReadOnly() && !isSyncHybrid()) {
-            _blobStoreForQa = false;
-            setCachePolicy(CACHE_POLICY_ALL_IN_CACHE);
         }
+//        if (_blobStoreForQa && !isMemorySA && !sa.isReadOnly() && !isSyncHybrid()) {
+//            _blobStoreForQa = false;
+//            setCachePolicy(CACHE_POLICY_ALL_IN_CACHE);
+//        }
+//        if (_blobStoreForQa && !isSyncHybrid()) {
+//            persistentBlobStore = true;
+//        }
+//        if (_blobStoreForQa && isEvictableCachePolicy()) {
+//            _blobStoreForQa = false;
+//        }
+//        if (_blobStoreForQa && _engine.isLocalCache()) {
+//            _blobStoreForQa = false;
+//        }
 //------------------ TEMP FOR QA
 
         Boolean forceSpaceIdIndexIfEqualDefault = !isBlobStoreCachePolicy();
