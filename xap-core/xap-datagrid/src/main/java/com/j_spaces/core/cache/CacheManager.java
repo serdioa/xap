@@ -317,11 +317,19 @@ public class CacheManager extends AbstractCacheManager
         if (getCachePolicy() < 0 || getCachePolicy() > MAX_CACHE_POLICY_VALUE)
             throw new RuntimeException("invalid cache policy value specified");
 
-        if (isBlobStoreCachePolicy() && _engine.isLocalCache())
-            throw new RuntimeException("blob-store cache policy not supported in local-cache");
+        if (isBlobStoreCachePolicy()) {
+            if (isSyncHybrid())
+                throw new RuntimeException("blob-store cache policy not supported with unsafe_sync_endpoint");
 
-        if (isBlobStoreCachePolicy() && !isMemorySA && !sa.isReadOnly() && !isSyncHybrid())
-            throw new RuntimeException("blob-store cache policy not supported with direct EDS");
+            if (_engine.isLocalCache())
+                throw new RuntimeException("blob-store cache policy not supported in local-cache");
+
+            if (isEvictableCachePolicy())
+                throw new RuntimeException("blob-store cache policy not supported with evictable cache policy");
+
+            if (!isMemorySA && !sa.isReadOnly() && !isSyncHybrid())
+                throw new RuntimeException("blob-store cache policy not supported with direct EDS");
+        }
 
         _persistentBlobStore = persistentBlobStore;
 
@@ -432,7 +440,7 @@ public class CacheManager extends AbstractCacheManager
         if (_blobStoreForQa) {
             throw new AssertionError("_blobStoreForQa already set!");
         }
-        boolean _blobStoreForQa = Boolean.getBoolean("com.gs.OffHeapData");
+        _blobStoreForQa = Boolean.getBoolean("com.gs.OffHeapData");
         if (!_blobStoreForQa) {
             _logger.info("com.gs.OffHeapData NOT set!");
             return;
