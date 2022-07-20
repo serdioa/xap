@@ -282,7 +282,7 @@ public class CacheManager extends AbstractCacheManager
         if (!_engine.isMirrorService()) {
             extractBlobStoreForQAFlag(isMemorySA, sa);
             if (_blobStoreForQa) {
-                persistentBlobStore = true;
+                persistentBlobStore = !isSyncHybrid();
                 setCachePolicy(CACHE_POLICY_BLOB_STORE);
             }
         }
@@ -446,9 +446,9 @@ public class CacheManager extends AbstractCacheManager
             return;
         }
 
-        if (isSyncHybrid()) {
-            throw new AssertionError("UNEXPECTED - isSyncHybrid");
-        }
+//        if (isSyncHybrid()) {
+//            throw new AssertionError("UNEXPECTED - isSyncHybrid");
+//        }
 
         if (isEvictableCachePolicy()) {
             throw new AssertionError("EXCLUDE TEST - isEvictableCachePolicy");
