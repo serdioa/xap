@@ -1526,7 +1526,7 @@ public class SpaceImpl extends AbstractService implements IRemoteSpace, IInterna
                     if (getDirectPersistencyRecoveryHelper() != null && isBackup()) {
                         getDirectPersistencyRecoveryHelper().setPendingBackupRecovery(false);
                     }
-                    if (isBackup() &&  _engine.isTieredStorage()) {
+                    if (isBackup() && getEngine().getCacheManager().isTieredStorageCachePolicy()) {
                         ConsistencyFile consistency = new ConsistencyFile(_engine.getSpaceName(), _engine.getFullSpaceName());
                         consistency.setStorageState(StorageConsistencyModes.Consistent);
                     }
@@ -1709,7 +1709,7 @@ public class SpaceImpl extends AbstractService implements IRemoteSpace, IInterna
                     leaderSelectorHandler = new LusBasedSelectorHandler(createSecuredProxy());
                     leaderSelectorHandler.initialize(leaderSelectorHandlerConfig);
                 } else {
-                    if (this._engine.isTieredStorage()) {
+                    if (getEngine().getCacheManager().isTieredStorageCachePolicy()) {
                         waitForLeaderIfNeededWhenUsingTieredStorage();
                     }
                     leaderSelectorHandler = createZooKeeperLeaderSelector();
@@ -3370,14 +3370,14 @@ public class SpaceImpl extends AbstractService implements IRemoteSpace, IInterna
         try {
             _clusterFailureDetector = initClusterFailureDetector(_clusterPolicy);
             _engine = new SpaceEngine(this);
-            if(attributeStore != null && _engine.isTieredStorage()){
+            if(attributeStore != null && getEngine().getCacheManager().isTieredStorageCachePolicy()){
                 final String persistentPath = ZNodePathFactory.space(_spaceName, "persistent");
                 String persistent = attributeStore.get(persistentPath);
                 if(persistent == null) {
                     try (final SharedLock lock = attributeStore.getSharedLockProvider().acquire(ZNodePathFactory.lockPersistentName(_puName), 1, TimeUnit.SECONDS, false)) {
                         persistent = attributeStore.get(persistentPath);
                         if (persistent == null) {
-                            final String isPersistent = String.valueOf(_engine.isTieredStorage());
+                            final String isPersistent = String.valueOf(getEngine().getCacheManager().isTieredStorageCachePolicy());
                             attributeStore.set(persistentPath, isPersistent);
                             attributeStore.set(ZNodePathFactory.processingUnit(_puName, "persistent"), isPersistent);
                             attributeStore.set(ZNodePathFactory.processingUnit(_puName, "space-name"), _spaceName);
@@ -3418,7 +3418,7 @@ public class SpaceImpl extends AbstractService implements IRemoteSpace, IInterna
 
     //prerequisite - _engine created, type manager initialized, metric manager initialized
     private void initTieredStorage() throws SAException, RemoteException {
-        if (_engine.isTieredStorage()) {
+        if (getEngine().getCacheManager().isTieredStorageCachePolicy()) {
             _engine.getTieredStorageManager().initializeInternalRDBMS(_engine);
             _engine.getTieredStorageManager().initTieredStorageMetrics(this, _engine.getMetricManager());
         }

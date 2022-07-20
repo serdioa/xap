@@ -58,7 +58,7 @@ public class SpaceMetricsRegistrationUtils {
             spaceEngine.getDataTypeMetricRegistrar(typeName).register("ram-read-count", wrapPrimaryOnly(typeCounters.getRamReadAccessCounter()));
         }
 
-        if (spaceEngine.isTieredStorage()) {
+        if (cacheManager.isTieredStorageCachePolicy()) {
             if (metricFlagsState.isTieredStorageMetricEnabled()){
                 String tieredStoragePrefix = "tiered-storage-";
                 spaceEngine.getDataTypeMetricRegistrar(typeName).register(tieredStoragePrefix + "disk-entries", typeCounters.getDiskEntriesCounter());

@@ -70,7 +70,7 @@ public class TieredStorageUtils {
 
     public static Map<Object, EntryTieredMetaData> getEntriesTieredMetaDataByIds(SpaceEngine space, String typeName, Object[] ids) throws Exception {
         Map<Object, EntryTieredMetaData> entryTieredMetaDataMap = new HashMap<>();
-        if (!space.isTieredStorage()) {
+        if (!space.getCacheManager().isTieredStorageCachePolicy()) {
             throw new Exception("Tiered storage undefined");
         }
         Context context = null;
@@ -172,16 +172,15 @@ public class TieredStorageUtils {
         throw new IllegalStateException("Should be unreachable");
     }
 
-    public static IEntryHolder getEntryHolderFromRow(IServerTypeDesc serverTypeDesc, ResultSet resultSet, boolean isUnderTransaction) throws SQLException {
+    public static IEntryHolder getEntryHolderFromRow(IServerTypeDesc serverTypeDesc, ResultSet resultSet) throws SQLException {
         ITypeDesc typeDesc = serverTypeDesc.getTypeDesc();
         PropertyInfo[] properties = typeDesc.getProperties();
         Object[] values = new Object[properties.length];
         for (int i = 0; i < properties.length; i++) {
             values[i] = getPropertyValue(resultSet, properties[i].getType(), properties[i].getOriginalIndex() + 1);
         }
-        long lease = isUnderTransaction ? 100 : Lease.FOREVER;
         FlatEntryData data = new FlatEntryData(values, null, typeDesc.getEntryTypeDesc(EntryType.DOCUMENT_JAVA),
-                getVersionValue(resultSet), lease, null);
+                getVersionValue(resultSet), Lease.FOREVER, null);
         String uid;
         List<String> idPropertiesNames = typeDesc.getIdPropertiesNames();
         if (typeDesc.isAutoGenerateId()) {

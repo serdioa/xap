@@ -873,7 +873,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
         WriteEntryResult writeResult = null;
         EntryAlreadyInSpaceException entryInSpaceEx = null;
         try {
-            if (isTieredStorage()) {
+            if (_cacheManager.isTieredStorageCachePolicy()) {
                 String typeName = eHolder.getServerTypeDesc().getTypeName();
                 context.setEntryTieredState(tieredStorageManager.getEntryTieredState(eHolder));
                 if (tieredStorageManager.getCacheRule(typeName) != null) {
@@ -3658,13 +3658,9 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
 
         _dataTypesMetricRegistrators.clear();
 
-        if(isTieredStorage()){
+        if(tieredStorageManager != null){
             tieredStorageManager.close();
         }
-    }
-
-    public boolean isTieredStorage() {
-        return tieredStorageManager != null;
     }
 
     /**
@@ -3681,8 +3677,11 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
                                                     boolean useSCN)
             throws TransactionException, TemplateDeletedException,
             SAException {
-        if (isTieredStorage() && context.getTemplateTieredState() == null) {
-            context.setTemplateTieredState(tieredStorageManager.guessTemplateTier(template));
+        if (_cacheManager.isTieredStorageCachePolicy()) {
+            context.setTemplateMaybeUnderTransaction(template.isMaybeUnderXtn());
+            if (context.getTemplateTieredState() == null) {
+                context.setTemplateTieredState(tieredStorageManager.guessTemplateTier(template));
+            }
         }
 
         // is it an operation by id ?? if so search only for specific entry
@@ -3729,7 +3728,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
             }
         }
 
-        if ((getCacheManager().isEvictableCachePolicy() && !_cacheManager.isMemorySpace()) || (isTieredStorage() && context.getTemplateTieredState() != TemplateMatchTier.MATCH_HOT)) {
+        if ((getCacheManager().isEvictableCachePolicy() && !_cacheManager.isMemorySpace()) || (_cacheManager.isTieredStorageCachePolicy() && context.getTemplateTieredState() != TemplateMatchTier.MATCH_HOT)) {
             IScanListIterator<IEntryCacheInfo> toScan =
                     _cacheManager.makeScanableEntriesIter(context, template, serverTypeDesc,
                             scnFilter, leaseFilter, isMemoryOnlyOperation(template) /*memoryonly*/);
@@ -3913,7 +3912,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
         boolean replicatedFromCentralDB = isReplicatedFromCentralDB(context);
 
         IEntryHolder entry = null;
-        if (isTieredStorage()) {
+        if (_cacheManager.isTieredStorageCachePolicy()) {
             if (tieredStorageManager.isTransient(template.getServerTypeDesc().getTypeName())) {
                 template.setTransient(true);
             }
@@ -4042,7 +4041,8 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
         boolean isServerIterator = template.isServerIterator();
         ServerIteratorInfo serverIteratorInfo = template.getServerIteratorInfo();
 
-        if(isTieredStorage()){
+        if(_cacheManager.isTieredStorageCachePolicy()){
+            context.setTemplateMaybeUnderTransaction(template.isMaybeUnderXtn());
             if (isServerIterator){
                 if (serverIteratorInfo.getTemplateMatchTier() != null){
                     if (context.getTemplateTieredState() == null){ 
@@ -4107,7 +4107,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
         long leaseFilter = SystemTime.timeMillis();
 
         if ((getCacheManager().isEvictableCachePolicy() && !_cacheManager.isMemorySpace()) ||
-                (isTieredStorage() && (context.getTemplateTieredState() != TemplateMatchTier.MATCH_HOT ||
+                (_cacheManager.isTieredStorageCachePolicy() && (context.getTemplateTieredState() != TemplateMatchTier.MATCH_HOT ||
                         (isServerIterator && template.getServerIteratorInfo().isTieredByTimeRule() && !template.isMemoryOnlySearch())))){
             IScanListIterator<IEntryCacheInfo> toScan;
             if (isServerIterator && serverIteratorInfo.getScanEntriesIter() != null){
@@ -4521,7 +4521,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
             BlobStoreOperationOptimizations.isConsiderOptimizedForBlobstore(this, context, tmpl, blobStoreRefEntryCacheInfo);
         }
 
-        if (isTieredStorage()) {
+        if (_cacheManager.isTieredStorageCachePolicy()) {
             context.setEntryTieredState(tieredStorageManager.getEntryTieredState(ent));
         }
 
@@ -4625,7 +4625,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
             }
             IEntryHolder entry = ent;
             boolean reRead = false;
-            if(isTieredStorage()){
+            if(_cacheManager.isTieredStorageCachePolicy()){
                 reRead = entry.isHollowEntry() || !context.isNonBlockingReadOp() ;
                 if(reRead){
                     entry = _cacheManager.getEntry(context, ent, false /*tryInsertToCache*/, !context.isNonBlockingReadOp() /*lockeEntry*/, tmpl.isMemoryOnlySearch() || ent.isTransient() /*useOnlyCache*/);

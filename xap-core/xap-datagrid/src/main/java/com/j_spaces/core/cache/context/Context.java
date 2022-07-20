@@ -247,6 +247,7 @@ public class Context {
     //tiered storage
     private TieredState entryTieredState;
     private TemplateMatchTier templateTieredState;
+    private boolean templateMaybeUnderTransaction;
 
     public Context() {
     }
@@ -1323,10 +1324,8 @@ public class Context {
         return entryTieredState;
     }
 
-    public Context setEntryTieredState(TieredState entryTieredState) {
-//        Thread.dumpStack();
+    public void setEntryTieredState(TieredState entryTieredState) {
         this.entryTieredState = entryTieredState;
-        return this;
     }
 
     public TemplateMatchTier getTemplateTieredState() {
@@ -1348,4 +1347,13 @@ public class Context {
     public boolean isMemoryAndDiskEntry(){
         return TieredState.TIERED_HOT_AND_COLD.equals(entryTieredState);
     }
+
+    public boolean isTemplateMaybeUnderTransaction() {
+        return templateMaybeUnderTransaction;
+    }
+
+    public void setTemplateMaybeUnderTransaction(boolean templateMaybeUnderTransaction) {
+        this.templateMaybeUnderTransaction = templateMaybeUnderTransaction;
+    }
+
 }

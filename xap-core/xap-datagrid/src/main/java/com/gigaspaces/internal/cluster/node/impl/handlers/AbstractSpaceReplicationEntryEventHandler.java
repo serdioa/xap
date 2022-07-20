@@ -27,21 +27,9 @@ import com.gigaspaces.internal.transport.IEntryPacket;
 import com.gigaspaces.internal.transport.ITemplatePacket;
 import com.gigaspaces.internal.transport.TemplatePacketFactory;
 import com.gigaspaces.logger.LogLevel;
-import com.j_spaces.core.AnswerHolder;
-import com.j_spaces.core.AnswerPacket;
-import com.j_spaces.core.ExtendedAnswerHolder;
-import com.j_spaces.core.OperationID;
-import com.j_spaces.core.UnknownTypeException;
-import com.j_spaces.core.client.EntryAlreadyInSpaceException;
-import com.j_spaces.core.client.EntryNotInSpaceException;
-import com.j_spaces.core.client.EntryVersionConflictException;
-import com.j_spaces.core.client.Modifiers;
-import com.j_spaces.core.client.OperationTimeoutException;
-import com.j_spaces.core.client.ReadModifiers;
-import com.j_spaces.core.client.TakeModifiers;
-import com.j_spaces.core.client.UpdateModifiers;
+import com.j_spaces.core.*;
+import com.j_spaces.core.client.*;
 import com.j_spaces.core.cluster.ConflictingOperationPolicy;
-
 import net.jini.core.entry.UnusableEntryException;
 import net.jini.core.transaction.Transaction;
 import net.jini.core.transaction.TransactionException;
@@ -136,7 +124,7 @@ public abstract class AbstractSpaceReplicationEntryEventHandler
             return;
 
         ITemplatePacket entryPacket;
-        if(_engine.isTieredStorage()){
+        if(_engine.getCacheManager().isTieredStorageCachePolicy()){
             ITypeDesc typeDesc = this._engine.getTypeManager().getTypeDesc(typeName);
             entryPacket = TemplatePacketFactory.createUidPacket(typeDesc, uid, 0);
         } else {
@@ -176,7 +164,7 @@ public abstract class AbstractSpaceReplicationEntryEventHandler
 
         ITemplatePacket template;
 
-        if(_engine.isTieredStorage()){
+        if(_engine.getCacheManager().isTieredStorageCachePolicy()){
             ITypeDesc typeDesc = this._engine.getTypeManager().getTypeDesc(typeName);
             template = TemplatePacketFactory.createUidPacket(typeDesc, uid, 0);
         } else {

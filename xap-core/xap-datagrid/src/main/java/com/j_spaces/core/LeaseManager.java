@@ -245,9 +245,7 @@ public class LeaseManager {
 
     public void reRegisterLease(ILeasedEntryCacheInfo leaseCacheInfo, IEntryHolder entry, long original_expiration,
                                 long new_expiration, int objectType) {
-        boolean skip_registration = false;
-        if (new_expiration == original_expiration)
-            skip_registration = true;
+        boolean skip_registration = new_expiration == original_expiration;
 
         if (!skip_registration && leaseCacheInfo.isConnectedToLeaseManager()) {//check if new && old are in same cell, if so no need to reregister
             long expirationTime_o = original_expiration != Lease.FOREVER ? (((original_expiration / _expirationTimeInterval + 1) * _expirationTimeInterval)) : -1;
@@ -510,7 +508,7 @@ public class LeaseManager {
     }
 
     public long getExpirationByTimeRuleOnInitialLoad(IEntryData entry) {
-        if (_engine.isTieredStorage()){
+        if (_cacheManager.isTieredStorageCachePolicy()){
             TieredStorageManager tieredStorageManager = _engine.getTieredStorageManager();
             CachePredicate cacheRule = tieredStorageManager.getCacheRule(entry.getSpaceTypeDescriptor().getTypeName());
             if (cacheRule != null && cacheRule.isTimeRule()){
@@ -523,7 +521,7 @@ public class LeaseManager {
 
 
     public long getExpirationOnWriteByLeaseOrByTimeRule(long lease, long startTime, IEntryPacket entry, boolean fromReplication) {
-        if (_engine.isTieredStorage()){
+        if (_cacheManager.isTieredStorageCachePolicy()){
             TieredStorageManager tieredStorageManager = _engine.getTieredStorageManager();
             String typeName = entry.getTypeName();
             CachePredicate cacheRule = tieredStorageManager.getCacheRule(typeName);
@@ -542,7 +540,7 @@ public class LeaseManager {
     }
 
     public long getExpirationOnUpdateByLeaseOrByTimeRule(long lease, long startTime, IEntryPacket entry, boolean fromReplication) {
-        if (_engine.isTieredStorage()){
+        if (_cacheManager.isTieredStorageCachePolicy()){
             TieredStorageManager tieredStorageManager = _engine.getTieredStorageManager();
             String typeName = entry.getTypeName();
             CachePredicate cacheRule = tieredStorageManager.getCacheRule(typeName);
@@ -562,7 +560,7 @@ public class LeaseManager {
     }
 
     public boolean isReRegisterLeaseOnUpdate(long lease, IEntryPacket entry){
-        if (_engine.isTieredStorage()) {
+        if (_cacheManager.isTieredStorageCachePolicy()) {
             TieredStorageManager tieredStorageManager = _engine.getTieredStorageManager();
             String typeName = entry.getTypeName();
             CachePredicate cacheRule = tieredStorageManager.getCacheRule(typeName);

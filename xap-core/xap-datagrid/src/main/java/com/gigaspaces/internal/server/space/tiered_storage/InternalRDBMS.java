@@ -64,7 +64,7 @@ public interface InternalRDBMS {
      */
     boolean removeEntry(Context context, IEntryHolder entryHolder) throws SAException;
 
-    IEntryHolder getEntryByUID(String typeName, String uid, boolean isUnderTransaction) throws SAException;
+    IEntryHolder getEntryByUID(String typeName, String uid) throws SAException;
 
     ISAdapterIterator<IEntryHolder> makeEntriesIter(String typeName, ITemplateHolder templateHolder) throws SAException;
 

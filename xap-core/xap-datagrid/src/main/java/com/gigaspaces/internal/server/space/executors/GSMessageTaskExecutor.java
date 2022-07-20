@@ -33,7 +33,7 @@ public class GSMessageTaskExecutor extends SpaceActionExecutor {
     public SpaceResponseInfo execute(SpaceImpl space, SpaceRequestInfo spaceRequestInfo) {
         GSMessageRequestInfo requestInfo = ((GSMessageRequestInfo) spaceRequestInfo);
         try {
-            if (!space.getEngine().isTieredStorage()) {
+            if (!space.getEngine().getCacheManager().isTieredStorageCachePolicy()) {
                 handleAllInCache(space, requestInfo);
             } else {
                 handleTieredStorage(space, requestInfo);

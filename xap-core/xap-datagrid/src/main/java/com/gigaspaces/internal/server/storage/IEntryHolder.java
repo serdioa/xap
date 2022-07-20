@@ -17,7 +17,6 @@
 package com.gigaspaces.internal.server.storage;
 
 import com.j_spaces.core.XtnEntry;
-
 import net.jini.core.transaction.server.ServerTransaction;
 
 import java.rmi.MarshalledObject;

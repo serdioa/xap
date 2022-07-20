@@ -6,7 +6,6 @@ import com.gigaspaces.internal.server.metadata.TypeCounters;
 import com.gigaspaces.internal.server.space.SpaceEngine;
 import com.gigaspaces.internal.server.space.metadata.SpaceTypeManager;
 import com.gigaspaces.internal.server.space.tiered_storage.transaction.*;
-import com.gigaspaces.internal.server.storage.EntryHolder;
 import com.gigaspaces.internal.server.storage.IEntryHolder;
 import com.gigaspaces.internal.server.storage.ITemplateHolder;
 import com.gigaspaces.metadata.index.SpaceIndex;
@@ -244,23 +243,14 @@ public class TieredStorageSA implements IStorageAdapter {
         if (logger.isDebugEnabled()) {
             logger.debug("call getEntry");
         }
-        boolean isMaybeUnderTransaction = false;
+
         if (template instanceof  ITemplateHolder){
-            isMaybeUnderTransaction = template.isMaybeUnderXtn();
             ITemplateHolder templateHolder = (ITemplateHolder) template;
             if (templateHolder.isReadOperation()) {
                 templateHolder.getServerTypeDesc().getTypeCounters().incDiskReadCounter();
             }
-        } else if (template instanceof EntryHolder){
-            CachePredicate cachePredicate = engine.getTieredStorageManager().getCacheRule(template.getClassName());
-            if (cachePredicate != null && (cachePredicate.isTimeRule())){
-                isMaybeUnderTransaction = template.isMaybeUnderXtn();
-            } else if (template.getEntryData() != null ) {
-                isMaybeUnderTransaction = template.getEntryData().getExpirationTime() < Long.MAX_VALUE;
-            }
         }
-        IEntryHolder entryByUID = internalRDBMS.getEntryByUID(classname, uid, isMaybeUnderTransaction);
-        return entryByUID;
+        return internalRDBMS.getEntryByUID(classname, uid);
     }
 
     @Override

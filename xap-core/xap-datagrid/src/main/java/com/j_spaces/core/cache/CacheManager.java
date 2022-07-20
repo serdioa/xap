@@ -90,6 +90,7 @@ import com.j_spaces.core.cache.blobStore.storage.BlobStoreHashMock;
 import com.j_spaces.core.cache.context.Context;
 import com.j_spaces.core.cache.context.IndexMetricsContext;
 import com.j_spaces.core.cache.context.TemplateMatchTier;
+import com.j_spaces.core.cache.context.TieredState;
 import com.j_spaces.core.cache.fifoGroup.FifoGroupCacheImpl;
 import com.j_spaces.core.client.*;
 import com.j_spaces.core.cluster.ClusterPolicy;
@@ -107,6 +108,7 @@ import com.j_spaces.kernel.ClassLoaderHelper;
 import com.j_spaces.kernel.*;
 import com.j_spaces.kernel.list.*;
 import com.j_spaces.kernel.locks.*;
+import net.jini.core.lease.Lease;
 import net.jini.core.transaction.server.ServerTransaction;
 import net.jini.space.InternalSpaceException;
 import org.slf4j.Logger;
@@ -120,6 +122,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.j_spaces.core.Constants.CacheManager.*;
 import static com.j_spaces.core.Constants.Engine.UPDATE_NO_LEASE;
+import static com.j_spaces.core.Constants.TieredStorage.DUMMY_LEASE_FOR_TRANSACTION;
 
 /**
  * The Cache Manager acts as a fast intermediate storage for objects in Virtual Memory.
@@ -1449,7 +1452,18 @@ public class CacheManager extends AbstractCacheManager
                     InitialLoadOrigin.FROM_EXTERNAL_DATA_SOURCE /*fromInitialLoad*/);
         } else if (isTieredStorageCachePolicy() && context.isDiskOnlyEntry()) {
             if (entryHolder.getXidOriginated() != null) {
-                entryHolder.setExpirationTime(100); // set lease for eviction later
+                //TODO: PIC-856 @sagiv need lock?
+                final IEntryHolder diskEntry = _storageAdapter.getEntry(context, entryHolder.getUID(),
+                        entryHolder.getClassName(), entryHolder);
+                if (diskEntry != null) { //if its update - upload the entry to the memory
+                    insertEntryToCache(context, diskEntry, false /* newEntry */,
+                            typeData, true /*pin*/, InitialLoadOrigin.NON /*fromInitialLoad*/);
+                }
+                //newEntry needs to be true here -  we have two cases:
+                // 1. This is a new entry that has not been in space yet.
+                // 2. This entry was on disk and must be updated. using newEntry=true,
+                //    the insertEntryToCache method will return _entryAlreadyInSpaceIndication
+                //    which in turn causes the engine to call the update path.
                 pE = insertEntryToCache(context, entryHolder, true /* newEntry */,
                         typeData, true /*pin*/, InitialLoadOrigin.NON /*fromInitialLoad*/);
             } else {
@@ -1459,7 +1473,11 @@ public class CacheManager extends AbstractCacheManager
                 //lease in TieredStorage is not supported. result contains persistent entry values.
                 context.setWriteResult(new WriteEntryResult(pE.getUID(), pE.getVersion(), pE.getExpirationTime()));
             }
-        } else { // !isTieredStorage() OR (isTieredStorage() && (context.isMemoryOnlyEntry() || conext.isMemoryAndDiskEntry()))
+        } else {
+            // we reached here if:
+            // tiered-storage policy and entry is memory only/memory and disk, or any other cache  policy.
+            // !isTieredStorageCachePolicy ||
+            //       (isTieredStorageCachePolicy && (context.isMemoryOnlyEntry || context.isMemoryAndDiskEntry))
             pE = insertEntryToCache(context, entryHolder, true /* newEntry */,
                     typeData, true /*pin*/, InitialLoadOrigin.NON /*fromInitialLoad*/);
         }
@@ -2291,6 +2309,38 @@ public class CacheManager extends AbstractCacheManager
     public IEntryHolder associateEntryWithXtn(Context context, IEntryHolder entryHolder, ITemplateHolder template,
                                               XtnEntry xtnEntry, IEntryHolder new_content)
             throws SAException {
+        if(isTieredStorageCachePolicy()) {
+            //new_content == null in take/read operation.
+            final boolean newIsDiskEntry = new_content != null && getEntryTieredState(new_content) == TieredState.TIERED_COLD;
+            final boolean oldIsDiskEntry = getEntryTieredState(entryHolder) == TieredState.TIERED_COLD;
+            long newEhLease = Lease.FOREVER;
+
+            if (new_content != null) {
+                final IEntryData newContentEntryData = new_content.getEntryData();
+                if (newContentEntryData != null) {
+                    newEhLease = newContentEntryData.getExpirationTime();
+                }
+            }
+
+            if (oldIsDiskEntry) {
+                entryHolder.setExpirationTime(DUMMY_LEASE_FOR_TRANSACTION);
+                if (!newIsDiskEntry) {
+                    if (newEhLease == DUMMY_LEASE_FOR_TRANSACTION) {
+                        //in case of write disk entry under Xtn, and then updating it
+                        // (causing it to stay in memory [HOT tier]).
+                        new_content.setExpirationTime(Lease.FOREVER);
+                    }
+                }
+            }
+            if (newIsDiskEntry) {
+                if (newEhLease != DUMMY_LEASE_FOR_TRANSACTION) {
+                    //in case of write disk entry under Xtn, and then update it (while tier state did not change).
+                    //OR in case of write memory entry under Xtn, and then update it to disk only.
+                    new_content.setExpirationTime(DUMMY_LEASE_FOR_TRANSACTION);
+                    context.setReRegisterLeaseOnUpdate(true);
+                }
+            }
+        }
         final XtnData pXtn = xtnEntry.getXtnData();
 
         xtnEntry.setOperatedUpon();
@@ -2392,6 +2442,10 @@ public class CacheManager extends AbstractCacheManager
 
         pEntry.getEntryHolder(this).setMaybeUnderXtn(true);
         return pEntry.getEntryHolder(this);
+    }
+
+    private TieredState getEntryTieredState(IEntryHolder entryHolder) {
+        return _engine.getTieredStorageManager().getEntryTieredState(entryHolder);
     }
 
 
@@ -3054,8 +3108,7 @@ public class CacheManager extends AbstractCacheManager
 
         int writeLockOperation = xtnWriteLock != null ? ehData.getWriteLockOperation() : 0;
 
-        if (ehData.isExpired() && !slaveLeaseManager
-                && (!isTieredStorageCachePolicy() || (isTieredStorageCachePolicy() && xtnWriteLock == null)))
+        if (ehData.isExpired() && !slaveLeaseManager && !context.isTemplateMaybeUnderTransaction())
             return; //ignore expired entries
 
         if (xtnWriteLock == null && !original_shadow) /* xtn not active, ignore*/ {
@@ -3437,6 +3490,11 @@ public class CacheManager extends AbstractCacheManager
             }//if (newEntry && m_Engine.m_FifoSupported && !fifoTimeStampAlreadySet)
             //FIFO--------------------------------------------
 
+            if ((context.isTemplateMaybeUnderTransaction() || entryHolder.isMaybeUnderXtn())
+                    && isTieredStorageCachePolicy()
+                    && context.isDiskOnlyEntry()) { //set dummy lease to remove the entry later from the memory
+                entryHolder.setExpirationTime(DUMMY_LEASE_FOR_TRANSACTION);
+            }
             return internalInsertEntryToCache(context, entryHolder, newEntry, typeData, pEntry, pin);
         } finally {
             if (newEntry)
@@ -5464,6 +5522,8 @@ public class CacheManager extends AbstractCacheManager
 
         IEntryData deleteEntryData;
         IEntryData keptEntryData;
+        ILeasedEntryCacheInfo keptEhCi;
+        IEntryHolder keptEh;
         ArrayList<IObjectInfo<IEntryCacheInfo>> deleteBackrefs;
         if (restoreOriginalValues) {
             deleteEntryData = pmaster.getEntryHolder(this).getEntryData();
@@ -5473,6 +5533,8 @@ public class CacheManager extends AbstractCacheManager
             }
             pType.prepareForUpdatingIndexValues(this, pmaster, shadowEh.getEntryData());
             deleteBackrefs = pmaster.getBackRefs();
+            keptEhCi = shadowEh;
+            keptEh = shadowEh;
             keptEntryData = shadowEh.getEntryData();
             pmaster.setBackRefs(shadowEh.getBackRefs());
             pmaster.getEntryHolder(this).restoreUpdateXtnRollback(shadowEh.getEntryData());
@@ -5481,10 +5543,22 @@ public class CacheManager extends AbstractCacheManager
                 _leaseManager.unregister(shadowEh, shadowEh.getEntryData().getExpirationTime());
 
             deleteBackrefs = shadowEh.getBackRefs();
-            IEntryHolder keptEh = pmaster.getEntryHolder(this);
+            keptEh = pmaster.getEntryHolder(this);
+            keptEhCi = pmaster;
             keptEntryData = keptEh.getEntryData();
             deleteEntryData = shadowEh.getEntryData();
             keptEh.setOtherUpdateUnderXtnEntry(null);
+        }
+
+        if(isTieredStorageCachePolicy()) {
+            if (_engine.getTieredStorageManager().getEntryTieredState(keptEh) == TieredState.TIERED_COLD) {
+                long oldLease = keptEntryData.getExpirationTime();
+                keptEh.setExpirationTime(DUMMY_LEASE_FOR_TRANSACTION);
+                if (!keptEhCi.isConnectedToLeaseManager() && oldLease == DUMMY_LEASE_FOR_TRANSACTION) {
+                    oldLease = Lease.FOREVER;
+                }
+                _leaseManager.reRegisterLease(keptEhCi, keptEh, oldLease, DUMMY_LEASE_FOR_TRANSACTION, ObjectTypes.ENTRY);
+            }
         }
 
         int refpos = 1;
@@ -5516,8 +5590,9 @@ public class CacheManager extends AbstractCacheManager
 
         } /* if pType.m_AnyIndexes */
 
-
-        shadowEh.setDeleted(true);
+        if (!(isTieredStorageCachePolicy() && keptEh == shadowEh /*By reference*/)) {
+            shadowEh.setDeleted(true);
+        }
     }
 
 
@@ -6040,7 +6115,7 @@ public class CacheManager extends AbstractCacheManager
         }
         long diskSize = 0;
         try {
-            if (getEngine().isTieredStorage()) {
+            if (isTieredStorageCachePolicy()) {
                 diskSize = getEngine().getTieredStorageManager().getTieredStorageSA().getDiskSize();
             }
         } catch (SAException | IOException e) {
@@ -6049,7 +6124,7 @@ public class CacheManager extends AbstractCacheManager
         long freeSpace = 0;
 
         try {
-            if (getEngine().isTieredStorage()) {
+            if (isTieredStorageCachePolicy()) {
                 freeSpace = getEngine().getTieredStorageManager().getTieredStorageSA().getFreeSpaceSize();
             }
         } catch (SAException | IOException e) {

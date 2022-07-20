@@ -101,6 +101,7 @@ public class EntriesIter extends SAIterBase implements ISAdapterIterator<IEntryH
 
         if (_cacheManager.isTieredStorageCachePolicy()) {
             TemplateMatchTier templateTieredState = context.getTemplateTieredState();
+            context.setTemplateMaybeUnderTransaction(template.isMaybeUnderXtn());
             if (templateTieredState == null) {
                 templateTieredState = _cacheManager.getEngine().getTieredStorageManager().guessTemplateTier(template);
                 context.setTemplateTieredState(templateTieredState);
@@ -304,6 +305,11 @@ public class EntriesIter extends SAIterBase implements ISAdapterIterator<IEntryH
             if (((_cacheManager.isEvictableCachePolicy() && !_cacheManager.isMemorySpace()) || _cacheManager.isTieredStorageCachePolicy())
                     && !_currentEntryHolder.isTransient()
                     && !_memoryOnly) {
+                if (_cacheManager.isTieredStorageCachePolicy()
+                        && !_context.isTemplateMaybeUnderTransaction()
+                        && _currentEntryCacheInfo.getEntryHolder(_cacheManager).isExpired()) {
+                    continue;
+                }
                 if (!(_entriesReturned.add(_currentEntryCacheInfo.getUID())))
                     continue; //already returned
 
