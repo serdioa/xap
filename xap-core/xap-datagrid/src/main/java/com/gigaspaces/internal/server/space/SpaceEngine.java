@@ -4418,10 +4418,14 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
             boolean upgrade_lock = false;
             while (true) {
                 context.setNonBlockingReadOp(template.isNonBlockingRead() && !context.isUnstableEntry() && !context.isTransactionalMultipleOperation());
-                if (!template.isFifoSearch())
+                if (!template.isFifoSearch()) {
                     need_xtn_lock = need_xtn_lock || (!context.isNonBlockingReadOp() && template.getXidOriginated() != null);
-                else
+                } else {
                     need_xtn_lock = need_xtn_lock || (!context.isNonBlockingReadOp() && (template.getXidOriginated() != null || entry.isMaybeUnderXtn()));
+                }
+                if (!need_xtn_lock) {
+                    need_xtn_lock = _cacheManager.isTieredStorageCachePolicy() && template.isMaybeUnderXtn() && !context.isMemoryOnlyEntry();
+                }
 
                 try {
                     if (!context.isNonBlockingReadOp()) {
@@ -4626,7 +4630,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
             IEntryHolder entry = ent;
             boolean reRead = false;
             if(_cacheManager.isTieredStorageCachePolicy()){
-                reRead = entry.isHollowEntry() || !context.isNonBlockingReadOp() ;
+                reRead = entry.isHollowEntry() || !context.isNonBlockingReadOp() || tmpl.isMaybeUnderXtn();
                 if(reRead){
                     entry = _cacheManager.getEntry(context, ent, false /*tryInsertToCache*/, !context.isNonBlockingReadOp() /*lockeEntry*/, tmpl.isMemoryOnlySearch() || ent.isTransient() /*useOnlyCache*/);
                     if(entry != null){
