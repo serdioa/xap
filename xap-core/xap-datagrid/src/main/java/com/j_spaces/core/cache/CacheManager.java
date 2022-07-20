@@ -86,7 +86,6 @@ import com.j_spaces.core.cache.blobStore.recovery.BlobStoreRecoveryHelperWrapper
 import com.j_spaces.core.cache.blobStore.sadapter.BlobStoreFifoInitialLoader;
 import com.j_spaces.core.cache.blobStore.sadapter.BlobStoreStorageAdapter;
 import com.j_spaces.core.cache.blobStore.sadapter.IBlobStoreStorageAdapter;
-import com.j_spaces.core.cache.blobStore.storage.BlobStoreHashMock;
 import com.j_spaces.core.cache.context.Context;
 import com.j_spaces.core.cache.context.IndexMetricsContext;
 import com.j_spaces.core.cache.context.TemplateMatchTier;
@@ -227,9 +226,6 @@ public class CacheManager extends AbstractCacheManager
 
     private final Map<String, QueryExtensionIndexManagerWrapper> queryExtensionManagers;
 
-    //TEMP FOR QA
-    private boolean _blobStoreForQa; //TODO:@sagiv remove?
-
     private final boolean _forceSpaceIdIndexIfEqual;
 
     private SpaceMetricsRegistrationUtils _spaceMetricsRegistrationUtils;
@@ -277,16 +273,14 @@ public class CacheManager extends AbstractCacheManager
         setCachePolicy(configReader.getIntSpaceProperty(CACHE_POLICY_PROP, String.valueOf(CACHE_POLICY_ALL_IN_CACHE)));
         _emptyAfterInitialLoadStage = true;
 
-//TEMP FOR QA
-//+++++++++++++++++ TEMP FOR QA
-        if (!_engine.isMirrorService()) {
-            extractBlobStoreForQAFlag(isMemorySA, sa);
-            if (_blobStoreForQa) {
-                persistentBlobStore = !isSyncHybrid();
-                setCachePolicy(CACHE_POLICY_BLOB_STORE);
+        if (isBlobStoreCachePolicy()) {
+            persistentBlobStore = !isSyncHybrid();
+
+            //FOR DEBUGGING
+            if (!isMemorySA && !sa.isReadOnly() && !isSyncHybrid()) {
+                throw new AssertionError("EXCLUDE TEST - ALL IN CACHE");
             }
         }
-//------------------ TEMP FOR QA
 
         Boolean forceSpaceIdIndexIfEqualDefault = !isBlobStoreCachePolicy();
         _forceSpaceIdIndexIfEqual = engine.getConfigReader().getBooleanSpaceProperty(
@@ -318,9 +312,6 @@ public class CacheManager extends AbstractCacheManager
             throw new RuntimeException("invalid cache policy value specified");
 
         if (isBlobStoreCachePolicy()) {
-            if (isSyncHybrid())
-                throw new RuntimeException("blob-store cache policy not supported with unsafe_sync_endpoint");
-
             if (_engine.isLocalCache())
                 throw new RuntimeException("blob-store cache policy not supported in local-cache");
 
@@ -411,60 +402,6 @@ public class CacheManager extends AbstractCacheManager
         Object userFunctions = customProperties.get(Constants.SqlFunction.USER_SQL_FUNCTION);
         sqlFunctions = new SQLFunctions((Map<String, SqlFunction>) userFunctions);
         queryExtensionManagers = initQueryExtensionManagers(customProperties);
-    }
-
-    /*
-
-            String oh = System.getProperty("com.gs.OffHeapData");
-        if (!_blobStoreForQa)
-            _blobStoreForQa = (oh == null || _engine.isLocalCache()) ? false : Boolean.parseBoolean(oh);
-        if (_blobStoreForQa && !isSyncHybrid()) {
-            persistentBlobStore = true;
-        }
-        if (_blobStoreForQa && isEvictableCachePolicy()) {
-            _blobStoreForQa = false;
-        }
-        if (_blobStoreForQa && _engine.isLocalCache()) {
-            _blobStoreForQa = false;
-        }
-        if (_blobStoreForQa)
-            setCachePolicy(CACHE_POLICY_BLOB_STORE);
-        if (_blobStoreForQa && !isMemorySA && !sa.isReadOnly() && !isSyncHybrid()) {
-            _blobStoreForQa = false;
-            setCachePolicy(CACHE_POLICY_ALL_IN_CACHE);
-        }
-
-
-     */
-    private void extractBlobStoreForQAFlag(boolean isMemorySA, IStorageAdapter sa) {
-        if (_blobStoreForQa) {
-            throw new AssertionError("_blobStoreForQa already set!");
-        }
-        _blobStoreForQa = Boolean.getBoolean("com.gs.OffHeapData");
-        if (!_blobStoreForQa) {
-            _logger.info("com.gs.OffHeapData NOT set!");
-            return;
-        }
-
-//        if (isSyncHybrid()) {
-//            throw new AssertionError("UNEXPECTED - isSyncHybrid");
-//        }
-
-        if (isEvictableCachePolicy()) {
-            throw new AssertionError("EXCLUDE TEST - isEvictableCachePolicy");
-        }
-
-        if (_engine.isLocalCache()) {
-            throw new AssertionError("EXCLUDE TEST - isLocalCache");
-        }
-
-//MOVED
-//        if (_blobStoreForQa)
-//            setCachePolicy(CACHE_POLICY_BLOB_STORE);
-        if (!isMemorySA && !sa.isReadOnly() && !isSyncHybrid()) {
-            _logger.info("====> isMemorySA=" + isMemorySA + " sa.isReadOnly()=" + sa.isReadOnly() + " isSyncHybrid=" + isSyncHybrid() + " sa=" + sa.getClass().getName());
-            throw new AssertionError("EXCLUDE TEST - ALL IN CACHE");
-        }
     }
 
     private void setOffHeapProperties(Properties customProperties) {
@@ -910,17 +847,8 @@ public class CacheManager extends AbstractCacheManager
             //user defined class name blobStore handler
             String oh = (String) properties.get(CACHE_MANAGER_BLOBSTORE_STORAGE_HANDLER_CLASS_PROP);
 
-//TEMP for QA
-            if (_blobStoreForQa && (oh == null || oh.length() == 0))
-                oh = BlobStoreHashMock.class.getName();
-//oh = BlobStoreNoSerializationHashMock.class.getName();
-
             if (oh == null || oh.length() == 0)
                 throw new RuntimeException("invalid blob-store storage handler value specified " + oh);
-            if (oh.indexOf("BlobStoreStorageHashMock") != -1) {
-                res = new BlobStoreHashMock();
-                return res;
-            }
 
             try {
                 Class<?> ohClass = ClassLoaderHelper.loadClass(oh);
