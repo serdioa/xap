@@ -90,7 +90,7 @@ public class PlatformVersion {
     }
 
     private static boolean isInsightEdge() {
-        return Files.exists(SystemLocations.singleton().tools("jdbc"));
+        return Boolean.parseBoolean(System.getProperty("isInsightedge"));
     }
 
     public static boolean isInsightEdgeAnalytics() {
