@@ -117,6 +117,7 @@ public class TieredStorageManagerImpl implements TieredStorageManager {
         CachePredicate cacheRule = getCacheRule(typeName);
 
         if (cacheRule == null) {
+            //TODO: @sagiv PIC-880 add entryHolder.isMaybeUnderXtn()?
             TieredState tieredState = entryHolder.isTransient() ? TieredState.TIERED_HOT : TieredState.TIERED_COLD;
             logger.trace("No cache rule for type {}, EntryTieredState = {}", typeName, tieredState);
             return tieredState;
@@ -224,24 +225,21 @@ public class TieredStorageManagerImpl implements TieredStorageManager {
             logger.trace("Generic type {} = MATCH_HOT_AND_COLD", typeName);
             return TemplateMatchTier.MATCH_HOT_AND_COLD;
         }
-
+        //PIC-661 Currently we always search in hot and cold even if the template criteria was cold only,
+        //regardless of whether the template is under transaction or not.
         CachePredicate cacheRule = getCacheRule(typeName);
         if (cacheRule == null) {
-            TemplateMatchTier templateMatchTier = templateHolder.isTransient() ?
-                    TemplateMatchTier.MATCH_HOT : TemplateMatchTier.MATCH_COLD;
+            TemplateMatchTier templateMatchTier = templateHolder.isTransient() ? TemplateMatchTier.MATCH_HOT
+                    : TemplateMatchTier.MATCH_HOT_AND_COLD;
             logger.trace("No cache rule for type {}, TemplateMatchTier = {}", typeName, templateMatchTier);
             return templateMatchTier;
         } else {
             if (cacheRule.isTransient()) {
                 logger.trace("Type {} is transient, TemplateMatchTier = MATCH_HOT", typeName);
                 return TemplateMatchTier.MATCH_HOT;
-            } else if (templateHolder.isIdQuery()) {
-                logger.trace("Id query for type {}, TemplateMatchTier = MATCH_HOT_AND_COLD", typeName);
-                return TemplateMatchTier.MATCH_HOT_AND_COLD;
             } else {
-                TemplateMatchTier templateMatchTier = cacheRule.evaluate(templateHolder);
-                logger.trace("Query for type {}, TemplateMatchTier = {}", typeName, templateMatchTier);
-                return templateMatchTier;
+                logger.trace("Query for type {}, TemplateMatchTier = MATCH_HOT_AND_COLD", typeName);
+                return TemplateMatchTier.MATCH_HOT_AND_COLD;
             }
         }
     }

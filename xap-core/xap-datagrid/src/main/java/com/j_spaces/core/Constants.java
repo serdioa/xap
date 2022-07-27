@@ -532,7 +532,7 @@ public interface Constants {
         String LM_BACKUP_EXPIRATION_DELAY_PROP = "lease_manager.backup_leases_expiration_delay";
         String LM_SEGMEENTS_PER_EXPIRATION_CELL_PROP = "lease_manager.segments_per_expiration_cell";
 
-        String TIERED_STORAGE_EVICTION_GRACE_PERIOD = "lease_manager.tiered_storage.eviction_grace_period";
+        String TIERED_STORAGE_EVICTION_GRACE_PERIOD_PROP = "lease_manager.tiered_storage.eviction_grace_period";
     }
 
     public interface SystemTime {

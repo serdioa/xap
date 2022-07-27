@@ -1456,7 +1456,23 @@ public class CacheManager extends AbstractCacheManager
                 final IEntryHolder diskEntry = _storageAdapter.getEntry(context, entryHolder.getUID(),
                         entryHolder.getClassName(), entryHolder);
                 if (diskEntry != null) { //if its update - upload the entry to the memory
-                    insertEntryToCache(context, diskEntry, false /* newEntry */,
+                    //create new disk entry that contains entryHolder XtnInfo
+                    final IEntryData diskEntryData = diskEntry.getEntryData();
+                    final FlatEntryData newDiskDataWithXtnInfo = new FlatEntryData(
+                            diskEntryData.getFixedPropertiesValues(),
+                            diskEntryData.getDynamicProperties(),
+                            diskEntryData.getEntryTypeDesc(),
+                            diskEntryData.getVersion(),
+                            diskEntryData.getExpirationTime(),
+                            entryHolder.getTxnEntryData().getEntryXtnInfo());
+                    newDiskDataWithXtnInfo.setWriteLockOperation(SpaceOperations.UPDATE);
+                    final IEntryHolder newDiskEntry = new EntryHolder(
+                            diskEntry.getServerTypeDesc(),
+                            diskEntry.getUID(),
+                            diskEntry.getSCN(),
+                            diskEntry.isTransient(),
+                            newDiskDataWithXtnInfo);
+                    insertEntryToCache(context, newDiskEntry, false /* newEntry */,
                             typeData, true /*pin*/, InitialLoadOrigin.NON /*fromInitialLoad*/);
                 }
                 //newEntry needs to be true here -  we have two cases:
@@ -2329,6 +2345,7 @@ public class CacheManager extends AbstractCacheManager
                         //in case of write disk entry under Xtn, and then updating it
                         // (causing it to stay in memory [HOT tier]).
                         new_content.setExpirationTime(Lease.FOREVER);
+                        context.setReRegisterLeaseOnUpdate(true);
                     }
                 }
             }

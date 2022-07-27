@@ -161,7 +161,7 @@ public class LeaseManager {
         _expirationTimeRecentUpdates = getLongValue(configReader, LM_EXPIRATION_TIME_RECENT_UPDATES_PROP, LM_EXPIRATION_TIME_RECENT_UPDATES_DEFAULT);
         _staleReplicaExpirationTime = getLongValue(configReader, LM_EXPIRATION_TIME_STALE_REPLICAS_PROP, LM_EXPIRATION_TIME_STALE_REPLICAS_DEFAULT);
         _supportsRecentExtendedUpdates = _engine.getCacheManager().isBlobStoreCachePolicy();
-        _tieredStorageEvictionGracePeriod = getLongValue(configReader, TIERED_STORAGE_EVICTION_GRACE_PERIOD, TIERED_STORAGE_EVICTION_GRACE_PERIOD_DEFAULT);
+        _tieredStorageEvictionGracePeriod = getLongValue(configReader, TIERED_STORAGE_EVICTION_GRACE_PERIOD_PROP, TIERED_STORAGE_EVICTION_GRACE_PERIOD_DEFAULT);
         logConfiguration();
 
     }

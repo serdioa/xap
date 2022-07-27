@@ -28,7 +28,8 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.*;
 
-import static com.gigaspaces.internal.server.space.tiered_storage.SqliteUtils.*;
+import static com.gigaspaces.internal.server.space.tiered_storage.SqliteUtils.getPropertyValue;
+import static com.gigaspaces.internal.server.space.tiered_storage.SqliteUtils.getVersionValue;
 
 public class TieredStorageUtils {
     private static Logger logger = LoggerFactory.getLogger(TieredStorageUtils.class);
@@ -142,15 +143,7 @@ public class TieredStorageUtils {
                 coldValue = coldEntry.getFixedPropertiesValues()[i];
             }
 
-            if (hotValue == null || coldValue == null) {
-                if(hotValue != coldValue){
-                    return false;
-                }else {
-                    continue;
-                }
-            }
-
-            if (!checkEquals(property.getType(),hotValue,coldValue)) {
+            if (!Objects.deepEquals(hotValue, coldValue)) {
                 logger.warn("Failed to have consistency between hot and cold tier for id: " +
                         hotEntry.getEntryDataType().name() + " Hot: " + hotValue + " Cold: " + coldValue);
                 return false;
