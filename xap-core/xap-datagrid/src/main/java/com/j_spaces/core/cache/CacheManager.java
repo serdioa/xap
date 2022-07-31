@@ -3452,6 +3452,17 @@ public class CacheManager extends AbstractCacheManager
         if (typeData == null)
             typeData = _typeDataMap.get(entryHolder.getServerTypeDesc());
 
+        if ((context.isTemplateMaybeUnderTransaction() || entryHolder.isMaybeUnderXtn())
+                && isTieredStorageCachePolicy()
+                && context.isDiskOnlyEntry()) {
+            //create new EntryHolder with empty TxnInfo
+            entryHolder = new EntryHolder(entryHolder.getServerTypeDesc(), entryHolder.getUID(),
+                    entryHolder.getSCN(), entryHolder.isTransient(),
+                    entryHolder.getTxnEntryData().createCopyWithTxnInfo(true));
+            //set dummy lease to remove the entry later from the memory
+            entryHolder.setExpirationTime(DUMMY_LEASE_FOR_TRANSACTION);
+        }
+
         final IEntryCacheInfo pEntry = !entryHolder.isBlobStoreEntry() ? EntryCacheInfoFactory.createEntryCacheInfo(entryHolder, typeData.numberOfBackRefs(), pin, getEngine()) :
                 ((IBlobStoreEntryHolder) entryHolder).getBlobStoreResidentPart();
         context.setWriteResult(null);
@@ -3470,11 +3481,6 @@ public class CacheManager extends AbstractCacheManager
             }//if (newEntry && m_Engine.m_FifoSupported && !fifoTimeStampAlreadySet)
             //FIFO--------------------------------------------
 
-            if ((context.isTemplateMaybeUnderTransaction() || entryHolder.isMaybeUnderXtn())
-                    && isTieredStorageCachePolicy()
-                    && context.isDiskOnlyEntry()) { //set dummy lease to remove the entry later from the memory
-                entryHolder.setExpirationTime(DUMMY_LEASE_FOR_TRANSACTION);
-            }
             return internalInsertEntryToCache(context, entryHolder, newEntry, typeData, pEntry, pin);
         } finally {
             if (newEntry)
