@@ -1415,29 +1415,7 @@ public class CacheManager extends AbstractCacheManager
                     InitialLoadOrigin.FROM_EXTERNAL_DATA_SOURCE /*fromInitialLoad*/);
         } else if (isTieredStorageCachePolicy() && context.isDiskOnlyEntry()) {
             if (entryHolder.getXidOriginated() != null) {
-                //TODO: PIC-856 @sagiv need lock?
-                final IEntryHolder diskEntry = _storageAdapter.getEntry(context, entryHolder.getUID(),
-                        entryHolder.getClassName(), entryHolder);
-                if (diskEntry != null) { //if its update - upload the entry to the memory
-                    //create new disk entry that contains entryHolder XtnInfo
-                    final IEntryData diskEntryData = diskEntry.getEntryData();
-                    final FlatEntryData newDiskDataWithXtnInfo = new FlatEntryData(
-                            diskEntryData.getFixedPropertiesValues(),
-                            diskEntryData.getDynamicProperties(),
-                            diskEntryData.getEntryTypeDesc(),
-                            diskEntryData.getVersion(),
-                            diskEntryData.getExpirationTime(),
-                            entryHolder.getTxnEntryData().getEntryXtnInfo());
-                    newDiskDataWithXtnInfo.setWriteLockOperation(SpaceOperations.UPDATE);
-                    final IEntryHolder newDiskEntry = new EntryHolder(
-                            diskEntry.getServerTypeDesc(),
-                            diskEntry.getUID(),
-                            diskEntry.getSCN(),
-                            diskEntry.isTransient(),
-                            newDiskDataWithXtnInfo);
-                    insertEntryToCache(context, newDiskEntry, false /* newEntry */,
-                            typeData, true /*pin*/, InitialLoadOrigin.NON /*fromInitialLoad*/);
-                }
+                insertColdEntryToCacheOnUpdate(context, entryHolder, typeData);
                 //newEntry needs to be true here -  we have two cases:
                 // 1. This is a new entry that has not been in space yet.
                 // 2. This entry was on disk and must be updated. using newEntry=true,
@@ -1457,6 +1435,9 @@ public class CacheManager extends AbstractCacheManager
             // tiered-storage policy and entry is memory only/memory and disk, or any other cache  policy.
             // !isTieredStorageCachePolicy ||
             //       (isTieredStorageCachePolicy && (context.isMemoryOnlyEntry || context.isMemoryAndDiskEntry))
+            if (isTieredStorageCachePolicy() && entryHolder.getXidOriginated() != null && context.isMemoryAndDiskEntry()){
+                insertColdEntryToCacheOnUpdate(context, entryHolder, typeData);
+            }
             pE = insertEntryToCache(context, entryHolder, true /* newEntry */,
                     typeData, true /*pin*/, InitialLoadOrigin.NON /*fromInitialLoad*/);
         }
@@ -1488,6 +1469,31 @@ public class CacheManager extends AbstractCacheManager
 
 
         }//if (entryHolder.m_XidOriginated == null)
+    }
+
+    private void insertColdEntryToCacheOnUpdate(Context context, IEntryHolder entryHolder, TypeData typeData) throws SAException {
+        final IEntryHolder diskEntry = _storageAdapter.getEntry(context, entryHolder.getUID(),
+                entryHolder.getClassName(), entryHolder);
+        if (diskEntry != null) { //if its update - upload the entry to the memory
+            //create new disk entry that contains entryHolder XtnInfo
+            final IEntryData diskEntryData = diskEntry.getEntryData();
+            final FlatEntryData newDiskDataWithXtnInfo = new FlatEntryData(
+                    diskEntryData.getFixedPropertiesValues(),
+                    diskEntryData.getDynamicProperties(),
+                    diskEntryData.getEntryTypeDesc(),
+                    diskEntryData.getVersion(),
+                    diskEntryData.getExpirationTime(),
+                    entryHolder.getTxnEntryData().getEntryXtnInfo());
+            newDiskDataWithXtnInfo.setWriteLockOperation(SpaceOperations.UPDATE);
+            final IEntryHolder newDiskEntry = new EntryHolder(
+                    diskEntry.getServerTypeDesc(),
+                    diskEntry.getUID(),
+                    diskEntry.getSCN(),
+                    diskEntry.isTransient(),
+                    newDiskDataWithXtnInfo);
+            insertEntryToCache(context, newDiskEntry, false /* newEntry */,
+                    typeData, true /*pin*/, InitialLoadOrigin.NON /*fromInitialLoad*/);
+        }
     }
 
     public void handleInsertEntryReplication(Context context, IEntryHolder entryHolder) throws SAException {
