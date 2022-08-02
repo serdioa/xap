@@ -1331,16 +1331,10 @@ public class LeaseManager {
                                                 continue; // not relevant any
                                                 // more
                                             }
-                                            if (isNoReapUnderXtnLeases() && entry.isEntryUnderWriteLockXtn()) {
+                                            if (isNoReapUnderXtnLeases() && entry.isMaybeUnderXtn()) {
                                                 needUnpin = true;
-                                                continue; // writelocked under xtn- dot reap it
+                                                continue; // under xtn- don't reap it
                                             }
-                                            if (_cacheManager.isTieredStorageCachePolicy()
-                                                    && (entry.isMaybeUnderXtn() || entry.getTxnEntryData().getEntryXtnInfo() != null)) {
-                                                needUnpin = true;
-                                                continue; // under xtn in tieredStorage - dont reap it
-                                            }
-
                                         } finally {
                                             _cacheManager.freeCacheContext(ctx);
                                         }

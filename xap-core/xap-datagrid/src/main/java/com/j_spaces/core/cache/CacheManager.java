@@ -3462,9 +3462,12 @@ public class CacheManager extends AbstractCacheManager
                 && isTieredStorageCachePolicy()
                 && context.isDiskOnlyEntry()) {
             //create new EntryHolder with empty TxnInfo
-            entryHolder = new EntryHolder(entryHolder.getServerTypeDesc(), entryHolder.getUID(),
-                    entryHolder.getSCN(), entryHolder.isTransient(),
-                    entryHolder.getTxnEntryData().createCopyWithTxnInfo(true));
+            if (!entryHolder.isMaybeUnderXtn()) {
+                entryHolder = new EntryHolder(entryHolder.getServerTypeDesc(), entryHolder.getUID(),
+                        entryHolder.getSCN(), entryHolder.isTransient(),
+                        entryHolder.getTxnEntryData().createCopyWithDummyTieredStorageTxnInfo());
+                entryHolder.setMaybeUnderXtn(true);
+            }
             //set dummy lease to remove the entry later from the memory
             entryHolder.setExpirationTime(DUMMY_LEASE_FOR_TRANSACTION);
         }
