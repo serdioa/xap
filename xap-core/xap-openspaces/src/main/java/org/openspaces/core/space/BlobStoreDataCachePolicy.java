@@ -20,12 +20,13 @@ import com.gigaspaces.server.blobstore.BlobStoreException;
 import com.gigaspaces.server.blobstore.BlobStoreStorageHandler;
 import com.j_spaces.core.Constants;
 import com.j_spaces.core.client.SQLQuery;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * A cache policy that stores data blobStore and indexes onheap.
@@ -115,7 +116,11 @@ public class BlobStoreDataCachePolicy implements CachePolicy {
         if (blobStoreHandler == null) {
             throw new BlobStoreException("blobStoreHandler attribute in Blobstore space must be configured");
         }
-        props.put(Constants.CacheManager.CACHE_MANAGER_BLOBSTORE_STORAGE_HANDLER_PROP, blobStoreHandler);
+        if (blobStoreHandler instanceof Serializable) {
+            props.put(Constants.CacheManager.CACHE_MANAGER_BLOBSTORE_STORAGE_HANDLER_PROP, blobStoreHandler);
+        } else {
+            props.put(Constants.CacheManager.CACHE_MANAGER_BLOBSTORE_STORAGE_HANDLER_CLASS_PROP, blobStoreHandler.getClass().getName());
+        }
 
         props.put(Constants.CacheManager.FULL_CACHE_MANAGER_BLOBSTORE_PERSISTENT_PROP, String.valueOf(calcPersistent(persistent, blobStoreHandler.isPersistent())));
 
