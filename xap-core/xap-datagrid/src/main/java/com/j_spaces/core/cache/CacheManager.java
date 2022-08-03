@@ -275,6 +275,15 @@ public class CacheManager extends AbstractCacheManager
         setCachePolicy(configReader.getIntSpaceProperty(CACHE_POLICY_PROP, String.valueOf(CACHE_POLICY_ALL_IN_CACHE)));
         _emptyAfterInitialLoadStage = true;
 
+        if (isBlobStoreCachePolicy()) {
+            persistentBlobStore = !isSyncHybrid();
+
+            //FOR DEBUGGING
+            if (!isMemorySA && !sa.isReadOnly() && !isSyncHybrid()) {
+                throw new AssertionError("EXCLUDE TEST - ALL IN CACHE");
+            }
+        }
+
         Boolean forceSpaceIdIndexIfEqualDefault = !isBlobStoreCachePolicy();
         _forceSpaceIdIndexIfEqual = engine.getConfigReader().getBooleanSpaceProperty(
                 Constants.CacheManager.CACHE_MANAGER_FORCE_ID_INDEX_PROP, forceSpaceIdIndexIfEqualDefault.toString());
