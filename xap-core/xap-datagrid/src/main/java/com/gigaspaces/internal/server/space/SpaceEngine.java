@@ -388,8 +388,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
 
 
     private void createTieredStorageManager() throws IllegalAccessException, InstantiationException, ClassNotFoundException {
-        final boolean isTieredStorage = String.valueOf(CACHE_POLICY_TIERED_STORAGE)
-                .equals(_spaceImpl.getJspaceAttr().getCustomProperties().get(FULL_CACHE_POLICY_PROP));
+        final boolean isTieredStorage = _spaceImpl.getJspaceAttr().isTieredStorageCachePolicy();
         if (isTieredStorage) {
             TieredStorageConfig tieredStorageConfig = _spaceImpl.getJspaceAttr().getTieredStorageConfig();
             if (tieredStorageConfig == null) {
