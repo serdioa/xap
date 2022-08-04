@@ -236,8 +236,8 @@ public class ProxySettings implements SmartExternalizable {
     }
 
     public TieredStorageConfig getTieredStorageConfig() {
-        Object config = _customProperties.get(FULL_TIERED_STORAGE_TABLE_CONFIG_INSTANCE_PROP);
-        return config != null ? ((TieredStorageConfig) config) : getSpaceAttributes().getTieredStorageConfig();
+        TieredStorageConfig config = (TieredStorageConfig) _customProperties.get(FULL_TIERED_STORAGE_TABLE_CONFIG_INSTANCE_PROP);
+        return config != null ? config : getSpaceAttributes().getTieredStorageConfig();
     }
 
     @Override
