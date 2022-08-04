@@ -22,10 +22,12 @@ import com.gigaspaces.internal.cluster.SpaceClusterInfo;
 import com.gigaspaces.internal.lrmi.stubs.LRMISpaceImpl;
 import com.gigaspaces.internal.server.space.IRemoteSpace;
 import com.gigaspaces.internal.server.space.SpaceImpl;
+import com.gigaspaces.internal.server.space.tiered_storage.TieredStorageConfig;
 import com.gigaspaces.internal.version.PlatformLogicalVersion;
 import com.gigaspaces.lrmi.LRMIInvocationContext;
 import com.gigaspaces.lrmi.RemoteStub;
 import com.gigaspaces.serialization.SmartExternalizable;
+import com.j_spaces.core.Constants;
 import com.j_spaces.core.IJSpaceContainer;
 import com.j_spaces.core.IStubHandler;
 import com.j_spaces.core.admin.SpaceConfig;
@@ -33,11 +35,13 @@ import com.j_spaces.core.cluster.LBProxyHolder;
 import com.j_spaces.kernel.SystemProperties;
 import net.jini.id.Uuid;
 
-import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.Properties;
+
+import static com.j_spaces.core.Constants.CacheManager.FULL_CACHE_POLICY_PROP;
+import static com.j_spaces.core.Constants.TieredStorage.FULL_TIERED_STORAGE_TABLE_CONFIG_INSTANCE_PROP;
 
 /**
  * Essential proxy settings. This class is not serializable and is not passed between the space and
@@ -223,6 +227,17 @@ public class ProxySettings implements SmartExternalizable {
 
     public Properties getCustomProperties() {
         return _customProperties;
+    }
+
+    public boolean isTieredStorageCachePolicy() {
+        final String cachePolicyValue = _customProperties.getProperty(FULL_CACHE_POLICY_PROP);
+        return String.valueOf(Constants.CacheManager.CACHE_POLICY_TIERED_STORAGE).equals(cachePolicyValue)
+                || getSpaceAttributes().isTieredStorageCachePolicy();
+    }
+
+    public TieredStorageConfig getTieredStorageConfig() {
+        TieredStorageConfig config = (TieredStorageConfig) _customProperties.get(FULL_TIERED_STORAGE_TABLE_CONFIG_INSTANCE_PROP);
+        return config != null ? config : getSpaceAttributes().getTieredStorageConfig();
     }
 
     @Override

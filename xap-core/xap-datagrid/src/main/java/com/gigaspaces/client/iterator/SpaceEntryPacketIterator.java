@@ -76,7 +76,7 @@ public class SpaceEntryPacketIterator implements IEntryPacketIterator {
         this._readModifiers = modifiers;
         this._queryPacket = toTemplatePacket(query);
         this._queryResultType = _queryPacket.getQueryResultType();
-        this._isTiered = _spaceProxy.getDirectProxy().getProxySettings().getSpaceAttributes().isTieredStorageCachePolicy();
+        this._isTiered = _spaceProxy.getDirectProxy().getProxySettings().isTieredStorageCachePolicy();
         this._iteratorResult = initialize();
         this._bufferIterator = _iteratorResult.getEntries().iterator();
     }

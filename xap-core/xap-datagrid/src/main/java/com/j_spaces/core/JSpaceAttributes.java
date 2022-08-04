@@ -1284,13 +1284,10 @@ public class JSpaceAttributes
         return String.valueOf(Constants.CacheManager.CACHE_POLICY_TIERED_STORAGE).equals(cachePolicyValue);
     }
 
-    public void setTieredStorageConfig(TieredStorageConfig tieredStorageConfig) {
-        put(FULL_TIERED_STORAGE_TABLE_CONFIG_INSTANCE_PROP, tieredStorageConfig);
-    }
-
     public TieredStorageConfig getTieredStorageConfig() {
         return ((TieredStorageConfig) getOrDefault(FULL_TIERED_STORAGE_TABLE_CONFIG_INSTANCE_PROP,
-                _customProperties.get(FULL_TIERED_STORAGE_TABLE_CONFIG_INSTANCE_PROP)));
+                _customProperties.getOrDefault(FULL_TIERED_STORAGE_TABLE_CONFIG_INSTANCE_PROP,
+                        new TieredStorageConfig())));
 
     }
 
