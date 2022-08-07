@@ -1476,21 +1476,11 @@ public class CacheManager extends AbstractCacheManager
                 entryHolder.getClassName(), entryHolder);
         if (diskEntry != null) { //if its update - upload the entry to the memory
             //create new disk entry that contains entryHolder XtnInfo
-            final IEntryData diskEntryData = diskEntry.getEntryData();
-            final FlatEntryData newDiskDataWithXtnInfo = new FlatEntryData(
-                    diskEntryData.getFixedPropertiesValues(),
-                    diskEntryData.getDynamicProperties(),
-                    diskEntryData.getEntryTypeDesc(),
-                    diskEntryData.getVersion(),
-                    diskEntryData.getExpirationTime(),
-                    entryHolder.getTxnEntryData().getEntryXtnInfo());
-            newDiskDataWithXtnInfo.setWriteLockOperation(SpaceOperations.UPDATE);
-            final IEntryHolder newDiskEntry = new EntryHolder(
-                    diskEntry.getServerTypeDesc(),
-                    diskEntry.getUID(),
-                    diskEntry.getSCN(),
-                    diskEntry.isTransient(),
-                    newDiskDataWithXtnInfo);
+            final IEntryHolder newDiskEntry = new EntryHolder(diskEntry.getServerTypeDesc(), diskEntry.getUID(),
+                    diskEntry.getSCN(), diskEntry.isTransient(),
+                    diskEntry.getTxnEntryData().createCopyWithDummyTieredStorageTxnInfo());
+            //set dummy lease to remove the entry later from the memory
+            entryHolder.setExpirationTime(DUMMY_LEASE_FOR_TRANSACTION);
             insertEntryToCache(context, newDiskEntry, false /* newEntry */,
                     typeData, true /*pin*/, InitialLoadOrigin.NON /*fromInitialLoad*/);
         }
@@ -3094,9 +3084,14 @@ public class CacheManager extends AbstractCacheManager
 
         int writeLockOperation = xtnWriteLock != null ? ehData.getWriteLockOperation() : 0;
 
-        if (ehData.isExpired() && !slaveLeaseManager && !context.isTemplateMaybeUnderTransaction())
-            return; //ignore expired entries
+        if (ehData.isExpired() && !slaveLeaseManager){
+            if (!isTieredStorageCachePolicy()) {
+                return; //ignore expired entries
+            } else if(template.isTransient()){ //isTieredStorageCachePolicy()
+                return; //ignore expired entries
+            }
 
+        }
         if (xtnWriteLock == null && !original_shadow) /* xtn not active, ignore*/ {
             countInfo.incSaCount();
             return;

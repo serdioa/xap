@@ -302,14 +302,12 @@ public class EntriesIter extends SAIterBase implements ISAdapterIterator<IEntryH
             }
 
             //iterate over cache
+            if(_cacheManager.isTieredStorageCachePolicy() && _currentEntryHolder.isTransient() && _currentEntryHolder.isExpired()){
+                continue;
+            }
             if (((_cacheManager.isEvictableCachePolicy() && !_cacheManager.isMemorySpace()) || _cacheManager.isTieredStorageCachePolicy())
                     && !_currentEntryHolder.isTransient()
                     && !_memoryOnly) {
-                if (_cacheManager.isTieredStorageCachePolicy()
-                        && !_context.isTemplateMaybeUnderTransaction()
-                        && _currentEntryCacheInfo.getEntryHolder(_cacheManager).isExpired()) {
-                    continue;
-                }
                 if (!(_entriesReturned.add(_currentEntryCacheInfo.getUID())))
                     continue; //already returned
 
