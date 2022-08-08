@@ -1480,7 +1480,7 @@ public class CacheManager extends AbstractCacheManager
                     diskEntry.getSCN(), diskEntry.isTransient(),
                     diskEntry.getTxnEntryData().createCopyWithDummyTieredStorageTxnInfo());
             //set dummy lease to remove the entry later from the memory
-            entryHolder.setExpirationTime(DUMMY_LEASE_FOR_TRANSACTION);
+            newDiskEntry.setExpirationTime(DUMMY_LEASE_FOR_TRANSACTION);
             insertEntryToCache(context, newDiskEntry, false /* newEntry */,
                     typeData, true /*pin*/, InitialLoadOrigin.NON /*fromInitialLoad*/);
         }
