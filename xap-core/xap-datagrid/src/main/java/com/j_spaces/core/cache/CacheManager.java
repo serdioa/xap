@@ -277,11 +277,6 @@ public class CacheManager extends AbstractCacheManager
 
         if (isBlobStoreCachePolicy()) {
             persistentBlobStore = !isSyncHybrid();
-
-            //FOR DEBUGGING
-            if (!isMemorySA && !sa.isReadOnly() && !isSyncHybrid()) {
-                throw new AssertionError("EXCLUDE TEST - ALL IN CACHE");
-            }
         }
 
         Boolean forceSpaceIdIndexIfEqualDefault = !isBlobStoreCachePolicy();
@@ -313,11 +308,16 @@ public class CacheManager extends AbstractCacheManager
         if (getCachePolicy() < 0 || getCachePolicy() > MAX_CACHE_POLICY_VALUE)
             throw new RuntimeException("invalid cache policy value specified");
 
-        if (isBlobStoreCachePolicy() && _engine.isLocalCache())
-            throw new RuntimeException("blob-store cache policy not supported in local-cache");
+        if (isBlobStoreCachePolicy()) {
+            if (_engine.isLocalCache())
+                throw new RuntimeException("blob-store cache policy not supported in local-cache");
 
-        if (isBlobStoreCachePolicy() && !isMemorySA && !sa.isReadOnly() && !isSyncHybrid())
-            throw new RuntimeException("blob-store cache policy not supported with direct EDS");
+            if (isEvictableCachePolicy())
+                throw new RuntimeException("blob-store cache policy not supported with evictable cache policy");
+
+            if (!isMemorySA && !sa.isReadOnly() && !isSyncHybrid())
+                throw new RuntimeException("blob-store cache policy not supported with direct EDS");
+        }
 
         _persistentBlobStore = persistentBlobStore;
 
