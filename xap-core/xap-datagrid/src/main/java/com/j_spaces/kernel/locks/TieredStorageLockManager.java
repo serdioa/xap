@@ -61,7 +61,7 @@ public class TieredStorageLockManager<T extends ISelfLockingSubject>
      */
     public ILockObject getLockObject(T subject, boolean isEvictable) {
         if (!isEvictable)
-            return subject; //nothing to do, return the subject
+            return subject; //return the subject when entry is a template or transient
 
         return getLockObject_impl(subject.getUID());
     }
