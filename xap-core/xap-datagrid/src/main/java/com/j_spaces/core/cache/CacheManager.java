@@ -3161,7 +3161,7 @@ public class CacheManager extends AbstractCacheManager
                 countInfo.incSaCount();
                 return;
             }
-            if (useDirtyRead || useReadCommitted) {
+            if (useReadCommitted) {
                 countInfo.incSaCount();
             } else if (!memoryOnly) {
                 countInfo.incSubFromPersistCount();

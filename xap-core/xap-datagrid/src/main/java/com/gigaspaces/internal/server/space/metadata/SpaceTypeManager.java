@@ -39,6 +39,7 @@ import com.gigaspaces.internal.utils.GsEnv;
 import com.gigaspaces.logger.LogLevel;
 import com.gigaspaces.lrmi.LRMIInvocationContext;
 import com.gigaspaces.metadata.SpaceMetadataException;
+import com.gigaspaces.metadata.SpacePropertyDescriptor;
 import com.gigaspaces.metadata.SpaceTypeDescriptor;
 import com.gigaspaces.metadata.index.ISpaceIndex;
 import com.gigaspaces.metadata.index.SpaceIndex;
@@ -378,7 +379,11 @@ public class SpaceTypeManager {
 
         TieredStorageTableConfig config = tieredStorageManager.getTableConfig(typeName);
         if (config != null && config.getTimeColumn() != null && config.getPeriod() != null) {
-            Class<?> timeColumnType = typeDesc.getFixedProperty(config.getTimeColumn()).getType();
+            SpacePropertyDescriptor fixedProperty = typeDesc.getFixedProperty(config.getTimeColumn());
+            if (fixedProperty == null){
+                throw new TieredStorageMetadataException("Unsupported type " + typeName + ": unsupported timeColumn [" + config.getTimeColumn() + "] does not exist.");
+            }
+            Class<?> timeColumnType = fixedProperty.getType();
             if (!TieredStorageUtils.isSupportedTimeColumn(timeColumnType)) {
                 throw new TieredStorageMetadataException("Unsupported type " + typeName + ": unsupported timeColumn type [" + config.getTimeColumn() + ": " + timeColumnType.getName() + "]");
             }
