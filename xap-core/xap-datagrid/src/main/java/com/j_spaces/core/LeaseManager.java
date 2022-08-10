@@ -123,8 +123,6 @@ public class LeaseManager {
     private final long _expirationTimeRecentDeletes;
     private final long _expirationTimeRecentUpdates;
     private final long _staleReplicaExpirationTime;
-    private final long _tieredStorageEvictionGracePeriod;
-
     private LeaseReaper _leaseReaperDaemon;
     private boolean _closed;
 
@@ -161,7 +159,6 @@ public class LeaseManager {
         _expirationTimeRecentUpdates = getLongValue(configReader, LM_EXPIRATION_TIME_RECENT_UPDATES_PROP, LM_EXPIRATION_TIME_RECENT_UPDATES_DEFAULT);
         _staleReplicaExpirationTime = getLongValue(configReader, LM_EXPIRATION_TIME_STALE_REPLICAS_PROP, LM_EXPIRATION_TIME_STALE_REPLICAS_DEFAULT);
         _supportsRecentExtendedUpdates = _engine.getCacheManager().isBlobStoreCachePolicy();
-        _tieredStorageEvictionGracePeriod = getLongValue(configReader, TIERED_STORAGE_EVICTION_GRACE_PERIOD_PROP, TIERED_STORAGE_EVICTION_GRACE_PERIOD_DEFAULT);
         logConfiguration();
 
     }
@@ -214,10 +211,7 @@ public class LeaseManager {
                     + _expirationTimeRecentUpdates
                     + " ms\n\t"
                     + "Transactions of FIFO entries - every "
-                    + LM_EXPIRATION_TIME_FIFOENTRY_XTNINFO + " ms\n\t"
-                    + "Tiered storage eviction grace period - "
-                    + _tieredStorageEvictionGracePeriod
-                    + "s\n\t");
+                    + LM_EXPIRATION_TIME_FIFOENTRY_XTNINFO + " ms\n\t");
         }
     }
 
@@ -513,7 +507,7 @@ public class LeaseManager {
             CachePredicate cacheRule = tieredStorageManager.getCacheRule(entry.getSpaceTypeDescriptor().getTypeName());
             if (cacheRule != null && cacheRule.isTimeRule()){
                 TimePredicate timePredicate = (TimePredicate) cacheRule;
-                return timePredicate.getExpirationTime(entry.getPropertyValue(timePredicate.getTimeColumn()), getTieredStorageEvictionGracePeriod());
+                return timePredicate.getExpirationTime(entry.getPropertyValue(timePredicate.getTimeColumn()));
             }
         }
         return -1;
@@ -532,7 +526,7 @@ public class LeaseManager {
             }
             if (cacheRule != null && cacheRule.isTimeRule()){
                 TimePredicate timePredicate = (TimePredicate) cacheRule;
-                return timePredicate.getExpirationTime(entry.getPropertyValue(timePredicate.getTimeColumn()), getTieredStorageEvictionGracePeriod());
+                return timePredicate.getExpirationTime(entry.getPropertyValue(timePredicate.getTimeColumn()));
             }
         }
         //cases of:1. no tiered storage  2.tiered- transient with/without lease  3. tiered-cache criteria without lease
@@ -551,7 +545,7 @@ public class LeaseManager {
             }
             if (cacheRule != null && cacheRule.isTimeRule()){
                 TimePredicate timePredicate = (TimePredicate) cacheRule;
-                return timePredicate.getExpirationTime(entry.getPropertyValue(timePredicate.getTimeColumn()), getTieredStorageEvictionGracePeriod());
+                return timePredicate.getExpirationTime(entry.getPropertyValue(timePredicate.getTimeColumn()));
             }
         }
 
@@ -571,10 +565,6 @@ public class LeaseManager {
 
         //cases of:1. no tiered storage  2.tiered- transient with/without lease  3. tiered-cache criteria without lease
         return lease != UPDATE_NO_LEASE;
-    }
-
-    public long getTieredStorageEvictionGracePeriod() {
-        return _tieredStorageEvictionGracePeriod;
     }
 
     /**

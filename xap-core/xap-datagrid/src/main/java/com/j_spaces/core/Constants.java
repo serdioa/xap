@@ -513,8 +513,6 @@ public interface Constants {
 
         boolean LM_DISABLE_ENTRIES_LEASES_DEFAULT = false;
 
-        long TIERED_STORAGE_EVICTION_GRACE_PERIOD_DEFAULT = 10 * 1000;
-
         String LM_EXPIRATION_TIME_UNUSED_TXN_PROP = "lease_manager.expiration_unused_txns";
 
         String LM_DISABLE_ENTRIES_LEASES_PROP = "lease_manager.disable_entries_leases";
@@ -532,8 +530,6 @@ public interface Constants {
         String FULL_LM_EXPIRATION_TIME_INTERVAL_PROP = SPACE_CONFIG_PREFIX + LM_EXPIRATION_TIME_INTERVAL_PROP;
         String LM_BACKUP_EXPIRATION_DELAY_PROP = "lease_manager.backup_leases_expiration_delay";
         String LM_SEGMEENTS_PER_EXPIRATION_CELL_PROP = "lease_manager.segments_per_expiration_cell";
-
-        String TIERED_STORAGE_EVICTION_GRACE_PERIOD_PROP = "lease_manager.tiered_storage.eviction_grace_period";
     }
 
     public interface SystemTime {
@@ -949,7 +945,6 @@ public interface Constants {
         String TIERED_STORAGE_INTERNAL_RDBMS_CLASS_PROP = "engine.TieredStorage.RDBMSClass";
         String TIERED_STORAGE_INTERNAL_RDBMS_CLASS_DEFAULT = "com.gigaspaces.internal.server.space.tiered_storage.SqliteRDBMS";
         CachePredicate TRANSIENT_ALL_CACHE_PREDICATE = new TransientPredicate();
-
         String UID_DB_FIELD_NAME = "UID$GS";
         String VERSION_DB_FIELD_NAME = "VERSION$GS";
         String TIERED_STORAGE_TYPES_TABLE = "com.gs.types.meta_data";
