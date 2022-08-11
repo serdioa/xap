@@ -272,7 +272,7 @@ public class CacheManager extends AbstractCacheManager
          */
         setCachePolicy(configReader.getIntSpaceProperty(CACHE_POLICY_PROP, String.valueOf(CACHE_POLICY_ALL_IN_CACHE)));
         _emptyAfterInitialLoadStage = true;
-        
+
         Boolean forceSpaceIdIndexIfEqualDefault = !isBlobStoreCachePolicy();
         _forceSpaceIdIndexIfEqual = engine.getConfigReader().getBooleanSpaceProperty(
                 Constants.CacheManager.CACHE_MANAGER_FORCE_ID_INDEX_PROP, forceSpaceIdIndexIfEqualDefault.toString());
@@ -292,6 +292,16 @@ public class CacheManager extends AbstractCacheManager
             _useBlobStoreReplicationBackupBulk = _useBlobStoreBulks && _engine.isReplicatedPersistentBlobstore()
                     && Boolean.parseBoolean(System.getProperty(SystemProperties.REPLICATION_USE_BACKUP_BLOBSTORE_BULKS, SystemProperties.REPLICATION_USE_BACKUP_BLOBSTORE_BULKS_DEFAULT));
             _logger.info("useBlobStoreReplicationBackupBulk=" + _useBlobStoreReplicationBackupBulk);
+
+            if (_engine.isLocalCache())
+                throw new RuntimeException("blob-store cache policy not supported in local-cache");
+
+            if (isEvictableCachePolicy())
+                throw new RuntimeException("blob-store cache policy not supported with evictable cache policy");
+
+            if (!isMemorySA && !sa.isReadOnly() && !isSyncHybrid())
+                throw new RuntimeException("blob-store cache policy not supported with direct EDS");
+
         } else {
             _persistentBlobStore = Boolean.parseBoolean(customProperties.getProperty(FULL_CACHE_MANAGER_BLOBSTORE_PERSISTENT_PROP, "false"));
             _useBlobStoreBulks = false;
@@ -304,16 +314,7 @@ public class CacheManager extends AbstractCacheManager
         if (getCachePolicy() < 0 || getCachePolicy() > MAX_CACHE_POLICY_VALUE)
             throw new RuntimeException("invalid cache policy value specified");
 
-        if (isBlobStoreCachePolicy()) {
-            if (_engine.isLocalCache())
-                throw new RuntimeException("blob-store cache policy not supported in local-cache");
 
-            if (isEvictableCachePolicy())
-                throw new RuntimeException("blob-store cache policy not supported with evictable cache policy");
-
-            if (!isMemorySA && !sa.isReadOnly() && !isSyncHybrid())
-                throw new RuntimeException("blob-store cache policy not supported with direct EDS");
-        }
         if (isBlobStoreCachePolicy()) {
             IStorageAdapter curSa;
             if (isSyncHybrid()) {
