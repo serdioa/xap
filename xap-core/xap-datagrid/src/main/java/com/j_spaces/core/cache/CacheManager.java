@@ -251,8 +251,6 @@ public class CacheManager extends AbstractCacheManager
         m_CacheSize = configReader.getIntSpaceProperty(CACHE_MANAGER_SIZE_PROP, CACHE_MANAGER_SIZE_DEFAULT);
         _spaceMetricsRegistrationUtils = new SpaceMetricsRegistrationUtils( this );
 
-        boolean persistentBlobStore = Boolean.parseBoolean(customProperties.getProperty(FULL_CACHE_MANAGER_BLOBSTORE_PERSISTENT_PROP, "false"));
-
         int numNotifyFifoThreads = engine.getConfigReader().getIntSpaceProperty(
                 Constants.Engine.ENGINE_FIFO_NOTIFY_THREADS_PROP, Constants.Engine.ENGINE_FIFO_NOTIFY_THREADS_DEFAULT);
         numNotifyFifoThreads = numNotifyFifoThreads != 0 ? numNotifyFifoThreads : Runtime.getRuntime().availableProcessors();
@@ -278,10 +276,11 @@ public class CacheManager extends AbstractCacheManager
         Boolean forceSpaceIdIndexIfEqualDefault = !isBlobStoreCachePolicy();
         _forceSpaceIdIndexIfEqual = engine.getConfigReader().getBooleanSpaceProperty(
                 Constants.CacheManager.CACHE_MANAGER_FORCE_ID_INDEX_PROP, forceSpaceIdIndexIfEqualDefault.toString());
-        if (_forceSpaceIdIndexIfEqual != forceSpaceIdIndexIfEqualDefault.booleanValue())
+        if (_forceSpaceIdIndexIfEqual != forceSpaceIdIndexIfEqualDefault.booleanValue()) {
             _logger.info(Constants.CacheManager.CACHE_MANAGER_FORCE_ID_INDEX_PROP + " was set to " + _forceSpaceIdIndexIfEqual);
-
+        }
         if (isBlobStoreCachePolicy()) {
+            _persistentBlobStore = !isSyncHybrid();
             _useBlobStoreBulks = Boolean.parseBoolean(System.getProperty(FULL_CACHE_MANAGER_USE_BLOBSTORE_BULKS_PROP, isSyncHybrid() ? "false" : "true"));
             _logger.info("useBlobStoreBulks=" + _useBlobStoreBulks);
             _optimizedBlobStoreClear = Boolean.parseBoolean(System.getProperty(CACHE_MANAGER_USE_BLOBSTORE_CLEAR_OPTIMIZATION_PROP, "true"));
@@ -293,7 +292,18 @@ public class CacheManager extends AbstractCacheManager
             _useBlobStoreReplicationBackupBulk = _useBlobStoreBulks && _engine.isReplicatedPersistentBlobstore()
                     && Boolean.parseBoolean(System.getProperty(SystemProperties.REPLICATION_USE_BACKUP_BLOBSTORE_BULKS, SystemProperties.REPLICATION_USE_BACKUP_BLOBSTORE_BULKS_DEFAULT));
             _logger.info("useBlobStoreReplicationBackupBulk=" + _useBlobStoreReplicationBackupBulk);
+
+            if (_engine.isLocalCache())
+                throw new RuntimeException("blob-store cache policy not supported in local-cache");
+
+            if (isEvictableCachePolicy())
+                throw new RuntimeException("blob-store cache policy not supported with evictable cache policy");
+
+            if (!isMemorySA && !sa.isReadOnly() && !isSyncHybrid())
+                throw new RuntimeException("blob-store cache policy not supported with direct EDS");
+
         } else {
+            _persistentBlobStore = Boolean.parseBoolean(customProperties.getProperty(FULL_CACHE_MANAGER_BLOBSTORE_PERSISTENT_PROP, "false"));
             _useBlobStoreBulks = false;
             _optimizedBlobStoreClear = false;
             _enableSyncListForBlobStore = false;
@@ -304,13 +314,6 @@ public class CacheManager extends AbstractCacheManager
         if (getCachePolicy() < 0 || getCachePolicy() > MAX_CACHE_POLICY_VALUE)
             throw new RuntimeException("invalid cache policy value specified");
 
-        if (isBlobStoreCachePolicy() && _engine.isLocalCache())
-            throw new RuntimeException("blob-store cache policy not supported in local-cache");
-
-        if (isBlobStoreCachePolicy() && !isMemorySA && !sa.isReadOnly() && !isSyncHybrid())
-            throw new RuntimeException("blob-store cache policy not supported with direct EDS");
-
-        _persistentBlobStore = persistentBlobStore;
 
         if (isBlobStoreCachePolicy()) {
             IStorageAdapter curSa;
