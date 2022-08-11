@@ -673,8 +673,15 @@ public class SpaceProxyImpl extends AbstractDirectSpaceProxy implements SameProx
             logger.info("Started rest server at " + server.getAddress());
             return server;
 
-        } catch (IOException e) {
-            throw new CreateException("Failed to start web server", e);
+        }  catch (IOException e) {
+            // In case web server has been already started from the SpaceImpl.java
+            // relevant for backup partitions, to avoid collision of 2 servers
+            if (e.getMessage().contains("Address already in use")) {
+                logger.warn("Proxy rest server didn't start: " + e.getMessage());
+                return null;
+            } else {
+                throw new CreateException("Failed to start web server", e);
+            }
         }
     }
 
