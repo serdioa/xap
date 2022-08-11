@@ -16,7 +16,6 @@
 
 package com.j_spaces.core.client;
 
-import com.gigaspaces.admin.ManagerClusterType;
 import com.gigaspaces.internal.client.spaceproxy.ISpaceProxy;
 import com.gigaspaces.internal.client.spaceproxy.SpaceProxyImpl;
 import com.gigaspaces.internal.extension.XapExtensions;
@@ -29,10 +28,8 @@ import com.gigaspaces.security.SecurityException;
 import com.gigaspaces.security.directory.CredentialsProvider;
 import com.gigaspaces.security.directory.CredentialsProviderHelper;
 import com.gigaspaces.security.directory.DefaultCredentialsProvider;
-import com.gigaspaces.start.SystemInfo;
 import com.gigaspaces.start.SystemLocations;
 import com.j_spaces.core.Constants;
-import com.j_spaces.core.CreateException;
 import com.j_spaces.core.JSpaceContainerImpl;
 import com.j_spaces.core.NoSuchNameException;
 import com.j_spaces.core.service.Service;
@@ -454,7 +451,7 @@ public class SpaceFinder {
 
     private ISpaceProxy initSpaceProxy(ISpaceProxy spaceProxy, SpaceURL spaceURL, Properties customProperties,
                                        CredentialsProvider credentialsProvider)
-            throws RemoteException, FinderException, CreateException {
+            throws RemoteException, FinderException {
         // If this is a "sink" proxy set a flag
         // Should be set before performing login on the space since the flag is cached with
         // a SpaceContext instance.
@@ -464,12 +461,6 @@ public class SpaceFinder {
             String property = customProperties.getProperty(Constants.Replication.GATEWAY_PROXY);
             if (Boolean.parseBoolean(property))
                 directProxy.setGatewayProxy();
-
-            ManagerClusterType managerClusterType = SystemInfo.singleton().getManagerClusterInfo().getManagerClusterType();
-            // Stateless services requires to have endpoints for kubernetes probes
-            if (managerClusterType == ManagerClusterType.KUBERNETES && spaceURL.isJiniProtocol()) {
-                directProxy.initWebServerIfEnabled();
-            }
         }
 
         //remote proxy login with userDetails
