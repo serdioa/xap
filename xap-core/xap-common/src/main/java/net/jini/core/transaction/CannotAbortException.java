@@ -39,6 +39,16 @@ public class CannotAbortException extends TransactionException {
     }
 
     /**
+     * Constructs an instance with a detail message.
+     *
+     * @param desc  the detail message
+     * @param cause the cause
+     */
+    public CannotAbortException(String desc, Throwable cause) {
+        super(desc, cause);
+    }
+
+    /**
      * Constructs an instance with no detail message.
      */
     public CannotAbortException() {
