@@ -24,6 +24,7 @@ import com.gigaspaces.internal.utils.concurrent.UncheckedAtomicIntegerFieldUpdat
 import com.gigaspaces.logger.LogUtils;
 import com.gigaspaces.lrmi.ILRMIProxy;
 import com.gigaspaces.time.SystemTime;
+import com.j_spaces.kernel.SystemProperties;
 import com.sun.jini.constants.TimeConstants;
 import com.sun.jini.constants.TxnConstants;
 import com.sun.jini.landlord.LeasedResource;
@@ -70,6 +71,9 @@ class TxnManagerTransaction
         implements TransactionConstants, TimeConstants, LeasedResource {
     static final long serialVersionUID = -2088463193687796098L;
     private static final boolean _disableNewSpaceProxyRouter = Boolean.getBoolean("com.gigaspaces.client.router.disableNewRouter");
+
+    private static final boolean waitForAbortOnExpire = Boolean.parseBoolean(System.getProperty(SystemProperties.WAIT_FOR_ABORT_EXPIRED_TX, "true"));
+
 
     /*
      * Table of valid state transitions which a
@@ -645,7 +649,17 @@ class TxnManagerTransaction
         //is not amenable, don't even try to continue
         int curstate = getState();
         if ((curstate == ACTIVE) && !_leaseForEver && (ensureCurrent() == false)) {
-            doAbort(0);
+            long timeOut = 0;
+            if (waitForAbortOnExpire) timeOut = waitFor;
+            //Add try and catch to be on the safe side (Yechiel suggestion)
+            try {
+                doAbort(timeOut);
+            }
+            catch (RuntimeException e){
+                if (transactionsLogger.isWarnEnabled()) {
+                    transactionsLogger.warn("Fail to abort expired transaction before failing commit, ID=" +getTransaction().id);
+                }
+            }
             throw new CannotCommitException("Lease expired [ID=" + +getTransaction().id + "]");
         }
 

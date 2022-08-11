@@ -90,6 +90,9 @@ public class SystemProperties extends CommonSystemProperties {
      */
     public final static String FAIL_ON_INVALID_ROLLBACK = "com.gs.xa.failOnInvalidRollback";
 
+
+    public final static String WAIT_FOR_ABORT_EXPIRED_TX = "com.gs.waitForAbortExpriedTx";
+
     /**
      * if -Dcom.gs.XMLEnvCheck=true we flush info about the Jaxp environment and print it to a file
      * called GS_JAXP_EnvironmentCheck.xml in current directory.
