@@ -231,6 +231,10 @@ public class AbortJob extends Job implements TransactionConstants {
             }  catch (RemoteException re) {
                 //Something happened with the network, so
                 //retry at a later time.
+                if (numberOfRetriesDueToConnectionExceptionExceeded(who)) {
+                    handle.setAbortException(new CannotAbortException("Failed to abort", re));
+                    response = ABORTED;
+                }
             } catch (RuntimeException rte) {
                 //Something happened with the participant, so
                 //stop retrying

@@ -23,19 +23,16 @@ import com.gigaspaces.logger.LogUtils;
 import com.sun.jini.mahalo.log.ClientLog;
 import com.sun.jini.thread.TaskManager;
 import com.sun.jini.thread.WakeupManager;
-
 import net.jini.core.transaction.CannotCommitException;
 import net.jini.core.transaction.Transaction;
 import net.jini.core.transaction.TransactionException;
 import net.jini.core.transaction.server.ServerTransaction;
 import net.jini.core.transaction.server.TransactionConstants;
 import net.jini.core.transaction.server.TransactionParticipant;
+import org.slf4j.Logger;
 
 import java.rmi.RemoteException;
 import java.util.concurrent.ConcurrentMap;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * An implementation of a <code>com.sun.jini.mahalo.Job</code> which interacts with a set of
@@ -235,6 +232,8 @@ public class PrepareJob extends Job implements TransactionConstants {
         } catch (RemoteException re) {
             vote = ABORTED;
             response = new Integer(vote);
+            // TODO investigate:
+            // in original jini code a remote exception is NOT considered as "may have been prepared"
             handle.setPrepared(); //may have been prepared in remote
         } catch (RuntimeException rte) {
             vote = ABORTED;
