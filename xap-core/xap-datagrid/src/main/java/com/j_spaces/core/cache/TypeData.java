@@ -207,7 +207,7 @@ public class TypeData {
         _isBlobStoreClass = typeDataFactory.getCcheManager().isBlobStoreCachePolicy() && serverTypeDesc.getTypeDesc().isBlobstoreEnabled();
 
         if (serverTypeDesc.getTypeDesc().hasSequenceNumber()) {
-            if (_cacheManager.isEvictableCachePolicy() && !_cacheManager.isMemorySpace())
+            if (_cacheManager.isEvictableFromSpaceCachePolicy() && !_cacheManager.isMemorySpace())
                 throw new SequenceNumberException(_className, " sequence number not supported with persistent LRU");
 
             _sequenceNumberGenerator = new SequenceNumberGenerator();
@@ -228,7 +228,7 @@ public class TypeData {
                     if (idProperties.size() != 1 || !idProperties.get(0).equals(u.getName())) {
                         if (isLocalCache)
                             u.setUnique(false); //no uniques in local cache-view  just the id
-                        else if (_cacheManager.isEvictableCachePolicy())
+                        else if (_cacheManager.isEvictableFromSpaceCachePolicy())
                             throw new UnsupportedOperationException("unique indices not supported for evictable cache policy=" + serverTypeDesc.getTypeName() + " index=" + u.getName());
                     }
                 }
@@ -284,7 +284,7 @@ public class TypeData {
                     ISpaceIndex u = (ISpaceIndex) spaceIndex;
                     if (isLocalCache)
                         u.setUnique(false); //no uniques in local cache-view  just the id
-                    else if (_cacheManager.isEvictableCachePolicy())
+                    else if (_cacheManager.isEvictableFromSpaceCachePolicy())
                         throw new UnsupportedOperationException("unique indices not supported for non All-In_cache policy type=" + serverTypeDesc.getTypeName() + " index=" + u.getName());
                 }
 

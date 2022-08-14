@@ -46,9 +46,7 @@ import com.j_spaces.core.exception.internal.ReplicationInternalSpaceException;
 import com.j_spaces.core.sadapter.ISAdapterIterator;
 import com.j_spaces.core.sadapter.SAException;
 import com.j_spaces.kernel.locks.ILockObject;
-
 import net.jini.space.InternalSpaceException;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -283,7 +281,7 @@ public class EntryReplicaProducer
 
     private IEntryHolder handleTransactionConflict(IEntryHolder entry) {
         if (!_engine.getCacheManager().isMemorySpace()
-                && _engine.getCacheManager().isEvictableCachePolicy()) {
+                && _engine.getCacheManager().isEvictableFromSpaceCachePolicy()) {
             try {
                 entry = _engine.getCacheManager()
                         .getEntry(_context,

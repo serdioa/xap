@@ -62,7 +62,7 @@ abstract public class AbstractCacheManager {
         return getCachePolicy() == CACHE_POLICY_BLOB_STORE;
     }
 
-    public boolean isEvictableCachePolicy() {
+    public boolean isEvictableFromSpaceCachePolicy() { //indicate it is LRU
         return !isResidentEntriesCachePolicy() && !isTieredStorageCachePolicy();
     }
 
@@ -80,6 +80,6 @@ abstract public class AbstractCacheManager {
 
 
     public int getMaxCacheSize() {
-        return !isEvictableCachePolicy() ? Integer.MAX_VALUE : m_CacheSize;
+        return isEvictableFromSpaceCachePolicy() ? m_CacheSize : Integer.MAX_VALUE;
     }
 }

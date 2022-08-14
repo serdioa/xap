@@ -58,7 +58,7 @@ public abstract class AbstractSpaceReplicationEntryEventHandler
     protected boolean ignoreOperation(boolean isTransient) {
         return _engine.getCacheManager().isCacheExternalDB() && !isTransient
                 && _engine.getCacheManager().isCentralDB()
-                && _engine.getCacheManager().isEvictableCachePolicy()
+                && _engine.getCacheManager().isEvictableFromSpaceCachePolicy()
                 && !_engine.hasMirror();
     }
 
@@ -263,7 +263,7 @@ public abstract class AbstractSpaceReplicationEntryEventHandler
     public void inEvictEntry(IReplicationInContext context, String uid, boolean isTransient, OperationID operationID)
             throws Exception {
         try {
-            if (!_engine.getCacheManager().isEvictableCachePolicy())
+            if (!_engine.getCacheManager().isEvictableFromSpaceCachePolicy())
                 return;
             if (!shouldEvictEntryFromSpace(isTransient))
                 return;

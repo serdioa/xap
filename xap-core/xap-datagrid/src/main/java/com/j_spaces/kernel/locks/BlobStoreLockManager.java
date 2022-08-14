@@ -38,7 +38,7 @@ public class BlobStoreLockManager<T extends ISelfLockingSubject>
     /*
      * @see com.j_spaces.kernel.locks.IBasicLockManager#getLockObject(java.lang.Object, java.lang.Object, boolean)
      */
-    public ILockObject getLockObject(T subject, boolean isEvictable) {
+    public ILockObject getLockObject(T subject, boolean isEvictableFromSpaceOrCache) {
         return subject.getExternalLockObject() != null ? subject.getExternalLockObject() : subject;
     }
 
@@ -59,7 +59,7 @@ public class BlobStoreLockManager<T extends ISelfLockingSubject>
         return;
     }
 
-    public boolean isPerLogicalSubjectLockObject(boolean isEvictable) {
+    public boolean isPerLogicalSubjectLockObject(boolean isEvictableFromSpaceOrCache) {
         return true;
     }
 

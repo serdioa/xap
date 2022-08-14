@@ -210,7 +210,7 @@ public class EntriesIter extends SAIterBase implements ISAdapterIterator<IEntryH
         }//if (m_TemplateHolder.m_FifoTemplate
         //FIFO-------------------------------------------=
 
-        if (_cacheManager.isEvictableCachePolicy() && !_cacheManager.isMemorySpace())
+        if (_cacheManager.isEvictableFromSpaceCachePolicy() && !_cacheManager.isMemorySpace())
             _entriesReturned = new HashSet<String>();
 
         /**
@@ -269,7 +269,7 @@ public class EntriesIter extends SAIterBase implements ISAdapterIterator<IEntryH
         if (_types == null)
             return null;
         boolean memoryOverTimebasedeviction = _memoryOnly && _cacheManager.isTimeBasedEvictionStrategy();
-        if (_templateHolder.isFifoTemplate() && _cacheManager.isEvictableCachePolicy() && !_cacheManager.isMemorySpace() && !memoryOverTimebasedeviction) {
+        if (_templateHolder.isFifoTemplate() && _cacheManager.isEvictableFromSpaceCachePolicy() && !_cacheManager.isMemorySpace() && !memoryOverTimebasedeviction) {
             return next_fifo();
         }
         //FIFO-------------------------------------------=
@@ -285,7 +285,7 @@ public class EntriesIter extends SAIterBase implements ISAdapterIterator<IEntryH
                         _templateHolder.getServerIteratorInfo().setTemplateMatchTier(updatedTieredState);
                     }
                 }
-                if (_cacheManager.isEvictableCachePolicy() &&
+                if (_cacheManager.isEvictableFromSpaceCachePolicy() &&
                         !_cacheManager.isMemorySpace() && !_memoryOnly && !_transientOnly) {
 
                     _saIter = _cacheManager.getStorageAdapter().makeEntriesIter(_templateHolder,
@@ -305,7 +305,7 @@ public class EntriesIter extends SAIterBase implements ISAdapterIterator<IEntryH
             if(_cacheManager.isTieredStorageCachePolicy() && _currentEntryHolder.isTransient() && _currentEntryHolder.isExpired()){
                 continue;
             }
-            if (((_cacheManager.isEvictableCachePolicy() && !_cacheManager.isMemorySpace()) || _cacheManager.isTieredStorageCachePolicy())
+            if (((_cacheManager.isEvictableFromSpaceCachePolicy() && !_cacheManager.isMemorySpace()) || _cacheManager.isTieredStorageCachePolicy())
                     && !_currentEntryHolder.isTransient()
                     && !_memoryOnly) {
                 if (!(_entriesReturned.add(_currentEntryCacheInfo.getUID())))
@@ -732,7 +732,7 @@ public class EntriesIter extends SAIterBase implements ISAdapterIterator<IEntryH
         if (pEntry == null)
             return true;
         return
-                (_cacheManager.isEvictableCachePolicy() && pEntry.isRemoving()) ||
+                (_cacheManager.isEvictableFromSpaceCachePolicy() && pEntry.isRemoving()) ||
                         (_SCNFilter != 0 && eh.getSCN() < _SCNFilter) ||
                         (_leaseFilter != 0 && eh.isExpired(_leaseFilter) && !_cacheManager.getLeaseManager().isSlaveLeaseManagerForEntries() && !_cacheManager.getEngine().isExpiredEntryStayInSpace(eh)) ||
                         (_transientOnly && !eh.isTransient());

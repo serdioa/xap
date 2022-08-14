@@ -128,4 +128,8 @@ public interface IEntryHolder extends ISpaceItem {
         return false;
     }
 
+    @Override
+    default boolean isLockByUid() {
+        return !isTransient();
+    }
 }

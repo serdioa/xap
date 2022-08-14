@@ -690,7 +690,6 @@ public class LeaseManager {
         IEntryHolder entry = null;
         Context context = null;
         ILockObject entryLock = null;
-        boolean non_evictable = false;
         boolean cancelLease = (duration == LeaseUtils.DISCARD_LEASE);
         long original_time = 0;
         try {
@@ -701,19 +700,16 @@ public class LeaseManager {
             long currentTime = SystemTime.timeMillis();
             long timeToCheck = getEffectiveEntryLeaseTime(currentTime);
 
-            if (!_cacheManager.isEvictableCachePolicy() || objectType != ObjectTypes.ENTRY) {
-                entry = objectType == ObjectTypes.ENTRY ? _cacheManager
-                        .getEntry(context,
+            if (!_cacheManager.isEvictableFromSpaceCachePolicy() || objectType != ObjectTypes.ENTRY) {
+                entry = objectType == ObjectTypes.ENTRY ?
+                        _cacheManager.getEntry(context,
                                 entryUid,
                                 className,
                                 null /* selectiontemplate */,
                                 false /* tryInsertToCache */,
                                 false /* lockeEntry */,
                                 true /* useOnlyCache */)
-                        : _cacheManager
-                        .getTemplate(entryUid);
-
-                non_evictable = true;
+                        : _cacheManager.getTemplate(entryUid);
                 if (entry == null || entry.isExpired(timeToCheck)) {
                     String reason = "Failed to "
                             + getExtendLeasePeriodDescription(leaseExpired,
@@ -729,19 +725,14 @@ public class LeaseManager {
                     throw new UnknownLeaseException(reason);
                 }
             }
-
+            final boolean isEvictableFromSpaceOrCache = _cacheManager.isTieredStorageCachePolicy() || _cacheManager.isEvictableFromSpaceCachePolicy();
             boolean extended = false;
-            entryLock = non_evictable ? _cacheManager
-                    .getLockManager()
-                    .getLockObject(entry,
-                            !non_evictable /* isEvictable */)
-                    : _cacheManager
-                    .getLockManager()
-                    .getLockObject(entryUid);
-
+            entryLock = entry != null ?
+                    _cacheManager.getLockManager().getLockObject(entry, isEvictableFromSpaceOrCache)
+                    : _cacheManager.getLockManager().getLockObject(entryUid);
             synchronized (entryLock) {
                 try {
-                    if (_cacheManager.isEvictableCachePolicy() && objectType == ObjectTypes.ENTRY) {
+                    if (_cacheManager.isEvictableFromSpaceCachePolicy() && objectType == ObjectTypes.ENTRY) {
                         if (cancelLease) {//in case expiration is only from eviction-
                             if (_cacheManager.requiresEvictionReplicationProtection() && _cacheManager.getEvictionReplicationsMarkersRepository().isEntryEvictable(entryUid, false /*alreadyLocked*/))
                                 throw new UnknownLeaseException("entry in markers repository- cannot be cancelled.");
@@ -1246,11 +1237,10 @@ public class LeaseManager {
                             continue;
                         }
 
-                        boolean non_evictable = (!_cacheManager.isEvictableCachePolicy() || !isEntry);
-
+                        final boolean isEvictableFromSpaceOrCache = _cacheManager.isTieredStorageCachePolicy() || _cacheManager.isEvictableFromSpaceCachePolicy();
                         entryLock = _cacheManager
                                 .getLockManager()
-                                .getLockObject(entry, !non_evictable/* isEvictable */);
+                                .getLockObject(entry, isEvictableFromSpaceOrCache);
 
                         boolean removedEntry = false;
 
@@ -1280,7 +1270,7 @@ public class LeaseManager {
                                         // lock
                                         Context ctx = _cacheManager.getCacheContext();
                                         try {
-                                            if (_cacheManager.isEvictableCachePolicy()) {
+                                            if (_cacheManager.isEvictableFromSpaceCachePolicy()) {
                                                 // fix GS-13590
                                                 if (_cacheManager.requiresEvictionReplicationProtection() && !entry.isTransient() && !_cacheManager.getEvictionReplicationsMarkersRepository().isEntryEvictable(entry.getUID(), false /*alreadyLocked*/))
                                                     continue; //markers repository- entry cannot be evicted
@@ -1964,7 +1954,7 @@ public class LeaseManager {
                         context = _cacheManager.getCacheContext();
 
                     IEntryHolder eh = null;
-                    if (!_cacheManager.isEvictableCachePolicy()) {
+                    if (!_cacheManager.isEvictableFromSpaceCachePolicy()) {
                         eh = _cacheManager
                                 .getEntryByUidFromPureCache(fxe.getUid());
                         if (eh == null) // deleted entry- delete from hash

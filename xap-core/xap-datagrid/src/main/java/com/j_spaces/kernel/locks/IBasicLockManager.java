@@ -38,10 +38,11 @@ public interface IBasicLockManager<T extends ILockedSubject> {
     /**
      * based on subject, return a lock object in order to lock the subject
      *
-     * @param isEvictable = true if the subject is part of evictable cache (like lru)
+     * @param isEvictableFromSpaceOrCache true if the subject is part of evictable from space (like lru) or
+     *                                    evicatble from cache (like in TieredStorage, template and transient entry)
      * @return the lock object
      */
-    public ILockObject getLockObject(T subject, boolean isEvictable);
+    public ILockObject getLockObject(T subject, boolean isEvictableFromSpaceOrCache);
 
     /**
      * based only on subject's uid, return a lock object in order to lock the represented subject
@@ -62,9 +63,10 @@ public interface IBasicLockManager<T extends ILockedSubject> {
     /**
      * do we use per-logical subject a different object for locking ?
      *
-     * @param isEvictable - is subject evictable
+     * @param isEvictableFromSpaceOrCache - is subject evicatble from space (like lru) or
+     *                                    evicatble from cache (like in TieredStorage, template and transient entry)
      * @return true if we use subject
      */
-    public boolean isPerLogicalSubjectLockObject(boolean isEvictable);
+    public boolean isPerLogicalSubjectLockObject(boolean isEvictableFromSpaceOrCache);
 
 }

@@ -64,8 +64,8 @@ public class BasicEvictableLockManager<T extends ISelfLockingSubject>
     /*
      * @see com.j_spaces.kernel.locks.IBasicLockManager#getLockObject(java.lang.Object, java.lang.Object, boolean)
      */
-    public ILockObject getLockObject(T subject, boolean isEvictable) {
-        if (!isEvictable)
+    public ILockObject getLockObject(T subject, boolean isEvictableFromSpaceOrCache) {
+        if (!isEvictableFromSpaceOrCache && !subject.isLockByUid())
             return subject; //nothing to do, return the subject
 
         return getLockObject_impl(subject.getUID());
@@ -96,10 +96,10 @@ public class BasicEvictableLockManager<T extends ISelfLockingSubject>
     /**
      * do we use subject for locking itself ?
      *
-     * @param isEvictable - is subject evictable
+     * @param isEvictableFromSpaceOrCache - is subject evictable
      * @return true if we use subject
      */
-    public boolean isPerLogicalSubjectLockObject(boolean isEvictable) {
-        return !isEvictable;
+    public boolean isPerLogicalSubjectLockObject(boolean isEvictableFromSpaceOrCache) {
+        return !isEvictableFromSpaceOrCache;
     }
 }

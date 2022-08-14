@@ -38,11 +38,9 @@ public class AllInCacheLockManager<T extends ISelfLockingSubject>
     /*
      * @see com.j_spaces.kernel.locks.IBasicLockManager#getLockObject(java.lang.Object, java.lang.Object, boolean)
      */
-    public ILockObject getLockObject(T subject, boolean isEvictable) {
-        if (isEvictable)
-            throw new RuntimeException("AllInCacheLockManager::getLockObject isEvictable=true for all-in-cache");
-        return
-                subject;
+    public ILockObject getLockObject(T subject, boolean isEvictableFromSpaceOrCache) {
+        assert !isEvictableFromSpaceOrCache : "AllInCacheLockManager::getLockObject isEvictableFromSpaceOrCache=true for all-in-cache";
+        return subject;
     }
 
     /**
@@ -65,12 +63,11 @@ public class AllInCacheLockManager<T extends ISelfLockingSubject>
     /**
      * do we use subject for locking itself ?
      *
-     * @param isEvictable - is subject evictable
+     * @param isEvictableFromSpaceOrCache - is subject evictable
      * @return true if we use subject
      */
-    public boolean isPerLogicalSubjectLockObject(boolean isEvictable) {
-        if (isEvictable)
-            throw new RuntimeException("AllInCacheLockManager::no evictable object");
+    public boolean isPerLogicalSubjectLockObject(boolean isEvictableFromSpaceOrCache) {
+        assert !isEvictableFromSpaceOrCache : "AllInCacheLockManager::no evictable object";
         return true;
     }
 
