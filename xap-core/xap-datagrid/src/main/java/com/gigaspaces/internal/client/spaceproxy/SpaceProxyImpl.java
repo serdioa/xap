@@ -43,7 +43,6 @@ import com.gigaspaces.internal.server.space.IRemoteSpace;
 import com.gigaspaces.internal.server.space.SpaceImpl;
 import com.gigaspaces.internal.server.space.tiered_storage.error.TieredStorageMetadataException;
 import com.gigaspaces.internal.transport.ITemplatePacket;
-import com.gigaspaces.internal.utils.concurrent.GSThreadFactory;
 import com.gigaspaces.internal.version.PlatformLogicalVersion;
 import com.gigaspaces.logger.Constants;
 import com.gigaspaces.lrmi.LRMIInvocationContext;
@@ -59,14 +58,11 @@ import com.j_spaces.core.admin.JSpaceAdminProxy;
 import com.j_spaces.core.client.*;
 import com.j_spaces.core.client.sql.IQueryManager;
 import com.j_spaces.core.client.sql.QueryManager;
-import com.j_spaces.core.exception.SpaceUnavailableException;
 import com.j_spaces.jdbc.builder.SQLQueryTemplatePacket;
 import com.j_spaces.kernel.SystemProperties;
 import com.sun.jini.proxy.DefaultProxyPivot;
 import com.sun.jini.proxy.MarshalPivot;
 import com.sun.jini.proxy.MarshalPivotProvider;
-import com.sun.net.httpserver.HttpExchange;
-import com.sun.net.httpserver.HttpServer;
 import net.jini.admin.Administrable;
 import net.jini.core.transaction.Transaction;
 import net.jini.core.transaction.TransactionException;
@@ -79,12 +75,9 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.io.OutputStream;
-import java.net.InetSocketAddress;
 import java.rmi.RemoteException;
 import java.security.SecureRandom;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -628,66 +621,6 @@ public class SpaceProxyImpl extends AbstractDirectSpaceProxy implements SameProx
             _proxyRouter = new SpaceProxyRouter(this, partitionId);
             _initializedNewRouter = true;
         }
-    }
-
-    /**
-     * Is used for readiness and liveness probes for stateless services
-     * @return http server instance
-     * @throws CreateException
-     */
-    public HttpServer initWebServerIfEnabled() throws CreateException {
-        final Logger logger = LoggerFactory.getLogger(this.getClass().getSimpleName());
-
-        // run param -Dcom.gs.space.rest...
-        final String prefix = "com.gs.space.rest";
-        boolean enabled = Boolean.getBoolean(prefix + ".enabled");
-        if (!enabled)
-            return null;
-
-        int port = Integer.getInteger(prefix + ".port", 8089);
-
-        try {
-            HttpServer server = HttpServer.create(new InetSocketAddress(port), 0);
-            server.createContext("/probes/alive", context -> {
-                try {
-                    httpResponse(context, 200, "OK");
-                    if (logger.isDebugEnabled())
-                        logger.debug("/probes/alive result: 200 (OK)");
-                } catch (SpaceUnavailableException e) {
-                    httpResponse(context, 503, e.getMessage());
-                    logger.warn("/probes/alive result: 503 (" + e.getMessage() + ")");
-                }
-            });
-            server.createContext("/probes/ready", context -> {
-                try {
-                    httpResponse(context, 200, "OK");
-                    if (logger.isDebugEnabled())
-                        logger.debug("/probes/ready result: 200 (OK)");
-                } catch (Exception e) {
-                    httpResponse(context, 503, e.getMessage());
-                    logger.warn("/probes/ready result: 503 (" + e.getMessage() + ")");
-                }
-            });
-            server.setExecutor(Executors.newSingleThreadExecutor(new GSThreadFactory("WEB", true)));
-            server.start();
-            logger.info("Started rest server at " + server.getAddress());
-            return server;
-
-        } catch (IOException e) {
-            throw new CreateException("Failed to start web server", e);
-        }
-    }
-
-    private static void httpResponse(HttpExchange context, int responseCode, String response) throws IOException {
-        OutputStream os = context.getResponseBody();
-        if (response == null ) {
-            context.sendResponseHeaders(responseCode, -1);
-        } else {
-            byte[] data = response.getBytes("UTF-8");
-            context.sendResponseHeaders(responseCode, data.length);
-            os.write(data);
-        }
-        os.close();
     }
 
     /***
