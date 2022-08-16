@@ -251,7 +251,8 @@ public class CacheManager extends AbstractCacheManager
         m_CacheSize = configReader.getIntSpaceProperty(CACHE_MANAGER_SIZE_PROP, CACHE_MANAGER_SIZE_DEFAULT);
         _spaceMetricsRegistrationUtils = new SpaceMetricsRegistrationUtils(this);
 
-        _persistentBlobStore = Boolean.parseBoolean(customProperties.getProperty(FULL_CACHE_MANAGER_BLOBSTORE_PERSISTENT_PROP, "false"));
+        _persistentBlobStore = Boolean.parseBoolean(customProperties.getProperty(FULL_CACHE_MANAGER_BLOBSTORE_PERSISTENT_PROP,
+                String.valueOf(Boolean.getBoolean("com.gs.OffHeapData") && !isSyncHybrid())));
 
         int numNotifyFifoThreads = engine.getConfigReader().getIntSpaceProperty(
                 Constants.Engine.ENGINE_FIFO_NOTIFY_THREADS_PROP, Constants.Engine.ENGINE_FIFO_NOTIFY_THREADS_DEFAULT);
