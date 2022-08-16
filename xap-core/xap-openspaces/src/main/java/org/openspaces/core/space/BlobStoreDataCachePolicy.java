@@ -122,14 +122,15 @@ public class BlobStoreDataCachePolicy implements CachePolicy {
 
         if (blobStoreHandler != null) {
             props.put(Constants.CacheManager.CACHE_MANAGER_BLOBSTORE_STORAGE_HANDLER_PROP, blobStoreHandler);
+            props.put(Constants.CacheManager.FULL_CACHE_MANAGER_BLOBSTORE_PERSISTENT_PROP, String.valueOf(calcPersistent(persistent, blobStoreHandler.isPersistent())));
         } else if (blobStoreHandlerClassName != null) {
             //will be loaded in CacheManager as a user defined BlobStoreHandler
             props.put(Constants.CacheManager.CACHE_MANAGER_BLOBSTORE_STORAGE_HANDLER_CLASS_PROP, blobStoreHandlerClassName);
+            props.put(Constants.CacheManager.FULL_CACHE_MANAGER_BLOBSTORE_PERSISTENT_PROP, String.valueOf(persistent));
         } else {
             throw new BlobStoreException("blobStoreHandler attribute in Blobstore space must be configured");
         }
 
-        props.put(Constants.CacheManager.FULL_CACHE_MANAGER_BLOBSTORE_PERSISTENT_PROP, String.valueOf(calcPersistent(persistent, blobStoreHandler.isPersistent())));
 
         if (sqlQueryList.size() > 0)
             props.put(Constants.CacheManager.FULL_CACHE_MANAGER_BLOBSTORE_CACHE_FILTER_QUERIES_PROP, sqlQueryList);
