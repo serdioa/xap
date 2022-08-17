@@ -23,7 +23,6 @@ import com.j_spaces.core.OperationID;
 import com.sun.jini.mahalo.log.ClientLog;
 import com.sun.jini.thread.TaskManager;
 import com.sun.jini.thread.WakeupManager;
-
 import net.jini.core.transaction.CannotCommitException;
 import net.jini.core.transaction.Transaction;
 import net.jini.core.transaction.TransactionException;
@@ -31,17 +30,9 @@ import net.jini.core.transaction.server.ExtendedTransactionManager;
 import net.jini.core.transaction.server.ServerTransaction;
 import net.jini.core.transaction.server.TransactionConstants;
 import net.jini.core.transaction.server.TransactionParticipant;
-
-import java.rmi.AccessException;
-import java.rmi.ConnectException;
-import java.rmi.ConnectIOException;
-import java.rmi.MarshalException;
-import java.rmi.NoSuchObjectException;
-import java.rmi.RemoteException;
-import java.rmi.UnknownHostException;
-
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
+import java.rmi.*;
 
 /**
  * An implementation of a <code>Job</code> which interacts with a set of
@@ -198,8 +189,10 @@ public class CommitJob extends Job implements TransactionConstants {
         } catch (ConnectException ce) {
             //failure setting up connection, so give
             //participant more time by retrying
-            if (numberOfRetriesDueToConnectionExceptionExceeded(who))
-                response = new Integer(COMMITTED);
+            if (numberOfRetriesDueToConnectionExceptionExceeded(who)) {
+                handle.setCommitException(new CannotCommitException("Failed to commit", ce));
+                response = COMMITTED;
+            }
         } catch (UnknownHostException uhe) {
             //could not resolve host for participant, so
             //stop and consider committed
@@ -207,8 +200,10 @@ public class CommitJob extends Job implements TransactionConstants {
         } catch (ConnectIOException cioe) {
             //multiplexed connection or cached
             //connection problem, give participant more time
-            if (numberOfRetriesDueToConnectionExceptionExceeded(who))
-                response = new Integer(COMMITTED);
+            if (numberOfRetriesDueToConnectionExceptionExceeded(who)) {
+                handle.setCommitException(new CannotCommitException("Failed to commit", cioe));
+                response = COMMITTED;
+            }
         } catch (MarshalException me) {
             //cannot send parameters, so stop and consider done
             response = new Integer(COMMITTED);
@@ -218,7 +213,10 @@ public class CommitJob extends Job implements TransactionConstants {
         }  catch (RemoteException re) {
             //Something happened with the network, so
             //return null to retry at a later time.
-            response = new Integer(COMMITTED);
+            if (numberOfRetriesDueToConnectionExceptionExceeded(who)) {
+                handle.setCommitException(new CannotCommitException("Failed to commit", re));
+                response = COMMITTED;
+            }
         } catch (RuntimeException rte) {
             //Something happened with the participant, so
             //stop and consider done

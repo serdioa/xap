@@ -24,7 +24,6 @@ import com.j_spaces.core.OperationID;
 import com.sun.jini.mahalo.log.ClientLog;
 import com.sun.jini.thread.TaskManager;
 import com.sun.jini.thread.WakeupManager;
-
 import net.jini.core.transaction.CannotCommitException;
 import net.jini.core.transaction.Transaction;
 import net.jini.core.transaction.UnknownTransactionException;
@@ -32,11 +31,9 @@ import net.jini.core.transaction.server.ServerTransaction;
 import net.jini.core.transaction.server.TransactionConstants;
 import net.jini.core.transaction.server.TransactionManager;
 import net.jini.core.transaction.server.TransactionParticipant;
+import org.slf4j.Logger;
 
 import java.rmi.RemoteException;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 
 /**
@@ -237,6 +234,9 @@ public class PrepareAndCommitJob extends Job implements TransactionConstants {
                 response = vote;
             } catch (RemoteException re) {
                 reCaught = re;
+                // TODO investigate:
+                // remote exception is ignored from participant in original jini code,
+                // but response is NOT considered as ABORTED, but here it is - why?!
                 vote = ABORTED;
                 response = vote;
             } catch (RuntimeException rte) {
