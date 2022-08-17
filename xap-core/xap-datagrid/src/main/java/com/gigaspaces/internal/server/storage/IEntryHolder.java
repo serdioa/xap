@@ -17,6 +17,7 @@
 package com.gigaspaces.internal.server.storage;
 
 import com.j_spaces.core.XtnEntry;
+import com.j_spaces.kernel.locks.LockSubjectType;
 import net.jini.core.transaction.server.ServerTransaction;
 
 import java.rmi.MarshalledObject;
@@ -129,7 +130,7 @@ public interface IEntryHolder extends ISpaceItem {
     }
 
     @Override
-    default boolean isLockByUid() {
-        return !isTransient();
+    default LockSubjectType getLockSubjectType() {
+        return isTransient() ? LockSubjectType.TRANSIENT_ENTRY : LockSubjectType.ENTRY;
     }
 }

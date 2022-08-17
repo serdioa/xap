@@ -239,8 +239,7 @@ public class Processor implements IConsumerObject<BusPacket<Processor>> {
                 //got EntryAlreadyInSpaceException . if we need to establish a new lock
                 //(because the object itself is also the lock object)-
                 //in order to remove the expired entry- we will try it
-                if (supplied_uid && _cacheManager.getLockManager().isPerLogicalSubjectLockObject(_cacheManager.isEvictableFromSpaceCachePolicy()
-                        || _cacheManager.isTieredStorageCachePolicy()) && !_engine.isExpiredEntryStayInSpace(entry) && --shortLeaseRetry >= 0) {
+                if (supplied_uid && _cacheManager.getLockManager().isEntryLocksItsSelf(entry) && !_engine.isExpiredEntryStayInSpace(entry) && --shortLeaseRetry >= 0) {
                     if (_engine.isSyncReplicationEnabled() && _engine.getLeaseManager().replicateLeaseExpirationEventsForEntries())
                         context.setSyncReplFromMultipleOperation(true); //piggyback the lease expiration replication
                     if (leaseExpiredInInsertWithSameUid(context, entry, typeDesc,
@@ -272,7 +271,7 @@ public class Processor implements IConsumerObject<BusPacket<Processor>> {
                             || UpdateModifiers.isMemoryOnlySearch(modifiers)/* memory only read */
                             || _cacheManager.isTieredStorageCachePolicy();
                     IEntryHolder curEh = _cacheManager.getEntry(context, entry, !_cacheManager.isTieredStorageCachePolicy() /*tryInsertToCache*/, true, useOnlyCache);
-                    if (curEh != null && !_cacheManager.getLockManager().isPerLogicalSubjectLockObject(_cacheManager.isEvictableFromSpaceCachePolicy() || _cacheManager.isTieredStorageCachePolicy())) {//under same lock we can try and remove the existing entry if its lease expired
+                    if (curEh != null && !_cacheManager.getLockManager().isEntryLocksItsSelf(entry)) {//under same lock we can try and remove the existing entry if its lease expired
                         if (_engine.isSyncReplicationEnabled() && _engine.getLeaseManager().replicateLeaseExpirationEventsForEntries())
                             context.setSyncReplFromMultipleOperation(true); //piggyback the lease expiration replication
 
@@ -295,7 +294,7 @@ public class Processor implements IConsumerObject<BusPacket<Processor>> {
                 } catch (EntryAlreadyInSpaceException ex_) {
                     alreadyIn = true;
                     //try to remove the existing entry if expired-if we can use this lock
-                    if (!_cacheManager.getLockManager().isPerLogicalSubjectLockObject(_cacheManager.isEvictableFromSpaceCachePolicy() || _cacheManager.isTieredStorageCachePolicy())) {
+                    if (!_cacheManager.getLockManager().isEntryLocksItsSelf(entry)) {
                         if (_engine.isSyncReplicationEnabled() && _engine.getLeaseManager().replicateLeaseExpirationEventsForEntries())
                             context.setSyncReplFromMultipleOperation(true); //piggyback thre lease expiration replication
                         if (_engine.isExpiredEntryStayInSpace(entry) || !leaseExpiredInInsertWithSameUid(context, entry, typeDesc,
@@ -347,7 +346,7 @@ public class Processor implements IConsumerObject<BusPacket<Processor>> {
         IEntryHolder curEh = existingEntry;
         ILockObject entryLock = null;
 
-        if (curEh == null && (_cacheManager.getLockManager().isPerLogicalSubjectLockObject(_cacheManager.isTieredStorageCachePolicy() || _cacheManager.isEvictableFromSpaceCachePolicy()) || alreadyLocked)) {
+        if (curEh == null && (_cacheManager.getLockManager().isEntryLocksItsSelf(entry) || alreadyLocked)) {
             if (_cacheManager.isBlobStoreCachePolicy())
                 curEh = _cacheManager.getEntryByUidFromPureCache(entry.getUID());
             else
@@ -360,8 +359,7 @@ public class Processor implements IConsumerObject<BusPacket<Processor>> {
             return removeEntryOnLeaseExpiration(context, typeDesc, curEh);
         //lock
         try {
-            entryLock = (_cacheManager.getLockManager().isPerLogicalSubjectLockObject(_cacheManager.isTieredStorageCachePolicy() || _cacheManager.isEvictableFromSpaceCachePolicy()))
-                    ? getEntryLockObject(curEh) : getEntryLockObject(entry);
+            entryLock = curEh != null ? getEntryLockObject(curEh) : getEntryLockObject(entry);
             synchronized (entryLock) {
                 if (curEh == null || _cacheManager.needReReadAfterEntryLock()) {//evictable- reget the entry under lock
                     IEntryHolder original = curEh;
@@ -853,7 +851,7 @@ public class Processor implements IConsumerObject<BusPacket<Processor>> {
      * @return
      */
     private ILockObject getTemplateLockObject(ITemplateHolder template) {
-        return _cacheManager.getLockManager().getLockObject(template, false /*isEvictable*/);
+        return _cacheManager.getLockManager().getLockObject(template);
     }
 
     private void freeTemplateLockObject(ILockObject lockObject) {
@@ -1287,9 +1285,7 @@ public class Processor implements IConsumerObject<BusPacket<Processor>> {
                                 if (eh == null || eh.isDeleted())
                                     continue ENTRY_LOOP;
                                 if (!entry.isSameEntryInstance(eh)
-                                        && _cacheManager.getLockManager().isPerLogicalSubjectLockObject(
-                                        _cacheManager.isTieredStorageCachePolicy()
-                                                || _cacheManager.isEvictableFromSpaceCachePolicy()))
+                                        && _cacheManager.getLockManager().isEntryLocksItsSelf(entry))
                                     continue ENTRY_LOOP;
                                 entry = eh;
 
@@ -1897,8 +1893,7 @@ public class Processor implements IConsumerObject<BusPacket<Processor>> {
                                 if (eh == null || eh.isDeleted())
                                     continue ENTRY_LOOP;
                                 if (!entry.isSameEntryInstance(eh)
-                                        && _cacheManager.getLockManager().isPerLogicalSubjectLockObject(
-                                        _cacheManager.isTieredStorageCachePolicy() || _cacheManager.isEvictableFromSpaceCachePolicy()))
+                                        && _cacheManager.getLockManager().isEntryLocksItsSelf(entry))
                                     continue ENTRY_LOOP;
                                 entry = eh;
                                 boolean updatedEntry = pXtn.isUpdatedEntry(entry);

@@ -28,46 +28,23 @@ package com.j_spaces.kernel.locks;
 public class AllInCacheLockManager<T extends ISelfLockingSubject>
         implements IBasicLockManager<T> {
 
-    /*
-     * @see com.j_spaces.kernel.locks.IBasicLockManager#getLockObject(java.lang.Object)
-     */
+    @Override
     public ILockObject getLockObject(T subject) {
-        return getLockObject(subject, false /*isEvictable*/);
-    }
-
-    /*
-     * @see com.j_spaces.kernel.locks.IBasicLockManager#getLockObject(java.lang.Object, java.lang.Object, boolean)
-     */
-    public ILockObject getLockObject(T subject, boolean isEvictableFromSpaceOrCache) {
-        assert !isEvictableFromSpaceOrCache : "AllInCacheLockManager::getLockObject isEvictableFromSpaceOrCache=true for all-in-cache";
         return subject;
     }
 
-    /**
-     * based only on subject's uid, return a lock object in order to lock the represented subject
-     * this method is relevant only for evictable objects
-     *
-     * @return the lock object
-     */
+    @Override
     public ILockObject getLockObject(String subjectUid) {
         throw new RuntimeException("AllInCacheLockManager::getLockObject based on uid is irrelevant for all-in-cache");
     }
 
-    /*
-     * @see com.j_spaces.kernel.locks.IBasicLockManager#freeLockObject(com.j_spaces.kernel.locks.ILockObject)
-     */
+    @Override
     public void freeLockObject(ILockObject lockObject) {
         return;
     }
 
-    /**
-     * do we use subject for locking itself ?
-     *
-     * @param isEvictableFromSpaceOrCache - is subject evictable
-     * @return true if we use subject
-     */
-    public boolean isPerLogicalSubjectLockObject(boolean isEvictableFromSpaceOrCache) {
-        assert !isEvictableFromSpaceOrCache : "AllInCacheLockManager::no evictable object";
+    @Override
+    public boolean isEntryLocksItsSelf(T entry) {
         return true;
     }
 

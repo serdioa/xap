@@ -725,10 +725,10 @@ public class LeaseManager {
                     throw new UnknownLeaseException(reason);
                 }
             }
-            final boolean isEvictableFromSpaceOrCache = _cacheManager.isTieredStorageCachePolicy() || _cacheManager.isEvictableFromSpaceCachePolicy();
             boolean extended = false;
+
             entryLock = entry != null ?
-                    _cacheManager.getLockManager().getLockObject(entry, isEvictableFromSpaceOrCache)
+                    _cacheManager.getLockManager().getLockObject(entry)
                     : _cacheManager.getLockManager().getLockObject(entryUid);
             synchronized (entryLock) {
                 try {
@@ -1237,10 +1237,9 @@ public class LeaseManager {
                             continue;
                         }
 
-                        final boolean isEvictableFromSpaceOrCache = _cacheManager.isTieredStorageCachePolicy() || _cacheManager.isEvictableFromSpaceCachePolicy();
                         entryLock = _cacheManager
                                 .getLockManager()
-                                .getLockObject(entry, isEvictableFromSpaceOrCache);
+                                .getLockObject(entry);
 
                         boolean removedEntry = false;
 

@@ -27,12 +27,8 @@ import static com.j_spaces.core.Constants.TieredStorage.CACHE_MANAGER_TIERED_STO
 public class TieredStorageLockManager<T extends ISelfLockingSubject>
         implements IBasicLockManager<T> {
     private static class LockObject implements ILockObject {
-        /**
-         * returns true if the lock object is the subject itself (i.e. entry or template) or a
-         * representing object
-         *
-         * @return true if is the subject itself
-         */
+
+        @Override
         public boolean isLockSubject() {
             return false;
         }
@@ -51,13 +47,7 @@ public class TieredStorageLockManager<T extends ISelfLockingSubject>
 
     @Override
     public ILockObject getLockObject(T subject) {
-        return getLockObject_impl(subject.getUID());
-    }
-
-
-    @Override
-    public ILockObject getLockObject(T subject, boolean isEvictableFromSpaceOrCache) {
-        if (!isEvictableFromSpaceOrCache && !subject.isLockByUid())
+        if (subject.getLockSubjectType() != LockSubjectType.ENTRY)
             return subject; //return the subject when entry is a template or transient
         return getLockObject_impl(subject.getUID());
     }
@@ -78,7 +68,7 @@ public class TieredStorageLockManager<T extends ISelfLockingSubject>
     }
 
     @Override
-    public boolean isPerLogicalSubjectLockObject(boolean isEvictableFromSpaceOrCache) {
-        return !isEvictableFromSpaceOrCache;
+    public boolean isEntryLocksItsSelf(T entry) {
+        return entry.getLockSubjectType() != LockSubjectType.ENTRY;
     }
 }

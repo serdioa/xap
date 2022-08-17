@@ -3310,7 +3310,7 @@ public class CacheManager extends AbstractCacheManager
                     Collection<ITemplateHolder> waitingForTemplates = entry.getCopyOfTemplatesWaitingForEntry();
                     if (waitingForTemplates != null) {
                         for (ITemplateHolder template : waitingForTemplates) {
-                            templateLock = getLockManager().getLockObject(template, false);
+                            templateLock = getLockManager().getLockObject(template);
                             try {
                                 synchronized (templateLock) {
                                     template.removeEntryWaitingForTemplate(entry);
@@ -3341,7 +3341,7 @@ public class CacheManager extends AbstractCacheManager
             TemplateCacheInfo pt = _templatesManager.get(keys.nextElement());
             ITemplateHolder th = pt.m_TemplateHolder;
             if (th.getClassName() != null && th.getClassName().equals(className)) {
-                templateLock = getLockManager().getLockObject(th, false /*isEvictable*/);
+                templateLock = getLockManager().getLockObject(th);
                 try {
                     synchronized (templateLock) {
                         if (th.isDeleted())

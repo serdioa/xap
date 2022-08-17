@@ -36,6 +36,7 @@ import com.j_spaces.core.cache.CacheManager;
 import com.j_spaces.core.cache.context.Context;
 import com.j_spaces.core.client.SQLQuery;
 import com.j_spaces.core.filters.FilterManager;
+import com.j_spaces.kernel.locks.LockSubjectType;
 
 import java.util.Collection;
 
@@ -283,7 +284,7 @@ public interface ITemplateHolder extends ISpaceItem, IEntryHolder {
     SingleExplainPlan getExplainPlan();
 
     @Override
-    default boolean isLockByUid() {
-        return false;
+    default LockSubjectType getLockSubjectType() {
+        return LockSubjectType.TEMPLATE;
     }
 }

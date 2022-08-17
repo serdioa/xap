@@ -7126,7 +7126,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
     }
 
     private ILockObject getTemplateLockObject(ITemplateHolder template) {
-        return _cacheManager.getLockManager().getLockObject(template, false /*isEvictable*/);
+        return _cacheManager.getLockManager().getLockObject(template);
     }
 
     private void freeTemplateLockObject(ILockObject lockObject) {
