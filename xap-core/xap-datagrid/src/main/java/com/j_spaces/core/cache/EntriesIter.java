@@ -302,7 +302,8 @@ public class EntriesIter extends SAIterBase implements ISAdapterIterator<IEntryH
             }
 
             //iterate over cache
-            if(_cacheManager.isTieredStorageCachePolicy() && _currentEntryHolder.isTransient() && _currentEntryHolder.isExpired()){
+            if(_cacheManager.isTieredStorageCachePolicy() && _currentEntryHolder.isTransient()
+                    && _currentEntryHolder.isExpired() && !_currentEntryHolder.isMaybeUnderXtn()){
                 continue;
             }
             if (((_cacheManager.isEvictableFromSpaceCachePolicy() && !_cacheManager.isMemorySpace()) || _cacheManager.isTieredStorageCachePolicy())
@@ -734,7 +735,8 @@ public class EntriesIter extends SAIterBase implements ISAdapterIterator<IEntryH
         return
                 (_cacheManager.isEvictableFromSpaceCachePolicy() && pEntry.isRemoving()) ||
                         (_SCNFilter != 0 && eh.getSCN() < _SCNFilter) ||
-                        (_leaseFilter != 0 && eh.isExpired(_leaseFilter) && !_cacheManager.getLeaseManager().isSlaveLeaseManagerForEntries() && !_cacheManager.getEngine().isExpiredEntryStayInSpace(eh)) ||
+                        (_leaseFilter != 0 && eh.isExpired(_leaseFilter) && !_cacheManager.getLeaseManager().isSlaveLeaseManagerForEntries()
+                                && !_cacheManager.getEngine().isExpiredEntryStayInSpace(eh) && !eh.isMaybeUnderXtn()) || // when the entryHolder is expired and under transaction it should still be available until the transaction ends
                         (_transientOnly && !eh.isTransient());
     }
 

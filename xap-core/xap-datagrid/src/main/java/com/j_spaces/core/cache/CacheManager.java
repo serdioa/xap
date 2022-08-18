@@ -49,6 +49,7 @@ import com.gigaspaces.internal.server.space.recovery.direct_persistency.IStorage
 import com.gigaspaces.internal.server.space.recovery.direct_persistency.StorageConsistencyModes;
 import com.gigaspaces.internal.server.space.tiered_storage.TieredStorageManager;
 import com.gigaspaces.internal.server.space.tiered_storage.TieredStorageSA;
+import com.gigaspaces.internal.server.space.tiered_storage.TieredStorageTableConfig;
 import com.gigaspaces.internal.server.storage.*;
 import com.gigaspaces.internal.sync.hybrid.SyncHybridStorageAdapter;
 import com.gigaspaces.internal.transport.ITemplatePacket;
@@ -3088,11 +3089,14 @@ public class CacheManager extends AbstractCacheManager
 
         int writeLockOperation = xtnWriteLock != null ? ehData.getWriteLockOperation() : 0;
 
-        if (ehData.isExpired() && !slaveLeaseManager){
+        if (ehData.isExpired() && !slaveLeaseManager) {
             if (!isTieredStorageCachePolicy()) {
                 return; //ignore expired entries
-            } else if(template.isTransient()){ //isTieredStorageCachePolicy()
-                return; //ignore expired entries
+            } else { //isTieredStorageCachePolicy()
+                TieredStorageTableConfig tieredStorageTableConfig = ehData.getEntryTypeDesc().getTypeDesc().getTieredStorageTableConfig();
+                if (tieredStorageTableConfig != null && tieredStorageTableConfig.isTransient()) {
+                    return; //ignore expired entries
+                }
             }
 
         }
@@ -3147,7 +3151,7 @@ public class CacheManager extends AbstractCacheManager
             if (xtnEntryStatus == XtnStatus.COMMITED
                     || xtnEntryStatus == XtnStatus.COMMITING
                     || (xtnEntryStatus == XtnStatus.PREPARED && xtnWriteLock.m_SingleParticipant)) {
-                countInfo.incSaCount();
+                  countInfo.incSaCount();
                 return;
             }
 
