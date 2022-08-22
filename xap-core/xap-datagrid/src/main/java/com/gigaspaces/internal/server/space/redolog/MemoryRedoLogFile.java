@@ -62,6 +62,11 @@ public class MemoryRedoLogFile<T extends IReplicationOrderedPacket> implements I
         return _redoFile.getFirst();
     }
 
+    @Override
+    public long getOldestKey() {
+        return _redoFile.getFirst().getKey();
+    }
+
     public boolean isEmpty() {
         return _redoFile.isEmpty();
     }

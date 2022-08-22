@@ -76,6 +76,7 @@ public class FixedSizeSwapRedoLogFile<T extends IReplicationOrderedPacket> imple
         _groupBacklog = groupBacklog;
     }
 
+    @Override
     public void add(T replicationPacket) {
         int packetWeight = replicationPacket.getWeight();
         if (!_insertToExternal) {
@@ -99,13 +100,23 @@ public class FixedSizeSwapRedoLogFile<T extends IReplicationOrderedPacket> imple
         }
     }
 
-
+    @Override
     public T getOldest() {
         if (!_memoryRedoLogFile.isEmpty())
             return _memoryRedoLogFile.getOldest();
 
         return getOldestFromDataStorage();
     }
+
+    @Override
+    public long getOldestKey() {
+        if (!_memoryRedoLogFile.isEmpty())
+            return _memoryRedoLogFile.getOldestKey();
+
+        T oldestFromDataStorage = getOldestFromDataStorage();
+        return oldestFromDataStorage != null ? oldestFromDataStorage.getKey() : -1L;
+    }
+
 
     private T getOldestFromDataStorage() {
         try {
@@ -121,6 +132,7 @@ public class FixedSizeSwapRedoLogFile<T extends IReplicationOrderedPacket> imple
         }
     }
 
+    @Override
     public boolean isEmpty() {
         //return true if both the memory redo log file is empty and the external storage
         try {
@@ -130,6 +142,7 @@ public class FixedSizeSwapRedoLogFile<T extends IReplicationOrderedPacket> imple
         }
     }
 
+    @Override
     public ReadOnlyIterator<T> readOnlyIterator(long fromKey) {
         if (isEmpty()) {
             return _memoryRedoLogFile.readOnlyIterator(fromKey);
@@ -144,6 +157,7 @@ public class FixedSizeSwapRedoLogFile<T extends IReplicationOrderedPacket> imple
         return new SwapReadOnlyIterator(fromIndex - memRedoFileSize);
     }
 
+    @Override
     public T removeOldest() {
         if (!_memoryRedoLogFile.isEmpty())
             return _memoryRedoLogFile.removeOldest();
@@ -153,6 +167,7 @@ public class FixedSizeSwapRedoLogFile<T extends IReplicationOrderedPacket> imple
         return _memoryRedoLogFile.removeOldest();
     }
 
+    @Override
     public long size() {
         //Returns the size of the redo log file taking both the swapped packets
         //and the memory residing packets into consideration
@@ -163,6 +178,7 @@ public class FixedSizeSwapRedoLogFile<T extends IReplicationOrderedPacket> imple
         }
     }
 
+    @Override
     public long getApproximateSize() {
         try {
             return _memoryRedoLogFile.getApproximateSize() + _externalStorage.size();
@@ -171,6 +187,7 @@ public class FixedSizeSwapRedoLogFile<T extends IReplicationOrderedPacket> imple
         }
     }
 
+    @Override
     public void deleteOldestPackets(long packetsCount) {
         long memorySize = _memoryRedoLogFile.size();
         _memoryRedoLogFile.deleteOldestPackets(packetsCount);
@@ -239,10 +256,12 @@ public class FixedSizeSwapRedoLogFile<T extends IReplicationOrderedPacket> imple
         }
     }
 
+    @Override
     public long getExternalStorageSpaceUsed() {
         return _externalStorage.getSpaceUsed();
     }
 
+    @Override
     public long getExternalStoragePacketsCount() {
         return _externalStorage.getExternalPacketsCount();
     }
@@ -257,15 +276,18 @@ public class FixedSizeSwapRedoLogFile<T extends IReplicationOrderedPacket> imple
         return _externalStorage.getExternalStoragePacketsWeight();
     }
 
+    @Override
     public long getMemoryPacketsCount() {
         return _memoryRedoLogFile.getMemoryPacketsCount() + _externalStorage.getMemoryPacketsCount();
     }
 
+    @Override
     public void validateIntegrity() throws RedoLogFileCompromisedException {
         _memoryRedoLogFile.validateIntegrity();
         _externalStorage.validateIntegrity();
     }
 
+    @Override
     public void close() {
         _memoryRedoLogFile.close();
         _externalStorage.close();

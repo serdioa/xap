@@ -120,6 +120,17 @@ public class DBSwapRedoLogFile<T extends IReplicationOrderedPacket> implements I
         return oldest;
     }
 
+    @Override
+    public long getOldestKey() {
+        if (_externalRedoLogStorage.isEmpty()) {
+            if (_memoryRedoLog.isEmpty()) {
+                throw new NoSuchElementException();
+            }
+            return _memoryRedoLog.getOldestKey();
+        }
+        return _externalRedoLogStorage.getOldestKey();
+    }
+
     private void fillPacketData(T oldest) {
         final IReplicationPacketDataProducer dataProducer = _config.getDataProducer();
         if (dataProducer != null) {

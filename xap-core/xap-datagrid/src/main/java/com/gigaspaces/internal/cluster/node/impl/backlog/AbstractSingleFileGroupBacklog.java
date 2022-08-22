@@ -425,7 +425,7 @@ public abstract class AbstractSingleFileGroupBacklog<T extends IReplicationOrder
         // 0 is returned both when backlog is empty and when the first packet is 0
         if (getBacklogFile().isEmpty())
             return 0;
-        return getBacklogFile().getOldest().getKey();
+        return getBacklogFile().getOldestKey();
     }
 
     public void monitor(OperationWeightInfo info) throws RedoLogCapacityExceededException {
@@ -1371,6 +1371,10 @@ public abstract class AbstractSingleFileGroupBacklog<T extends IReplicationOrder
         metricRegister.register("first-key-in-backlog", new SynchronizedGauge() {
             @Override
             protected Long getValueImpl() {
+                // This code is run using a GSC thread and not a PU thread,
+                // therefore classloaders of the types written to the space do not exist.
+                // PIC-908 - create a new API to get the last-key from redo-log storage,
+                // this path (@see SqliteRedoLogFileStorage) does not include packet deserialization from storage.
                 return getBacklogFile().isEmpty() ? -1L : getFirstKeyInBacklogInternal();
             }
         });

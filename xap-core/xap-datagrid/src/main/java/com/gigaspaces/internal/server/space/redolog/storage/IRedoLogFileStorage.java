@@ -104,4 +104,8 @@ public interface IRedoLogFileStorage<T extends IReplicationOrderedPacket> extend
     default T removeOldest() throws StorageException {
         throw new StorageException("Unsupported");
     }
+
+    default long getOldestKey() throws StorageException {
+        throw new StorageException("Unsupported");
+    }
 }

@@ -177,6 +177,11 @@ public class SqliteRedoLogFileStorage<T extends IReplicationOrderedPacket> exten
     }
 
     @Override
+    public long getOldestKey() {
+        return oldestKey;
+    }
+
+    @Override
     public void close() {
         try {
             dropTable();
@@ -214,6 +219,7 @@ public class SqliteRedoLogFileStorage<T extends IReplicationOrderedPacket> exten
 
     @Override
     public long getSpaceUsed() {
+        //TODO: @sagiv need to be implemented.
         return 0;
     }
 
