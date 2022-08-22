@@ -17,7 +17,7 @@
 package com.gigaspaces.internal.server.space.redolog;
 
 import com.gigaspaces.internal.cluster.node.impl.packets.IReplicationOrderedPacket;
-import com.gigaspaces.internal.cluster.node.impl.packets.data.IReplicationPacketDataProducer;
+import com.gigaspaces.internal.server.space.redolog.storage.bytebuffer.IPacketStreamSerializer;
 import com.j_spaces.core.cluster.SwapBacklogConfig;
 
 /**
@@ -31,7 +31,7 @@ public class DBSwapRedoLogFileConfig<T extends IReplicationOrderedPacket> {
     private final String containerName; //e.g. mySpace_container1
     private final int memoryPacketCapacity;
     private int flushBufferPacketCount;
-    private IReplicationPacketDataProducer<?> dataProducer;
+    private IPacketStreamSerializer<T> packetStreamSerializer;
     private boolean keepDatabaseFile;
 
     public DBSwapRedoLogFileConfig(String spaceName, String containerName, int memoryPacketCapacity) {
@@ -57,12 +57,12 @@ public class DBSwapRedoLogFileConfig<T extends IReplicationOrderedPacket> {
         this.flushBufferPacketCount = flushBufferPacketCount;
     }
 
-    public IReplicationPacketDataProducer<?> getDataProducer() {
-        return dataProducer;
+    public IPacketStreamSerializer<T> getPacketStreamSerializer() {
+        return packetStreamSerializer;
     }
 
-    public void setDataProducer(IReplicationPacketDataProducer<?> _dataProducer) {
-        this.dataProducer = _dataProducer;
+    public void setPacketStreamSerializer(IPacketStreamSerializer<T> packetStreamSerializer) {
+        this.packetStreamSerializer = packetStreamSerializer;
     }
 
     public int getFlushBufferPacketCount() {

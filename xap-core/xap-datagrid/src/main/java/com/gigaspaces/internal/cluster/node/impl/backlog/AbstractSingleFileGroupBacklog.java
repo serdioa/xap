@@ -360,13 +360,30 @@ public abstract class AbstractSingleFileGroupBacklog<T extends IReplicationOrder
     private IRedoLogFile<T> createSwapBacklog(SourceGroupConfig groupConfig) {
         final BacklogConfig backlogConfig = groupConfig.getBacklogConfig();
         final SwapBacklogConfig swapBacklogConfig = backlogConfig.getSwapBacklogConfig();
+        final IPacketStreamSerializer<T> packetStreamSerializer = new IPacketStreamSerializer<T>() {
+            final SwapPacketStreamSerializer<T> serializer = new SwapPacketStreamSerializer<>();
+            final IReplicationPacketDataProducer dataProducer = _dataProducer;
+
+            @Override
+            public void writePacketToStream(ObjectOutput output, T packet) throws IOException {
+                serializer.writePacketToStream(output, packet);
+            }
+
+            @Override
+            public T readPacketFromStream(ObjectInput input) throws IOException, ClassNotFoundException {
+                final T packet = serializer.readPacketFromStream(input);
+                dataProducer.completePacketDataContent(packet.getData());
+                return packet;
+            }
+        };
+
         if (RedoLogSwapStorageType.SQLITE.equals(swapBacklogConfig.getSwapStorageType())) {
             final int indexOfCol = _name.indexOf(":");
             final String spaceName = _name.substring(indexOfCol + 1);
             final String fullMemberName = _name.substring(0, indexOfCol);
             final DBSwapRedoLogFileConfig<T> config = new DBSwapRedoLogFileConfig<>(spaceName, fullMemberName, backlogConfig.getLimitedMemoryCapacity());
             config.setFlushBufferPacketCount(swapBacklogConfig.getFlushBufferPacketsCount());
-            config.setDataProducer(_dataProducer);
+            config.setPacketStreamSerializer(packetStreamSerializer);
             return new DBSwapRedoLogFile<>(config, this);
         }
         else { // RedoLogSwapStorageType.BYTE_BUFFER
@@ -379,24 +396,7 @@ public abstract class AbstractSingleFileGroupBacklog<T extends IReplicationOrder
             storageConfig.setMaxScanLength(swapBacklogConfig.getMaxScanLength());
             storageConfig.setMaxOpenStorageCursors(swapBacklogConfig.getMaxOpenCursors());
             storageConfig.setWriterMaxBufferSize(swapBacklogConfig.getWriterBufferSize());
-
-
-            storageConfig.setPacketStreamSerializer(new IPacketStreamSerializer<T>() {
-                final SwapPacketStreamSerializer<T> serializer = new SwapPacketStreamSerializer<T>();
-
-                @Override
-                public void writePacketToStream(ObjectOutput output, T packet) throws IOException {
-                    serializer.writePacketToStream(output, packet);
-                }
-
-                @Override
-                public T readPacketFromStream(ObjectInput input) throws IOException, ClassNotFoundException {
-                    final T packet = serializer.readPacketFromStream(input);
-                    final IReplicationPacketDataProducer dataProducer = _dataProducer;
-                    dataProducer.completePacketDataContent(packet.getData());
-                    return packet;
-                }
-            });
+            storageConfig.setPacketStreamSerializer(packetStreamSerializer);
 
             IRedoLogFileStorage<T> externalRedoLogFileStorage = new ByteBufferRedoLogFileStorage<T>(byteBufferStorageProvider,
                     storageConfig, backlogConfig.getBackLogWeightPolicy());

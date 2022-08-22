@@ -4,7 +4,6 @@ import com.gigaspaces.internal.cluster.node.handlers.ITransactionInContext;
 import com.gigaspaces.internal.cluster.node.impl.backlog.globalorder.GlobalOrderDiscardedReplicationPacket;
 import com.gigaspaces.internal.cluster.node.impl.packets.IReplicationOrderedPacket;
 import com.gigaspaces.internal.cluster.node.impl.packets.data.IReplicationPacketData;
-import com.gigaspaces.internal.cluster.node.impl.packets.data.IReplicationPacketDataProducer;
 import com.gigaspaces.internal.cluster.node.impl.packets.data.IReplicationPacketEntryData;
 import com.gigaspaces.internal.cluster.node.impl.packets.data.operations.AbstractTransactionReplicationPacketData;
 import com.gigaspaces.internal.server.space.redolog.DBSwapRedoLogFileConfig;
@@ -17,9 +16,6 @@ import org.slf4j.LoggerFactory;
 import org.sqlite.SQLiteConfig;
 
 import java.io.File;
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.sql.*;
@@ -79,24 +75,10 @@ public abstract class SqliteStorageLayer<T extends IReplicationOrderedPacket> {
             createTable();
         }
 
-        this.packetSerializer = new PacketSerializer<>(new IPacketStreamSerializer<T>() {
-            final SwapPacketStreamSerializer<T> serializer = new SwapPacketStreamSerializer<T>();
-            final IReplicationPacketDataProducer dataProducer = config.getDataProducer();
-
-            @Override
-            public void writePacketToStream(ObjectOutput output, T packet) throws IOException {
-                serializer.writePacketToStream(output, packet);
-            }
-
-            @Override
-            public T readPacketFromStream(ObjectInput input) throws IOException, ClassNotFoundException {
-                final T packet = serializer.readPacketFromStream(input);
-                if (dataProducer != null) {
-                    dataProducer.completePacketDataContent(packet.getData());
-                }
-                return packet;
-            }
-        });
+        final IPacketStreamSerializer<T> packetStreamSerializer = config.getPacketStreamSerializer();
+        this.packetSerializer = new PacketSerializer<>(packetStreamSerializer == null
+                ? new SwapPacketStreamSerializer<T>() //for tests - use default one
+                : packetStreamSerializer);
     }
 
     private Connection connectToDB(String jdbcDriver, String dbUrl, String user, String password, SQLiteConfig sqLiteConfig) throws ClassNotFoundException, SQLException {
