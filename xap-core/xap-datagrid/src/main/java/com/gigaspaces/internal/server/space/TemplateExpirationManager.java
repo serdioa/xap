@@ -28,13 +28,12 @@ import com.j_spaces.core.exception.ClosedResourceException;
 import com.j_spaces.kernel.IConsumerObject;
 import com.j_spaces.kernel.WorkingGroup;
 import com.j_spaces.kernel.locks.ILockObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Iterator;
 import java.util.Map;
 import java.util.NoSuchElementException;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * a time based service that is responsible of sending back an empty response back to the client
@@ -95,7 +94,7 @@ public class TemplateExpirationManager implements IConsumerObject<Object> {
     private void cancelTemplateHolder(ITemplateHolder template, Exception exp, boolean fromTimerThread) {
         IResponseContext respContext = template.getResponseContext();
         if (respContext != null || template.getMultipleIdsContext() != null || exp != null) {
-            ILockObject templateLock = _cacheManager.getLockManager().getLockObject(template, false /*isEvictable*/);
+            ILockObject templateLock = _cacheManager.getLockManager().getLockObject(template);
             Context context = null;
             AnswerHolder aHolder = template.getAnswerHolder();
             try {

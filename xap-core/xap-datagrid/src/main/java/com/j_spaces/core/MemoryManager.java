@@ -23,45 +23,17 @@ import com.gigaspaces.start.SystemInfo;
 import com.j_spaces.core.cache.AbstractCacheManager;
 import com.j_spaces.core.cache.CacheManager;
 import com.j_spaces.core.cache.blobStore.memory_pool.AbstractMemoryPool;
-import com.j_spaces.core.cache.blobStore.memory_pool.OffHeapMemoryPool;
 import com.j_spaces.kernel.JSpaceUtilities;
 import com.j_spaces.kernel.SystemProperties;
-
-import java.io.Closeable;
-import java.lang.management.ManagementFactory;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
+import java.io.Closeable;
+import java.lang.management.ManagementFactory;
 
-import static com.j_spaces.core.Constants.Engine.ENGINE_MEMORY_EXPLICIT_GC_DEFAULT;
-import static com.j_spaces.core.Constants.Engine.ENGINE_MEMORY_EXPLICIT_GC_PROP;
-import static com.j_spaces.core.Constants.Engine.ENGINE_MEMORY_EXPLICIT_LEASE_REAPER_DEFAULT;
-import static com.j_spaces.core.Constants.Engine.ENGINE_MEMORY_EXPLICIT_LEASE_REAPER_PROP;
-import static com.j_spaces.core.Constants.Engine.ENGINE_MEMORY_GC_BEFORE_MEMORY_SHORTAGE_DEFAULT;
-import static com.j_spaces.core.Constants.Engine.ENGINE_MEMORY_GC_BEFORE_MEMORY_SHORTAGE_PROP;
-import static com.j_spaces.core.Constants.Engine.ENGINE_MEMORY_USAGE_ENABLED_DEFAULT;
-import static com.j_spaces.core.Constants.Engine.ENGINE_MEMORY_USAGE_ENABLED_PRIMARY_ONLY;
-import static com.j_spaces.core.Constants.Engine.ENGINE_MEMORY_USAGE_ENABLED_PROP;
-import static com.j_spaces.core.Constants.Engine.ENGINE_MEMORY_USAGE_EVICTION_BATCH_SIZE_DEFAULT;
-import static com.j_spaces.core.Constants.Engine.ENGINE_MEMORY_USAGE_EVICTION_BATCH_SIZE_PROP;
-import static com.j_spaces.core.Constants.Engine.ENGINE_MEMORY_USAGE_HIGH_PERCENTAGE_RATIO_DEFAULT;
-import static com.j_spaces.core.Constants.Engine.ENGINE_MEMORY_USAGE_HIGH_PERCENTAGE_RATIO_PROP;
-import static com.j_spaces.core.Constants.Engine.ENGINE_MEMORY_USAGE_LOW_PERCENTAGE_RATIO_DEFAULT;
-import static com.j_spaces.core.Constants.Engine.ENGINE_MEMORY_USAGE_LOW_PERCENTAGE_RATIO_PROP;
-import static com.j_spaces.core.Constants.Engine.ENGINE_MEMORY_USAGE_RETRY_COUNT_DEFAULT;
-import static com.j_spaces.core.Constants.Engine.ENGINE_MEMORY_USAGE_RETRY_COUNT_PROP;
-import static com.j_spaces.core.Constants.Engine.ENGINE_MEMORY_USAGE_RETRY_YIELD_DEFAULT;
-import static com.j_spaces.core.Constants.Engine.ENGINE_MEMORY_USAGE_RETRY_YIELD_PROP;
-import static com.j_spaces.core.Constants.Engine.ENGINE_MEMORY_USAGE_SYNCHRONUS_EVICTION_WATERMARK_DEFAULT;
-import static com.j_spaces.core.Constants.Engine.ENGINE_MEMORY_USAGE_SYNCHRONUS_EVICTION_WATERMARK_PROP;
-import static com.j_spaces.core.Constants.Engine.ENGINE_MEMORY_USAGE_WR_ONLY_BLOCK_PERCENTAGE_RATIO_DEFAULT;
-import static com.j_spaces.core.Constants.Engine.ENGINE_MEMORY_USAGE_WR_ONLY_BLOCK_PERCENTAGE_RATIO_PROP;
-import static com.j_spaces.core.Constants.Engine.ENGINE_MEMORY_USAGE_WR_ONLY_CHECK_PERCENTAGE_RATIO_DEFAULT;
-import static com.j_spaces.core.Constants.Engine.ENGINE_MEMORY_USAGE_WR_ONLY_CHECK_PERCENTAGE_RATIO_PROP;
-import static com.j_spaces.core.Constants.Engine.FULL_ENGINE_MEMORY_USAGE_ENABLED_PROP;
+import static com.j_spaces.core.Constants.Engine.*;
 
 @com.gigaspaces.api.InternalApi
 public class MemoryManager implements Closeable {
@@ -377,7 +349,7 @@ public class MemoryManager implements Closeable {
         if (_monitorOnlyWriteOps && !isWriteTypeOperation && !_cacheManager.isBlobStoreCachePolicy())
             return MemoryEvictionDecision.NO_EVICTION;
 
-        double rate = getMemoryUsageRate(false, !_cacheManager.isEvictableCachePolicy());
+        double rate = getMemoryUsageRate(false, !_cacheManager.isEvictableFromSpaceCachePolicy());
 
         // set _monitorOnlyWriteOps flag for next call:
         // Monitor only write-type ops' if the prev' level was LE _memoryWriteOnlyCheck
@@ -426,7 +398,7 @@ public class MemoryManager implements Closeable {
     }
 
     private void start() {
-        if (_evictor != null && _cacheManager.isEvictableCachePolicy())
+        if (_evictor != null && _cacheManager.isEvictableFromSpaceCachePolicy())
             _evictor.start();
     }
 
@@ -644,7 +616,7 @@ public class MemoryManager implements Closeable {
                     _logger.debug("Evictor started to evict, rate=" + rate + " free-memory=" + _processMemoryManager.getFreeMemory() + " max-memory=" + _processMemoryManager.getMaximumMemory());
 
                 try {
-                    if (_cacheManager.isEvictableCachePolicy() && _evictionQuota > 0) {
+                    if (_cacheManager.isEvictableFromSpaceCachePolicy() && _evictionQuota > 0) {
                         // try to lower the memory level
                         for (int retryCount = 0; retryCount < _memoryRetryCount; retryCount++) {
                             if (rate <= _memoryUsageLowLevel) // no need to continue nor to check for shortage

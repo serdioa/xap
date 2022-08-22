@@ -24,24 +24,16 @@ import com.gigaspaces.internal.server.space.events.UpdateNotifyContextHolder;
 import com.gigaspaces.internal.server.storage.IEntryHolder;
 import com.gigaspaces.internal.server.storage.ITemplateHolder;
 import com.gigaspaces.internal.utils.concurrent.GSThread;
-import com.j_spaces.core.EntryDeletedException;
-import com.j_spaces.core.FifoException;
-import com.j_spaces.core.NoMatchException;
-import com.j_spaces.core.PendingFifoSearch;
-import com.j_spaces.core.SpaceOperations;
-import com.j_spaces.core.TemplateDeletedException;
-import com.j_spaces.core.TransactionConflictException;
-import com.j_spaces.core.TransactionNotActiveException;
+import com.j_spaces.core.*;
 import com.j_spaces.core.cache.CacheManager;
 import com.j_spaces.core.cache.context.Context;
 import com.j_spaces.core.sadapter.SAException;
 import com.j_spaces.kernel.locks.ILockObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * @author Niv Ingberg
@@ -228,7 +220,7 @@ public abstract class FifoWorkerThread extends GSThread {
                 ILockObject templateLock = null;
                 //lock the template
                 try {
-                    templateLock = _cacheManager.getLockManager().getLockObject(rd.getTemplate(), false/*isEvictable*/);
+                    templateLock = _cacheManager.getLockManager().getLockObject(rd.getTemplate());
                     synchronized (templateLock) {
                         if (rd.getTemplate().isDeleted())
                             return;

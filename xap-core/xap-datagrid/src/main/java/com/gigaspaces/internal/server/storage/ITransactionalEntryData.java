@@ -26,11 +26,11 @@ import com.gigaspaces.internal.utils.ReflectionUtils;
 import com.gigaspaces.metadata.SpacePropertyDescriptor;
 import com.gigaspaces.server.MutableServerEntry;
 import com.gigaspaces.time.SystemTime;
+import com.j_spaces.core.Constants;
 import com.j_spaces.core.SpaceOperations;
 import com.j_spaces.core.XtnEntry;
 import com.j_spaces.core.cache.DefaultValueCloner;
 import com.j_spaces.core.server.transaction.EntryXtnInfo;
-
 import net.jini.core.transaction.server.ServerTransaction;
 
 import java.util.Collection;
@@ -77,6 +77,10 @@ public interface ITransactionalEntryData extends IEntryData, MutableServerEntry 
 
     default ITransactionalEntryData createShallowClonedCopyWithSuppliedVersionAndExpiration(int versionID, long expirationTime) {
         return createCopy(versionID, expirationTime, copyTxnInfo(true, false), true);
+    }
+
+    default ITransactionalEntryData createCopyWithDummyTieredStorageTxnInfo() {
+        return createCopy(getVersion(), getExpirationTime(), Constants.TieredStorage.DUMMY_EMPTY_XTN_INFO, false);
     }
 
     @Override

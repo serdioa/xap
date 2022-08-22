@@ -29,7 +29,6 @@ import com.j_spaces.core.LeaseManager;
 import com.j_spaces.core.ObjectTypes;
 import com.j_spaces.core.OperationID;
 import com.j_spaces.core.cluster.ConflictingOperationPolicy;
-
 import net.jini.core.lease.UnknownLeaseException;
 
 
@@ -63,7 +62,7 @@ public class SpaceReplicationEntryLeaseEventHandler implements
     }
 
     private boolean ignoreOperation(boolean isTransient) {
-        return !isTransient && _engine.getCacheManager().isCentralDB() && _engine.getCacheManager().isCacheExternalDB() && _engine.getCacheManager().isEvictableCachePolicy();
+        return !isTransient && _engine.getCacheManager().isCentralDB() && _engine.getCacheManager().isCacheExternalDB() && _engine.getCacheManager().isEvictableFromSpaceCachePolicy();
     }
 
     @Override

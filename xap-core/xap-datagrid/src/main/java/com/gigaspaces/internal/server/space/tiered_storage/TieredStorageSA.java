@@ -174,6 +174,10 @@ public class TieredStorageSA implements IStorageAdapter {
     @Override
     public void prepare(Context context, ServerTransaction xtn, ArrayList<IEntryHolder> pLocked, boolean singleParticipant, Map<String, Object> partialUpdatesAndInPlaceUpdatesInfo, boolean shouldReplicate) throws SAException {
 
+        if (!singleParticipant) {
+            throw new SAException("only single participant transactions are supported");
+        }
+
         HashMap<String, IEntryHolder> entriesForBulkOperations = new HashMap<>();
         //1. locate & setDirty to the relevant entries
         for (IEntryHolder inputeh : pLocked) {
@@ -219,8 +223,8 @@ public class TieredStorageSA implements IStorageAdapter {
 
             }
 
-            List<TieredStorageBulkOperationResult> results = singleParticipant ?
-                    internalRDBMS.executeBulk(operations, xtn) : new ArrayList<>();
+            List<TieredStorageBulkOperationResult> results = internalRDBMS.executeBulk(operations, xtn);
+
             //scan and if exception in any result - throw it
             for (TieredStorageBulkOperationResult res : results) {
                 if (res.getException() != null)

@@ -40,4 +40,11 @@ public interface ILockedSubject {
      * @return the lock object
      */
     public ILockObject getExternalLockObject();
+
+    /**
+     * @return if this subject need to be locked by its uid or by itself.
+     */
+    default LockSubjectType getLockSubjectType() {
+        return LockSubjectType.ENTRY;
+    }
 }

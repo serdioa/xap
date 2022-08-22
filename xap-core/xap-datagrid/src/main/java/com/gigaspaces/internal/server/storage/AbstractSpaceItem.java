@@ -24,10 +24,9 @@ import com.gigaspaces.internal.utils.Textualizable;
 import com.gigaspaces.internal.utils.Textualizer;
 import com.j_spaces.core.client.NotifyModifiers;
 import com.j_spaces.kernel.locks.IEvictableLockObject;
+import org.slf4j.Logger;
 
 import java.rmi.MarshalledObject;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * @author Niv Ingberg

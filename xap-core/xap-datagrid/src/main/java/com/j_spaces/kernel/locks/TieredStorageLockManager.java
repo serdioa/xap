@@ -27,12 +27,8 @@ import static com.j_spaces.core.Constants.TieredStorage.CACHE_MANAGER_TIERED_STO
 public class TieredStorageLockManager<T extends ISelfLockingSubject>
         implements IBasicLockManager<T> {
     private static class LockObject implements ILockObject {
-        /**
-         * returns true if the lock object is the subject itself (i.e. entry or template) or a
-         * representing object
-         *
-         * @return true if is the subject itself
-         */
+
+        @Override
         public boolean isLockSubject() {
             return false;
         }
@@ -49,29 +45,14 @@ public class TieredStorageLockManager<T extends ISelfLockingSubject>
             _locks[i] = new LockObject();
     }
 
-    /*
-     * @see com.j_spaces.kernel.locks.IBasicLockManager#getLockObject(java.lang.Object)
-     */
+    @Override
     public ILockObject getLockObject(T subject) {
+        if (subject.getLockSubjectType() != LockSubjectType.ENTRY)
+            return subject; //return the subject when entry is a template or transient
         return getLockObject_impl(subject.getUID());
     }
 
-    /*
-     * @see com.j_spaces.kernel.locks.IBasicLockManager#getLockObject(java.lang.Object, java.lang.Object, boolean)
-     */
-    public ILockObject getLockObject(T subject, boolean isEvictable) {
-        if (!isEvictable)
-            return subject; //nothing to do, return the subject
-
-        return getLockObject_impl(subject.getUID());
-    }
-
-    /**
-     * based only on subject's uid, return a lock object in order to lock the represented subject
-     * this method is relevant only for evictable objects
-     *
-     * @return the lock object
-     */
+    @Override
     public ILockObject getLockObject(String subjectUid) {
         return getLockObject_impl(subjectUid);
     }
@@ -81,20 +62,13 @@ public class TieredStorageLockManager<T extends ISelfLockingSubject>
         return _locks[Math.abs(subjectUid.hashCode() % _locks.length)];
     }
 
-    /*
-     * @see com.j_spaces.kernel.locks.IBasicLockManager#freeLockObject(com.j_spaces.kernel.locks.ILockObject)
-     */
+    @Override
     public void freeLockObject(ILockObject lockObject) {
         return;
     }
 
-    /**
-     * do we use subject for locking itself ?
-     *
-     * @param isEvictable - is subject evictable
-     * @return true if we use subject
-     */
-    public boolean isPerLogicalSubjectLockObject(boolean isEvictable) {
-        return !isEvictable;
+    @Override
+    public boolean isEntryLocksItsSelf(T entry) {
+        return entry.getLockSubjectType() != LockSubjectType.ENTRY;
     }
 }

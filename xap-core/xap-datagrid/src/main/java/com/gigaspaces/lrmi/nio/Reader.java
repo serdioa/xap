@@ -621,6 +621,12 @@ public class Reader {
                 // so all the handles in the ObjectInputStream will be cleared
                 _bais.setBuffer(_resetBuffer);
                 mis.readObject();
+            }
+            catch (Throwable t) {
+                // we already read the object and will do another clean up in finally so shouldn't fail the operation
+                if (_logger.isWarnEnabled())
+                    _logger.warn("Fail to reset stream after reading." , t);
+
             } finally {
                 if (_bufferIsOccupied) {
                     _bais.setBuffer(DUMMY_BUFFER); // release the internal reference for the byte array

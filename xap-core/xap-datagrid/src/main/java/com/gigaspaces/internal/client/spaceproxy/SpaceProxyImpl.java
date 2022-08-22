@@ -418,11 +418,6 @@ public class SpaceProxyImpl extends AbstractDirectSpaceProxy implements SameProx
     }
 
     public void beforeSpaceAction(CommonProxyActionInfo action) {
-        //TODO: @sagiv/@tomer PIC-809 currently we start support txn, remove this when we done -
-        // considering block distributed txn.
-//        if(action.txn != null && this.getProxySettings().getSpaceAttributes().isTieredStorageCachePolicy()){
-//           throw new TieredStorageOperationException("Transactions are not supported with tiered storage at this stage");
-//        }
         action.txn = _transactionManager.beforeSpaceAction(action.txn);
     }
 

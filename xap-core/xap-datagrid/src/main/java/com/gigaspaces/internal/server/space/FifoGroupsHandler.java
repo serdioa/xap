@@ -34,7 +34,6 @@ import com.j_spaces.core.sadapter.SAException;
 import com.j_spaces.core.sadapter.SelectType;
 import com.j_spaces.kernel.list.IScanListIterator;
 import com.j_spaces.kernel.locks.ILockObject;
-
 import net.jini.core.transaction.TransactionException;
 
 import java.util.Collection;
@@ -196,7 +195,7 @@ public class FifoGroupsHandler {
     public void handleNeedFgOnlyScanOnXtnEnd(Context context, XtnEntry xtnEntry)
             throws SAException {
         try {
-            if ((!_cacheManager.isMemorySpace() && _cacheManager.isEvictableCachePolicy()) || !xtnEntry.getXtnData().anyEntriesForFifoGroupScan())
+            if ((!_cacheManager.isMemorySpace() && _cacheManager.isEvictableFromSpaceCachePolicy()) || !xtnEntry.getXtnData().anyEntriesForFifoGroupScan())
                 return; //not relevant, f-g not supported
             if (_cacheManager.getFifoGroupCacheImpl().getNumOfTemplates() == 0)
                 return;

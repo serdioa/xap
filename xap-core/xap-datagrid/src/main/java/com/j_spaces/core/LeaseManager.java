@@ -123,8 +123,6 @@ public class LeaseManager {
     private final long _expirationTimeRecentDeletes;
     private final long _expirationTimeRecentUpdates;
     private final long _staleReplicaExpirationTime;
-    private final long _tieredStorageEvictionGracePeriod;
-
     private LeaseReaper _leaseReaperDaemon;
     private boolean _closed;
 
@@ -161,7 +159,6 @@ public class LeaseManager {
         _expirationTimeRecentUpdates = getLongValue(configReader, LM_EXPIRATION_TIME_RECENT_UPDATES_PROP, LM_EXPIRATION_TIME_RECENT_UPDATES_DEFAULT);
         _staleReplicaExpirationTime = getLongValue(configReader, LM_EXPIRATION_TIME_STALE_REPLICAS_PROP, LM_EXPIRATION_TIME_STALE_REPLICAS_DEFAULT);
         _supportsRecentExtendedUpdates = _engine.getCacheManager().isBlobStoreCachePolicy();
-        _tieredStorageEvictionGracePeriod = getLongValue(configReader, TIERED_STORAGE_EVICTION_GRACE_PERIOD, TIERED_STORAGE_EVICTION_GRACE_PERIOD_DEFAULT);
         logConfiguration();
 
     }
@@ -214,10 +211,7 @@ public class LeaseManager {
                     + _expirationTimeRecentUpdates
                     + " ms\n\t"
                     + "Transactions of FIFO entries - every "
-                    + LM_EXPIRATION_TIME_FIFOENTRY_XTNINFO + " ms\n\t"
-                    + "Tiered storage eviction grace period - "
-                    + _tieredStorageEvictionGracePeriod
-                    + "s\n\t");
+                    + LM_EXPIRATION_TIME_FIFOENTRY_XTNINFO + " ms\n\t");
         }
     }
 
@@ -513,7 +507,7 @@ public class LeaseManager {
             CachePredicate cacheRule = tieredStorageManager.getCacheRule(entry.getSpaceTypeDescriptor().getTypeName());
             if (cacheRule != null && cacheRule.isTimeRule()){
                 TimePredicate timePredicate = (TimePredicate) cacheRule;
-                return timePredicate.getExpirationTime(entry.getPropertyValue(timePredicate.getTimeColumn()), getTieredStorageEvictionGracePeriod());
+                return timePredicate.getExpirationTime(entry.getPropertyValue(timePredicate.getTimeColumn()));
             }
         }
         return -1;
@@ -532,7 +526,7 @@ public class LeaseManager {
             }
             if (cacheRule != null && cacheRule.isTimeRule()){
                 TimePredicate timePredicate = (TimePredicate) cacheRule;
-                return timePredicate.getExpirationTime(entry.getPropertyValue(timePredicate.getTimeColumn()), getTieredStorageEvictionGracePeriod());
+                return timePredicate.getExpirationTime(entry.getPropertyValue(timePredicate.getTimeColumn()));
             }
         }
         //cases of:1. no tiered storage  2.tiered- transient with/without lease  3. tiered-cache criteria without lease
@@ -551,7 +545,7 @@ public class LeaseManager {
             }
             if (cacheRule != null && cacheRule.isTimeRule()){
                 TimePredicate timePredicate = (TimePredicate) cacheRule;
-                return timePredicate.getExpirationTime(entry.getPropertyValue(timePredicate.getTimeColumn()), getTieredStorageEvictionGracePeriod());
+                return timePredicate.getExpirationTime(entry.getPropertyValue(timePredicate.getTimeColumn()));
             }
         }
 
@@ -571,10 +565,6 @@ public class LeaseManager {
 
         //cases of:1. no tiered storage  2.tiered- transient with/without lease  3. tiered-cache criteria without lease
         return lease != UPDATE_NO_LEASE;
-    }
-
-    public long getTieredStorageEvictionGracePeriod() {
-        return _tieredStorageEvictionGracePeriod;
     }
 
     /**
@@ -700,7 +690,6 @@ public class LeaseManager {
         IEntryHolder entry = null;
         Context context = null;
         ILockObject entryLock = null;
-        boolean non_evictable = false;
         boolean cancelLease = (duration == LeaseUtils.DISCARD_LEASE);
         long original_time = 0;
         try {
@@ -711,19 +700,16 @@ public class LeaseManager {
             long currentTime = SystemTime.timeMillis();
             long timeToCheck = getEffectiveEntryLeaseTime(currentTime);
 
-            if (!_cacheManager.isEvictableCachePolicy() || objectType != ObjectTypes.ENTRY) {
-                entry = objectType == ObjectTypes.ENTRY ? _cacheManager
-                        .getEntry(context,
+            if (!_cacheManager.isEvictableFromSpaceCachePolicy() || objectType != ObjectTypes.ENTRY) {
+                entry = objectType == ObjectTypes.ENTRY ?
+                        _cacheManager.getEntry(context,
                                 entryUid,
                                 className,
                                 null /* selectiontemplate */,
                                 false /* tryInsertToCache */,
                                 false /* lockeEntry */,
                                 true /* useOnlyCache */)
-                        : _cacheManager
-                        .getTemplate(entryUid);
-
-                non_evictable = true;
+                        : _cacheManager.getTemplate(entryUid);
                 if (entry == null || entry.isExpired(timeToCheck)) {
                     String reason = "Failed to "
                             + getExtendLeasePeriodDescription(leaseExpired,
@@ -739,19 +725,14 @@ public class LeaseManager {
                     throw new UnknownLeaseException(reason);
                 }
             }
-
             boolean extended = false;
-            entryLock = non_evictable ? _cacheManager
-                    .getLockManager()
-                    .getLockObject(entry,
-                            !non_evictable /* isEvictable */)
-                    : _cacheManager
-                    .getLockManager()
-                    .getLockObject(entryUid);
 
+            entryLock = entry != null ?
+                    _cacheManager.getLockManager().getLockObject(entry)
+                    : _cacheManager.getLockManager().getLockObject(entryUid);
             synchronized (entryLock) {
                 try {
-                    if (_cacheManager.isEvictableCachePolicy() && objectType == ObjectTypes.ENTRY) {
+                    if (_cacheManager.isEvictableFromSpaceCachePolicy() && objectType == ObjectTypes.ENTRY) {
                         if (cancelLease) {//in case expiration is only from eviction-
                             if (_cacheManager.requiresEvictionReplicationProtection() && _cacheManager.getEvictionReplicationsMarkersRepository().isEntryEvictable(entryUid, false /*alreadyLocked*/))
                                 throw new UnknownLeaseException("entry in markers repository- cannot be cancelled.");
@@ -1256,11 +1237,9 @@ public class LeaseManager {
                             continue;
                         }
 
-                        boolean non_evictable = (!_cacheManager.isEvictableCachePolicy() || !isEntry);
-
                         entryLock = _cacheManager
                                 .getLockManager()
-                                .getLockObject(entry, !non_evictable/* isEvictable */);
+                                .getLockObject(entry);
 
                         boolean removedEntry = false;
 
@@ -1290,7 +1269,7 @@ public class LeaseManager {
                                         // lock
                                         Context ctx = _cacheManager.getCacheContext();
                                         try {
-                                            if (_cacheManager.isEvictableCachePolicy()) {
+                                            if (_cacheManager.isEvictableFromSpaceCachePolicy()) {
                                                 // fix GS-13590
                                                 if (_cacheManager.requiresEvictionReplicationProtection() && !entry.isTransient() && !_cacheManager.getEvictionReplicationsMarkersRepository().isEntryEvictable(entry.getUID(), false /*alreadyLocked*/))
                                                     continue; //markers repository- entry cannot be evicted
@@ -1331,11 +1310,10 @@ public class LeaseManager {
                                                 continue; // not relevant any
                                                 // more
                                             }
-                                            if (isNoReapUnderXtnLeases() && entry.isEntryUnderWriteLockXtn()) {
+                                            if (isNoReapUnderXtnLeases() && entry.isMaybeUnderXtn()) {
                                                 needUnpin = true;
-                                                continue; // writelocked under xtn- dot reap it
+                                                continue; // under xtn- don't reap it
                                             }
-
                                         } finally {
                                             _cacheManager.freeCacheContext(ctx);
                                         }
@@ -1975,7 +1953,7 @@ public class LeaseManager {
                         context = _cacheManager.getCacheContext();
 
                     IEntryHolder eh = null;
-                    if (!_cacheManager.isEvictableCachePolicy()) {
+                    if (!_cacheManager.isEvictableFromSpaceCachePolicy()) {
                         eh = _cacheManager
                                 .getEntryByUidFromPureCache(fxe.getUid());
                         if (eh == null) // deleted entry- delete from hash

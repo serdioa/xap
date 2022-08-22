@@ -49,6 +49,7 @@ import com.gigaspaces.internal.server.space.recovery.direct_persistency.IStorage
 import com.gigaspaces.internal.server.space.recovery.direct_persistency.StorageConsistencyModes;
 import com.gigaspaces.internal.server.space.tiered_storage.TieredStorageManager;
 import com.gigaspaces.internal.server.space.tiered_storage.TieredStorageSA;
+import com.gigaspaces.internal.server.space.tiered_storage.TieredStorageTableConfig;
 import com.gigaspaces.internal.server.storage.*;
 import com.gigaspaces.internal.sync.hybrid.SyncHybridStorageAdapter;
 import com.gigaspaces.internal.transport.ITemplatePacket;
@@ -86,7 +87,6 @@ import com.j_spaces.core.cache.blobStore.recovery.BlobStoreRecoveryHelperWrapper
 import com.j_spaces.core.cache.blobStore.sadapter.BlobStoreFifoInitialLoader;
 import com.j_spaces.core.cache.blobStore.sadapter.BlobStoreStorageAdapter;
 import com.j_spaces.core.cache.blobStore.sadapter.IBlobStoreStorageAdapter;
-import com.j_spaces.core.cache.blobStore.storage.BlobStoreHashMock;
 import com.j_spaces.core.cache.context.Context;
 import com.j_spaces.core.cache.context.IndexMetricsContext;
 import com.j_spaces.core.cache.context.TemplateMatchTier;
@@ -229,10 +229,6 @@ public class CacheManager extends AbstractCacheManager
     private final boolean _useBlobStoreReplicationBackupBulk;
 
     private final Map<String, QueryExtensionIndexManagerWrapper> queryExtensionManagers;
-
-    //TEMP FOR QA
-    private boolean _blobStoreForQa; //TODO:@sagiv remove?
-
     private final boolean _forceSpaceIdIndexIfEqual;
 
     private SpaceMetricsRegistrationUtils _spaceMetricsRegistrationUtils;
@@ -254,9 +250,10 @@ public class CacheManager extends AbstractCacheManager
         _typeDataMap = new PTypeMap();
         _typeDataFactory = new TypeDataFactory(engine.getConfigReader(), this);
         m_CacheSize = configReader.getIntSpaceProperty(CACHE_MANAGER_SIZE_PROP, CACHE_MANAGER_SIZE_DEFAULT);
-        _spaceMetricsRegistrationUtils = new SpaceMetricsRegistrationUtils( this );
+        _spaceMetricsRegistrationUtils = new SpaceMetricsRegistrationUtils(this);
 
-        boolean persistentBlobStore = Boolean.parseBoolean(customProperties.getProperty(FULL_CACHE_MANAGER_BLOBSTORE_PERSISTENT_PROP, "false"));
+        _persistentBlobStore = Boolean.parseBoolean(customProperties.getProperty(FULL_CACHE_MANAGER_BLOBSTORE_PERSISTENT_PROP,
+                String.valueOf(Boolean.getBoolean("com.gs.OffHeapData") && !isSyncHybrid())));
 
         int numNotifyFifoThreads = engine.getConfigReader().getIntSpaceProperty(
                 Constants.Engine.ENGINE_FIFO_NOTIFY_THREADS_PROP, Constants.Engine.ENGINE_FIFO_NOTIFY_THREADS_DEFAULT);
@@ -280,34 +277,12 @@ public class CacheManager extends AbstractCacheManager
         setCachePolicy(configReader.getIntSpaceProperty(CACHE_POLICY_PROP, String.valueOf(CACHE_POLICY_ALL_IN_CACHE)));
         _emptyAfterInitialLoadStage = true;
 
-//TEMP FOR QA
-//+++++++++++++++++ TEMP FOR QA
-        String oh = System.getProperty("com.gs.OffHeapData");
-        if (!_blobStoreForQa)
-            _blobStoreForQa = (oh == null || _engine.isLocalCache()) ? false : Boolean.parseBoolean(oh);
-        if (_blobStoreForQa && !isSyncHybrid()) {
-            persistentBlobStore = true;
-        }
-        if (_blobStoreForQa && isEvictableCachePolicy()) {
-            _blobStoreForQa = false;
-        }
-        if (_blobStoreForQa && _engine.isLocalCache()) {
-            _blobStoreForQa = false;
-        }
-        if (_blobStoreForQa)
-            setCachePolicy(CACHE_POLICY_BLOB_STORE);
-        if (_blobStoreForQa && !isMemorySA && !sa.isReadOnly() && !isSyncHybrid()) {
-            _blobStoreForQa = false;
-            setCachePolicy(CACHE_POLICY_ALL_IN_CACHE);
-        }
-//------------------ TEMP FOR QA
-
         Boolean forceSpaceIdIndexIfEqualDefault = !isBlobStoreCachePolicy();
         _forceSpaceIdIndexIfEqual = engine.getConfigReader().getBooleanSpaceProperty(
                 Constants.CacheManager.CACHE_MANAGER_FORCE_ID_INDEX_PROP, forceSpaceIdIndexIfEqualDefault.toString());
-        if (_forceSpaceIdIndexIfEqual != forceSpaceIdIndexIfEqualDefault.booleanValue())
+        if (_forceSpaceIdIndexIfEqual != forceSpaceIdIndexIfEqualDefault.booleanValue()) {
             _logger.info(Constants.CacheManager.CACHE_MANAGER_FORCE_ID_INDEX_PROP + " was set to " + _forceSpaceIdIndexIfEqual);
-
+        }
         if (isBlobStoreCachePolicy()) {
             _useBlobStoreBulks = Boolean.parseBoolean(System.getProperty(FULL_CACHE_MANAGER_USE_BLOBSTORE_BULKS_PROP, isSyncHybrid() ? "false" : "true"));
             _logger.info("useBlobStoreBulks=" + _useBlobStoreBulks);
@@ -320,6 +295,16 @@ public class CacheManager extends AbstractCacheManager
             _useBlobStoreReplicationBackupBulk = _useBlobStoreBulks && _engine.isReplicatedPersistentBlobstore()
                     && Boolean.parseBoolean(System.getProperty(SystemProperties.REPLICATION_USE_BACKUP_BLOBSTORE_BULKS, SystemProperties.REPLICATION_USE_BACKUP_BLOBSTORE_BULKS_DEFAULT));
             _logger.info("useBlobStoreReplicationBackupBulk=" + _useBlobStoreReplicationBackupBulk);
+
+            if (_engine.isLocalCache())
+                throw new RuntimeException("blob-store cache policy not supported in local-cache");
+
+            if (isEvictableFromSpaceCachePolicy())
+                throw new RuntimeException("blob-store cache policy not supported with evictable cache policy");
+
+            if (!isMemorySA && !sa.isReadOnly() && !isSyncHybrid())
+                throw new RuntimeException("blob-store cache policy not supported with direct EDS");
+
         } else {
             _useBlobStoreBulks = false;
             _optimizedBlobStoreClear = false;
@@ -331,13 +316,6 @@ public class CacheManager extends AbstractCacheManager
         if (getCachePolicy() < 0 || getCachePolicy() > MAX_CACHE_POLICY_VALUE)
             throw new RuntimeException("invalid cache policy value specified");
 
-        if (isBlobStoreCachePolicy() && _engine.isLocalCache())
-            throw new RuntimeException("blob-store cache policy not supported in local-cache");
-
-        if (isBlobStoreCachePolicy() && !isMemorySA && !sa.isReadOnly() && !isSyncHybrid())
-            throw new RuntimeException("blob-store cache policy not supported with direct EDS");
-
-        _persistentBlobStore = persistentBlobStore;
 
         if (isBlobStoreCachePolicy()) {
             IStorageAdapter curSa;
@@ -367,7 +345,7 @@ public class CacheManager extends AbstractCacheManager
         _isTimeBasedEvictionStrategy = _evictionStrategy instanceof TimeBasedSpaceEvictionStrategy;
 
         //do we need to create EvictionReplicationsMarkersRepository ?
-        if (!isMemorySA && isEvictableCachePolicy() && _engine.hasMirror())
+        if (!isMemorySA && isEvictableFromSpaceCachePolicy() && _engine.hasMirror())
             _evictionReplicationsMarkersRepository = new EvictionReplicationsMarkersRepository();
         else
             _evictionReplicationsMarkersRepository = null;
@@ -724,11 +702,11 @@ public class CacheManager extends AbstractCacheManager
     }
 
     public boolean needReReadAfterEntryLock() {
-        return isEvictableCachePolicy() || isBlobStoreCachePolicy() || isTieredStorageCachePolicy();
+        return isEvictableFromSpaceCachePolicy() || isBlobStoreCachePolicy() || isTieredStorageCachePolicy();
     }
 
     public boolean mayNeedEntriesUnpinning() {
-        return isEvictableCachePolicy() || isBlobStoreCachePolicy();
+        return isEvictableFromSpaceCachePolicy() || isBlobStoreCachePolicy();
     }
 
     /**
@@ -861,18 +839,8 @@ public class CacheManager extends AbstractCacheManager
 
             //user defined class name blobStore handler
             String oh = (String) properties.get(CACHE_MANAGER_BLOBSTORE_STORAGE_HANDLER_CLASS_PROP);
-
-//TEMP for QA
-            if (_blobStoreForQa && (oh == null || oh.length() == 0))
-                oh = BlobStoreHashMock.class.getName();
-//oh = BlobStoreNoSerializationHashMock.class.getName();
-
             if (oh == null || oh.length() == 0)
                 throw new RuntimeException("invalid blob-store storage handler value specified " + oh);
-            if (oh.indexOf("BlobStoreStorageHashMock") != -1) {
-                res = new BlobStoreHashMock();
-                return res;
-            }
 
             try {
                 Class<?> ohClass = ClassLoaderHelper.loadClass(oh);
@@ -993,7 +961,7 @@ public class CacheManager extends AbstractCacheManager
         } //if isResidentEntriesCachePolicy
 
         // if cache policy is LRU- load some entries to cache from SA according to setting
-        if (isEvictableCachePolicy()) {
+        if (isEvictableFromSpaceCachePolicy()) {
             evictableEntriesInitialLoad(context, configReader, initialLoadInfo);
         }
 
@@ -1336,7 +1304,7 @@ public class CacheManager extends AbstractCacheManager
      * returns true if recentDeletes hash in engine need to be used.
      */
     public boolean useRecentDeletes() {
-        return isEvictableCachePolicy() && !_isMemorySA && (!_readOnlySA || _engine.hasMirror());
+        return isEvictableFromSpaceCachePolicy() && !_isMemorySA && (!_readOnlySA || _engine.hasMirror());
     }
 
     public void insertToRecentDeletes(IEntryHolder entry, long duration, ServerTransaction committingXtn) {
@@ -1363,7 +1331,7 @@ public class CacheManager extends AbstractCacheManager
      * returns true if recentUpdates hash in engine need to be used.
      */
     public boolean useRecentUpdatesForPinning() {
-        return isEvictableCachePolicy() && !_isMemorySA && (!_readOnlySA || _engine.hasMirror());
+        return isEvictableFromSpaceCachePolicy() && !_isMemorySA && (!_readOnlySA || _engine.hasMirror());
     }
 
     public void insertToRecentUpdates(IEntryHolder entry, long duration, ServerTransaction committingXtn) {
@@ -1452,13 +1420,7 @@ public class CacheManager extends AbstractCacheManager
                     InitialLoadOrigin.FROM_EXTERNAL_DATA_SOURCE /*fromInitialLoad*/);
         } else if (isTieredStorageCachePolicy() && context.isDiskOnlyEntry()) {
             if (entryHolder.getXidOriginated() != null) {
-                //TODO: PIC-856 @sagiv need lock?
-                final IEntryHolder diskEntry = _storageAdapter.getEntry(context, entryHolder.getUID(),
-                        entryHolder.getClassName(), entryHolder);
-                if (diskEntry != null) { //if its update - upload the entry to the memory
-                    insertEntryToCache(context, diskEntry, false /* newEntry */,
-                            typeData, true /*pin*/, InitialLoadOrigin.NON /*fromInitialLoad*/);
-                }
+                insertColdEntryToCacheOnUpdate(context, entryHolder, typeData);
                 //newEntry needs to be true here -  we have two cases:
                 // 1. This is a new entry that has not been in space yet.
                 // 2. This entry was on disk and must be updated. using newEntry=true,
@@ -1478,6 +1440,9 @@ public class CacheManager extends AbstractCacheManager
             // tiered-storage policy and entry is memory only/memory and disk, or any other cache  policy.
             // !isTieredStorageCachePolicy ||
             //       (isTieredStorageCachePolicy && (context.isMemoryOnlyEntry || context.isMemoryAndDiskEntry))
+            if (isTieredStorageCachePolicy() && entryHolder.getXidOriginated() != null && context.isMemoryAndDiskEntry()){
+                insertColdEntryToCacheOnUpdate(context, entryHolder, typeData);
+            }
             pE = insertEntryToCache(context, entryHolder, true /* newEntry */,
                     typeData, true /*pin*/, InitialLoadOrigin.NON /*fromInitialLoad*/);
         }
@@ -1509,6 +1474,21 @@ public class CacheManager extends AbstractCacheManager
 
 
         }//if (entryHolder.m_XidOriginated == null)
+    }
+
+    private void insertColdEntryToCacheOnUpdate(Context context, IEntryHolder entryHolder, TypeData typeData) throws SAException {
+        final IEntryHolder diskEntry = _storageAdapter.getEntry(context, entryHolder.getUID(),
+                entryHolder.getClassName(), entryHolder);
+        if (diskEntry != null) { //if its update - upload the entry to the memory
+            //create new disk entry that contains entryHolder XtnInfo
+            final IEntryHolder newDiskEntry = new EntryHolder(diskEntry.getServerTypeDesc(), diskEntry.getUID(),
+                    diskEntry.getSCN(), diskEntry.isTransient(),
+                    diskEntry.getTxnEntryData().createCopyWithDummyTieredStorageTxnInfo());
+            //set dummy lease to remove the entry later from the memory
+            newDiskEntry.setExpirationTime(DUMMY_LEASE_FOR_TRANSACTION);
+            insertEntryToCache(context, newDiskEntry, false /* newEntry */,
+                    typeData, true /*pin*/, InitialLoadOrigin.NON /*fromInitialLoad*/);
+        }
     }
 
     public void handleInsertEntryReplication(Context context, IEntryHolder entryHolder) throws SAException {
@@ -1625,7 +1605,7 @@ public class CacheManager extends AbstractCacheManager
             try {
                 if (entry.getEntryData().getVersion() == template.getUpdatedEntry().getEntryData().getVersion()) {//when RuntimeException is thrown we revert the references to the before update situation
                     // in the TypeData::updateEntryReferences
-                    if (isEvictableCachePolicy()) {
+                    if (isEvictableFromSpaceCachePolicy()) {
                         removeEntryFromCache(entry);
                     } else {
                         updateEntryInCache(context, null, entry,
@@ -1852,7 +1832,7 @@ public class CacheManager extends AbstractCacheManager
             }
 
             if (lockedEntry && tryInsertToCache) {//locked entry
-                if (isEvictableCachePolicy()) {
+                if (isEvictableFromSpaceCachePolicy()) {
                     //pin entry for an intrusive op'
                     if (!pEntry.setPinned(true, !isMemorySpace() /*waitIfPendingInsertion*/))
                         pEntry = null; //failed- entry currently irrelevant
@@ -1866,7 +1846,7 @@ public class CacheManager extends AbstractCacheManager
             if (pEntry != null)
                 return pEntry.getEntryHolder(this);
         } //if (pEntry != null)
-        if (!isEvictableCachePolicy() || _isMemorySA) {
+        if (!isEvictableFromSpaceCachePolicy() || _isMemorySA) {
             if (isTieredStorageCachePolicy()) {
                 if (context.isMemoryOnlyEntry()) {
                     return null;   //no relevant entry found
@@ -1931,7 +1911,7 @@ public class CacheManager extends AbstractCacheManager
             }
 
             if (lockedEntry && tryInsertToCache) {//locked entry
-                if (isEvictableCachePolicy()) {
+                if (isEvictableFromSpaceCachePolicy()) {
                     //pin entry for an intrusive op'
                     if (!pEntry.setPinned(true, !isMemorySpace() /*waitIfPendingInsertion*/))
                         pEntry = null; //failed- entry currently irrelevant
@@ -1953,7 +1933,7 @@ public class CacheManager extends AbstractCacheManager
             }
 
         } //if (pEntry != null)
-        if (!isEvictableCachePolicy() || _isMemorySA) {
+        if (!isEvictableFromSpaceCachePolicy() || _isMemorySA) {
             if (isTieredStorageCachePolicy()) {
                 if (context.getTemplateTieredState() == TemplateMatchTier.MATCH_HOT) {
                     return null;   //no relevant entry found
@@ -2331,6 +2311,7 @@ public class CacheManager extends AbstractCacheManager
                         new_content.setExpirationTime(Lease.FOREVER);
                     }
                 }
+                context.setReRegisterLeaseOnUpdate(true);
             }
             if (newIsDiskEntry) {
                 if (newEhLease != DUMMY_LEASE_FOR_TRANSACTION) {
@@ -2463,7 +2444,7 @@ public class CacheManager extends AbstractCacheManager
 
     public IEntryCacheInfo getPEntryByUid(String uid) {
         IEntryCacheInfo pEntry = _entries.get(uid);
-        if (pEntry != null && isEvictableCachePolicy() && pEntry.isRemovingOrRemoved())
+        if (pEntry != null && isEvictableFromSpaceCachePolicy() && pEntry.isRemovingOrRemoved())
             return null;
         return pEntry;
     }
@@ -3108,9 +3089,17 @@ public class CacheManager extends AbstractCacheManager
 
         int writeLockOperation = xtnWriteLock != null ? ehData.getWriteLockOperation() : 0;
 
-        if (ehData.isExpired() && !slaveLeaseManager && !context.isTemplateMaybeUnderTransaction())
-            return; //ignore expired entries
+        if (ehData.isExpired() && !slaveLeaseManager) {
+            if (!isTieredStorageCachePolicy()) {
+                return; //ignore expired entries
+            } else { //isTieredStorageCachePolicy()
+                TieredStorageTableConfig tieredStorageTableConfig = ehData.getEntryTypeDesc().getTypeDesc().getTieredStorageTableConfig();
+                if (tieredStorageTableConfig != null && tieredStorageTableConfig.isTransient()) {
+                    return; //ignore expired entries
+                }
+            }
 
+        }
         if (xtnWriteLock == null && !original_shadow) /* xtn not active, ignore*/ {
             countInfo.incSaCount();
             return;
@@ -3162,7 +3151,7 @@ public class CacheManager extends AbstractCacheManager
             if (xtnEntryStatus == XtnStatus.COMMITED
                     || xtnEntryStatus == XtnStatus.COMMITING
                     || (xtnEntryStatus == XtnStatus.PREPARED && xtnWriteLock.m_SingleParticipant)) {
-                countInfo.incSaCount();
+                  countInfo.incSaCount();
                 return;
             }
 
@@ -3180,7 +3169,7 @@ public class CacheManager extends AbstractCacheManager
                 countInfo.incSaCount();
                 return;
             }
-            if (useDirtyRead || useReadCommitted) {
+            if (useReadCommitted) {
                 countInfo.incSaCount();
             } else if (!memoryOnly) {
                 countInfo.incSubFromPersistCount();
@@ -3325,7 +3314,7 @@ public class CacheManager extends AbstractCacheManager
                     Collection<ITemplateHolder> waitingForTemplates = entry.getCopyOfTemplatesWaitingForEntry();
                     if (waitingForTemplates != null) {
                         for (ITemplateHolder template : waitingForTemplates) {
-                            templateLock = getLockManager().getLockObject(template, false);
+                            templateLock = getLockManager().getLockObject(template);
                             try {
                                 synchronized (templateLock) {
                                     template.removeEntryWaitingForTemplate(entry);
@@ -3356,7 +3345,7 @@ public class CacheManager extends AbstractCacheManager
             TemplateCacheInfo pt = _templatesManager.get(keys.nextElement());
             ITemplateHolder th = pt.m_TemplateHolder;
             if (th.getClassName() != null && th.getClassName().equals(className)) {
-                templateLock = getLockManager().getLockObject(th, false /*isEvictable*/);
+                templateLock = getLockManager().getLockObject(th);
                 try {
                     synchronized (templateLock) {
                         if (th.isDeleted())
@@ -3407,7 +3396,7 @@ public class CacheManager extends AbstractCacheManager
         try {
             for (pos = entriesList.establishListScan(true); pos != null; pos = entriesList.next(pos)) {
                 IEntryCacheInfo pEntry = (IEntryCacheInfo) pos.getSubject();
-                if (pEntry == null || (isEvictableCachePolicy() && pEntry.isRemoving()))
+                if (pEntry == null || (isEvictableFromSpaceCachePolicy() && pEntry.isRemoving()))
                     continue;
 
                 IEntryHolder entry = pEntry.getEntryHolder(this);
@@ -3426,7 +3415,7 @@ public class CacheManager extends AbstractCacheManager
                             if (entry.isDeleted())
                                 continue; // already deleted
 
-                            if (isEvictableCachePolicy()) {
+                            if (isEvictableFromSpaceCachePolicy()) {
                                 if (pEntry.setPinned(true, true /*waitIfPendingInsertion*/)) {
                                     //pin entry for an intrusive op'
                                     needUnpin = true;
@@ -3472,6 +3461,20 @@ public class CacheManager extends AbstractCacheManager
         if (typeData == null)
             typeData = _typeDataMap.get(entryHolder.getServerTypeDesc());
 
+        if ((context.isTemplateMaybeUnderTransaction() || entryHolder.isMaybeUnderXtn())
+                && isTieredStorageCachePolicy()
+                && context.isDiskOnlyEntry()) {
+            //create new EntryHolder with empty TxnInfo
+            if (!entryHolder.isMaybeUnderXtn()) {
+                entryHolder = new EntryHolder(entryHolder.getServerTypeDesc(), entryHolder.getUID(),
+                        entryHolder.getSCN(), entryHolder.isTransient(),
+                        entryHolder.getTxnEntryData().createCopyWithDummyTieredStorageTxnInfo());
+                entryHolder.setMaybeUnderXtn(true);
+            }
+            //set dummy lease to remove the entry later from the memory
+            entryHolder.setExpirationTime(DUMMY_LEASE_FOR_TRANSACTION);
+        }
+
         final IEntryCacheInfo pEntry = !entryHolder.isBlobStoreEntry() ? EntryCacheInfoFactory.createEntryCacheInfo(entryHolder, typeData.numberOfBackRefs(), pin, getEngine()) :
                 ((IBlobStoreEntryHolder) entryHolder).getBlobStoreResidentPart();
         context.setWriteResult(null);
@@ -3490,11 +3493,6 @@ public class CacheManager extends AbstractCacheManager
             }//if (newEntry && m_Engine.m_FifoSupported && !fifoTimeStampAlreadySet)
             //FIFO--------------------------------------------
 
-            if ((context.isTemplateMaybeUnderTransaction() || entryHolder.isMaybeUnderXtn())
-                    && isTieredStorageCachePolicy()
-                    && context.isDiskOnlyEntry()) { //set dummy lease to remove the entry later from the memory
-                entryHolder.setExpirationTime(DUMMY_LEASE_FOR_TRANSACTION);
-            }
             return internalInsertEntryToCache(context, entryHolder, newEntry, typeData, pEntry, pin);
         } finally {
             if (newEntry)
@@ -3625,7 +3623,7 @@ public class CacheManager extends AbstractCacheManager
         ITypeDesc typeDescriptor = entryHolder.getServerTypeDesc().getTypeDesc();
 
         //persistent entries don't support LRU+FIFO because the EDS doesn't support fifo ordering
-        if (!entryHolder.isTransient() && typeDescriptor.isFifoSupported() && isEvictableCachePolicy() && (isCacheExternalDB() || isClusteredExternalDBEnabled()))
+        if (!entryHolder.isTransient() && typeDescriptor.isFifoSupported() && isEvictableFromSpaceCachePolicy() && (isCacheExternalDB() || isClusteredExternalDBEnabled()))
             throw new SpaceMetadataException("Fifo class [" + typeDescriptor.getTypeName() + "] is not supported by space with LRU cache and external data source.");
     }
 
@@ -3671,7 +3669,7 @@ public class CacheManager extends AbstractCacheManager
                     }
                     throw new RuntimeException("internalInsertEntryToCache: recent deletes cannot be replaced uid=" + pEntry.getUID());
                 }
-                if (isEvictableCachePolicy() && oldEntry.isRemoving()) {  //entry in cache-removal process- help out
+                if (isEvictableFromSpaceCachePolicy() && oldEntry.isRemoving()) {  //entry in cache-removal process- help out
                     //first-wait for removal fromeviction strategy -provide concurrency protection
                     if (_evictionStrategy.requiresConcurrencyProtection())
                         ((EvictableEntryCacheInfo) oldEntry).verifyEntryRemovedFromStrategy();
@@ -3710,7 +3708,7 @@ public class CacheManager extends AbstractCacheManager
             _leaseManager.registerEntryLease(pEntry, expiration);
             context.setWriteResult(new WriteEntryResult(pEntry.getUID(), version, expiration));
 
-            if (isEvictableCachePolicy())
+            if (isEvictableFromSpaceCachePolicy())
                 addToEvictionStrategy(pEntry, newEntry);
             insertedToEvictionStrategy = true;
 
@@ -3722,7 +3720,7 @@ public class CacheManager extends AbstractCacheManager
                 pEntry.getEntryHolder(this).getXidOriginated().setOperatedUpon();
             }
 
-            if (isEvictableCachePolicy())
+            if (isEvictableFromSpaceCachePolicy())
                 _cacheSize.incrementAndGet();
             if (newEntry && pEntry.isBlobStoreEntry() && isDirectPersistencyEmbeddedtHandlerUsed())
                 _engine.getReplicationNode().getDirectPesistencySyncHandler().getEmbeddedSyncHandler().onSpaceOpRemovePhantomIfExists(pEntry.getUID());
@@ -3739,7 +3737,7 @@ public class CacheManager extends AbstractCacheManager
 
 
             _entries.remove(pEntry.getUID(), pEntry);
-            if (isEvictableCachePolicy())
+            if (isEvictableFromSpaceCachePolicy())
                 ((EvictableEntryCacheInfo) pEntry).notifyWaitersOnFailure();
             if (newEntry && pEntry.getEntryHolder(this).getXidOriginated() != null) {//
                 try {
@@ -3764,7 +3762,7 @@ public class CacheManager extends AbstractCacheManager
                 removeFifoXtnInfoForEntry(entryHolder);
 
             if (res != null && res != _entryAlreadyInSpaceIndication && !alreadyIn && !pin && !pEntry.isRemoved()) {
-                if (isEvictableCachePolicy())
+                if (isEvictableFromSpaceCachePolicy())
                     res.setInCache(!isMemorySpace()); //non-pined entry inserted
             }
         }
@@ -4052,7 +4050,7 @@ public class CacheManager extends AbstractCacheManager
             if (!initiatedByEvictionStrategy && !pEntry.setRemoving(false /*isPinned*/))
                 return false; //someone else have removed or pinned this instance
         } else {
-            if (isEvictableCachePolicy() || entryHolder.isBlobStoreEntry()) {
+            if (isEvictableFromSpaceCachePolicy() || entryHolder.isBlobStoreEntry()) {
                 if (pEntry == null)
                     pEntry = entryHolder.isBlobStoreEntry() ? ((IBlobStoreEntryHolder) (entryHolder)).getBlobStoreResidentPart() : getPEntryByUid(entryHolder.getUID());
 
@@ -4070,7 +4068,7 @@ public class CacheManager extends AbstractCacheManager
                 return false;
         } else {
             // remove from strategy first + optional concurrency protection
-            if (pEntry != null && isEvictableCachePolicy())
+            if (pEntry != null && isEvictableFromSpaceCachePolicy())
                 removeFromEvictionStrategy(pEntry);
         }
 
@@ -4096,7 +4094,7 @@ public class CacheManager extends AbstractCacheManager
         if (recentDeleteUsage == RecentDeleteCodes.REMOVE_DUMMY)
             return true;
 
-        boolean inserted = (!isEvictableCachePolicy() || (pEntry != null && pEntry.wasInserted()));
+        boolean inserted = (!isEvictableFromSpaceCachePolicy() || (pEntry != null && pEntry.wasInserted()));
         if (!inserted)
             return true;
 
@@ -4108,7 +4106,7 @@ public class CacheManager extends AbstractCacheManager
         //unregister from lease manager
         _leaseManager.unregister(pEntry, entryHolder.getEntryData().getExpirationTime());
 
-        if (isEvictableCachePolicy())
+        if (isEvictableFromSpaceCachePolicy())
             _cacheSize.decrementAndGet();
         // clean Xtn reference, if exists
         XtnData pXtn = null;
@@ -4126,7 +4124,7 @@ public class CacheManager extends AbstractCacheManager
             }
         }
 
-        if (isEvictableCachePolicy())
+        if (isEvictableFromSpaceCachePolicy())
             pEntry.setRemoved();
 
         return true;
@@ -5382,7 +5380,7 @@ public class CacheManager extends AbstractCacheManager
      * @return null if not unpinned
      */
     public boolean unpinIfNeeded(Context context, IEntryHolder entry, ITemplateHolder template, IEntryCacheInfo pEntry) {
-        if (!isEvictableCachePolicy() && !entry.isBlobStoreEntry())
+        if (!isEvictableFromSpaceCachePolicy() && !entry.isBlobStoreEntry())
             return false;
 
         if (template != null) {//template based op'
@@ -5408,7 +5406,7 @@ public class CacheManager extends AbstractCacheManager
         if (pEntry.getEntryHolder(this).isMaybeUnderXtn() || pEntry.getEntryHolder(this).isHasWaitingFor())
             return false;
 
-        if (isEvictableCachePolicy())
+        if (isEvictableFromSpaceCachePolicy())
             pEntry.setPinned(false);
         else
             ((IBlobStoreRefCacheInfo) pEntry).unLoadFullEntryIfPossible(this, context);

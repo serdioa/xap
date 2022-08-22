@@ -20,7 +20,10 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.sql.*;
 import java.time.*;
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.StringJoiner;
 
 import static com.j_spaces.core.Constants.TieredStorage.VERSION_DB_FIELD_NAME;
 
@@ -28,19 +31,11 @@ import static com.j_spaces.core.Constants.TieredStorage.VERSION_DB_FIELD_NAME;
 public class SqliteUtils {
     private static final long NANOS_PER_SEC = 1_000_000_000;
     private static final long OFFSET = 0;
-    private static final Map<String, TypeEqualsFunction> typeEqualsFunctionMap = initSpecialTypeEqualsFunctionMapMap();
     private static final Map<String, String> sqlTypesMap = initSqlTypesMap();
     private static final Map<String, ExtractFunction> sqlExtractorsMap = initSqlExtractorsMap();
     private static final Map<String, InjectFunction> sqlInjectorsMap = initSqlInjectorsMap();
     private static final Map<String, RangeToStringFunction> rangeToStringFunctionMap = initRangeToStringFunctionMap();
-    private static Map<String, InstantToDateTypeFunction> instantToDateTypeFunctionMap = initInstantToDateTypeMap();
-
-    private static Map<String, TypeEqualsFunction> initSpecialTypeEqualsFunctionMapMap() {
-        Map<String, TypeEqualsFunction> map = new HashMap<>();
-        map.put(byte[].class.getName(), (v1, v2) -> Arrays.equals(((byte[]) v1), ((byte[]) v2)));
-        map.put(Byte[].class.getName(), (v1, v2) -> Arrays.equals(((Byte[]) v1), ((Byte[]) v2)));
-        return map;
-    }
+    private static final Map<String, InstantToDateTypeFunction> instantToDateTypeFunctionMap = initInstantToDateTypeMap();
 
     private static Map<String, InstantToDateTypeFunction> initInstantToDateTypeMap() {
         Map<String, InstantToDateTypeFunction> map = new HashMap<>();
@@ -321,14 +316,6 @@ public class SqliteUtils {
         }
         rangeToStringFunction.toString(range, queryBuilder, queryParams);
 
-    }
-
-    static boolean checkEquals(Class<?> type, Object val1, Object val2) {
-        if (typeEqualsFunctionMap.containsKey(type.getName())) {
-            return typeEqualsFunctionMap.get(type.getName()).equals(val1, val2);
-        } else {
-            return val1.equals(val2);
-        }
     }
 
     static TemplateMatchTier evaluateByMatchTier(ITemplateHolder template, TemplateMatchTier templateMatchTier) {
@@ -702,10 +689,6 @@ public class SqliteUtils {
     @FunctionalInterface
     interface RangeToStringFunction {
         void toString(Range range, StringBuilder queryBuilder, QueryParameters queryParams) ;
-    }
-    @FunctionalInterface
-    interface TypeEqualsFunction {
-        boolean equals(Object val1, Object val2) ;
     }
 
     @FunctionalInterface

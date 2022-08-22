@@ -28,7 +28,6 @@ import com.gigaspaces.security.SecurityException;
 import com.gigaspaces.security.directory.CredentialsProvider;
 import com.gigaspaces.security.directory.CredentialsProviderHelper;
 import com.gigaspaces.security.directory.DefaultCredentialsProvider;
-import com.gigaspaces.start.SystemInfo;
 import com.gigaspaces.start.SystemLocations;
 import com.j_spaces.core.Constants;
 import com.j_spaces.core.JSpaceContainerImpl;
@@ -40,6 +39,8 @@ import com.j_spaces.kernel.SystemProperties;
 import com.j_spaces.kernel.log.JProperties;
 import com.sun.jini.proxy.DefaultProxyPivot;
 import com.sun.jini.start.LifeCycle;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.InputStream;
@@ -49,9 +50,6 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.StringTokenizer;
 import java.util.WeakHashMap;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * <pre>

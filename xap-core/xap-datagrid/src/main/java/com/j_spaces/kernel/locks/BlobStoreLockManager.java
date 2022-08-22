@@ -28,38 +28,26 @@ package com.j_spaces.kernel.locks;
 public class BlobStoreLockManager<T extends ISelfLockingSubject>
         implements IBasicLockManager<T> {
 
-    /*
-     * @see com.j_spaces.kernel.locks.IBasicLockManager#getLockObject(java.lang.Object)
-     */
+    @Override
     public ILockObject getLockObject(T subject) {
-        return getLockObject(subject, true /*isEvictable*/);
-    }
-
-    /*
-     * @see com.j_spaces.kernel.locks.IBasicLockManager#getLockObject(java.lang.Object, java.lang.Object, boolean)
-     */
-    public ILockObject getLockObject(T subject, boolean isEvictable) {
         return subject.getExternalLockObject() != null ? subject.getExternalLockObject() : subject;
     }
 
-    /**
-     * based only on subject's uid, return a lock object in order to lock the represented subject
-     * this method is relevant only for evictable objects
-     *
-     * @return the lock object
-     */
+    @Override
     public ILockObject getLockObject(String subjectUid) {
         throw new RuntimeException("BlobStoreLockManager::getLockObject based on uid is not supported");
     }
 
-    /*
-     * @see com.j_spaces.kernel.locks.IBasicLockManager#freeLockObject(com.j_spaces.kernel.locks.ILockObject)
-     */
+    @Override
     public void freeLockObject(ILockObject lockObject) {
         return;
     }
 
-    public boolean isPerLogicalSubjectLockObject(boolean isEvictable) {
+    @Override
+    public boolean isEntryLocksItsSelf(T entry) {
+        // In BlobStore 'EntryLocksItsSelf' is some part of the Entry used for the locking,
+        // Therefore always true, and not -
+        // return entry.getExternalLockObject() == null;
         return true;
     }
 

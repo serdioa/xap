@@ -31,16 +31,12 @@ import com.gigaspaces.internal.server.space.iterator.ServerIteratorInfo;
 import com.gigaspaces.internal.transport.AbstractProjectionTemplate;
 import com.gigaspaces.internal.transport.IEntryPacket;
 import com.gigaspaces.lrmi.nio.IResponseContext;
-import com.j_spaces.core.AnswerHolder;
-import com.j_spaces.core.OperationID;
-import com.j_spaces.core.PendingFifoSearch;
-import com.j_spaces.core.SpaceContext;
-import com.j_spaces.core.UpdateOrWriteContext;
+import com.j_spaces.core.*;
 import com.j_spaces.core.cache.CacheManager;
-import com.j_spaces.core.cache.TypeData;
 import com.j_spaces.core.cache.context.Context;
 import com.j_spaces.core.client.SQLQuery;
 import com.j_spaces.core.filters.FilterManager;
+import com.j_spaces.kernel.locks.LockSubjectType;
 
 import java.util.Collection;
 
@@ -286,4 +282,9 @@ public interface ITemplateHolder extends ISpaceItem, IEntryHolder {
     TemplateEntryData getTemplateEntryData();
 
     SingleExplainPlan getExplainPlan();
+
+    @Override
+    default LockSubjectType getLockSubjectType() {
+        return LockSubjectType.TEMPLATE;
+    }
 }

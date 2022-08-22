@@ -34,12 +34,12 @@ public class TimePredicate implements CachePredicate, InternalCachePredicate {
     }
 
     //eviction from hot tier
-    public long getExpirationTime(Object value, long gracePeriod) {
+    public long getExpirationTime(Object value) {
         if (value == null){
             throw new SpaceMetadataException("property of type [" + timeColumn + "] which set as time rule cannot be null.");
         }
         long originalValueInLong = Long.class.equals(value.getClass())? (long)value : SqliteUtils.convertTimeTypeToInstant(value).toEpochMilli();
-        return originalValueInLong + period.toMillis() + gracePeriod;
+        return originalValueInLong + period.toMillis();
     }
 
     //For tests

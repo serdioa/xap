@@ -20,12 +20,12 @@ import com.gigaspaces.server.blobstore.BlobStoreException;
 import com.gigaspaces.server.blobstore.BlobStoreStorageHandler;
 import com.j_spaces.core.Constants;
 import com.j_spaces.core.client.SQLQuery;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * A cache policy that stores data blobStore and indexes onheap.
@@ -41,6 +41,7 @@ public class BlobStoreDataCachePolicy implements CachePolicy {
     private List<SQLQuery> sqlQueryList;
 
     private BlobStoreStorageHandler blobStoreHandler;
+    private String blobStoreHandlerClassName;
 
     private static final int DEFAULT_AVG_OBJECT_SIZE_BYTES = 5 * 1024;
     private static final int DEFAULT_CACHE_ENTRIES_PERCENTAGE = 20;
@@ -52,6 +53,14 @@ public class BlobStoreDataCachePolicy implements CachePolicy {
     public BlobStoreDataCachePolicy setBlobStoreHandler(BlobStoreStorageHandler blobStoreHandler) {
         this.blobStoreHandler = blobStoreHandler;
         return this;
+    }
+
+    /**
+     * @param blobStoreHandlerClassName name of the BlobStoreHandler to load at the server
+     * @see #setBlobStoreHandler(BlobStoreStorageHandler) for direct reference usage
+     */
+    public void setBlobStoreHandlerClassName(String blobStoreHandlerClassName) {
+        this.blobStoreHandlerClassName = blobStoreHandlerClassName;
     }
 
     public BlobStoreDataCachePolicy setAvgObjectSizeKB(Integer avgObjectSizeKB) {
@@ -111,13 +120,17 @@ public class BlobStoreDataCachePolicy implements CachePolicy {
         props.setProperty(Constants.CacheManager.FULL_CACHE_MANAGER_BLOBSTORE_CACHE_SIZE_PROP, String.valueOf(blobStoreCacheSize));
         _logger.info("Blob Store Cache size [ " + blobStoreCacheSize + " ]");
 
-
-        if (blobStoreHandler == null) {
+        if (blobStoreHandler != null) {
+            props.put(Constants.CacheManager.CACHE_MANAGER_BLOBSTORE_STORAGE_HANDLER_PROP, blobStoreHandler);
+            props.put(Constants.CacheManager.FULL_CACHE_MANAGER_BLOBSTORE_PERSISTENT_PROP, String.valueOf(calcPersistent(persistent, blobStoreHandler.isPersistent())));
+        } else if (blobStoreHandlerClassName != null) {
+            //will be loaded in CacheManager as a user defined BlobStoreHandler
+            props.put(Constants.CacheManager.CACHE_MANAGER_BLOBSTORE_STORAGE_HANDLER_CLASS_PROP, blobStoreHandlerClassName);
+            props.put(Constants.CacheManager.FULL_CACHE_MANAGER_BLOBSTORE_PERSISTENT_PROP, String.valueOf(persistent));
+        } else {
             throw new BlobStoreException("blobStoreHandler attribute in Blobstore space must be configured");
         }
-        props.put(Constants.CacheManager.CACHE_MANAGER_BLOBSTORE_STORAGE_HANDLER_PROP, blobStoreHandler);
 
-        props.put(Constants.CacheManager.FULL_CACHE_MANAGER_BLOBSTORE_PERSISTENT_PROP, String.valueOf(calcPersistent(persistent, blobStoreHandler.isPersistent())));
 
         if (sqlQueryList.size() > 0)
             props.put(Constants.CacheManager.FULL_CACHE_MANAGER_BLOBSTORE_CACHE_FILTER_QUERIES_PROP, sqlQueryList);

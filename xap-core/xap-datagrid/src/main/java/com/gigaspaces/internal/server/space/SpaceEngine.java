@@ -388,8 +388,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
 
 
     private void createTieredStorageManager() throws IllegalAccessException, InstantiationException, ClassNotFoundException {
-        final boolean isTieredStorage = String.valueOf(CACHE_POLICY_TIERED_STORAGE)
-                .equals(_spaceImpl.getJspaceAttr().getCustomProperties().get(FULL_CACHE_POLICY_PROP));
+        final boolean isTieredStorage = _spaceImpl.getJspaceAttr().isTieredStorageCachePolicy();
         if (isTieredStorage) {
             TieredStorageConfig tieredStorageConfig = _spaceImpl.getJspaceAttr().getTieredStorageConfig();
             if (tieredStorageConfig == null) {
@@ -604,7 +603,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
             _cacheManager.init(properties);
             if (_clusterPolicy != null && _clusterPolicy.getReplicationPolicy() != null && _clusterPolicy.getReplicationPolicy().getConflictingOperationPolicy() == null) {
                 //uninitialized, set a default
-                _conflictingOperationPolicy = (_cacheManager.isMemorySpace() && _cacheManager.isEvictableCachePolicy()) ? ConflictingOperationPolicy.OVERRIDE : ConflictingOperationPolicy.DEFAULT;
+                _conflictingOperationPolicy = (_cacheManager.isMemorySpace() && _cacheManager.isEvictableFromSpaceCachePolicy()) ? ConflictingOperationPolicy.OVERRIDE : ConflictingOperationPolicy.DEFAULT;
             }
 
             //Create LeaseManager
@@ -1245,7 +1244,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
             throw new InvalidFifoTemplateException(template.getTypeName());
         if ((template.getUID() != null || (template.getID() != null && template.getExtendedMatchCodes() == null)) && ReadModifiers.isFifoGroupingPoll(operationModifiers))
             operationModifiers = Modifiers.remove(operationModifiers, ReadModifiers.FIFO_GROUPING_POLL);//ignore it
-        if (ReadModifiers.isFifoGroupingPoll(operationModifiers) && !_cacheManager.isMemorySpace() && _cacheManager.isEvictableCachePolicy())
+        if (ReadModifiers.isFifoGroupingPoll(operationModifiers) && !_cacheManager.isMemorySpace() && _cacheManager.isEvictableFromSpaceCachePolicy())
             throw new UnsupportedOperationException(" fifo grouping not supported with persistent-LRU");
         // Disable FIFO if not required:
         if (isFifoOperation && (template.getUID() != null || ReadModifiers.isFifoGroupingPoll(operationModifiers)))
@@ -1991,7 +1990,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
             throw new InvalidFifoTemplateException(template.getTypeName());
         if ((template.getUID() != null || template.getMultipleUIDs() != null || (template.getID() != null && template.getExtendedMatchCodes() == null)) && ReadModifiers.isFifoGroupingPoll(operationModifiers))
             operationModifiers = Modifiers.remove(operationModifiers, ReadModifiers.FIFO_GROUPING_POLL);//ignore it
-        if (ReadModifiers.isFifoGroupingPoll(operationModifiers) && !_cacheManager.isMemorySpace() && _cacheManager.isEvictableCachePolicy())
+        if (ReadModifiers.isFifoGroupingPoll(operationModifiers) && !_cacheManager.isMemorySpace() && _cacheManager.isEvictableFromSpaceCachePolicy())
             throw new UnsupportedOperationException(" fifo grouping not supported with persistent-LRU");
         // Disable FIFO if not required:
         if (isFifoOperation && (template.getUID() != null || ReadModifiers.isFifoGroupingPoll(operationModifiers)) || template.getMultipleUIDs() != null)
@@ -3698,7 +3697,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
         long leaseFilter = SystemTime.timeMillis();
 
         //optimize performance for read-by-id
-        if (template.getID() != null && template.getExtendedMatchCodes() == null) {
+        if (template.getID() != null && template.getExtendedMatchCodes() == null && !_cacheManager.isTieredStorageCachePolicy()) {
             IScanListIterator<IEntryCacheInfo> toScan = _cacheManager.getEntryByUniqueId(context, serverTypeDesc, template.getID(), template);
             if (toScan != null && !toScan.isIterator()) {
                 res = getMatchedEntryAndOperateSA_Entry(context,
@@ -3728,7 +3727,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
             }
         }
 
-        if ((getCacheManager().isEvictableCachePolicy() && !_cacheManager.isMemorySpace()) || (_cacheManager.isTieredStorageCachePolicy() && context.getTemplateTieredState() != TemplateMatchTier.MATCH_HOT)) {
+        if (_cacheManager.isTieredStorageCachePolicy() || (getCacheManager().isEvictableFromSpaceCachePolicy() && !_cacheManager.isMemorySpace())) {
             IScanListIterator<IEntryCacheInfo> toScan =
                     _cacheManager.makeScanableEntriesIter(context, template, serverTypeDesc,
                             scnFilter, leaseFilter, isMemoryOnlyOperation(template) /*memoryonly*/);
@@ -4106,7 +4105,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
 
         long leaseFilter = SystemTime.timeMillis();
 
-        if ((getCacheManager().isEvictableCachePolicy() && !_cacheManager.isMemorySpace()) ||
+        if ((getCacheManager().isEvictableFromSpaceCachePolicy() && !_cacheManager.isMemorySpace()) ||
                 (_cacheManager.isTieredStorageCachePolicy() && (context.getTemplateTieredState() != TemplateMatchTier.MATCH_HOT ||
                         (isServerIterator && template.getServerIteratorInfo().isTieredByTimeRule() && !template.isMemoryOnlySearch())))){
             IScanListIterator<IEntryCacheInfo> toScan;
@@ -4418,10 +4417,14 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
             boolean upgrade_lock = false;
             while (true) {
                 context.setNonBlockingReadOp(template.isNonBlockingRead() && !context.isUnstableEntry() && !context.isTransactionalMultipleOperation());
-                if (!template.isFifoSearch())
+                if (!template.isFifoSearch()) {
                     need_xtn_lock = need_xtn_lock || (!context.isNonBlockingReadOp() && template.getXidOriginated() != null);
-                else
+                } else {
                     need_xtn_lock = need_xtn_lock || (!context.isNonBlockingReadOp() && (template.getXidOriginated() != null || entry.isMaybeUnderXtn()));
+                }
+                if (!need_xtn_lock) {
+                    need_xtn_lock = _cacheManager.isTieredStorageCachePolicy() && template.isMaybeUnderXtn() && !context.isMemoryOnlyEntry();
+                }
 
                 try {
                     if (!context.isNonBlockingReadOp()) {
@@ -4626,7 +4629,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
             IEntryHolder entry = ent;
             boolean reRead = false;
             if(_cacheManager.isTieredStorageCachePolicy()){
-                reRead = entry.isHollowEntry() || !context.isNonBlockingReadOp() ;
+                reRead = entry.isHollowEntry() || !context.isNonBlockingReadOp() || tmpl.isMaybeUnderXtn();
                 if(reRead){
                     entry = _cacheManager.getEntry(context, ent, false /*tryInsertToCache*/, !context.isNonBlockingReadOp() /*lockeEntry*/, tmpl.isMemoryOnlySearch() || ent.isTransient() /*useOnlyCache*/);
                     if(entry != null){
@@ -4989,7 +4992,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
         }
 
 
-        if (getCacheManager().isEvictableCachePolicy() || entry.isBlobStoreEntry())
+        if (getCacheManager().isEvictableFromSpaceCachePolicy() || entry.isBlobStoreEntry())
             _cacheManager.touchByEntry(context, entry, false /*modifyOp*/, template, CacheOperationReason.ON_READ);
 
     }
@@ -5108,7 +5111,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
                 _processorWG.enqueueBlocked(etp);
             }
         }
-        if ((getCacheManager().isEvictableCachePolicy() || entry.isBlobStoreEntry()) && template.getXidOriginatedTransaction() != null)
+        if ((getCacheManager().isEvictableFromSpaceCachePolicy() || entry.isBlobStoreEntry()) && template.getXidOriginatedTransaction() != null)
             _cacheManager.touchByEntry(context,entry, true /*modifyOp*/, template, CacheOperationReason.ON_TAKE);
     }
 
@@ -5368,7 +5371,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
         if (needVerifyWF)
             checkWFValidityAfterUpdate(context, entry);
 
-        if (getCacheManager().isEvictableCachePolicy() || entry.isBlobStoreEntry())
+        if (getCacheManager().isEvictableFromSpaceCachePolicy() || entry.isBlobStoreEntry())
             _cacheManager.touchByEntry(context,entry, true /*modifyOp*/,template,CacheOperationReason.ON_UPDATE);
     }
 
@@ -7123,7 +7126,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
     }
 
     private ILockObject getTemplateLockObject(ITemplateHolder template) {
-        return _cacheManager.getLockManager().getLockObject(template, false /*isEvictable*/);
+        return _cacheManager.getLockManager().getLockObject(template);
     }
 
     private void freeTemplateLockObject(ILockObject lockObject) {
@@ -7392,7 +7395,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
     public boolean isExpiredEntryStayInSpace(IEntryHolder entry) {
         return !entry.isTransient() &&
                 (_cacheManager.isTieredStorageCachePolicy()
-                        || (_cacheManager.isEvictableCachePolicy() && !_cacheManager.isMemorySpace()));
+                        || (_cacheManager.isEvictableFromSpaceCachePolicy() && !_cacheManager.isMemorySpace()));
     }
 
     public boolean isFailOverDuringRecovery() {
