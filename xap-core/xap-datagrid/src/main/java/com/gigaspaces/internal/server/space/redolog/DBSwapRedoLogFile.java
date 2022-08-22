@@ -2,7 +2,6 @@ package com.gigaspaces.internal.server.space.redolog;
 
 import com.gigaspaces.internal.cluster.node.impl.backlog.AbstractSingleFileGroupBacklog;
 import com.gigaspaces.internal.cluster.node.impl.packets.IReplicationOrderedPacket;
-import com.gigaspaces.internal.cluster.node.impl.packets.data.IReplicationPacketDataProducer;
 import com.gigaspaces.internal.io.IOUtils;
 import com.gigaspaces.internal.server.space.redolog.storage.IRedoLogFileStorage;
 import com.gigaspaces.internal.server.space.redolog.storage.SqliteRedoLogFileStorage;
@@ -116,7 +115,6 @@ public class DBSwapRedoLogFile<T extends IReplicationOrderedPacket> implements I
             return _memoryRedoLog.getOldest();
         }
         T oldest = _externalRedoLogStorage.getOldest();
-        fillPacketData(oldest);
         return oldest;
     }
 
@@ -129,13 +127,6 @@ public class DBSwapRedoLogFile<T extends IReplicationOrderedPacket> implements I
             return _memoryRedoLog.getOldestKey();
         }
         return _externalRedoLogStorage.getOldestKey();
-    }
-
-    private void fillPacketData(T oldest) {
-        final IReplicationPacketDataProducer dataProducer = _config.getDataProducer();
-        if (dataProducer != null) {
-            dataProducer.completePacketDataContent(oldest.getData());
-        }
     }
 
     @Override
@@ -292,7 +283,6 @@ public class DBSwapRedoLogFile<T extends IReplicationOrderedPacket> implements I
         @Override
         public T next() {
             T packet = (T) RedoLogCompactionUtil.compactPacket(iterator.next(), lastCompactionKey);
-            fillPacketData(packet);
             return packet;
         }
 

@@ -4,16 +4,23 @@ import com.gigaspaces.internal.cluster.node.handlers.ITransactionInContext;
 import com.gigaspaces.internal.cluster.node.impl.backlog.globalorder.GlobalOrderDiscardedReplicationPacket;
 import com.gigaspaces.internal.cluster.node.impl.packets.IReplicationOrderedPacket;
 import com.gigaspaces.internal.cluster.node.impl.packets.data.IReplicationPacketData;
+import com.gigaspaces.internal.cluster.node.impl.packets.data.IReplicationPacketDataProducer;
 import com.gigaspaces.internal.cluster.node.impl.packets.data.IReplicationPacketEntryData;
 import com.gigaspaces.internal.cluster.node.impl.packets.data.operations.AbstractTransactionReplicationPacketData;
-import com.gigaspaces.internal.io.IOUtils;
 import com.gigaspaces.internal.server.space.redolog.DBSwapRedoLogFileConfig;
+import com.gigaspaces.internal.server.space.redolog.storage.bytebuffer.IPacketStreamSerializer;
+import com.gigaspaces.internal.server.space.redolog.storage.bytebuffer.PacketSerializer;
+import com.gigaspaces.internal.server.space.redolog.storage.bytebuffer.SwapPacketStreamSerializer;
 import com.gigaspaces.start.SystemLocations;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.sqlite.SQLiteConfig;
 
-import java.io.*;
+import java.io.File;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.sql.*;
 import java.util.Arrays;
@@ -43,6 +50,7 @@ public abstract class SqliteStorageLayer<T extends IReplicationOrderedPacket> {
     protected final int PACKET_COUNT_COLUMN_INDEX = 5;
     protected final int PACKET_WEIGHT_COLUMN_INDEX = 6;
     protected final int PACKET_COLUMN_INDEX = 7;
+    private final PacketSerializer<T> packetSerializer;
 
 
     protected SqliteStorageLayer(DBSwapRedoLogFileConfig<T> config) {
@@ -70,6 +78,25 @@ public abstract class SqliteStorageLayer<T extends IReplicationOrderedPacket> {
         if (!config.shouldKeepDatabaseFile()){
             createTable();
         }
+
+        this.packetSerializer = new PacketSerializer<>(new IPacketStreamSerializer<T>() {
+            final SwapPacketStreamSerializer<T> serializer = new SwapPacketStreamSerializer<T>();
+            final IReplicationPacketDataProducer dataProducer = config.getDataProducer();
+
+            @Override
+            public void writePacketToStream(ObjectOutput output, T packet) throws IOException {
+                serializer.writePacketToStream(output, packet);
+            }
+
+            @Override
+            public T readPacketFromStream(ObjectInput input) throws IOException, ClassNotFoundException {
+                final T packet = serializer.readPacketFromStream(input);
+                if (dataProducer != null) {
+                    dataProducer.completePacketDataContent(packet.getData());
+                }
+                return packet;
+            }
+        });
     }
 
     private Connection connectToDB(String jdbcDriver, String dbUrl, String user, String password, SQLiteConfig sqLiteConfig) throws ClassNotFoundException, SQLException {
@@ -154,28 +181,10 @@ public abstract class SqliteStorageLayer<T extends IReplicationOrderedPacket> {
         }
     }
 
-    private byte[] objectToBytesUsingSwapExternalizable(T obj) throws java.io.IOException {
-        ByteArrayOutputStream bos = new ByteArrayOutputStream();
-        ObjectOutputStream oos = new ObjectOutputStream(bos);
-        IOUtils.writeSwapExternalizableObject(oos, obj);
-        oos.close();
-        bos.close();
-        return bos.toByteArray();
-    }
-
-    private T bytesToObjectUsingSwapExternalizable(byte[] bytes) throws IOException, ClassNotFoundException {
-        ByteArrayInputStream inStream = new ByteArrayInputStream(bytes);
-        ObjectInputStream in = new ObjectInputStream(inStream);
-        T data = IOUtils.readSwapExternalizableObject(in);
-        in.close();
-        inStream.close();
-        return data;
-    }
-
-
     protected byte[] serializePacket(T packet) {
         try {
-            return objectToBytesUsingSwapExternalizable(packet);
+            ByteBuffer byteBuffer = packetSerializer.serializePacket(packet);
+            return byteBuffer.array();
         } catch (Exception e) {
             logSerializePacketFailureInfo(packet, e);
         }
@@ -185,7 +194,7 @@ public abstract class SqliteStorageLayer<T extends IReplicationOrderedPacket> {
     protected T deserializePacket(ResultSet resultSet) {
         try {
             final byte[] bytes = resultSet.getBytes(PACKET_COLUMN_INDEX);
-            return bytesToObjectUsingSwapExternalizable(bytes);
+            return packetSerializer.deserializePacket(bytes);
         } catch (Exception e) {
             logDeserializePacketFailureInfo(resultSet, e);
         }
