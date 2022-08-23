@@ -8,7 +8,6 @@ import com.gigaspaces.internal.cluster.node.impl.packets.data.IReplicationPacket
 import com.gigaspaces.internal.cluster.node.impl.packets.data.operations.AbstractTransactionReplicationPacketData;
 import com.gigaspaces.internal.server.space.redolog.DBSwapRedoLogFileConfig;
 import com.gigaspaces.internal.server.space.redolog.storage.bytebuffer.IPacketStreamSerializer;
-import com.gigaspaces.internal.server.space.redolog.storage.bytebuffer.PacketSerializer;
 import com.gigaspaces.internal.server.space.redolog.storage.bytebuffer.SwapPacketStreamSerializer;
 import com.gigaspaces.start.SystemLocations;
 import org.slf4j.Logger;
@@ -16,7 +15,6 @@ import org.slf4j.LoggerFactory;
 import org.sqlite.SQLiteConfig;
 
 import java.io.File;
-import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.sql.*;
 import java.util.Arrays;
@@ -46,7 +44,7 @@ public abstract class SqliteStorageLayer<T extends IReplicationOrderedPacket> {
     protected final int PACKET_COUNT_COLUMN_INDEX = 5;
     protected final int PACKET_WEIGHT_COLUMN_INDEX = 6;
     protected final int PACKET_COLUMN_INDEX = 7;
-    private final PacketSerializer<T> packetSerializer;
+    private final DBPacketSerializer<T> packetSerializer;
 
 
     protected SqliteStorageLayer(DBSwapRedoLogFileConfig<T> config) {
@@ -76,7 +74,7 @@ public abstract class SqliteStorageLayer<T extends IReplicationOrderedPacket> {
         }
 
         final IPacketStreamSerializer<T> packetStreamSerializer = config.getPacketStreamSerializer();
-        this.packetSerializer = new PacketSerializer<>(packetStreamSerializer == null
+        this.packetSerializer = new DBPacketSerializer<>(packetStreamSerializer == null
                 ? new SwapPacketStreamSerializer<T>() //for tests - use default one
                 : packetStreamSerializer);
     }
@@ -165,8 +163,7 @@ public abstract class SqliteStorageLayer<T extends IReplicationOrderedPacket> {
 
     protected byte[] serializePacket(T packet) {
         try {
-            ByteBuffer byteBuffer = packetSerializer.serializePacket(packet);
-            return byteBuffer.array();
+            return packetSerializer.serializePacket(packet);
         } catch (Exception e) {
             logSerializePacketFailureInfo(packet, e);
         }
