@@ -16,9 +16,13 @@
 
 package com.gigaspaces.internal.server.space.redolog.storage;
 
+import com.gigaspaces.internal.server.space.redolog.storage.bytebuffer.ByteBufferObjectInputStream;
+import com.gigaspaces.internal.server.space.redolog.storage.bytebuffer.ByteBufferObjectOutputStream;
 import com.gigaspaces.internal.server.space.redolog.storage.bytebuffer.IPacketStreamSerializer;
 
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 
 /**
  * Supports single serializer and single deserializer
@@ -35,20 +39,20 @@ public class DBPacketSerializer<T> {
     }
 
     public byte[] serializePacket(T packet) throws java.io.IOException {
-        ByteArrayOutputStream bos = new ByteArrayOutputStream();
-        ObjectOutputStream oos = new ObjectOutputStream(bos);
-        packetStreamSerializer.writePacketToStream(oos, packet);
-        oos.close();
-        bos.close();
-        return bos.toByteArray();
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        ByteBufferObjectOutputStream bbos = new ByteBufferObjectOutputStream(baos);
+        packetStreamSerializer.writePacketToStream(bbos, packet);
+        bbos.close();
+        baos.close();
+        return baos.toByteArray();
     }
 
     public T deserializePacket(byte[] bytes) throws IOException, ClassNotFoundException {
-        ByteArrayInputStream bis = new ByteArrayInputStream(bytes);
-        ObjectInputStream ois = new ObjectInputStream(bis);
-        T packet = packetStreamSerializer.readPacketFromStream(ois);
-        ois.close();
-        bis.close();
+        ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
+        ByteBufferObjectInputStream bbis = new ByteBufferObjectInputStream(bais);
+        T packet = packetStreamSerializer.readPacketFromStream(bbis);
+        bbis.close();
+        bais.close();
         return packet;
     }
 }
