@@ -285,13 +285,19 @@ public class ClusterRemoteOperationRouter extends AbstractRemoteOperationRouter 
             try {
                 final T result = asyncResult.getResult();
                 Exception exception = asyncResult.getException();
-                if (exception != null)
-                    logAsyncExecutionFailure(_proxy, _request, exception);
-                else
-                    logAfterExecuteAsync(_proxy, _request, result);
+                if (exception == null) {
+                    if (result == null) {
+                        exception = new IllegalStateException("Async operation completed without result or exception");
+                    } else {
+                        exception = result.getExecutionException();
+                    }
+                }
 
-                if (exception == null)
-                    exception = result != null ? result.getExecutionException() : new IllegalStateException("Async operation completed without result or exception");
+                if (exception != null) {
+                    logAsyncExecutionFailure(_proxy, _request, exception);
+                } else {
+                    logAfterExecuteAsync(_proxy, _request, result);
+                }
 
                 final ExecutionStatus status = processResult(_request, result, exception);
                 afterOperationExecution(_request, _proxy, status);
