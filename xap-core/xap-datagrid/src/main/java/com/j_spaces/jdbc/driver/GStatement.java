@@ -40,6 +40,7 @@ public class GStatement implements Statement {
     protected ResultSet resultSet = null;
     protected List<String> _queriesBatch;
     protected boolean ignoreUnsupportedOptions;
+    protected ResponsePacket packet;
 
     //logger
     final private static Logger _logger = LoggerFactory.getLogger(Constants.LOGGER_QUERY);
@@ -168,7 +169,13 @@ public class GStatement implements Statement {
      * @see java.sql.Statement#getMoreResults()
      */
     public boolean getMoreResults() throws SQLException {
-        throw new SQLException("Command not Supported!", "GSP", -132);
+        packet = packet.getNext();
+        if (packet != null) {
+              return executePacket();
+        } else {
+            updateCount = -1;
+            return false;
+        }
     }
 
     /* (non-Javadoc)
@@ -296,7 +303,11 @@ public class GStatement implements Statement {
     public boolean execute(String sql) throws SQLException {
         init();
 
-        ResponsePacket packet = connection.sendStatement(sql);
+        packet = connection.sendStatement(sql);
+        return executePacket();
+    }
+
+    private boolean executePacket() {
         if (packet.getResultEntry() != null) {
             buildResultSet(packet);
             return true;

@@ -1,5 +1,7 @@
 package com.gigaspaces.query.sql.functions.extended;
 
+import net.jini.core.transaction.Transaction;
+
 import java.io.Serializable;
 
 public class LocalSession implements Serializable {
@@ -7,6 +9,7 @@ public class LocalSession implements Serializable {
     private static final long serialVersionUID = -2470679645214359948L;
     private String username;
     private int gwPort;
+    private Transaction transaction;
 
     public LocalSession() {
     }
@@ -34,5 +37,13 @@ public class LocalSession implements Serializable {
 
     public void setGwPort(int gwPort) {
         this.gwPort = gwPort;
+    }
+
+    public Transaction getTransaction() {
+        return transaction;
+    }
+
+    public void setTransaction(Transaction transaction) {
+        this.transaction = transaction;
     }
 }
