@@ -39,20 +39,15 @@ public class DBPacketSerializer<T> {
     }
 
     public byte[] serializePacket(T packet) throws java.io.IOException {
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        ByteBufferObjectOutputStream bbos = new ByteBufferObjectOutputStream(baos);
-        packetStreamSerializer.writePacketToStream(bbos, packet);
-        bbos.close();
-        baos.close();
-        return baos.toByteArray();
+        try (ByteArrayOutputStream baos = new ByteArrayOutputStream(); ByteBufferObjectOutputStream bbos = new ByteBufferObjectOutputStream(baos)) {
+            packetStreamSerializer.writePacketToStream(bbos, packet);
+            return baos.toByteArray();
+        }
     }
 
     public T deserializePacket(byte[] bytes) throws IOException, ClassNotFoundException {
-        ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
-        ByteBufferObjectInputStream bbis = new ByteBufferObjectInputStream(bais);
-        T packet = packetStreamSerializer.readPacketFromStream(bbis);
-        bbis.close();
-        bais.close();
-        return packet;
+        try (ByteBufferObjectInputStream bbis = new ByteBufferObjectInputStream(new ByteArrayInputStream(bytes))) {
+            return packetStreamSerializer.readPacketFromStream(bbis);
+        }
     }
 }
