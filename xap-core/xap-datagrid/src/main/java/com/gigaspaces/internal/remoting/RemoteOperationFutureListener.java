@@ -19,19 +19,16 @@ package com.gigaspaces.internal.remoting;
 import com.gigaspaces.async.AsyncFuture;
 import com.gigaspaces.async.AsyncFutureListener;
 import com.gigaspaces.async.internal.DefaultAsyncResult;
-import com.gigaspaces.internal.remoting.routing.clustered.PostponedAsyncOperationsQueue;
 import com.gigaspaces.internal.remoting.routing.clustered.RemoteOperationsExecutorProxy;
 import com.gigaspaces.internal.utils.concurrent.ContextClassLoaderRunnable;
 import com.gigaspaces.lrmi.LRMIRuntime;
 import com.j_spaces.core.exception.internal.ProxyInternalSpaceException;
+import org.slf4j.Logger;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import static com.gigaspaces.internal.remoting.routing.clustered.PostponedAsyncOperationsQueue.THREADS_NAME_PREFIX;
 
@@ -147,11 +144,11 @@ public class RemoteOperationFutureListener<T extends RemoteOperationResult> impl
             try {
                 if (_logger.isTraceEnabled())
                     _logger.trace("Received " + request.getRemoteOperationResult() + ((sourceProxy != null) ? " from " + sourceProxy.toLogMessage(request) : ""));
-                isCompleted = onOperationResultArrival(request);
+                isCompleted = request.getRemoteOperationResult() == null || onOperationResultArrival(request);
                 if (isCompleted && _getResultOnCompletion)
                     this._result = getResult(request);
             } catch (ExecutionException e) {
-                isCompleted = true;
+                isCompleted = true; //Variable is already assigned but compiler doesn't get it
                 this._exception = e;
             } catch (Exception e) {
                 isCompleted = true;
