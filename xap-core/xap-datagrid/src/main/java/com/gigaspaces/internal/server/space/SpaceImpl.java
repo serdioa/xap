@@ -208,7 +208,6 @@ import static com.j_spaces.core.Constants.DirectPersistency.ZOOKEEPER.ZOOKEEPER_
 import static com.j_spaces.core.Constants.LeaderSelector.LEADER_SELECTOR_HANDLER_CLASS_NAME;
 import static com.j_spaces.core.Constants.LeaderSelector.ZK_PARTICIPANT_NAME_SEPARATOR;
 import static com.j_spaces.core.Constants.LeaseManager.*;
-import static com.j_spaces.core.Constants.TieredStorage.FULL_TIERED_STORAGE_TABLE_CONFIG_INSTANCE_PROP;
 
 
 @com.gigaspaces.api.InternalApi
@@ -3115,14 +3114,16 @@ public class SpaceImpl extends AbstractService implements IRemoteSpace, IInterna
 
             if (_spaceConfig != null) {
                 if (_engine != null && _engine.getTieredStorageManager() != null) {
-                    _spaceConfig.getCustomProperties().put(FULL_TIERED_STORAGE_TABLE_CONFIG_INSTANCE_PROP,
-                            _engine.getTieredStorageManager().getTieredStorageConfig());
+                    _spaceConfig.setTieredStorageConfig(_engine.getTieredStorageManager().getTieredStorageConfig());
                 }
                 return _spaceConfig;
             }
 
             final Properties spaceProps = JProperties.getSpaceProperties(_configReader.getFullSpaceName());
             _spaceConfig = new SpaceConfig(_spaceName, spaceProps, _containerName, "");
+            if (_engine != null && _engine.getTieredStorageManager() != null) {
+                _spaceConfig.setTieredStorageConfig(_engine.getTieredStorageManager().getTieredStorageConfig());
+            }
             _spaceConfig.setClusterPolicy(_clusterPolicy);
             _spaceConfig.setClusterInfo(_clusterInfo);
             _spaceConfig.setLoadOnStartup(_jspaceAttr.isLoadOnStartup());

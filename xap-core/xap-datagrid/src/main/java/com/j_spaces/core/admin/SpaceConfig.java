@@ -19,6 +19,7 @@ package com.j_spaces.core.admin;
 
 import com.gigaspaces.internal.cluster.SpaceClusterInfo;
 import com.gigaspaces.internal.server.space.IClusterInfoChangedListener;
+import com.gigaspaces.internal.server.space.tiered_storage.TieredStorageConfig;
 import com.gigaspaces.internal.utils.StringUtils;
 import com.j_spaces.core.Constants;
 import com.j_spaces.core.JSpaceAttributes;
@@ -48,6 +49,8 @@ public class SpaceConfig extends JSpaceAttributes implements IClusterInfoChanged
 
     private static final long serialVersionUID = 1L;
     private static final int SERIAL_VERSION = 1;
+
+    private TieredStorageConfig _tieredStorageConfig;
 
     /**
      *
@@ -106,6 +109,14 @@ public class SpaceConfig extends JSpaceAttributes implements IClusterInfoChanged
      */
     public void setSpaceName(String spaceName) {
         _spaceName = spaceName;
+    }
+
+    public void setTieredStorageConfig(TieredStorageConfig tieredStorageConfig) {
+        _tieredStorageConfig = tieredStorageConfig;
+    }
+
+    public TieredStorageConfig getTieredStorageConfig() {
+        return _tieredStorageConfig;
     }
 
     public String getFullSpaceName() {
