@@ -67,6 +67,11 @@ public class DBMemoryRedoLogFile<T extends IReplicationOrderedPacket> implements
     }
 
     @Override
+    public long getOldestKey() {
+        return _redoFile.getFirst().getKey();
+    }
+
+    @Override
     public void add(T replicationPacket) {
         _redoFile.addLast(replicationPacket);
         increaseWeight(replicationPacket);

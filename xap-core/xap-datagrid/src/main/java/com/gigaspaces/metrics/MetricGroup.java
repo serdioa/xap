@@ -16,6 +16,9 @@
 
 package com.gigaspaces.metrics;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -28,6 +31,7 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 @com.gigaspaces.api.InternalApi
 public class MetricGroup {
+    private static final Logger logger = LoggerFactory.getLogger(MetricGroup.class);
     private final Map<String, Metric> metrics = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, Gauge> gauges = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, LongCounter> counters = new ConcurrentHashMap<>();
@@ -71,7 +75,7 @@ public class MetricGroup {
                     metricsValues.put(entry.getKey(), value);
                 }
             } catch (Exception e) {
-                // TODO: Consider logging this exception.
+                logger.warn("Failed to use metrics for key [{}]", entry.getKey(), e);
             }
         }
 
