@@ -32,6 +32,8 @@ import java.rmi.UnmarshalException;
 import java.util.Arrays;
 import java.util.Properties;
 
+import static com.j_spaces.core.Constants.TieredStorage.FULL_TIERED_STORAGE_TABLE_CONFIG_INSTANCE_PROP;
+
 /**
  * This structure contains all information about space configuration. <code>SpaceConfig</code>
  * builds inside of Server and transfered to the side of client.
@@ -49,9 +51,6 @@ public class SpaceConfig extends JSpaceAttributes implements IClusterInfoChanged
 
     private static final long serialVersionUID = 1L;
     private static final int SERIAL_VERSION = 1;
-
-    private TieredStorageConfig _tieredStorageConfig;
-
     /**
      *
      */
@@ -112,11 +111,11 @@ public class SpaceConfig extends JSpaceAttributes implements IClusterInfoChanged
     }
 
     public void setTieredStorageConfig(TieredStorageConfig tieredStorageConfig) {
-        _tieredStorageConfig = tieredStorageConfig;
+        getCustomProperties().put(FULL_TIERED_STORAGE_TABLE_CONFIG_INSTANCE_PROP, tieredStorageConfig);
     }
 
     public TieredStorageConfig getTieredStorageConfig() {
-        return _tieredStorageConfig;
+        return (TieredStorageConfig) getCustomProperties().get(FULL_TIERED_STORAGE_TABLE_CONFIG_INSTANCE_PROP);
     }
 
     public String getFullSpaceName() {
