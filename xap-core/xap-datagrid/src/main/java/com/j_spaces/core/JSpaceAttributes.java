@@ -1286,8 +1286,7 @@ public class JSpaceAttributes
 
     public TieredStorageConfig getTieredStorageConfig() {
         return ((TieredStorageConfig) getOrDefault(FULL_TIERED_STORAGE_TABLE_CONFIG_INSTANCE_PROP,
-                _customProperties.getOrDefault(FULL_TIERED_STORAGE_TABLE_CONFIG_INSTANCE_PROP,
-                        new TieredStorageConfig())));
+                _customProperties.get(FULL_TIERED_STORAGE_TABLE_CONFIG_INSTANCE_PROP)));
 
     }
 
