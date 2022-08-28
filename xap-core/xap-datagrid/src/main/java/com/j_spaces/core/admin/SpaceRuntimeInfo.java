@@ -17,11 +17,11 @@
 
 package com.j_spaces.core.admin;
 
+import com.gigaspaces.internal.server.space.tiered_storage.TieredStorageConfig;
 import com.gigaspaces.internal.version.PlatformLogicalVersion;
 import com.gigaspaces.lrmi.LRMIInvocationContext;
 import com.gigaspaces.serialization.SmartExternalizable;
 
-import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
@@ -77,9 +77,8 @@ public class SpaceRuntimeInfo implements SmartExternalizable {
     public List<Integer> m_NumOFTemplates;
 
     private long diskSize;
-
-
     private long freeSpace;
+    private TieredStorageConfig tieredStorageConfig;
 
     /**
      * Empty constructor.
@@ -94,13 +93,15 @@ public class SpaceRuntimeInfo implements SmartExternalizable {
      * @param numOfEntries list of numbers of entries for each class correlated to
      *                     <code>classNames</code>
      */
-    public SpaceRuntimeInfo(List<String> classNames, List<Integer> numOfEntries, List<Integer> numOFTemplates, List<Integer> ramNumOFEntries,long diskSize, long freeSpace) {
+    public SpaceRuntimeInfo(List<String> classNames, List<Integer> numOfEntries, List<Integer> numOFTemplates, List<Integer> ramNumOFEntries
+            , long diskSize, long freeSpace, TieredStorageConfig tieredStorageConfig) {
         m_ClassNames = classNames;
         m_NumOFEntries = numOfEntries;
         m_NumOFTemplates = numOFTemplates;
         m_RamNumOFEntries = ramNumOFEntries;
         this.diskSize = diskSize;
         this.freeSpace = freeSpace;
+        this.tieredStorageConfig = tieredStorageConfig;
     }
 
     /**
@@ -126,6 +127,9 @@ public class SpaceRuntimeInfo implements SmartExternalizable {
             out.writeLong(diskSize);
             out.writeLong(freeSpace);
         }
+        if (LRMIInvocationContext.getEndpointLogicalVersion().greaterOrEquals(PlatformLogicalVersion.v16_2_0)) {
+            out.writeObject(tieredStorageConfig);
+        }
     }
 
     /**
@@ -137,7 +141,6 @@ public class SpaceRuntimeInfo implements SmartExternalizable {
         m_NumOFEntries = new ArrayList<Integer>(size);
         m_NumOFTemplates = new ArrayList<Integer>(size);
         m_RamNumOFEntries = new ArrayList<Integer>(size);
-
         for (int i = 0; i < size; ++i) {
             m_ClassNames.add(in.readUTF());
         }
@@ -155,6 +158,9 @@ public class SpaceRuntimeInfo implements SmartExternalizable {
             }
             diskSize = in.readLong();
             freeSpace = in.readLong();
+        }
+        if (LRMIInvocationContext.getEndpointLogicalVersion().greaterOrEquals(PlatformLogicalVersion.v16_2_0)) {
+            tieredStorageConfig = (TieredStorageConfig) in.readObject();
         }
     }
 
@@ -198,12 +204,22 @@ public class SpaceRuntimeInfo implements SmartExternalizable {
         }
         diskSize = spaceRuntimeInfo.diskSize;
         freeSpace = spaceRuntimeInfo.freeSpace;
+        tieredStorageConfig = spaceRuntimeInfo.tieredStorageConfig;
         return this;
     }
+
     public long getFreeSpace() {
         return freeSpace;
     }
+
     public long getDiskSize() {
         return diskSize;
+    }
+
+    /**
+     * @since 16.2
+     **/
+    public TieredStorageConfig getTieredStorageConfig() {
+        return tieredStorageConfig;
     }
 }

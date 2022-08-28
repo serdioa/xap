@@ -3113,17 +3113,11 @@ public class SpaceImpl extends AbstractService implements IRemoteSpace, IInterna
             }
 
             if (_spaceConfig != null) {
-                if (_engine != null && _engine.getTieredStorageManager() != null) {
-                    _spaceConfig.setTieredStorageConfig(_engine.getTieredStorageManager().getTieredStorageConfig());
-                }
                 return _spaceConfig;
             }
 
             final Properties spaceProps = JProperties.getSpaceProperties(_configReader.getFullSpaceName());
             _spaceConfig = new SpaceConfig(_spaceName, spaceProps, _containerName, "");
-            if (_engine != null && _engine.getTieredStorageManager() != null) {
-                _spaceConfig.setTieredStorageConfig(_engine.getTieredStorageManager().getTieredStorageConfig());
-            }
             _spaceConfig.setClusterPolicy(_clusterPolicy);
             _spaceConfig.setClusterInfo(_clusterInfo);
             _spaceConfig.setLoadOnStartup(_jspaceAttr.isLoadOnStartup());
