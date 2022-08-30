@@ -814,7 +814,7 @@ public class SpaceTypeInfo implements SmartExternalizable {
             _broadcast = classAnnotation.broadcast();
         }
 
-        SpaceTieredStorageTableConfig tieredStorageAnnotation = _type.getAnnotation(SpaceTieredStorageTableConfig.class);
+        SpaceTieredStorageCacheRule tieredStorageAnnotation = _type.getAnnotation(SpaceTieredStorageCacheRule.class);
         if (tieredStorageAnnotation != null) {
             _tieredStorageTableConfig = new TieredStorageTableConfig()
                 .setName(_type.getName())
