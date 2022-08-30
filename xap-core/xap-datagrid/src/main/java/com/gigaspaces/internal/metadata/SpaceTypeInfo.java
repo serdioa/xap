@@ -814,14 +814,14 @@ public class SpaceTypeInfo implements SmartExternalizable {
             _broadcast = classAnnotation.broadcast();
         }
 
-        SpaceTieredStorageTableConfig tieredStorageAnnotation = _type.getAnnotation(SpaceTieredStorageTableConfig.class);
+        SpaceTieredStorageCacheRule tieredStorageAnnotation = _type.getAnnotation(SpaceTieredStorageCacheRule.class);
         if (tieredStorageAnnotation != null) {
             _tieredStorageTableConfig = new TieredStorageTableConfig()
-                .setName(_type.getName())
-                .setTransient(tieredStorageAnnotation.isTransient())
-                .setCriteria(evalFieldAnnotation(tieredStorageAnnotation.criteria()))
-                .setTimeColumn(evalFieldAnnotation(tieredStorageAnnotation.timeColumn()))
-                .setPeriod(tieredStorageAnnotation.period().isEmpty()? null :Duration.parse(tieredStorageAnnotation.period()));
+                    .setName(_type.getName())
+                    .setTransient(!_persist)
+                    .setCriteria(evalFieldAnnotation(tieredStorageAnnotation.criteria()))
+                    .setTimeColumn(evalFieldAnnotation(tieredStorageAnnotation.timeColumn()))
+                    .setPeriod(tieredStorageAnnotation.period().isEmpty() ? null : Duration.parse(tieredStorageAnnotation.period()));
         }
 
         SpaceSystemClass systemClassAnnotation = _type.getAnnotation(SpaceSystemClass.class);

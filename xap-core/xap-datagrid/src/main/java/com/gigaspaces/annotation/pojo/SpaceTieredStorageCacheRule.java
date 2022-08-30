@@ -16,19 +16,12 @@ import java.lang.annotation.Target;
  */
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
-public @interface SpaceTieredStorageTableConfig {
+public @interface SpaceTieredStorageCacheRule {
 
     /**
      * @return The criteria field that holds a cache rule.
      */
     String criteria() default "";
-
-    /**
-     * Same as <code>@SpaceClass(persist = false)</code>
-     *
-     * @return <code>true</code> if the type will be stored only in RAM and not in disk.
-     */
-    boolean isTransient() default false;
 
     /**
      * @return The name of the timestamp field to be evaluated against the {@link #period()}.
