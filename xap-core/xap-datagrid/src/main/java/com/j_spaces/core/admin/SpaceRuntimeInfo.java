@@ -18,7 +18,6 @@
 package com.j_spaces.core.admin;
 
 import com.gigaspaces.internal.server.space.tiered_storage.TieredStorageConfig;
-import com.gigaspaces.internal.server.space.tiered_storage.TieredStorageTableConfig;
 import com.gigaspaces.internal.version.PlatformLogicalVersion;
 import com.gigaspaces.lrmi.LRMIInvocationContext;
 import com.gigaspaces.serialization.SmartExternalizable;
@@ -27,7 +26,6 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 
 /**
@@ -128,16 +126,9 @@ public class SpaceRuntimeInfo implements SmartExternalizable {
             }
             out.writeLong(diskSize);
             out.writeLong(freeSpace);
-
-            if (tieredStorageConfig.getTables().isEmpty()) {
-                out.writeInt(-1);
-            } else {
-                Collection<TieredStorageTableConfig> tables = tieredStorageConfig.getTables();
-                out.writeInt(tieredStorageConfig.getTables().size());
-                for (TieredStorageTableConfig table : tables) {
-                    out.writeObject(table);
-                }
-            }
+        }
+        if (LRMIInvocationContext.getEndpointLogicalVersion().greaterOrEquals(PlatformLogicalVersion.v16_2_0)) {
+            out.writeObject(tieredStorageConfig);
         }
     }
 
@@ -150,11 +141,6 @@ public class SpaceRuntimeInfo implements SmartExternalizable {
         m_NumOFEntries = new ArrayList<Integer>(size);
         m_NumOFTemplates = new ArrayList<Integer>(size);
         m_RamNumOFEntries = new ArrayList<Integer>(size);
-
-        for (int i = 0; i < size; i++) {
-            if (tieredStorageConfig != null)
-                tieredStorageConfig.addTable((TieredStorageTableConfig) in.readObject());
-        }
         for (int i = 0; i < size; ++i) {
             m_ClassNames.add(in.readUTF());
         }
@@ -172,6 +158,9 @@ public class SpaceRuntimeInfo implements SmartExternalizable {
             }
             diskSize = in.readLong();
             freeSpace = in.readLong();
+        }
+        if (LRMIInvocationContext.getEndpointLogicalVersion().greaterOrEquals(PlatformLogicalVersion.v16_2_0)) {
+            tieredStorageConfig = (TieredStorageConfig) in.readObject();
         }
     }
 
@@ -227,6 +216,9 @@ public class SpaceRuntimeInfo implements SmartExternalizable {
         return diskSize;
     }
 
+    /**
+     * @since 16.2
+     **/
     public TieredStorageConfig getTieredStorageConfig() {
         return tieredStorageConfig;
     }
