@@ -144,7 +144,7 @@ public class RemoteOperationFutureListener<T extends RemoteOperationResult> impl
             try {
                 if (_logger.isTraceEnabled())
                     _logger.trace("Received " + request.getRemoteOperationResult() + ((sourceProxy != null) ? " from " + sourceProxy.toLogMessage(request) : ""));
-                isCompleted = request.getRemoteOperationResult() == null || onOperationResultArrival(request);
+                isCompleted = onOperationResultArrival(request);
                 if (isCompleted && _getResultOnCompletion)
                     this._result = getResult(request);
             } catch (ExecutionException e) {
