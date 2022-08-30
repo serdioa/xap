@@ -7,8 +7,8 @@ import java.lang.annotation.Target;
 
 /**
  * <p>
- * Define fields of a config table in tiered storage which represent cache rules that determine which entries will be stored in cache.
- *
+ * Define cache rules that determine which entries will be available in RAM for faster access.
+ * Entries that don't match the criteria/time-rule, will be accessed from disk.
  * </p>
  *
  * @author Sapir
@@ -19,25 +19,26 @@ import java.lang.annotation.Target;
 public @interface SpaceTieredStorageTableConfig {
 
     /**
-     * sets the criteria field that hold a cache rule.
+     * @return The criteria field that holds a cache rule.
      */
     String criteria() default "";
 
     /**
-     * Returns true if the type will be stored only in cache
+     * Same as <code>@SpaceClass(persist = false)</code>
      *
-     * @return <code>true</code> if type is transient
+     * @return <code>true</code> if the type will be stored only in RAM and not in disk.
      */
     boolean isTransient() default false;
 
     /**
-     Set the time rule column which represents the timestamp
-     @return the column name to be evaluated against the time rule period     * */
+     * @return The name of the timestamp field to be evaluated against the {@link #period()}.
+     */
     String timeColumn() default "";
 
-
+    /**
+     * Set the {@link java.time.Duration} period to keep in RAM.
+     *
+     * @return a text string such as {@code PnDTnHnMn.nS} representing a {@code Duration}
+     */
     String period() default "";
-
-
-
 }
