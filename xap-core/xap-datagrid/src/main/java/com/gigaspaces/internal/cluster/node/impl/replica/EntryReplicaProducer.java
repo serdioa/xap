@@ -99,9 +99,9 @@ public class EntryReplicaProducer
                     templatePacket,
                     _engine.generateUid(),
                     Long.MAX_VALUE /*
-                                                                                         * expiration
-                                                                                         * time
-                                                                                         */);
+                     * expiration
+                     * time
+                     */);
 
             // iterator for entries
             _entriesIterSA = _engine.getCacheManager()
@@ -319,7 +319,7 @@ public class EntryReplicaProducer
             throws TransactionConflictException {
 
         IEntryHolder original = entry;
-        if (_engine.getCacheManager().needReReadAfterEntryLock()) {
+        if (xtnsLocked && _engine.getCacheManager().needReReadAfterEntryLock()) {
             try {
                 entry = _engine.getCacheManager()
                         .getEntry(_context,
