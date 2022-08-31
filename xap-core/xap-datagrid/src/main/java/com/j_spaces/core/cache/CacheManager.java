@@ -47,6 +47,7 @@ import com.gigaspaces.internal.server.space.recovery.direct_persistency.Consiste
 import com.gigaspaces.internal.server.space.recovery.direct_persistency.DirectPersistencyRecoveryException;
 import com.gigaspaces.internal.server.space.recovery.direct_persistency.IStorageConsistency;
 import com.gigaspaces.internal.server.space.recovery.direct_persistency.StorageConsistencyModes;
+import com.gigaspaces.internal.server.space.tiered_storage.TieredStorageConfig;
 import com.gigaspaces.internal.server.space.tiered_storage.TieredStorageManager;
 import com.gigaspaces.internal.server.space.tiered_storage.TieredStorageSA;
 import com.gigaspaces.internal.server.space.tiered_storage.TieredStorageTableConfig;
@@ -6082,7 +6083,7 @@ public class CacheManager extends AbstractCacheManager
         ArrayList<Integer> entries = new ArrayList<>(subTypes.length);
         ArrayList<Integer> ramOnlyEntries = new ArrayList<>(subTypes.length);
         ArrayList<Integer> templates = new ArrayList<>(subTypes.length);
-
+        TieredStorageConfig tieredStorageConfig = null;
         for (IServerTypeDesc subType : subTypes) {
             if (subType.isInactive())
                 continue;
@@ -6117,19 +6118,21 @@ public class CacheManager extends AbstractCacheManager
                 diskSize = getEngine().getTieredStorageManager().getTieredStorageSA().getDiskSize();
             }
         } catch (SAException | IOException e) {
-            _logger.warn("failed to get tiered storage disk size with exception: " , e);
+            _logger.warn("failed to get tiered storage disk size with exception: ", e);
         }
         long freeSpace = 0;
-
         try {
             if (isTieredStorageCachePolicy()) {
                 freeSpace = getEngine().getTieredStorageManager().getTieredStorageSA().getFreeSpaceSize();
             }
         } catch (SAException | IOException e) {
-            _logger.warn("failed to get tiered storage free space size with exception: " , e);
+            _logger.warn("failed to get tiered storage free space size with exception: ", e);
+        }
+        if (isTieredStorageCachePolicy()) {
+            tieredStorageConfig = getEngine().getTieredStorageManager().getTieredStorageConfig();
         }
 
-        return new SpaceRuntimeInfo(classes, entries, templates,ramOnlyEntries, diskSize, freeSpace);
+        return new SpaceRuntimeInfo(classes, entries, templates, ramOnlyEntries, diskSize, freeSpace, tieredStorageConfig);
     }
 
     private void countPersistentEntries(Map<String, Integer> classCountMap, ITemplateHolder template, IServerTypeDesc[] subTypes) {
