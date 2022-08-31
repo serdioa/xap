@@ -1058,7 +1058,7 @@ public class CacheManager extends AbstractCacheManager
                                 eh.updateEntryData(eh.getEntryData(), expiration);
                             }
                         }
-                        insertEntry(context, eh, false, false, true);
+                        insertEntry(context, eh, false, false, true, false);
                     } else {
                         boolean insertBlobStoreEntryToCache = true;
                         // handle initial load entry with embedded sync list
@@ -1390,7 +1390,7 @@ public class CacheManager extends AbstractCacheManager
     /**
      * insert an entry to the space.
      */
-    public void insertEntry(Context context, IEntryHolder entryHolder, boolean shouldReplicate, boolean origin, boolean suppliedUid)
+    public void insertEntry(Context context, IEntryHolder entryHolder, boolean shouldReplicate, boolean origin, boolean suppliedUid, boolean fromReplication)
             throws SAException, EntryAlreadyInSpaceException {
 
         validateEntryCanBeWrittenToCache(entryHolder);
@@ -1402,8 +1402,9 @@ public class CacheManager extends AbstractCacheManager
             entryHolder.setWriteLockOwnerAndOperation(entryHolder.getXidOriginated(), SpaceOperations.WRITE, false /*createSnapshot*/);
         }
 
-        if (entryHolder.getXidOriginated() != null)
+        if (entryHolder.getXidOriginated() != null) {
             entryHolder.getXidOriginated().setOperatedUpon();
+        }
 
         IEntryCacheInfo pE = null;
 
@@ -1416,7 +1417,7 @@ public class CacheManager extends AbstractCacheManager
             _storageAdapter.insertEntry(context, entryHolder, origin, shouldReplicate);
         }
 
-        if (isTieredStorageCachePolicy() && (context.isMemoryOnlyEntry() || context.isMemoryAndDiskEntry()) && !origin) {
+        if (isTieredStorageCachePolicy() && (context.isMemoryOnlyEntry() || context.isMemoryAndDiskEntry()) && !origin && !fromReplication) {
             pE = safeInsertEntryToCache(context, entryHolder, false /* newEntry */, null /*pType*/, false /*pin*/,
                     InitialLoadOrigin.FROM_EXTERNAL_DATA_SOURCE /*fromInitialLoad*/);
         } else if (isTieredStorageCachePolicy() && context.isDiskOnlyEntry()) {

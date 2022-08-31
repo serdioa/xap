@@ -99,9 +99,9 @@ public class EntryReplicaProducer
                     templatePacket,
                     _engine.generateUid(),
                     Long.MAX_VALUE /*
-                                                                                         * expiration
-                                                                                         * time
-                                                                                         */);
+                     * expiration
+                     * time
+                     */);
 
             // iterator for entries
             _entriesIterSA = _engine.getCacheManager()
@@ -319,7 +319,7 @@ public class EntryReplicaProducer
             throws TransactionConflictException {
 
         IEntryHolder original = entry;
-        if (_engine.getCacheManager().needReReadAfterEntryLock()) {
+        if (xtnsLocked && _engine.getCacheManager().needReReadAfterEntryLock()) {
             try {
                 entry = _engine.getCacheManager()
                         .getEntry(_context,
@@ -389,10 +389,12 @@ public class EntryReplicaProducer
             }
         }
 
+
         if (entry.isExpired()
-                && (!entry.isEntryUnderWriteLockXtn() || !_engine.getLeaseManager()
-                .isNoReapUnderXtnLeases()))
+                && !(entry.getEntryData().getExpirationTime() == com.j_spaces.core.Constants.TieredStorage.DUMMY_LEASE_FOR_TRANSACTION)
+                && (!entry.isEntryUnderWriteLockXtn() || !_engine.getLeaseManager().isNoReapUnderXtnLeases())) {
             return null;
+        }
 
         final IEntryPacket entryPacket = buildEntryPacket(entryToUse);
         if (_templateHolder.getProjectionTemplate() != null)
