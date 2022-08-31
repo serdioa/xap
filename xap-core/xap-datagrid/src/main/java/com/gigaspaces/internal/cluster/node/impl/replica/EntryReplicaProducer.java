@@ -389,10 +389,12 @@ public class EntryReplicaProducer
             }
         }
 
+
         if (entry.isExpired()
-                && (!entry.isEntryUnderWriteLockXtn() || !_engine.getLeaseManager()
-                .isNoReapUnderXtnLeases()))
+                && !(entry.getEntryData().getExpirationTime() == com.j_spaces.core.Constants.TieredStorage.DUMMY_LEASE_FOR_TRANSACTION)
+                && (!entry.isEntryUnderWriteLockXtn() || !_engine.getLeaseManager().isNoReapUnderXtnLeases())) {
             return null;
+        }
 
         final IEntryPacket entryPacket = buildEntryPacket(entryToUse);
         if (_templateHolder.getProjectionTemplate() != null)
