@@ -29,17 +29,20 @@ import java.util.List;
 public enum XapModules {
     // System modules
     CORE_COMMON("required/xap-common.jar", ClassLoaderType.SYSTEM),
+    OPENSPACE_SYSTEM("required/xap-openspaces.jar", ClassLoaderType.SYSTEM),
     // Common Modules
     DATA_GRID("required/xap-datagrid.jar", ClassLoaderType.COMMON),
     CORE_REFLECTIONS_ASM("required/xap-asm.jar", ClassLoaderType.COMMON),
     CORE_COLLECTIONS_TROVE("required/xap-trove.jar", ClassLoaderType.COMMON),
     LICENSE("required/xap-premium-common.jar", ClassLoaderType.COMMON),
+    OPENSPACE_COMMON("required/xap-openspaces.jar", ClassLoaderType.COMMON),
     MAP("optional/map/xap-map.jar", ClassLoaderType.COMMON),
     NEAR_CACHE("optional/near-cache/xap-near-cache.jar", ClassLoaderType.COMMON),
     INTEROP("optional/interop/xap-interop.jar", ClassLoaderType.COMMON),
     WAN("optional/wan-gateway/xap-wan-gateway.jar", ClassLoaderType.COMMON),
     SERVICE_GRID("platform/service-grid/xap-service-grid.jar", ClassLoaderType.COMMON),
     // Service modules
+    OPENSPACE_SERVICE("required/xap-openspaces.jar", ClassLoaderType.SERVICE),
     HIBERNATE_SPRING("optional/hibernate/xap-hibernate-spring.jar", ClassLoaderType.SERVICE),
     JPA_SPRING("optional/jpa/xap-jpa-spring.jar", ClassLoaderType.SERVICE),
     MAP_SPRING("optional/map/xap-map-spring.jar", ClassLoaderType.SERVICE),
