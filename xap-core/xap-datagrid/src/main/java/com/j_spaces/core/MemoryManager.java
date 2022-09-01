@@ -378,7 +378,7 @@ public class MemoryManager implements Closeable {
         if (rate < _memoryUsageHighLevel && !isWriteTypeOperation)
             return MemoryEvictionDecision.NO_EVICTION;
 
-        if (_cacheManager.isResidentEntriesCachePolicy()) {
+        if (!_cacheManager.isEvictableFromSpaceCachePolicy()) {
             if (_gcBeforeShortage)
                 rate = getMemoryUsageRate(true, false);
             MemoryShortageException ex = shortageCheck(rate, isWriteTypeOperation);

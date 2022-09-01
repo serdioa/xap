@@ -290,7 +290,7 @@ public class Processor implements IConsumerObject<BusPacket<Processor>> {
                     context.setBackupOnly();
                 }
                 try {
-                    _cacheManager.insertEntry(context, entry, shouldReplicate, origin, supplied_uid);
+                    _cacheManager.insertEntry(context, entry, shouldReplicate, origin, supplied_uid, fromReplication);
                 } catch (EntryAlreadyInSpaceException ex_) {
                     alreadyIn = true;
                     //try to remove the existing entry if expired-if we can use this lock
@@ -300,7 +300,7 @@ public class Processor implements IConsumerObject<BusPacket<Processor>> {
                         if (_engine.isExpiredEntryStayInSpace(entry) || !leaseExpiredInInsertWithSameUid(context, entry, typeDesc,
                                 null, true /*alreadyLocked*/))
                             throw ex_;
-                        _cacheManager.insertEntry(context, entry, shouldReplicate, origin, (supplied_uid && _cacheManager.isMemorySpace()));
+                        _cacheManager.insertEntry(context, entry, shouldReplicate, origin, (supplied_uid && _cacheManager.isMemorySpace()), fromReplication);
                         alreadyIn = false;
 
                     } else

@@ -19,7 +19,6 @@ package com.j_spaces.core.admin;
 
 import com.gigaspaces.internal.cluster.SpaceClusterInfo;
 import com.gigaspaces.internal.server.space.IClusterInfoChangedListener;
-import com.gigaspaces.internal.server.space.tiered_storage.TieredStorageConfig;
 import com.gigaspaces.internal.utils.StringUtils;
 import com.j_spaces.core.Constants;
 import com.j_spaces.core.JSpaceAttributes;
@@ -31,8 +30,6 @@ import java.io.ObjectOutput;
 import java.rmi.UnmarshalException;
 import java.util.Arrays;
 import java.util.Properties;
-
-import static com.j_spaces.core.Constants.TieredStorage.FULL_TIERED_STORAGE_TABLE_CONFIG_INSTANCE_PROP;
 
 /**
  * This structure contains all information about space configuration. <code>SpaceConfig</code>
@@ -108,14 +105,6 @@ public class SpaceConfig extends JSpaceAttributes implements IClusterInfoChanged
      */
     public void setSpaceName(String spaceName) {
         _spaceName = spaceName;
-    }
-
-    public void setTieredStorageConfig(TieredStorageConfig tieredStorageConfig) {
-        getCustomProperties().put(FULL_TIERED_STORAGE_TABLE_CONFIG_INSTANCE_PROP, tieredStorageConfig);
-    }
-
-    public TieredStorageConfig getTieredStorageConfig() {
-        return (TieredStorageConfig) getCustomProperties().get(FULL_TIERED_STORAGE_TABLE_CONFIG_INSTANCE_PROP);
     }
 
     public String getFullSpaceName() {
