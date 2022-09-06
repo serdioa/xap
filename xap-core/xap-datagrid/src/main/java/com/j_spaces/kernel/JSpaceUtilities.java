@@ -82,6 +82,7 @@ import static com.j_spaces.core.Constants.LookupManager.*;
  */
 @com.gigaspaces.api.InternalApi
 public class JSpaceUtilities {
+    public static final Logger DEBUG_LOGGER = LoggerFactory.getLogger("DEBUG");
     public static final String BLANK_VALUE = "-";
     public static final String YES_VAL = "Yes";
     public static final String NO_VAL = "No";

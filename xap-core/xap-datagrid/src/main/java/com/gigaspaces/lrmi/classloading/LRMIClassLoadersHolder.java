@@ -27,7 +27,6 @@ import com.gigaspaces.lrmi.classloading.protocol.lrmi.LRMIConnection;
 import com.gigaspaces.lrmi.nio.filters.IOFilterException;
 import com.j_spaces.kernel.ClassLoaderHelper;
 import com.j_spaces.kernel.SystemProperties;
-
 import org.jini.rio.boot.AdditionalClassProviderFactory;
 import org.jini.rio.boot.IAdditionalClassProvider;
 
@@ -116,13 +115,13 @@ public class LRMIClassLoadersHolder {
                 if (_logger.isDebugEnabled())
                     logFine("Trying to get class loader for class: " + className + ", context class loader is " + ClassLoaderHelper.getClassLoaderLogName(ClassLoaderHelper.getContextClassLoader()));
 
-                LRMIClassLoader cl = getClassLoader(className);
+                LRMIClassLoader cl = getClassLoaderByClassName(className);
 
                 if (cl == null) {
                     try {
                         if (_logger.isTraceEnabled())
                             logFinest("no previously created LRMIClassLoader found for class: " + className + " creating new one");
-                        cl = createClassLoader(className);
+                        cl = getClassLoaderByRemoteIdOrCreate(className);
 
                         if (_logger.isDebugEnabled())
                             logFine("trying to load " + className + " using classloader: " + cl);
@@ -171,7 +170,7 @@ public class LRMIClassLoadersHolder {
     /**
      * Create a LRMIClassLoader according to the current thread context
      */
-    private synchronized static LRMIClassLoader createClassLoader(String className) throws LRMIClassLoaderCreationException {
+    private synchronized static LRMIClassLoader getClassLoaderByRemoteIdOrCreate(String className) throws LRMIClassLoaderCreationException {
         final ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
         if (contextClassLoader == null)
             throw new LRMIClassLoaderCreationException("attempt to create a LRMIClassLoader when there is no context class loader");
@@ -307,7 +306,7 @@ public class LRMIClassLoadersHolder {
     /**
      * Finds a classloader for the specific class name if one exists.
      */
-    private synchronized static LRMIClassLoader getClassLoader(String className) {
+    private synchronized static LRMIClassLoader getClassLoaderByClassName(String className) {
         ServiceClassLoaderContext serviceClassLoaderContext = getServiceClassLoaderContext();
 
         if (serviceClassLoaderContext == null)

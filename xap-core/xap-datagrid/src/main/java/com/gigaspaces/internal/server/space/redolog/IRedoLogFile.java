@@ -45,6 +45,8 @@ public interface IRedoLogFile<T extends IReplicationOrderedPacket> extends IRedo
      */
     T getOldest();
 
+    long getOldestKey();
+
     /**
      * Add a replication packet to the file as the latest packet
      *

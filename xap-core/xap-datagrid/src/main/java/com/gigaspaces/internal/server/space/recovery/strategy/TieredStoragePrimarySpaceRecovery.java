@@ -80,15 +80,7 @@ public class TieredStoragePrimarySpaceRecovery
      * notify templates in LB group
      */
     public ISpaceSynchronizeReplicaState recoverFromOtherSpace() throws Exception {
-        // check if all the entries should be recovered,or only the transient ones 
-        // if the engine didn't load any data - recover everything from another space
-        // if space was started and data was loaded from database,
-        // only transient entries should be copied from the target space because all persistent entries
-        // were be retrieved from the DB.
-        boolean transientOnly = !_space.getEngine()
-                .isColdStart();
-
-        return _recoveryGroup.recover(transientOnly, transientOnly);
+        return _recoveryGroup.recover(false, false);
 
     }
 

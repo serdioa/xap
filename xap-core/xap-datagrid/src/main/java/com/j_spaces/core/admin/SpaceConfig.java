@@ -48,7 +48,6 @@ public class SpaceConfig extends JSpaceAttributes implements IClusterInfoChanged
 
     private static final long serialVersionUID = 1L;
     private static final int SERIAL_VERSION = 1;
-
     /**
      *
      */

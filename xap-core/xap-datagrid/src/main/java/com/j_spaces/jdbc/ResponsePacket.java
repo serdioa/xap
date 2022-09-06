@@ -42,6 +42,7 @@ public class ResponsePacket implements Serializable, Iterable<IEntryPacket> {
     private ResultEntry resultEntry = null;
     private Collection<IEntryPacket> resultSet = null;
     private IEntryPacket[] resultArray;
+    private ResponsePacket next;
 
     public ResponsePacket() {
     }
@@ -99,6 +100,14 @@ public class ResponsePacket implements Serializable, Iterable<IEntryPacket> {
         return resultSet.iterator().next();
 
 
+    }
+
+    public ResponsePacket getNext() {
+        return next;
+    }
+
+    public void setNext(ResponsePacket next) {
+        this.next = next;
     }
 
     /**

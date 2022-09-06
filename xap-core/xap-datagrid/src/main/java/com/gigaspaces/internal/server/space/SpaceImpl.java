@@ -3112,8 +3112,9 @@ public class SpaceImpl extends AbstractService implements IRemoteSpace, IInterna
                 _spaceConfig = null;
             }
 
-            if (_spaceConfig != null)
+            if (_spaceConfig != null) {
                 return _spaceConfig;
+            }
 
             final Properties spaceProps = JProperties.getSpaceProperties(_configReader.getFullSpaceName());
             _spaceConfig = new SpaceConfig(_spaceName, spaceProps, _containerName, "");

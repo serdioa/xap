@@ -47,6 +47,7 @@ import com.gigaspaces.internal.server.space.recovery.direct_persistency.Consiste
 import com.gigaspaces.internal.server.space.recovery.direct_persistency.DirectPersistencyRecoveryException;
 import com.gigaspaces.internal.server.space.recovery.direct_persistency.IStorageConsistency;
 import com.gigaspaces.internal.server.space.recovery.direct_persistency.StorageConsistencyModes;
+import com.gigaspaces.internal.server.space.tiered_storage.TieredStorageConfig;
 import com.gigaspaces.internal.server.space.tiered_storage.TieredStorageManager;
 import com.gigaspaces.internal.server.space.tiered_storage.TieredStorageSA;
 import com.gigaspaces.internal.server.space.tiered_storage.TieredStorageTableConfig;
@@ -1057,7 +1058,7 @@ public class CacheManager extends AbstractCacheManager
                                 eh.updateEntryData(eh.getEntryData(), expiration);
                             }
                         }
-                        insertEntry(context, eh, false, false, true);
+                        insertEntry(context, eh, false, false, true, false);
                     } else {
                         boolean insertBlobStoreEntryToCache = true;
                         // handle initial load entry with embedded sync list
@@ -1389,7 +1390,7 @@ public class CacheManager extends AbstractCacheManager
     /**
      * insert an entry to the space.
      */
-    public void insertEntry(Context context, IEntryHolder entryHolder, boolean shouldReplicate, boolean origin, boolean suppliedUid)
+    public void insertEntry(Context context, IEntryHolder entryHolder, boolean shouldReplicate, boolean origin, boolean suppliedUid, boolean fromReplication)
             throws SAException, EntryAlreadyInSpaceException {
 
         validateEntryCanBeWrittenToCache(entryHolder);
@@ -1401,8 +1402,9 @@ public class CacheManager extends AbstractCacheManager
             entryHolder.setWriteLockOwnerAndOperation(entryHolder.getXidOriginated(), SpaceOperations.WRITE, false /*createSnapshot*/);
         }
 
-        if (entryHolder.getXidOriginated() != null)
+        if (entryHolder.getXidOriginated() != null) {
             entryHolder.getXidOriginated().setOperatedUpon();
+        }
 
         IEntryCacheInfo pE = null;
 
@@ -1415,7 +1417,7 @@ public class CacheManager extends AbstractCacheManager
             _storageAdapter.insertEntry(context, entryHolder, origin, shouldReplicate);
         }
 
-        if (isTieredStorageCachePolicy() && (context.isMemoryOnlyEntry() || context.isMemoryAndDiskEntry()) && !origin) {
+        if (isTieredStorageCachePolicy() && (context.isMemoryOnlyEntry() || context.isMemoryAndDiskEntry()) && !origin && !fromReplication) {
             pE = safeInsertEntryToCache(context, entryHolder, false /* newEntry */, null /*pType*/, false /*pin*/,
                     InitialLoadOrigin.FROM_EXTERNAL_DATA_SOURCE /*fromInitialLoad*/);
         } else if (isTieredStorageCachePolicy() && context.isDiskOnlyEntry()) {
@@ -6082,7 +6084,7 @@ public class CacheManager extends AbstractCacheManager
         ArrayList<Integer> entries = new ArrayList<>(subTypes.length);
         ArrayList<Integer> ramOnlyEntries = new ArrayList<>(subTypes.length);
         ArrayList<Integer> templates = new ArrayList<>(subTypes.length);
-
+        TieredStorageConfig tieredStorageConfig = null;
         for (IServerTypeDesc subType : subTypes) {
             if (subType.isInactive())
                 continue;
@@ -6117,19 +6119,21 @@ public class CacheManager extends AbstractCacheManager
                 diskSize = getEngine().getTieredStorageManager().getTieredStorageSA().getDiskSize();
             }
         } catch (SAException | IOException e) {
-            _logger.warn("failed to get tiered storage disk size with exception: " , e);
+            _logger.warn("failed to get tiered storage disk size with exception: ", e);
         }
         long freeSpace = 0;
-
         try {
             if (isTieredStorageCachePolicy()) {
                 freeSpace = getEngine().getTieredStorageManager().getTieredStorageSA().getFreeSpaceSize();
             }
         } catch (SAException | IOException e) {
-            _logger.warn("failed to get tiered storage free space size with exception: " , e);
+            _logger.warn("failed to get tiered storage free space size with exception: ", e);
+        }
+        if (isTieredStorageCachePolicy()) {
+            tieredStorageConfig = getEngine().getTieredStorageManager().getTieredStorageConfig();
         }
 
-        return new SpaceRuntimeInfo(classes, entries, templates,ramOnlyEntries, diskSize, freeSpace);
+        return new SpaceRuntimeInfo(classes, entries, templates, ramOnlyEntries, diskSize, freeSpace, tieredStorageConfig);
     }
 
     private void countPersistentEntries(Map<String, Integer> classCountMap, ITemplateHolder template, IServerTypeDesc[] subTypes) {
