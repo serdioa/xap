@@ -21,6 +21,7 @@ import com.j_spaces.jdbc.QueryProcessor;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 
 /**
  * @author Kobi
@@ -44,11 +45,17 @@ public class LocalDateTimeParser extends AbstractDateTimeParser {
             try{
                 date = LocalDateTime.parse(s.replace(' ', 'T'));
             }
-            catch (Exception e){
+            catch (DateTimeParseException e){
+                System.err.println("An exception occurred!\nMSG=" + e.getMessage() );
             }
         }
         if (date == null){
-            date = LocalDateTime.parse(s, formatter);
+            try {
+                date = LocalDateTime.parse(s, formatter); // TODO : add 00:00:00 if necessary
+            }
+                catch (DateTimeParseException e){
+                System.err.println("An exception occurred!\nMSG=" + e.getMessage() );
+            }
             if (date == null){
                 throw new SQLException("Wrong " + _desc + " format, expected format=[" + _pattern + "], provided=[" + s + "]", "GSP", -378);
             }
