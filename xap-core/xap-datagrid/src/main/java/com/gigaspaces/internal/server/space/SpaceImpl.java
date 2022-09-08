@@ -3107,8 +3107,8 @@ public class SpaceImpl extends AbstractService implements IRemoteSpace, IInterna
             //FIX for GS-11826
             //Cause to SpaceConfig initialization if cachePolicy is BlobStore and devices still were not initialized
             if (_spaceConfig != null
-                    && _spaceConfig.getCachePolicy().equals(String.valueOf(CACHE_POLICY_BLOB_STORE))
-                    && _spaceConfig.getBlobStoreDevices() == null) {
+                    && _spaceConfig.getCachePolicy().equals(CACHE_POLICY_BLOB_STORE)
+                    && _spaceConfig.getBlobStoreDevices() == null) { //TODO PIC-1053 this line is never true
                 _spaceConfig = null;
             }
 
