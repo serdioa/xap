@@ -132,9 +132,9 @@ public class IndexInfoDetail {
             return Arrays.stream((Object[]) value)
                     .map(Object::toString)
                     .collect(Collectors.joining("; "));
-        } catch (final ClassCastException e) {
-            return getValueDesc( value );
-        }
+        } catch (final RuntimeException e) {
+            return getValueDesc(value);
+       }
     }
 
     protected String getSizeDesc() {
