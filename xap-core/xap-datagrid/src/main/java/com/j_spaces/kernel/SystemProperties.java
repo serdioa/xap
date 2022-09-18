@@ -284,6 +284,13 @@ public class SystemProperties extends CommonSystemProperties {
     public final static String LRMI_SIMPLE_CLASSLOADING_DEFAULT = "false";
 
     /**
+     * Set to true in order to set the codebase URL path that a remote party should use to download the definition
+     * for a specified class. Default is false.
+     */
+    public final static boolean LRMI_SUPPORT_CODE_BASE = Boolean.getBoolean("com.gs.transport_protocol.lrmi.support-codebase");
+
+
+    /**
      * Set the space iterator type, allowed values: CURSOR, PREFETCH_UIDS
      * it. Defaults to CURSOR
      */
