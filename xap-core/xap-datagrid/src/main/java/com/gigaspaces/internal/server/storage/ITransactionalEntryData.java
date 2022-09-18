@@ -80,8 +80,18 @@ public interface ITransactionalEntryData extends IEntryData, MutableServerEntry 
     }
 
     default ITransactionalEntryData createCopyWithDummyTieredStorageTxnInfo() {
-        return createCopy(getVersion(), getExpirationTime(), Constants.TieredStorage.DUMMY_EMPTY_XTN_INFO, false);
+        return createCopyWithDummyTieredStorageTxnContainsOtherXidOriginated(null);
     }
+
+    default ITransactionalEntryData createCopyWithDummyTieredStorageTxnContainsOtherXidOriginated(EntryXtnInfo other) {
+        EntryXtnInfo newEntryXtnInfo = new EntryXtnInfo();
+        if (other != null) {
+            XtnEntry otherXidOriginated = other.getXidOriginated();
+            newEntryXtnInfo.setXidOriginated(otherXidOriginated);
+        }
+        return createCopy(getVersion(), Constants.TieredStorage.DUMMY_LEASE_FOR_TRANSACTION, newEntryXtnInfo, false);
+    }
+
 
     @Override
     default void setPathValue(String path, Object value) {
@@ -220,7 +230,7 @@ public interface ITransactionalEntryData extends IEntryData, MutableServerEntry 
 
     default boolean anyReadLockXtn() {
         EntryXtnInfo entryXtnInfo = getEntryXtnInfo();
-        return entryXtnInfo == null ? false : entryXtnInfo.anyReadLockXtn();
+        return entryXtnInfo != null && entryXtnInfo.anyReadLockXtn();
     }
 
     default List<XtnEntry> getReadLocksOwners() {
@@ -327,11 +337,10 @@ public interface ITransactionalEntryData extends IEntryData, MutableServerEntry 
 
     default boolean isExpired(long limit) {
         long leaseToCompare = getExpirationTime();
-        if (getWriteLockOwner() != null && getOtherUpdateUnderXtnEntry() != null) {
+        final IEntryHolder original = getOtherUpdateUnderXtnEntry();
+        if (getWriteLockOwner() != null && original != null) {
             //take the time from the original entry in case pending update under xtn
-            IEntryHolder original = getOtherUpdateUnderXtnEntry();
-            if (original != null)
-                leaseToCompare = Math.max(leaseToCompare, original.getEntryData().getExpirationTime());
+            leaseToCompare = Math.max(leaseToCompare, original.getEntryData().getExpirationTime());
         }
         return leaseToCompare < limit;
     }

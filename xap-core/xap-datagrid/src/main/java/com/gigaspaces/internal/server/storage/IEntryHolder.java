@@ -112,7 +112,6 @@ public interface IEntryHolder extends ISpaceItem {
 
     boolean isExpired(long limit);
 
-
     Object getRoutingValue();
 
     Object getEntryId();

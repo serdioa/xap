@@ -499,7 +499,7 @@ public class Processor implements IConsumerObject<BusPacket<Processor>> {
                 if (template.hasAnswer())
                     return; //answer already received, return
 
-                if (!template.isHasWaitingFor()) { /* template  not waiting for anybody */
+                if (!template.hasWaitingFor()) { /* template  not waiting for anybody */
                     //NoEntryInSpaceException is handled in the engine
                     context.setOperationAnswer(template, null, null);
                     if (!template.isDeleted() && template.isInCache()) {
@@ -994,7 +994,7 @@ public class Processor implements IConsumerObject<BusPacket<Processor>> {
                         if (template.hasAnswer())
                             return; //answer already received, return
                         template.resetInitialIfExistSearchActive();
-                        if (!template.isHasWaitingFor()) { /* template  not waiting for anybody */
+                        if (!template.hasWaitingFor()) { /* template  not waiting for anybody */
                             boolean exceptionIfNoEntry = template.getUidToOperateBy() != null;
 
                             if (((template.getTemplateOperation() == SpaceOperations.READ_IE)
@@ -1312,10 +1312,10 @@ public class Processor implements IConsumerObject<BusPacket<Processor>> {
 
                                 //remove WF connections for committed-updated entries in which some WF
                                 // templates may be irrelevant (no match anymore)
-                                if (updatedEntry && entry.isHasWaitingFor())
+                                if (updatedEntry && entry.hasWaitingFor())
                                     _engine.checkWFValidityAfterUpdate(context, entry);
 
-                                if (entry.isHasWaitingFor()) {
+                                if (entry.hasWaitingFor()) {
                                     entry_has_wf = true;
                                     wf = entry.getCopyOfTemplatesWaitingForEntry();
                                 }
@@ -1914,10 +1914,10 @@ public class Processor implements IConsumerObject<BusPacket<Processor>> {
 
                                 //remove WF connections for rolled-updated entries in which some WF
                                 // templates may be irrelevant (no match anymore)
-                                if (updatedEntry && entry.isHasWaitingFor())
+                                if (updatedEntry && entry.hasWaitingFor())
                                     _engine.checkWFValidityAfterUpdate(context, entry);
 
-                                if (entry.isHasWaitingFor()) {
+                                if (entry.hasWaitingFor()) {
                                     entry_has_wf = true;
                                     wf = entry.getCopyOfTemplatesWaitingForEntry();
                                 }
@@ -2157,7 +2157,7 @@ public class Processor implements IConsumerObject<BusPacket<Processor>> {
                 if (template.isDeleted())
                     //whoever deleted template has already notified receiver
                     return;
-                if (template.isHasWaitingFor())
+                if (template.hasWaitingFor())
                     //template still has a  WF connections
                     return;
                 if (!template.isInitialIfExistSearchActive()) { //initial search terminated- can return a no-success
@@ -2527,7 +2527,7 @@ public class Processor implements IConsumerObject<BusPacket<Processor>> {
                         if (template.hasAnswer())
                             return; //answer already received, return
                         template.resetInitialIfExistSearchActive();
-                        if (!template.isHasWaitingFor()) { /* template  not waiting for anybody */
+                        if (!template.hasWaitingFor()) { /* template  not waiting for anybody */
                             boolean exceptionIfNoEntry = template.getUidToOperateBy() != null;
 
                             if (((template.getTemplateOperation() == SpaceOperations.READ_IE)

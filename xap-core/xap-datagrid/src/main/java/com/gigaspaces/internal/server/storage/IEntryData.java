@@ -17,9 +17,11 @@
 package com.gigaspaces.internal.server.storage;
 
 import com.gigaspaces.internal.lease.LeaseUtils;
-import com.gigaspaces.internal.metadata.*;
+import com.gigaspaces.internal.metadata.EntryTypeDesc;
+import com.gigaspaces.internal.metadata.ITypeDesc;
 import com.gigaspaces.internal.query.valuegetter.SpaceEntryPathGetter;
 import com.gigaspaces.server.ServerEntry;
+import com.j_spaces.core.Constants;
 
 import java.util.Map;
 
@@ -86,4 +88,9 @@ public interface IEntryData extends ServerEntry {
     default boolean isView(){
         return false;
     }
+
+    default boolean isDummyLease() { //used for tiered-storage
+        return getExpirationTime() == Constants.TieredStorage.DUMMY_LEASE_FOR_TRANSACTION;
+    }
+
 }
