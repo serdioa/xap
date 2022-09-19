@@ -60,8 +60,6 @@ public class TemplateHolder extends AbstractSpaceItem implements ITemplateHolder
     private final int _templateOperation; // of type SpaceOperations
     private boolean _pendingRemoteException;   //for notify template- other threads will not try to xmit
 
-    //does entry has WF array ?  
-    private volatile boolean _hasWaitingFor;
     private Collection<IEntryHolder> _waitingFor;
 
     private final AbstractProjectionTemplate _projectionTemplate;
@@ -251,14 +249,6 @@ public class TemplateHolder extends AbstractSpaceItem implements ITemplateHolder
                 operationModifiers, isfifo, queryResultType, false, false);
     }
 
-    public boolean isHasWaitingFor() {
-        return _hasWaitingFor;
-    }
-
-    public void setHasWaitingFor(boolean value) {
-        this._hasWaitingFor = value;
-    }
-
     public boolean isNotifyTemplate() {
         return false;
     }
@@ -273,10 +263,16 @@ public class TemplateHolder extends AbstractSpaceItem implements ITemplateHolder
     }
 
     public boolean isExpired() {
+        if (isDummyLeaseAndNotExpired()) {
+            return false;
+        }
         return _templateData.isExpired();
     }
 
     public boolean isExpired(long limit) {
+        if (isDummyLeaseAndNotExpired()) {
+            return false;
+        }
         return _templateData.isExpired(limit);
     }
 
@@ -1033,7 +1029,7 @@ public class TemplateHolder extends AbstractSpaceItem implements ITemplateHolder
         if (!_waitingFor.contains(entry))
             _waitingFor.add(entry);
 
-        if (_waitingFor.size() == 1 && !isHasWaitingFor())
+        if (_waitingFor.size() == 1 && !hasWaitingFor())
             setHasWaitingFor(true);
     }
 
@@ -1042,9 +1038,8 @@ public class TemplateHolder extends AbstractSpaceItem implements ITemplateHolder
         if (_waitingFor != null)
             _waitingFor.remove(entry);
 
-        if (_waitingFor != null && _waitingFor.isEmpty() && isHasWaitingFor())
+        if (_waitingFor != null && _waitingFor.isEmpty() && hasWaitingFor())
             setHasWaitingFor(false);
-
     }
 
     //batch op related methods
@@ -1075,7 +1070,7 @@ public class TemplateHolder extends AbstractSpaceItem implements ITemplateHolder
     public boolean canFinishBatchOperation() {
         return ((_batchOerationContext.reachedMaxEntries()) ||
                 (isInCache() &&
-                        ((isIfExist() && !isInitialIfExistSearchActive() && !isHasWaitingFor()) ||
+                        ((isIfExist() && !isInitialIfExistSearchActive() && !hasWaitingFor()) ||
                                 (_batchOerationContext.reachedMinEntries() && (!isIfExist() || !isInitialIfExistSearchActive())))));
     }
 

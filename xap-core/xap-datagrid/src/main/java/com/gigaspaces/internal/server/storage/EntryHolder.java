@@ -20,14 +20,12 @@ import com.gigaspaces.internal.server.metadata.IServerTypeDesc;
 import com.j_spaces.core.XtnEntry;
 import com.j_spaces.core.server.transaction.EntryXtnInfo;
 import com.j_spaces.kernel.locks.ILockObject;
-
 import net.jini.core.transaction.server.ServerTransaction;
+import org.slf4j.Logger;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 
 /**
@@ -45,9 +43,6 @@ public class EntryHolder extends AbstractSpaceItem implements IEntryHolder {
      */
     private ITransactionalEntryData _entryData;
 
-
-    //does entry has WF array ?  note- its non volatile !!!!!!!!!!!!!
-    private boolean _hasWaitingFor;
     //entry is being inserted/updated, in the process of fields insertion
     //NOTE- currently not volatile,
     private boolean _unStable;
@@ -68,10 +63,12 @@ public class EntryHolder extends AbstractSpaceItem implements IEntryHolder {
         _entryData = other.getTxnEntryData().createCopyWithoutTxnInfo();
     }
 
+    @Override
     public IEntryHolder createCopy() {
         return new EntryHolder(this);
     }
 
+    @Override
     public IEntryHolder createDummy() {
         ITransactionalEntryData ed = new FlatEntryData(
                 new Object[getEntryData().getNumOfFixedProperties()],
@@ -86,34 +83,32 @@ public class EntryHolder extends AbstractSpaceItem implements IEntryHolder {
         return dummy;
     }
 
-    public boolean isHasWaitingFor() {
-        return _hasWaitingFor;
-    }
-
-    public void setHasWaitingFor(boolean value) {
-        this._hasWaitingFor = value;
-    }
-
+    @Override
     public boolean isUnstable() {
         return _unStable;
     }
 
+    @Override
     public void setunStable(boolean value) {
         this._unStable = value;
     }
 
+    @Override
     public IEntryData getEntryData() {
         return _entryData;
     }
 
+    @Override
     public ITransactionalEntryData getTxnEntryData() {
         return _entryData;
     }
 
+    @Override
     public void updateVersionAndExpiration(int versionID, long expiration) {
         _entryData = _entryData.createCopyWithTxnInfo(versionID, expiration);
     }
 
+    @Override
     public void updateEntryData(IEntryData newEntryData, long expirationTime) {
         _entryData = _entryData.createCopy(newEntryData, expirationTime);
     }
@@ -126,12 +121,17 @@ public class EntryHolder extends AbstractSpaceItem implements IEntryHolder {
         _entryData = ed.createCopyWithTxnInfo(ed.getVersion(), expirationTime);
     }
 
+    @Override
+    // NOTE - should be called under lock
     public void resetEntryXtnInfo() {
         _entryData = _entryData.createCopyWithoutTxnInfo();
+        setMaybeUnderXtn(false);
+        setHasWaitingFor(false);
     }
 
     /**
      */
+    @Override
     public void resetWriteLockOwner() {
         if (_entryData.getWriteLockOwner() == null)
             return;
@@ -141,11 +141,12 @@ public class EntryHolder extends AbstractSpaceItem implements IEntryHolder {
         _entryData = _entryData.createCopyWithSuppliedTxnInfo(ex);
     }
 
+    @Override
     public void setWriteLockOwnerAndOperation(XtnEntry writeLockOwner, int writeLockOperation) {
         setWriteLockOwnerAndOperation(writeLockOwner, writeLockOperation, true/*createsnapshot*/);
     }
 
-
+    @Override
     public void setWriteLockOwnerAndOperation(XtnEntry writeLockOwner, int writeLockOperation, boolean createSnapshot) {
         if (!createSnapshot && _entryData.getEntryXtnInfo() == null)
             createSnapshot = true;
@@ -162,6 +163,7 @@ public class EntryHolder extends AbstractSpaceItem implements IEntryHolder {
         }
     }
 
+    @Override
     public void setWriteLockOwnerOperationAndShadow(XtnEntry writeLockOwner, int writeLockOperation, IEntryHolder otherEh) {
         EntryXtnInfo ex = EntryXtnInfo.createCloneOrEmptyInfo(_entryData.getEntryXtnInfo());
         ex.setWriteLockOwner(writeLockOwner);
@@ -170,6 +172,7 @@ public class EntryHolder extends AbstractSpaceItem implements IEntryHolder {
         _entryData = _entryData.createCopyWithSuppliedTxnInfo(ex);
     }
 
+    @Override
     public void restoreUpdateXtnRollback(IEntryData entryData) {
         ITransactionalEntryData newed = _entryData.createCopy(entryData, entryData.getExpirationTime());
         EntryXtnInfo ex = null;
@@ -183,6 +186,7 @@ public class EntryHolder extends AbstractSpaceItem implements IEntryHolder {
 
     }
 
+    @Override
     public void setWriteLockOperation(int writeLockOperation, boolean createSnapshot) {
         if (!createSnapshot && _entryData.getEntryXtnInfo() == null)
             createSnapshot = true;
@@ -196,13 +200,14 @@ public class EntryHolder extends AbstractSpaceItem implements IEntryHolder {
 
     /**
      */
+    @Override
     public void resetXidOriginated() {
         //	no need to duplicate data for this parameter
-
         if (_entryData.getEntryXtnInfo() != null)
             _entryData.setXidOriginated(null);
     }
 
+    @Override
     public XtnEntry getXidOriginated() {
         return _entryData.getXidOriginated();
     }
@@ -210,10 +215,12 @@ public class EntryHolder extends AbstractSpaceItem implements IEntryHolder {
     /**
      * @return the m_XidOriginated transaction
      */
+    @Override
     public ServerTransaction getXidOriginatedTransaction() {
         return _entryData.getXidOriginatedTransaction();
     }
 
+    @Override
     public void setOtherUpdateUnderXtnEntry(IEntryHolder eh) {
         if (eh == null && _entryData.getEntryXtnInfo() == null)
             return;
@@ -226,6 +233,7 @@ public class EntryHolder extends AbstractSpaceItem implements IEntryHolder {
         return isShadow() || hasShadow();
     }
 
+    @Override
     public String getUidToOperateBy() {
         return getUID();
     }
@@ -251,6 +259,7 @@ public class EntryHolder extends AbstractSpaceItem implements IEntryHolder {
         logger.info("XidOriginated : " + getXidOriginatedTransaction());
     }
 
+    @Override
     public boolean anyReadLockXtn() {
         // Get local reference (volatile):
         ITransactionalEntryData entryData = _entryData;
@@ -260,12 +269,14 @@ public class EntryHolder extends AbstractSpaceItem implements IEntryHolder {
     /***
      * @return Returns ReadWriteLock Transaction's Owner Lists.
      **/
+    @Override
     public List<XtnEntry> getReadLockOwners() {
         // Get local reference (volatile):
         ITransactionalEntryData entryData = _entryData;
         return entryData.getReadLocksOwners();
     }
 
+    @Override
     public void addReadLockOwner(XtnEntry xtn) {
         if (_entryData.getEntryXtnInfo() == null)
             _entryData = _entryData.createCopyWithTxnInfo(true /*createEmptyTxnInfoIfNone*/);
@@ -275,6 +286,7 @@ public class EntryHolder extends AbstractSpaceItem implements IEntryHolder {
         entryData.addReadLockOwner(xtn);
     }
 
+    @Override
     public void removeReadLockOwner(XtnEntry xtn) {
         if (_entryData.getEntryXtnInfo() == null)
             return;
@@ -284,6 +296,7 @@ public class EntryHolder extends AbstractSpaceItem implements IEntryHolder {
         entryData.removeReadLockOwner(xtn);
     }
 
+    @Override
     public void clearReadLockOwners() {
         if (_entryData.getEntryXtnInfo() == null)
             return;
@@ -293,23 +306,26 @@ public class EntryHolder extends AbstractSpaceItem implements IEntryHolder {
         entryData.clearReadLockOwners();
     }
 
+    @Override
     public XtnEntry getWriteLockOwner() {
         // Get local reference (volatile):
         ITransactionalEntryData entryData = _entryData;
         return entryData.getWriteLockOwner();
     }
 
+    @Override
     public boolean isEntryUnderWriteLockXtn() {
         return getWriteLockOwner() != null;
     }
 
-
+    @Override
     public int getWriteLockOperation() {
         // Get local reference (volatile):
         ITransactionalEntryData entryData = _entryData;
         return entryData.getWriteLockOperation();
     }
 
+    @Override
     public ServerTransaction getWriteLockTransaction() {
         // Get local reference (volatile):
         ITransactionalEntryData entryData = _entryData;
@@ -329,12 +345,14 @@ public class EntryHolder extends AbstractSpaceItem implements IEntryHolder {
      * @return Returns the m_WaitingFor. holds all entries waited by templates
      * ReadIfExists/TaleIfExists
      */
+    @Override
     public Collection<ITemplateHolder> getTemplatesWaitingForEntry() {
         // Get local reference (volatile):
         ITransactionalEntryData entryData = _entryData;
         return entryData.getWaitingFor();
     }
 
+    @Override
     public Collection<ITemplateHolder> getCopyOfTemplatesWaitingForEntry() {
         if (getTemplatesWaitingForEntry() != null && !getTemplatesWaitingForEntry().isEmpty())
             return new ArrayList<ITemplateHolder>(getTemplatesWaitingForEntry());
@@ -349,7 +367,7 @@ public class EntryHolder extends AbstractSpaceItem implements IEntryHolder {
             initWaitingFor();
         if (!getTemplatesWaitingForEntry().contains(template))
             getTemplatesWaitingForEntry().add(template);
-        if (getTemplatesWaitingForEntry().size() == 1 && !isHasWaitingFor())
+        if (getTemplatesWaitingForEntry().size() == 1 && !hasWaitingFor())
             setHasWaitingFor(true);
     }
 
@@ -358,11 +376,9 @@ public class EntryHolder extends AbstractSpaceItem implements IEntryHolder {
     public void removeTemplateWaitingForEntry(ITemplateHolder template) {
         if (getTemplatesWaitingForEntry() != null)
             getTemplatesWaitingForEntry().remove(template);
-
-        if (getTemplatesWaitingForEntry() != null && getTemplatesWaitingForEntry().isEmpty() && isHasWaitingFor())
+        if (getTemplatesWaitingForEntry() != null && getTemplatesWaitingForEntry().isEmpty() && hasWaitingFor())
             setHasWaitingFor(false);
     }
-
 
     protected IEntryHolder getOtherUpdateUnderXtnEntry() {
         // Get local reference (volatile):
@@ -370,11 +386,13 @@ public class EntryHolder extends AbstractSpaceItem implements IEntryHolder {
         return entryData.getOtherUpdateUnderXtnEntry();
     }
 
+    @Override
     public boolean hasShadow(boolean safeEntry) {
         boolean hasShadow = !isShadow() && getOtherUpdateUnderXtnEntry() != null;
         return (safeEntry ? hasShadow : hasShadow && isMaybeUnderXtn());
     }
 
+    @Override
     public ShadowEntryHolder getShadow() {
         if (isShadow())
             return (ShadowEntryHolder) this;
@@ -385,16 +403,25 @@ public class EntryHolder extends AbstractSpaceItem implements IEntryHolder {
         return null;
     }
 
+    @Override
     public IEntryHolder getMaster() {
         return isShadow() ? getOtherUpdateUnderXtnEntry() : this;
     }
 
+    @Override
     public boolean isExpired(long limit) {
+        if (isDummyLeaseAndNotExpired()) {
+            return false;
+        }
         ITransactionalEntryData ed = _entryData;
         return ed.isExpired(limit);
     }
 
+    @Override
     public boolean isExpired() {
+        if (isDummyLeaseAndNotExpired()) {
+            return false;
+        }
         ITransactionalEntryData ed = _entryData;
         return ed.isExpired();
     }

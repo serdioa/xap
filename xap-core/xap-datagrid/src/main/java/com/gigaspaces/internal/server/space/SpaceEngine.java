@@ -5171,7 +5171,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
         IEntryData edata;
         IEntryHolder newEntry;
         boolean reWrittenUnderXtn = false;
-        boolean needVerifyWF = entry.isHasWaitingFor();
+        boolean needVerifyWF = entry.hasWaitingFor();
         boolean fromReplication = false;
         int newVersionID;
         try {
@@ -5531,7 +5531,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
      */
     public void checkWFValidityAfterUpdate(Context context, IEntryHolder entry)
             throws SAException {
-        if (!entry.isHasWaitingFor() || entry.isDeleted())
+        if (!entry.hasWaitingFor() || entry.isDeleted())
             return;
 
         Collection<ITemplateHolder> wf = entry.getTemplatesWaitingForEntry();
@@ -5594,7 +5594,6 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
                               boolean ofReplicatableClass, EntryRemoveReasonCodes removeReason,
                               boolean disableReplication, boolean disableProcessorCall, boolean disableSADelete)
             throws SAException {
-        //TODO - tiered storage - handle lease expiration
         boolean fromLeaseExpiration = removeReason == EntryRemoveReasonCodes.LEASE_CANCEL || removeReason == EntryRemoveReasonCodes.LEASE_EXPIRED;
         // check for before-remove filter
         if ((fromLeaseExpiration || _general_purpose_remove_filters) && _filterManager._isFilter[FilterOperationCodes.BEFORE_REMOVE])
@@ -5616,7 +5615,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
 
         // handle waiting for templates, if exist
         boolean originalWF = false;
-        if (entry.isHasWaitingFor()) {
+        if (entry.hasWaitingFor()) {
             originalWF = true;
             // create and dispatch RemoveWaitingForInfoSABusPacket
             // so that the removal of waiting for info will be done
@@ -5711,8 +5710,9 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
                     entry.resetWriteLockOwner();
                 if (entry.getReadLockOwners() != null && entry.getReadLockOwners().size() > 0)
                     entry.getReadLockOwners().clear();
-            } else
+            } else {
                 entry.resetEntryXtnInfo();
+            }
         }
         //NOTE- fifo related info not removed - for NBR of fifo we need to check the deleted bit
         //at the end of fifocheck

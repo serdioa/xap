@@ -101,7 +101,7 @@ public class SpaceClusterInfo implements SmartExternalizable {
         }
         this.membersNames = clusterPolicy != null ? Collections.unmodifiableList(clusterPolicy.m_AllClusterMemberList) : Collections.singletonList(defaultMemberName);
         this.broadcastDisabled = clusterPolicy != null && clusterPolicy.m_LoadBalancingPolicy != null && clusterPolicy.m_LoadBalancingPolicy.m_DefaultPolicy.getBroadcastCondition().isBroadcastNever();
-
+//here theres the round robin partiton routing
         final String routingPolicy = getLoadBalancingPolicy(clusterPolicy);
         this.numOfPartitions = getNumOfPartitions(clusterPolicy, routingPolicy);
         this.numOfBackups = getNumberOfBackups(clusterPolicy, numOfPartitions);

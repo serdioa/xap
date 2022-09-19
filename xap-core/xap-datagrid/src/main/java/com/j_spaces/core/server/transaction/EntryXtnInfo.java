@@ -21,7 +21,6 @@ import com.gigaspaces.internal.server.storage.IEntryHolder;
 import com.gigaspaces.internal.server.storage.ITemplateHolder;
 import com.j_spaces.core.SpaceOperations;
 import com.j_spaces.core.XtnEntry;
-
 import net.jini.core.transaction.server.ServerTransaction;
 
 import java.util.ArrayList;
@@ -62,15 +61,14 @@ public class EntryXtnInfo {
      */
     private Collection<ITemplateHolder> _waitingFor;
 
-
     public EntryXtnInfo() {
 
     }
 
-    public EntryXtnInfo(EntryXtnInfo other) {//tbd
+    public EntryXtnInfo(EntryXtnInfo other) {
         _xidOriginated = other._xidOriginated;
         if (other._readLocksOwners != null && other._readLocksOwners.size() > 0) {
-            _readLocksOwners = new ArrayList<XtnEntry>(other._readLocksOwners);
+            _readLocksOwners = new ArrayList<>(other._readLocksOwners);
         }
         _writeLockOwner = other._writeLockOwner;
         _writeLockOperation = other._writeLockOperation;

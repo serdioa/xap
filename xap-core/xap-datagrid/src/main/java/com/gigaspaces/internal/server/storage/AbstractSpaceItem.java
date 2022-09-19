@@ -22,6 +22,7 @@ import com.gigaspaces.internal.server.metadata.IServerTypeDesc;
 import com.gigaspaces.internal.server.space.SpaceUidFactory;
 import com.gigaspaces.internal.utils.Textualizable;
 import com.gigaspaces.internal.utils.Textualizer;
+import com.j_spaces.core.Constants;
 import com.j_spaces.core.client.NotifyModifiers;
 import com.j_spaces.kernel.locks.IEvictableLockObject;
 import org.slf4j.Logger;
@@ -54,10 +55,8 @@ public abstract class AbstractSpaceItem implements ISpaceItem, Textualizable {
      * A transient entry in a persistent space resides in memory and is not written to the DB.
      */
     private boolean _transient;
-    //is entry deleted?  
-    private transient volatile boolean _deleted;
 
-    private transient volatile boolean _maybeUnderXtn;
+    private transient volatile byte flags;
 
     /**
      * inserting order within same time stamp.
@@ -76,15 +75,17 @@ public abstract class AbstractSpaceItem implements ISpaceItem, Textualizable {
         this(other.getServerTypeDesc(), other.getUID(), other.getSCN(), other.isTransient());
     }
 
-
+    @Override
     public IServerTypeDesc getServerTypeDesc() {
         return _typeDesc;
     }
 
+    @Override
     public String getClassName() {
         return _typeDesc.getTypeName();
     }
 
+    @Override
     public String getUID() {
         return _uid;
     }
@@ -93,6 +94,7 @@ public abstract class AbstractSpaceItem implements ISpaceItem, Textualizable {
         this._uid = uid;
     }
 
+    @Override
     public long getSCN() {
         return _scn;
     }
@@ -105,12 +107,14 @@ public abstract class AbstractSpaceItem implements ISpaceItem, Textualizable {
         return getEntryData().getExpirationTime();
     }
 
+    @Override
     public abstract void setExpirationTime(long expirationTime);
 
     public int getVersionID() {
         return getEntryData().getVersion();
     }
 
+    @Override
     public boolean isTransient() {
         return _transient;
     }
@@ -119,23 +123,65 @@ public abstract class AbstractSpaceItem implements ISpaceItem, Textualizable {
         this._transient = _transient;
     }
 
+    @Override
     public boolean isMaybeUnderXtn() {
-        return _maybeUnderXtn;
+        return getFlag(Constants.SpaceItem.IS_MAYBE_UNDER_TRANSACTION);
     }
 
-    public void setMaybeUnderXtn(boolean value) {
-        this._maybeUnderXtn = value;
+    @Override
+    public void setMaybeUnderXtn(boolean maybeUnderXtn) {
+        setFlag(Constants.SpaceItem.IS_MAYBE_UNDER_TRANSACTION, maybeUnderXtn);
+    }
+
+    @Override
+    public boolean hasWaitingFor() {
+        return getFlag(Constants.SpaceItem.HAS_WAITING_FOR);
+    }
+
+    @Override
+    public void setHasWaitingFor(boolean hasWaitingFor) {
+        setFlag(Constants.SpaceItem.HAS_WAITING_FOR, hasWaitingFor);
     }
 
     @Override
     public boolean isDeleted() {
-        return _deleted;
+        return getFlag(Constants.SpaceItem.IS_DELETED);
     }
 
+    @Override
     public void setDeleted(boolean isDeleted) {
-        this._deleted = isDeleted;
+        setFlag(Constants.SpaceItem.IS_DELETED, isDeleted);
     }
 
+    private boolean getFlag(byte mask) {
+        return (flags & mask) > 0; // bit is 1
+    }
+
+    //NOTE - to be called under lock
+    private void setFlag(byte mask, boolean value) {
+        if (value) {
+            //set true (set the bit to 1)
+            flags |= mask;
+        } else {
+            //set false (set the bit to 0)
+            flags &= ~mask;
+        }
+    }
+
+    @Override
+    public boolean isDummyLease() {
+        IEntryData entryData = getEntryData();
+        return entryData != null && entryData.isDummyLease();
+    }
+
+    public boolean isDummyLeaseAndNotExpired() {
+        return isDummyLease() && isMaybeUnderXtn();
+    }
+
+
+    public void setDummyLease() {
+        setExpirationTime(Constants.TieredStorage.DUMMY_LEASE_FOR_TRANSACTION);
+    }
 
     public void dump(Logger logger, String msg) {
         logger.info(msg);
@@ -148,7 +194,7 @@ public abstract class AbstractSpaceItem implements ISpaceItem, Textualizable {
         logger.info("Expiration Time : " + getExpirationTime());
         logger.info("Deleted: " + isDeleted());
         logger.info("MaybeUnderXtn: " + isMaybeUnderXtn());
-        logger.info("HasWaitingFor: " + isHasWaitingFor());
+        logger.info("HasWaitingFor: " + hasWaitingFor());
     }
 
     /*******************************

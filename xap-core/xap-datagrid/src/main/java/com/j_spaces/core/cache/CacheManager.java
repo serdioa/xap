@@ -1485,9 +1485,11 @@ public class CacheManager extends AbstractCacheManager
             //create new disk entry that contains entryHolder XtnInfo
             final IEntryHolder newDiskEntry = new EntryHolder(diskEntry.getServerTypeDesc(), diskEntry.getUID(),
                     diskEntry.getSCN(), diskEntry.isTransient(),
-                    diskEntry.getTxnEntryData().createCopyWithDummyTieredStorageTxnInfo());
-            //set dummy lease to remove the entry later from the memory
-            newDiskEntry.setExpirationTime(DUMMY_LEASE_FOR_TRANSACTION);
+                    //set dummy lease to remove the entry later from the memory
+                    diskEntry.getTxnEntryData()
+                            .createCopyWithDummyTieredStorageTxnContainsOtherXidOriginated(
+                                    entryHolder.getTxnEntryData().getEntryXtnInfo()));
+            newDiskEntry.setMaybeUnderXtn(true);
             insertEntryToCache(context, newDiskEntry, false /* newEntry */,
                     typeData, true /*pin*/, InitialLoadOrigin.NON /*fromInitialLoad*/);
         }
@@ -2188,7 +2190,7 @@ public class CacheManager extends AbstractCacheManager
         template.setDeleted(true);
 
         // handle waiting for entries, if exist
-        if (template.isHasWaitingFor()) {
+        if (template.hasWaitingFor()) {
             // create and dispatch RemoveWaitingForInfoSABusPacket
             // so that the removal of waiting for info will be done
             // asynchronously
@@ -2273,7 +2275,7 @@ public class CacheManager extends AbstractCacheManager
     public void removeWaitingForInfo(Context context, IEntryHolder entryHolder, ITemplateHolder templateHolder, boolean unpinIfPossible) {
         entryHolder.removeTemplateWaitingForEntry(templateHolder);
 
-        if (!entryHolder.isHasWaitingFor() && !entryHolder.isMaybeUnderXtn())
+        if (!entryHolder.hasWaitingFor() && !entryHolder.isMaybeUnderXtn())
             entryHolder.resetEntryXtnInfo();
 
         templateHolder.removeEntryWaitingForTemplate(entryHolder);
@@ -2295,31 +2297,23 @@ public class CacheManager extends AbstractCacheManager
             //new_content == null in take/read operation.
             final boolean newIsDiskEntry = new_content != null && getEntryTieredState(new_content) == TieredState.TIERED_COLD;
             final boolean oldIsDiskEntry = getEntryTieredState(entryHolder) == TieredState.TIERED_COLD;
-            long newEhLease = Lease.FOREVER;
-
-            if (new_content != null) {
-                final IEntryData newContentEntryData = new_content.getEntryData();
-                if (newContentEntryData != null) {
-                    newEhLease = newContentEntryData.getExpirationTime();
-                }
-            }
 
             if (oldIsDiskEntry) {
-                entryHolder.setExpirationTime(DUMMY_LEASE_FOR_TRANSACTION);
+                entryHolder.setDummyLease();
                 if (!newIsDiskEntry) {
-                    if (newEhLease == DUMMY_LEASE_FOR_TRANSACTION) {
-                        //in case of write disk entry under Xtn, and then updating it
-                        // (causing it to stay in memory [HOT tier]).
+                    if (new_content != null && new_content.isDummyLease()) {
+                        //in case of write disk entry under Xtn, and then updating it and
+                        // causing it to stay in memory [HOT tier].
                         new_content.setExpirationTime(Lease.FOREVER);
                     }
                 }
                 context.setReRegisterLeaseOnUpdate(true);
             }
             if (newIsDiskEntry) {
-                if (newEhLease != DUMMY_LEASE_FOR_TRANSACTION) {
+                if (!new_content.isDummyLease()) {
                     //in case of write disk entry under Xtn, and then update it (while tier state did not change).
                     //OR in case of write memory entry under Xtn, and then update it to disk only.
-                    new_content.setExpirationTime(DUMMY_LEASE_FOR_TRANSACTION);
+                    new_content.setDummyLease();
                     context.setReRegisterLeaseOnUpdate(true);
                 }
             }
@@ -2482,27 +2476,28 @@ public class CacheManager extends AbstractCacheManager
         if (!xtnEnd)
             removeLockedEntry(pXtn, pEntry);
 
-        if ((pEntry.getEntryHolder(this).getWriteLockTransaction() == null) ||
-                !pEntry.getEntryHolder(this).getWriteLockTransaction().equals(pXtn.getXtn())) {
-            pEntry.getEntryHolder(this).removeReadLockOwner(pXtn.getXtnEntry());
+        IEntryHolder pEh = pEntry.getEntryHolder(this);
+        if ((pEh.getWriteLockTransaction() == null) ||
+                !pEh.getWriteLockTransaction().equals(pXtn.getXtn())) {
+            pEh.removeReadLockOwner(pXtn.getXtnEntry());
         }
 
-        if ((pEntry.getEntryHolder(this).getWriteLockTransaction() != null) &&
-                pEntry.getEntryHolder(this).getWriteLockTransaction().equals(pXtn.getXtn())) {
-            pEntry.getEntryHolder(this).resetWriteLockOwner();
+        if ((pEh.getWriteLockTransaction() != null) &&
+                pEh.getWriteLockTransaction().equals(pXtn.getXtn())) {
+            pEh.resetWriteLockOwner();
         }
 
-        if (xtnEntry == pEntry.getEntryHolder(this).getXidOriginated())
-            pEntry.getEntryHolder(this).resetXidOriginated();
+        if (xtnEntry == pEh.getXidOriginated())
+            pEh.resetXidOriginated();
 
-        pEntry.getEntryHolder(this).setMaybeUnderXtn(pEntry.getEntryHolder(this).anyReadLockXtn() || pEntry.getEntryHolder(this).getWriteLockTransaction() != null);
+        pEh.setMaybeUnderXtn(pEh.anyReadLockXtn() || pEh.getWriteLockTransaction() != null);
 
         // unpin entry if relevant
-        if (!pEntry.getEntryHolder(this).isMaybeUnderXtn()) {
-            if (!pEntry.getEntryHolder(this).isHasWaitingFor()) {
-                pEntry.getEntryHolder(this).resetEntryXtnInfo();
+        if (!pEh.isMaybeUnderXtn()) {
+            if (!pEh.hasWaitingFor()) {
+                pEh.resetEntryXtnInfo();
                 if (pEntry.isPinned() && xtnEnd)
-                    unpinIfNeeded(context, pEntry.getEntryHolder(this), null /*template*/, pEntry);
+                    unpinIfNeeded(context, pEh, null /*template*/, pEntry);
             }
         }
     }
@@ -3463,18 +3458,20 @@ public class CacheManager extends AbstractCacheManager
         if (typeData == null)
             typeData = _typeDataMap.get(entryHolder.getServerTypeDesc());
 
-        if ((context.isTemplateMaybeUnderTransaction() || entryHolder.isMaybeUnderXtn())
-                && isTieredStorageCachePolicy()
+        if (isTieredStorageCachePolicy()
+                && (context.isTemplateMaybeUnderTransaction() || entryHolder.isMaybeUnderXtn())
                 && context.isDiskOnlyEntry()) {
-            //create new EntryHolder with empty TxnInfo
             if (!entryHolder.isMaybeUnderXtn()) {
+                //create new EntryHolder with dummy TxnInfo and dummy lease
                 entryHolder = new EntryHolder(entryHolder.getServerTypeDesc(), entryHolder.getUID(),
                         entryHolder.getSCN(), entryHolder.isTransient(),
+                        //set dummy lease to remove the entry later from the memory
                         entryHolder.getTxnEntryData().createCopyWithDummyTieredStorageTxnInfo());
-                entryHolder.setMaybeUnderXtn(true);
+            } else {
+                //set dummy lease to remove the entry later from the memory
+                entryHolder.setDummyLease();
             }
-            //set dummy lease to remove the entry later from the memory
-            entryHolder.setExpirationTime(DUMMY_LEASE_FOR_TRANSACTION);
+            entryHolder.setMaybeUnderXtn(true);
         }
 
         final IEntryCacheInfo pEntry = !entryHolder.isBlobStoreEntry() ? EntryCacheInfoFactory.createEntryCacheInfo(entryHolder, typeData.numberOfBackRefs(), pin, getEngine()) :
@@ -3684,8 +3681,9 @@ public class CacheManager extends AbstractCacheManager
                     //prevent a race in which a dead entry will reside in cache
                     return null; //deleted entry not relevant
                 }
-                if (newEntry)
+                if (newEntry) {
                     return (res = _entryAlreadyInSpaceIndication);
+                }
 
                 //try to pin the already existing entry
                 if (pin && !oldEntry.setPinned(true, !isMemorySpace() /*waitIfPendingInsertion*/)) {//failed to pin, entry must be in removing process
@@ -3715,7 +3713,9 @@ public class CacheManager extends AbstractCacheManager
             insertedToEvictionStrategy = true;
 
             // add entry to Xtn if written under Xtn
-            if (newEntry && pEntry.getEntryHolder(this).getXidOriginated() != null) {
+            if ((newEntry && pEntry.getEntryHolder(this).getXidOriginated() != null)
+                    //or when upload disk entry to memory in tiered-storage
+                || (entryHolder.getXidOriginated() != null && entryHolder.isDummyLeaseAndNotExpired())) {
                 XtnData pXtn = pEntry.getEntryHolder(this).getXidOriginated().getXtnData();
                 pXtn.getNewEntries(true/*createIfNull*/).add(pEntry);
                 lockEntry(pXtn, pEntry, context.getOperationID());
@@ -4044,7 +4044,7 @@ public class CacheManager extends AbstractCacheManager
     public boolean removeEntryFromCache(IEntryHolder entryHolder, boolean initiatedByEvictionStrategy, boolean locked, IEntryCacheInfo pEntry, RecentDeleteCodes recentDeleteUsage) {
         boolean recentDeleteEntry = false;
         if (!locked) {
-            if (!locked && pEntry == null)
+            if (pEntry == null)
                 throw new RuntimeException("removeEntryFromCache: invalid usage, unlocked && pEntry is null");
             recentDeleteEntry = pEntry.isRecentDelete();
             if (recentDeleteUsage == RecentDeleteCodes.REMOVE_DUMMY && !recentDeleteEntry)
@@ -5405,7 +5405,7 @@ public class CacheManager extends AbstractCacheManager
             return false;   //bulk termination will unpin
 
         // unpin entry if relevant
-        if (pEntry.getEntryHolder(this).isMaybeUnderXtn() || pEntry.getEntryHolder(this).isHasWaitingFor())
+        if (pEntry.getEntryHolder(this).isMaybeUnderXtn() || pEntry.getEntryHolder(this).hasWaitingFor())
             return false;
 
         if (isEvictableFromSpaceCachePolicy())
@@ -5438,7 +5438,7 @@ public class CacheManager extends AbstractCacheManager
             return false;
 
         // unpin entry if relevant
-        if (pEntry.getEntryHolder(this).isMaybeUnderXtn() || pEntry.getEntryHolder(this).isHasWaitingFor())
+        if (pEntry.getEntryHolder(this).isMaybeUnderXtn() || pEntry.getEntryHolder(this).hasWaitingFor())
             return false;
 
         if (requiresEvictionReplicationProtection()) {//can we evict the entry considering its replication marker ?
@@ -5552,12 +5552,15 @@ public class CacheManager extends AbstractCacheManager
 
         if(isTieredStorageCachePolicy()) {
             if (_engine.getTieredStorageManager().getEntryTieredState(keptEh) == TieredState.TIERED_COLD) {
-                long oldLease = keptEntryData.getExpirationTime();
-                keptEh.setExpirationTime(DUMMY_LEASE_FOR_TRANSACTION);
-                if (!keptEhCi.isConnectedToLeaseManager() && oldLease == DUMMY_LEASE_FOR_TRANSACTION) {
-                    oldLease = Lease.FOREVER;
+                final long oldLease = keptEntryData.getExpirationTime();
+                if(!keptEh.isDummyLease()) {
+                    keptEh.setDummyLease();
                 }
-                _leaseManager.reRegisterLease(keptEhCi, keptEh, oldLease, DUMMY_LEASE_FOR_TRANSACTION, ObjectTypes.ENTRY);
+                if (keptEhCi.isConnectedToLeaseManager()) {
+                    _leaseManager.reRegisterLease(keptEhCi, keptEh, oldLease, DUMMY_LEASE_FOR_TRANSACTION, ObjectTypes.ENTRY);
+                } else {
+                    _leaseManager.registerEntryLease(keptEhCi, keptEh, DUMMY_LEASE_FOR_TRANSACTION);
+                }
             }
         }
 
