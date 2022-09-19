@@ -30,6 +30,8 @@ import static com.j_spaces.kernel.SystemProperties.LRMI_SUPPORT_CODE_BASE;
 @com.gigaspaces.api.InternalApi
 public class ServiceTypeBase implements Serializable {
 
+    private static final boolean support_code_base = Boolean.getBoolean("com.gs.transport_protocol.lrmi.support-codebase");
+
     private static final long serialVersionUID = 2L;
 
     /**
