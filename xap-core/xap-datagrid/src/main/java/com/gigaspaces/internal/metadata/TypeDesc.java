@@ -338,6 +338,7 @@ public class TypeDesc implements ITypeDesc {
             TypeDesc copy = (TypeDesc) super.clone();
             copy._indexes = new HashMap<String, SpaceIndex>(this._indexes);
             copy.buildCompoundIndexesList();
+            copy.initHybridProperties();
             return copy;
         } catch (CloneNotSupportedException e) {
             // this shouldn't happen, since we are Cloneable
