@@ -28,6 +28,8 @@ import java.rmi.server.RMIClassLoader;
 @com.gigaspaces.api.InternalApi
 public class ServiceTypeBase implements Serializable {
 
+    private static final boolean support_code_base = Boolean.getBoolean("com.gs.transport_protocol.lrmi.support-codebase");
+
     private static final long serialVersionUID = 2L;
 
     /**
@@ -55,7 +57,7 @@ public class ServiceTypeBase implements Serializable {
      * Sets the codebase to the codebase of the given class.
      */
     public void setCodebase(Class cls) {
-        codebase = RMIClassLoader.getClassAnnotation(cls);
+        codebase = support_code_base ? RMIClassLoader.getClassAnnotation(cls) : null;
     }
 
     /**
