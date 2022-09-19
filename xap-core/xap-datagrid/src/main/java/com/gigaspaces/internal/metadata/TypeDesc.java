@@ -1490,6 +1490,8 @@ public class TypeDesc implements ITypeDesc {
     }
 
     public int[] getPositionsForScanning() {
+        if (positionsForScanning == null)
+            initHybridProperties();
         return positionsForScanning;
     }
 
