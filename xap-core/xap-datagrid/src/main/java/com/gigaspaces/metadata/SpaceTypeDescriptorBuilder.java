@@ -828,7 +828,7 @@ public class SpaceTypeDescriptorBuilder {
                 _queryExtensionsInfo,
                 binaryStorageAdapterClass,
                 _broadcast,
-                _tieredStorageTableConfig);
+                _tieredStorageTableConfig, false);
     }
 
     private void applyDefaults() {
