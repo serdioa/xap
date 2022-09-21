@@ -19,7 +19,6 @@ package com.gigaspaces.internal.server.storage;
 import com.gigaspaces.internal.metadata.ITypeDesc;
 import com.gigaspaces.internal.metadata.TypeDescriptorUtils;
 import com.gigaspaces.internal.server.metadata.IServerTypeDesc;
-import com.gigaspaces.internal.server.space.SpaceUidFactory;
 import com.gigaspaces.internal.transport.AbstractEntryPacket;
 import com.gigaspaces.internal.utils.Textualizable;
 import com.gigaspaces.internal.utils.Textualizer;
@@ -256,22 +255,17 @@ public abstract class AbstractSpaceItem implements ISpaceItem, Textualizable {
     }
 
     public Object getRoutingValue() {
+
         IEntryData edata = getEntryData();
         if (edata.getNumOfFixedProperties() == 0)
             return null;
         ITypeDesc _typeDesc = edata.getEntryTypeDesc().getTypeDesc();
-        String routingPropertyName = _typeDesc.getRoutingPropertyName();
-        if (_typeDesc.isAutoGenerateRouting())
-            return SpaceUidFactory.extractPartitionId(getUID());
-        if (routingPropertyName == null) {
-            return null;
-        }
+        List<String> properties = _typeDesc.getIdPropertiesNames();
+
         int routingPropertyId = _typeDesc.getRoutingPropertyId();
         if (routingPropertyId == -1) return null;
-
-        List<String> properties = _typeDesc.getIdPropertiesNames();
-        if (properties.size() == 1) {
-            return edata.getPropertyValue(properties.get(routingPropertyId));
+        if (_typeDesc.hasRouting() || properties.size() == 1) {
+            return edata.getFixedPropertyValue(routingPropertyId);
         }
         AbstractEntryPacket.RoutingFields result = new AbstractEntryPacket.RoutingFields();
         List<String> propertyNames = _typeDesc.getIdPropertiesNames();
@@ -281,9 +275,41 @@ public abstract class AbstractSpaceItem implements ISpaceItem, Textualizable {
                 return null;
             }
             result.sumValueHashCode(propertyValue);
+
         }
         return result;
     }
+
+
+//    public Object getRoutingValue() {
+//        IEntryData edata = getEntryData();
+//        if (edata.getNumOfFixedProperties() == 0)
+//            return null;
+//        ITypeDesc _typeDesc = edata.getEntryTypeDesc().getTypeDesc();
+//        String routingPropertyName = _typeDesc.getRoutingPropertyName();
+//        if (_typeDesc.isAutoGenerateRouting())
+//            return SpaceUidFactory.extractPartitionId(getUID());
+//        if (routingPropertyName == null) {
+//            return null;
+//        }
+//        int routingPropertyId = _typeDesc.getRoutingPropertyId();
+//        if (routingPropertyId == -1) return null;
+//
+//        List<String> properties = _typeDesc.getIdPropertiesNames();
+//        if (properties.size() == 1) {
+//            return edata.getPropertyValue(properties.get(routingPropertyId));
+//        }
+//        AbstractEntryPacket.RoutingFields result = new AbstractEntryPacket.RoutingFields();
+//        List<String> propertyNames = _typeDesc.getIdPropertiesNames();
+//        for (int i = 0; i < propertyNames.size(); i++) {
+//            Object propertyValue = edata.getPropertyValue(propertyNames.get(i));
+//            if (propertyValue == null) {
+//                return null;
+//            }
+//            result.sumValueHashCode(propertyValue);
+//        }
+//        return result;
+//    }
 
     public Object getEntryId() {
         IEntryData entryData = getEntryData();
