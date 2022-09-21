@@ -3697,7 +3697,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
         long leaseFilter = SystemTime.timeMillis();
 
         //optimize performance for read-by-id
-        if (template.getID() != null && template.getExtendedMatchCodes() == null && !_cacheManager.isTieredStorageCachePolicy()) {
+        if (template.getID() != null && template.getExtendedMatchCodes() == null) {
             IScanListIterator<IEntryCacheInfo> toScan = _cacheManager.getEntryByUniqueId(context, serverTypeDesc, template.getID(), template);
             if (toScan != null && !toScan.isIterator()) {
                 res = getMatchedEntryAndOperateSA_Entry(context,
@@ -3727,7 +3727,8 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
             }
         }
 
-        if (_cacheManager.isTieredStorageCachePolicy() || (getCacheManager().isEvictableFromSpaceCachePolicy() && !_cacheManager.isMemorySpace())) {
+        if ((_cacheManager.isTieredStorageCachePolicy() && context.getTemplateTieredState() != TemplateMatchTier.MATCH_HOT)
+                || (getCacheManager().isEvictableFromSpaceCachePolicy() && !_cacheManager.isMemorySpace())) {
             IScanListIterator<IEntryCacheInfo> toScan =
                     _cacheManager.makeScanableEntriesIter(context, template, serverTypeDesc,
                             scnFilter, leaseFilter, isMemoryOnlyOperation(template) /*memoryonly*/);
