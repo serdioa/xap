@@ -38,8 +38,6 @@ public interface ITypeDesc extends SpaceTypeDescriptor, IDotnetTypeDescDetails, 
 
     String getCodeBase();
 
-    boolean hasRouting();
-
     boolean isExternalizable();
 
     String[] getSuperClassesNames();
