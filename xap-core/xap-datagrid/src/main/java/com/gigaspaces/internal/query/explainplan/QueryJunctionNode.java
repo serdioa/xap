@@ -75,8 +75,7 @@ public class QueryJunctionNode implements QueryOperationNode{
             result.append(")");
         }
 
-        return result.toString()
-                .replace(" AND )", ")");
+        return result.toString();
     }
 
     @Override
