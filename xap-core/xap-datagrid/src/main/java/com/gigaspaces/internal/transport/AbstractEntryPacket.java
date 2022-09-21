@@ -32,7 +32,6 @@ import com.j_spaces.core.OperationID;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -220,42 +219,14 @@ public abstract class AbstractEntryPacket extends AbstractExternalizable impleme
         return _previousVersion != 0;
     }
 
-//    public Object getRoutingFieldValue() {
-//        if (_typeDesc.isAutoGenerateRouting())
-//            return SpaceUidFactory.extractPartitionId(getUID());
-//
-//        int routingPropertyId = _typeDesc.getRoutingPropertyId();
-//        return routingPropertyId == -1 ? null : getFieldValue(routingPropertyId);
-//    }
-
-
     public Object getRoutingFieldValue() {
-
         if (_typeDesc.isAutoGenerateRouting())
             return SpaceUidFactory.extractPartitionId(getUID());
-        List<String> properties = _typeDesc.getIdPropertiesNames();
 
         int routingPropertyId = _typeDesc.getRoutingPropertyId();
-        if (routingPropertyId == -1) return null;
-        if (_typeDesc.hasRouting() || properties.size() == 1) {
-            return getFieldValue(routingPropertyId);
-        }
-        RoutingFields result = new RoutingFields();
-        List<String> propertyNames = _typeDesc.getIdPropertiesNames();
-        for (int i = 0; i < propertyNames.size(); i++) {
-            Object propertyValue = getPropertyValue(propertyNames.get(i));
-            if (propertyValue == null) {
-                return null;
-            }
-            result.sumValueHashCode(propertyValue);
-        }
-        System.out.println("routing for id1=" + getPropertyValue(propertyNames.get(0))
-                + " id2=" + getPropertyValue(propertyNames.get(1))
-                + " result=" + result.sum);
-        return result;
-
-
+        return routingPropertyId == -1 ? null : getFieldValue(routingPropertyId);
     }
+
     public Object toObject(QueryResultTypeInternal resultType) {
         return toObject(resultType, StorageTypeDeserialization.EAGER);
     }
@@ -403,27 +374,6 @@ public abstract class AbstractEntryPacket extends AbstractExternalizable impleme
             }
         }
     }
-
-
-    public static class RoutingFields {
-        int sum = 0;
-
-        public RoutingFields() {
-        }
-
-        public void sumValueHashCode(Object routingValue) {
-            sum += routingValue.hashCode();
-
-
-        }
-
-
-        @Override
-        public int hashCode() {
-            return sum;
-        }
-    }
-
 
     @Override
     public boolean isExternalizableEntryPacket() {
