@@ -76,6 +76,8 @@ public class SpaceTypeInfo implements SmartExternalizable {
 
     private transient final Object _lock = new Object();
     private Class<?> _type;
+
+    private boolean _hasRouting;
     private SpaceTypeInfo _superTypeInfo;
     private IConstructor<?> _constructor;
     private IParamsConstructor<?> _paramsConstructor;
@@ -253,6 +255,10 @@ public class SpaceTypeInfo implements SmartExternalizable {
 
     public String getSequenceNumberPropertyName() {
         return _sequenceNumberPropertyName;
+    }
+
+    public boolean hasRouting() {
+        return _hasRouting;
     }
 
     public int indexOf(SpacePropertyInfo property) {
@@ -895,7 +901,8 @@ public class SpaceTypeInfo implements SmartExternalizable {
                 _idAutoGenerate = idAnnotation.autoGenerate();
                 _idIndexType = idAnnotation.indexType();
             }
-
+            if (getter.getAnnotation(SpaceRouting.class) != null)
+                _hasRouting = true;
             _routingProperty = updateProperty(_routingProperty, property, SpaceRouting.class);
             _versionProperty = updateProperty(_versionProperty, property, SpaceVersion.class);
             _persistProperty = updateProperty(_persistProperty, property, SpacePersist.class);
@@ -1637,6 +1644,7 @@ public class SpaceTypeInfo implements SmartExternalizable {
     }
 
     public void readExternal(ObjectInput in, PlatformLogicalVersion version) throws IOException, ClassNotFoundException {
+        _hasRouting = in.readBoolean();
         if (version.greaterOrEquals(PlatformLogicalVersion.v10_1_0))
             readExternalV10_1(in, version);
         else if (version.greaterOrEquals(PlatformLogicalVersion.v10_0_0))
@@ -1800,6 +1808,7 @@ public class SpaceTypeInfo implements SmartExternalizable {
     }
 
     public void writeExternal(ObjectOutput out, PlatformLogicalVersion version) throws IOException {
+        out.writeBoolean(_hasRouting);
         if (version.greaterOrEquals(PlatformLogicalVersion.v10_1_0))
             writeExternalV10_1(out, version);
         else if (version.greaterOrEquals(PlatformLogicalVersion.v10_0_0))
