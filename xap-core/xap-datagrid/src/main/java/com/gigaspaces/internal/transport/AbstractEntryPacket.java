@@ -249,9 +249,6 @@ public abstract class AbstractEntryPacket extends AbstractExternalizable impleme
             }
             result.sumValueHashCode(propertyValue);
         }
-        System.out.println("routing for id1=" + getPropertyValue(propertyNames.get(0))
-                + " id2=" + getPropertyValue(propertyNames.get(1))
-                + " result=" + result.sum);
         return result;
 
 
