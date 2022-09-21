@@ -20,6 +20,7 @@ import com.gigaspaces.internal.metadata.ITypeDesc;
 import com.gigaspaces.internal.metadata.TypeDescriptorUtils;
 import com.gigaspaces.internal.server.metadata.IServerTypeDesc;
 import com.gigaspaces.internal.server.space.SpaceUidFactory;
+import com.gigaspaces.internal.transport.AbstractEntryPacket;
 import com.gigaspaces.internal.utils.Textualizable;
 import com.gigaspaces.internal.utils.Textualizer;
 import com.j_spaces.core.Constants;
@@ -28,6 +29,7 @@ import com.j_spaces.kernel.locks.IEvictableLockObject;
 import org.slf4j.Logger;
 
 import java.rmi.MarshalledObject;
+import java.util.List;
 
 /**
  * @author Niv Ingberg
@@ -257,13 +259,30 @@ public abstract class AbstractSpaceItem implements ISpaceItem, Textualizable {
         IEntryData edata = getEntryData();
         if (edata.getNumOfFixedProperties() == 0)
             return null;
-        ITypeDesc typeDesc = edata.getEntryTypeDesc().getTypeDesc();
-        String routingPropertyName = typeDesc.getRoutingPropertyName();
-        if (routingPropertyName == null)
-            return null;
-        if (typeDesc.isAutoGenerateRouting())
+        ITypeDesc _typeDesc = edata.getEntryTypeDesc().getTypeDesc();
+        String routingPropertyName = _typeDesc.getRoutingPropertyName();
+        if (_typeDesc.isAutoGenerateRouting())
             return SpaceUidFactory.extractPartitionId(getUID());
-        return edata.getPropertyValue(routingPropertyName);
+        if (routingPropertyName == null) {
+            return null;
+        }
+        int routingPropertyId = _typeDesc.getRoutingPropertyId();
+        if (routingPropertyId == -1) return null;
+
+        List<String> properties = _typeDesc.getIdPropertiesNames();
+        if (properties.size() == 1) {
+            return edata.getPropertyValue(properties.get(routingPropertyId));
+        }
+        AbstractEntryPacket.RoutingFields result = new AbstractEntryPacket.RoutingFields();
+        List<String> propertyNames = _typeDesc.getIdPropertiesNames();
+        for (int i = 0; i < propertyNames.size(); i++) {
+            Object propertyValue = edata.getPropertyValue(propertyNames.get(i));
+            if (propertyValue == null) {
+                return null;
+            }
+            result.sumValueHashCode(propertyValue);
+        }
+        return result;
     }
 
     public Object getEntryId() {
