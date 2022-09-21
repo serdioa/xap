@@ -1487,7 +1487,7 @@ public class CacheManager extends AbstractCacheManager
                     diskEntry.getSCN(), diskEntry.isTransient(),
                     //set dummy lease to remove the entry later from the memory
                     diskEntry.getTxnEntryData()
-                            .createCopyWithDummyTieredStorageTxnContainsOtherXidOriginated(
+                            .createCopyWithDummyTieredStorageTxnContainsOtherWriteLockOwner(
                                     entryHolder.getTxnEntryData().getEntryXtnInfo()));
             newDiskEntry.setMaybeUnderXtn(true);
             insertEntryToCache(context, newDiskEntry, false /* newEntry */,
@@ -3465,13 +3465,12 @@ public class CacheManager extends AbstractCacheManager
                 //create new EntryHolder with dummy TxnInfo and dummy lease
                 entryHolder = new EntryHolder(entryHolder.getServerTypeDesc(), entryHolder.getUID(),
                         entryHolder.getSCN(), entryHolder.isTransient(),
-                        //set dummy lease to remove the entry later from the memory
                         entryHolder.getTxnEntryData().createCopyWithDummyTieredStorageTxnInfo());
+                entryHolder.setMaybeUnderXtn(true);
             } else {
                 //set dummy lease to remove the entry later from the memory
                 entryHolder.setDummyLease();
             }
-            entryHolder.setMaybeUnderXtn(true);
         }
 
         final IEntryCacheInfo pEntry = !entryHolder.isBlobStoreEntry() ? EntryCacheInfoFactory.createEntryCacheInfo(entryHolder, typeData.numberOfBackRefs(), pin, getEngine()) :
@@ -3713,13 +3712,21 @@ public class CacheManager extends AbstractCacheManager
             insertedToEvictionStrategy = true;
 
             // add entry to Xtn if written under Xtn
-            if ((newEntry && pEntry.getEntryHolder(this).getXidOriginated() != null)
-                    //or when upload disk entry to memory in tiered-storage
-                || (entryHolder.getXidOriginated() != null && entryHolder.isDummyLeaseAndNotExpired())) {
+            if (newEntry && pEntry.getEntryHolder(this).getXidOriginated() != null) {
                 XtnData pXtn = pEntry.getEntryHolder(this).getXidOriginated().getXtnData();
                 pXtn.getNewEntries(true/*createIfNull*/).add(pEntry);
                 lockEntry(pXtn, pEntry, context.getOperationID());
                 pEntry.getEntryHolder(this).getXidOriginated().setOperatedUpon();
+            }
+
+            // add entry to Xtn if written under Xtn when upload disk entry to memory in tiered-storage
+            if (entryHolder.isDummyLeaseAndNotExpired()
+                    && entryHolder.getXidOriginated() == null
+                    && entryHolder.getWriteLockOwner() != null) {
+                XtnData pXtn = entryHolder.getWriteLockOwner().getXtnData();
+                pXtn.getNewEntries(true/*createIfNull*/).add(pEntry);
+                lockEntry(pXtn, pEntry, context.getOperationID());
+                entryHolder.getWriteLockOwner().setOperatedUpon();
             }
 
             if (isEvictableFromSpaceCachePolicy())
@@ -4295,26 +4302,21 @@ public class CacheManager extends AbstractCacheManager
         if (template.isFifoSearch() && !typeData.isFifoSupport())
             return null;
 
-        //TODO - tiered storage - what if template tiered state == null
-        if (context.getTemplateTieredState() != TemplateMatchTier.MATCH_COLD
-                || (context.getTemplateTieredState() == TemplateMatchTier.MATCH_COLD
-                    && template.isMaybeUnderXtn())) {
-            // If template has no fields of type has no indexes, skip index optimization:
-            if (!typeData.hasIndexes())
-                return null;
+        // If template has no fields of type has no indexes, skip index optimization:
+        if (!typeData.hasIndexes())
+            return null;
 
-            int latestIndexToConsider = typeData.getLastIndexCreationNumber();
+        int latestIndexToConsider = typeData.getLastIndexCreationNumber();
 
-            // If type contains a primary key definition, check it first:
-            TypeDataIndex<IStoredList<IEntryCacheInfo>> primaryKey = typeData.getIdField();
-            if (primaryKey != null && latestIndexToConsider >= primaryKey.getIndexCreationNumber()) {
-                if (typeData.disableIdIndexForEntries(primaryKey)) {
-                    return getPEntryByUid(typeData.generateUid(templateValue));
-                }
-                IStoredList<IEntryCacheInfo> res = primaryKey.getUniqueEntriesStore().get(templateValue);
-                if (res != null && !res.isMultiObjectCollection()) {
-                    return res.getObjectFromHead();
-                }
+        // If type contains a primary key definition, check it first:
+        TypeDataIndex<IStoredList<IEntryCacheInfo>> primaryKey = typeData.getIdField();
+        if (primaryKey != null && latestIndexToConsider >= primaryKey.getIndexCreationNumber()) {
+            if (typeData.disableIdIndexForEntries(primaryKey)) {
+                return getPEntryByUid(typeData.generateUid(templateValue));
+            }
+            IStoredList<IEntryCacheInfo> res = primaryKey.getUniqueEntriesStore().get(templateValue);
+            if (res != null && !res.isMultiObjectCollection()) {
+                return res.getObjectFromHead();
             }
         }
 
