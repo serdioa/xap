@@ -19,6 +19,7 @@ package com.gigaspaces.internal.server.storage;
 import com.gigaspaces.internal.metadata.ITypeDesc;
 import com.gigaspaces.internal.metadata.TypeDescriptorUtils;
 import com.gigaspaces.internal.server.metadata.IServerTypeDesc;
+import com.gigaspaces.internal.server.space.SpaceUidFactory;
 import com.gigaspaces.internal.transport.AbstractEntryPacket;
 import com.gigaspaces.internal.utils.Textualizable;
 import com.gigaspaces.internal.utils.Textualizer;
@@ -259,16 +260,25 @@ public abstract class AbstractSpaceItem implements ISpaceItem, Textualizable {
         IEntryData edata = getEntryData();
         if (edata.getNumOfFixedProperties() == 0)
             return null;
-        ITypeDesc _typeDesc = edata.getEntryTypeDesc().getTypeDesc();
-        List<String> properties = _typeDesc.getIdPropertiesNames();
 
-        int routingPropertyId = _typeDesc.getRoutingPropertyId();
+        ITypeDesc typeDesc = edata.getEntryTypeDesc().getTypeDesc();
+
+        String routingPropertyName = typeDesc.getRoutingPropertyName();
+        if (routingPropertyName == null)
+            return null;
+
+        if (typeDesc.isAutoGenerateRouting())
+            return SpaceUidFactory.extractPartitionId(getUID());
+
+        List<String> properties = typeDesc.getIdPropertiesNames();
+
+        int routingPropertyId = typeDesc.getRoutingPropertyId();
         if (routingPropertyId == -1) return null;
-        if (_typeDesc.hasRouting() || properties.size() == 1) {
+        if (typeDesc.hasRouting() || properties.size() == 1) {
             return edata.getFixedPropertyValue(routingPropertyId);
         }
         AbstractEntryPacket.RoutingFields result = new AbstractEntryPacket.RoutingFields();
-        List<String> propertyNames = _typeDesc.getIdPropertiesNames();
+        List<String> propertyNames = typeDesc.getIdPropertiesNames();
         for (int i = 0; i < propertyNames.size(); i++) {
             Object propertyValue = edata.getPropertyValue(propertyNames.get(i));
             if (propertyValue == null) {
