@@ -10,6 +10,7 @@ public class LocalSession implements Serializable {
     private static final long serialVersionUID = -2470679645214359948L;
     private String username;
     private int gwPort;
+    private String sessionId;
     private Transaction transaction;
     private IsolationLevelModifiers isolationLevelModifiers;
 
@@ -23,6 +24,14 @@ public class LocalSession implements Serializable {
     public LocalSession(String username, int gwPort) {
         this.username = username;
         this.gwPort = gwPort;
+    }
+
+    public String getSessionId() {
+        return sessionId;
+    }
+
+    public void setSessionId(String sessionId) {
+        this.sessionId = sessionId;
     }
 
     public String getUsername() {
