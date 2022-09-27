@@ -20,14 +20,17 @@ import com.gigaspaces.entry.CompoundSpaceId;
 import com.gigaspaces.internal.client.QueryResultTypeInternal;
 import com.gigaspaces.internal.io.IOUtils;
 import com.gigaspaces.internal.metadata.ITypeDesc;
+import com.gigaspaces.internal.server.space.SpaceUidFactory;
 import com.gigaspaces.internal.transport.AbstractProjectionTemplate;
 import com.gigaspaces.internal.transport.AbstractQueryPacket;
+import com.gigaspaces.internal.transport.RoutingFields;
 import com.gigaspaces.internal.version.PlatformLogicalVersion;
 import com.gigaspaces.metadata.SpaceMetadataException;
 
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.util.List;
 
 /**
  * Used for querying the space by a class + id.
@@ -128,9 +131,34 @@ public class IdQueryPacket extends AbstractQueryPacket {
         return _id;
     }
 
+    //    @Override
+//    public Object getRoutingFieldValue() {
+//        return _routingFieldIndex == -1 ? null : _values[_routingFieldIndex];
+//    }
     @Override
     public Object getRoutingFieldValue() {
-        return _routingFieldIndex == -1 ? null : _values[_routingFieldIndex];
+
+        if (_typeDesc.isAutoGenerateRouting())
+            return SpaceUidFactory.extractPartitionId(getUID());
+        List<String> properties = _typeDesc.getIdPropertiesNames();
+
+        int routingPropertyId = _typeDesc.getRoutingPropertyId();
+        if (routingPropertyId == -1) return null;
+        if (_typeDesc.hasRouting() || properties.size() < 2) {
+            return getFieldValue(routingPropertyId);
+        }
+        RoutingFields result = new RoutingFields();
+        List<String> propertyNames = _typeDesc.getIdPropertiesNames();
+        for (int i = 0; i < propertyNames.size(); i++) {
+            Object propertyValue = getPropertyValue(propertyNames.get(i));
+            if (propertyValue == null) {
+                return null;
+            }
+            result.sumValueHashCode(propertyValue);
+        }
+        return result;
+
+
     }
 
     @Override

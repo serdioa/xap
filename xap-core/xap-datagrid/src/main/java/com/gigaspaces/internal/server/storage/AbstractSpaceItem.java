@@ -20,7 +20,7 @@ import com.gigaspaces.internal.metadata.ITypeDesc;
 import com.gigaspaces.internal.metadata.TypeDescriptorUtils;
 import com.gigaspaces.internal.server.metadata.IServerTypeDesc;
 import com.gigaspaces.internal.server.space.SpaceUidFactory;
-import com.gigaspaces.internal.transport.AbstractEntryPacket;
+import com.gigaspaces.internal.transport.RoutingFields;
 import com.gigaspaces.internal.utils.Textualizable;
 import com.gigaspaces.internal.utils.Textualizer;
 import com.j_spaces.core.Constants;
@@ -277,7 +277,7 @@ public abstract class AbstractSpaceItem implements ISpaceItem, Textualizable {
         if (typeDesc.hasRouting() || properties.size() == 1) {
             return edata.getFixedPropertyValue(routingPropertyId);
         }
-        AbstractEntryPacket.RoutingFields result = new AbstractEntryPacket.RoutingFields();
+        RoutingFields result = new RoutingFields();
         List<String> propertyNames = typeDesc.getIdPropertiesNames();
         for (int i = 0; i < propertyNames.size(); i++) {
             Object propertyValue = edata.getPropertyValue(propertyNames.get(i));

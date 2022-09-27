@@ -237,7 +237,7 @@ public abstract class AbstractEntryPacket extends AbstractExternalizable impleme
 
         int routingPropertyId = _typeDesc.getRoutingPropertyId();
         if (routingPropertyId == -1) return null;
-        if (_typeDesc.hasRouting() || properties.size() == 1) {
+        if (_typeDesc.hasRouting() || properties.size() < 2) {
             return getFieldValue(routingPropertyId);
         }
         RoutingFields result = new RoutingFields();
@@ -401,25 +401,6 @@ public abstract class AbstractEntryPacket extends AbstractExternalizable impleme
         }
     }
 
-
-    public static class RoutingFields {
-        int sum = 0;
-
-        public RoutingFields() {
-        }
-
-        public void sumValueHashCode(Object routingValue) {
-            sum += routingValue.hashCode();
-
-
-        }
-
-
-        @Override
-        public int hashCode() {
-            return sum;
-        }
-    }
 
 
     @Override
