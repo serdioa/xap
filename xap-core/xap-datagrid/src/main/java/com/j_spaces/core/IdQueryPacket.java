@@ -20,17 +20,14 @@ import com.gigaspaces.entry.CompoundSpaceId;
 import com.gigaspaces.internal.client.QueryResultTypeInternal;
 import com.gigaspaces.internal.io.IOUtils;
 import com.gigaspaces.internal.metadata.ITypeDesc;
-import com.gigaspaces.internal.server.space.SpaceUidFactory;
 import com.gigaspaces.internal.transport.AbstractProjectionTemplate;
 import com.gigaspaces.internal.transport.AbstractQueryPacket;
-import com.gigaspaces.internal.transport.RoutingFields;
 import com.gigaspaces.internal.version.PlatformLogicalVersion;
 import com.gigaspaces.metadata.SpaceMetadataException;
 
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.util.List;
 
 /**
  * Used for querying the space by a class + id.
@@ -53,6 +50,8 @@ public class IdQueryPacket extends AbstractQueryPacket {
 
     private transient String _uid;
 
+    private boolean hasRouting;
+
     /**
      * Empty constructor required by Externalizable.
      */
@@ -68,11 +67,12 @@ public class IdQueryPacket extends AbstractQueryPacket {
         this._propertiesLength = typeDesc.getNumOfFixedProperties();
         this._idFieldIndexes = typeDesc.getIdentifierPropertiesId();
         this._routingFieldIndex = typeDesc.getRoutingPropertyId();
+        this.hasRouting = typeDesc.hasRouting();
         initValues(routing);
     }
 
     private void initValues(Object routing) {
-        _values = new Object[_propertiesLength];
+        _values = new Object[_propertiesLength + 1];
         if (_id != null) {
             if (_idFieldIndexes.length == 1)
                 _values[_idFieldIndexes[0]] = _id;
@@ -80,13 +80,18 @@ public class IdQueryPacket extends AbstractQueryPacket {
                 CompoundSpaceId compoundId = assertIsArray(_id, _idFieldIndexes.length);
                 for (int i = 0; i < compoundId.length(); i++)
                     _values[_idFieldIndexes[i]] = compoundId.getValue(i);
+
+                if (routing == null && hasRouting) {
+                    _routingFieldIndex = -1; //broadcast
+                }
             }
         }
         if (routing != null) {
-            int index = _routingFieldIndex;
-            if (index >= 0)
-                _values[index] = routing;
+            _routingFieldIndex = _propertiesLength;
+            if (_routingFieldIndex >= 0)
+                _values[_routingFieldIndex] = routing;
         }
+
     }
 
     private CompoundSpaceId assertIsArray(Object obj, int expectedSize) {
@@ -131,34 +136,10 @@ public class IdQueryPacket extends AbstractQueryPacket {
         return _id;
     }
 
-    //    @Override
-//    public Object getRoutingFieldValue() {
-//        return _routingFieldIndex == -1 ? null : _values[_routingFieldIndex];
-//    }
     @Override
     public Object getRoutingFieldValue() {
-
-        if (_typeDesc.isAutoGenerateRouting())
-            return SpaceUidFactory.extractPartitionId(getUID());
-        List<String> properties = _typeDesc.getIdPropertiesNames();
-
-        int routingPropertyId = _typeDesc.getRoutingPropertyId();
-        if (routingPropertyId == -1) return null;
-        if (_typeDesc.hasRouting() || properties.size() < 2) {
-            return getFieldValue(routingPropertyId);
-        }
-        RoutingFields result = new RoutingFields();
-        List<String> propertyNames = _typeDesc.getIdPropertiesNames();
-        for (int i = 0; i < propertyNames.size(); i++) {
-            Object propertyValue = getPropertyValue(propertyNames.get(i));
-            if (propertyValue == null) {
-                return null;
-            }
-            result.sumValueHashCode(propertyValue);
-        }
-        return result;
-
-
+        if (_routingFieldIndex == -1) return null;
+        return _values[_propertiesLength] = super.getRoutingFieldValue();
     }
 
     @Override
