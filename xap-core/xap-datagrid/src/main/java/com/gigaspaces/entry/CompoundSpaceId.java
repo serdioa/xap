@@ -96,7 +96,7 @@ public class CompoundSpaceId implements SmartExternalizable {
     public int hashCode() {
         int sum = 0;
         for (Object obj : values) {
-            sum += obj.hashCode();
+            sum += obj != null ? obj.hashCode() : 0;
         }
         return sum;
     }
