@@ -139,7 +139,7 @@ public class IdQueryPacket extends AbstractQueryPacket {
     @Override
     public Object getRoutingFieldValue() {
         if (_routingFieldIndex == -1) return null;
-        return _values[_propertiesLength] = super.getRoutingFieldValue();
+        return super.getRoutingFieldValue();
     }
 
     @Override

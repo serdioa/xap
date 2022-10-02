@@ -126,9 +126,8 @@ public abstract class AbstractTypeIntrospector<T> implements ITypeIntrospector<T
     protected Object[] toDocumentIfNeeded(Object[] values, boolean cloneOnChange) {
         if (values == null || values.length == 0)
             return values;
-        int size = values.length - 1;
-        Object[] result = cloneOnChange ? new Object[size] : values;
-        for (int i = 0; i < size; i++) {
+        Object[] result = cloneOnChange ? new Object[values.length] : values;
+        for (int i = 0; i < values.length; i++) {
             PropertyInfo property = _typeDesc.getFixedProperty(i);
             result[i] = _documentObjectConverter.toDocumentIfNeeded(values[i], property.getDocumentSupport());
         }
@@ -138,9 +137,8 @@ public abstract class AbstractTypeIntrospector<T> implements ITypeIntrospector<T
     protected Object[] fromDocumentIfNeeded(Object[] values, boolean cloneOnChange) {
         if (values == null || values.length == 0)
             return values;
-        int size = values.length - 1;
-        Object[] result = cloneOnChange ? new Object[size] : values;
-        for (int i = 0; i < _typeDesc.getNumOfFixedProperties(); i++) {
+        Object[] result = cloneOnChange ? new Object[values.length] : values;
+        for (int i = 0; i < values.length; i++) {
             PropertyInfo property = _typeDesc.getFixedProperty(i);
             result[i] = _documentObjectConverter.fromDocumentIfNeeded(values[i], property.getDocumentSupport(), property.getType());
         }
