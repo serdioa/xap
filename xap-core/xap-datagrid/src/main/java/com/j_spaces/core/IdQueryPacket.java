@@ -87,16 +87,12 @@ public class IdQueryPacket extends AbstractQueryPacket {
             }
         }
         if (routing != null) {
-            hasRouting = true;
             _routingFieldIndex = _propertiesLength;
             if (_routingFieldIndex >= 0)
                 _values[_routingFieldIndex] = routing;
         }
 
     }
-
-    public boolean hasRouting()
-    {return hasRouting;}
 
     private CompoundSpaceId assertIsArray(Object obj, int expectedSize) {
         try {
