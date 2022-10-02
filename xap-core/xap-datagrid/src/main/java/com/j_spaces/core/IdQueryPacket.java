@@ -72,7 +72,7 @@ public class IdQueryPacket extends AbstractQueryPacket {
     }
 
     private void initValues(Object routing) {
-        _values = new Object[_propertiesLength + 1];
+        _values = new Object[_propertiesLength+1];
         if (_id != null) {
             if (_idFieldIndexes.length == 1)
                 _values[_idFieldIndexes[0]] = _id;
@@ -87,12 +87,16 @@ public class IdQueryPacket extends AbstractQueryPacket {
             }
         }
         if (routing != null) {
+            hasRouting = true;
             _routingFieldIndex = _propertiesLength;
             if (_routingFieldIndex >= 0)
                 _values[_routingFieldIndex] = routing;
         }
 
     }
+
+    public boolean hasRouting()
+    {return hasRouting;}
 
     private CompoundSpaceId assertIsArray(Object obj, int expectedSize) {
         try {
