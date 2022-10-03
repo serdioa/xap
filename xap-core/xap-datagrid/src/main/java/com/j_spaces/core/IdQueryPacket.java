@@ -52,6 +52,8 @@ public class IdQueryPacket extends AbstractQueryPacket {
 
     private boolean hasRouting;
 
+    private Object routingValue;
+
     /**
      * Empty constructor required by Externalizable.
      */
@@ -72,7 +74,7 @@ public class IdQueryPacket extends AbstractQueryPacket {
     }
 
     private void initValues(Object routing) {
-        _values = new Object[_propertiesLength+1];
+        _values = new Object[_propertiesLength];
         if (_id != null) {
             if (_idFieldIndexes.length == 1)
                 _values[_idFieldIndexes[0]] = _id;
@@ -87,11 +89,12 @@ public class IdQueryPacket extends AbstractQueryPacket {
             }
         }
         if (routing != null) {
-            _routingFieldIndex = _propertiesLength;
-            if (_routingFieldIndex >= 0)
-                _values[_routingFieldIndex] = routing;
+            routingValue = routing;
+        } else if (_typeDesc != null) {
+            if (!_typeDesc.isRoutingSameAsId()) {
+                routingValue = null;
+            } else routingValue = super.getRoutingFieldValue();
         }
-
     }
 
     private CompoundSpaceId assertIsArray(Object obj, int expectedSize) {
@@ -138,8 +141,7 @@ public class IdQueryPacket extends AbstractQueryPacket {
 
     @Override
     public Object getRoutingFieldValue() {
-        if (_routingFieldIndex == -1) return null;
-        return super.getRoutingFieldValue();
+        return routingValue;
     }
 
     @Override
@@ -195,8 +197,11 @@ public class IdQueryPacket extends AbstractQueryPacket {
             if (version.greaterOrEquals(PlatformLogicalVersion.v16_1_1))
                 this._idFieldIndexes = IOUtils.readIntegerArray(in);
             else
-                this._idFieldIndexes = new int[] {in.readInt()};
+                this._idFieldIndexes = new int[]{in.readInt()};
             this._id = IOUtils.readObject(in);
+        }
+        if (version.greaterOrEquals(PlatformLogicalVersion.v16_3_0)) {
+            routingValue = IOUtils.readObject(in);
         }
         Object routing = null;
         if ((flags & HAS_ROUTING) != 0) {
@@ -242,6 +247,9 @@ public class IdQueryPacket extends AbstractQueryPacket {
             else
                 out.writeInt(this._idFieldIndexes[0]);
             IOUtils.writeObject(out, _id);
+        }
+        if (version.greaterOrEquals(PlatformLogicalVersion.v16_3_0)) {
+            IOUtils.writeObject(out, routingValue);
         }
         if (routing != null) {
             out.writeInt(this._routingFieldIndex);

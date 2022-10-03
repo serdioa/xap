@@ -281,6 +281,7 @@ public class PlatformLogicalVersion implements SmartExternalizable, Comparable<P
     public static final PlatformLogicalVersion v16_1_0 = fromVersion(16, 1, 0);
     public static final PlatformLogicalVersion v16_1_1 = fromVersion(16, 1, 1);
     public static final PlatformLogicalVersion v16_2_0 = fromVersion(16, 2, 0);
+    public static final PlatformLogicalVersion v16_3_0 = fromVersion(16, 3, 0);
     //DOCUMENT BACKWARD BREAKING CHANGES, EACH CHANGE IN A LINE
     //GS-XXXX: Short backward breaking description and classes
     //GS-14728 SpaceId with multiple properties (#160)
