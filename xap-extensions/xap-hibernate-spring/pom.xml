@@ -7,7 +7,7 @@
     <parent>
         <artifactId>xap</artifactId>
         <groupId>org.gigaspaces</groupId>
-        <version>16.2.1-SNAPSHOT</version>
+        <version>16.2.1-cli-k8s-libs-versions-upgrade-mon-128</version>
         <relativePath>../../</relativePath>
     </parent>
     <artifactId>xap-hibernate-spring</artifactId>
