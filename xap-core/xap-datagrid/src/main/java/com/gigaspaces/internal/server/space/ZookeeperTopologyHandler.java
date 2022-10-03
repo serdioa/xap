@@ -57,6 +57,9 @@ public class ZookeeperTopologyHandler implements Closeable {
     public static String pipelines() {
         return ZNodePathFactory.pipelines();
     }
+    public static String getConsumers() {
+        return ZNodePathFactory.getConsumers();
+    }
 
 
     public static String getZkTopologyGenerationPath(String puName, int generation) {
