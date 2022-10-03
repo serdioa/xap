@@ -200,7 +200,7 @@ public class IdQueryPacket extends AbstractQueryPacket {
                 this._idFieldIndexes = new int[]{in.readInt()};
             this._id = IOUtils.readObject(in);
         }
-        if (version.greaterOrEquals(PlatformLogicalVersion.v16_3_0)) {
+        if (version.greaterOrEquals(PlatformLogicalVersion.v16_2_1)) {
             routingValue = IOUtils.readObject(in);
         }
         Object routing = null;
@@ -248,7 +248,7 @@ public class IdQueryPacket extends AbstractQueryPacket {
                 out.writeInt(this._idFieldIndexes[0]);
             IOUtils.writeObject(out, _id);
         }
-        if (version.greaterOrEquals(PlatformLogicalVersion.v16_3_0)) {
+        if (version.greaterOrEquals(PlatformLogicalVersion.v16_2_1)) {
             IOUtils.writeObject(out, routingValue);
         }
         if (routing != null) {
