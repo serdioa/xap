@@ -85,6 +85,8 @@ public class IdQueryPacket extends AbstractQueryPacket {
 
                 if (routing == null && hasRouting) {
                     _routingFieldIndex = -1; //broadcast
+                    routingValue = null;
+                    return;
                 }
             }
         }
@@ -200,14 +202,12 @@ public class IdQueryPacket extends AbstractQueryPacket {
                 this._idFieldIndexes = new int[]{in.readInt()};
             this._id = IOUtils.readObject(in);
         }
-        if (version.greaterOrEquals(PlatformLogicalVersion.v16_2_1)) {
-            routingValue = IOUtils.readObject(in);
-        }
         Object routing = null;
         if ((flags & HAS_ROUTING) != 0) {
             this._routingFieldIndex = in.readInt();
             routing = IOUtils.readObject(in);
         }
+
         if ((flags & HAS_PROJECTION) != 0)
             this._projectionTemplate = IOUtils.readObject(in);
 
@@ -230,7 +230,6 @@ public class IdQueryPacket extends AbstractQueryPacket {
 
     private final void serialize(ObjectOutput out, PlatformLogicalVersion version) throws IOException {
         Object routing = getRoutingFieldValue();
-
         byte flags = buildFlags(routing, version);
         out.writeByte(flags);
 
@@ -247,9 +246,6 @@ public class IdQueryPacket extends AbstractQueryPacket {
             else
                 out.writeInt(this._idFieldIndexes[0]);
             IOUtils.writeObject(out, _id);
-        }
-        if (version.greaterOrEquals(PlatformLogicalVersion.v16_2_1)) {
-            IOUtils.writeObject(out, routingValue);
         }
         if (routing != null) {
             out.writeInt(this._routingFieldIndex);
