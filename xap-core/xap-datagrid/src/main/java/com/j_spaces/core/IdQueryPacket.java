@@ -52,7 +52,7 @@ public class IdQueryPacket extends AbstractQueryPacket {
 
     private boolean hasRouting;
 
-    private Object routingValue;
+    private Object _routing;
 
     /**
      * Empty constructor required by Externalizable.
@@ -70,6 +70,7 @@ public class IdQueryPacket extends AbstractQueryPacket {
         this._idFieldIndexes = typeDesc.getIdentifierPropertiesId();
         this._routingFieldIndex = typeDesc.getRoutingPropertyId();
         this.hasRouting = typeDesc.hasRouting();
+        this._routing = routing;
         initValues(routing);
     }
 
@@ -85,17 +86,15 @@ public class IdQueryPacket extends AbstractQueryPacket {
 
                 if (routing == null && hasRouting) {
                     _routingFieldIndex = -1; //broadcast
-                    routingValue = null;
-                    return;
                 }
             }
         }
         if (routing != null) {
-            routingValue = routing;
+            _values[_routingFieldIndex] = routing;
+            _routing = routing;
         } else if (_typeDesc != null) {
             if (!_typeDesc.isRoutingSameAsId()) {
-                routingValue = null;
-            } else routingValue = super.getRoutingFieldValue();
+            } else _routing = super.getRoutingFieldValue();
         }
     }
 
@@ -143,7 +142,7 @@ public class IdQueryPacket extends AbstractQueryPacket {
 
     @Override
     public Object getRoutingFieldValue() {
-        return routingValue;
+        return _routing;
     }
 
     @Override
