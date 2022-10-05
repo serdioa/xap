@@ -1,6 +1,7 @@
 package com.gigaspaces.query.sql.functions.extended;
 
 import com.gigaspaces.client.IsolationLevelModifiers;
+import com.gigaspaces.client.TransactionModeModifiers;
 import net.jini.core.transaction.Transaction;
 
 import java.io.Serializable;
@@ -12,6 +13,7 @@ public class LocalSession implements Serializable {
     private int gwPort;
     private Transaction transaction;
     private IsolationLevelModifiers isolationLevelModifiers;
+    private TransactionModeModifiers transactionMode;
 
     public LocalSession() {
     }
@@ -55,5 +57,13 @@ public class LocalSession implements Serializable {
 
     public void setIsolationLevelModifiers(IsolationLevelModifiers isolationLevelModifiers) {
         this.isolationLevelModifiers = isolationLevelModifiers;
+    }
+
+    public TransactionModeModifiers getTransactionMode() {
+        return transactionMode;
+    }
+
+    public void setTransactionMode(TransactionModeModifiers transactionMode) {
+        this.transactionMode = transactionMode;
     }
 }
