@@ -7,7 +7,7 @@
     <parent>
         <artifactId>xap</artifactId>
         <groupId>org.gigaspaces</groupId>
-        <version>16.2.1-SNAPSHOT</version>
+        <version>16.2.1-PIC-1151-zookeeper-version-upgrade-wed-138</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
     <artifactId>xap-dist</artifactId>
