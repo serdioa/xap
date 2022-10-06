@@ -29,6 +29,8 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 
+import static com.j_spaces.kernel.SystemProperties.MATCH_BY_ROUTING_PROPERTY;
+
 /**
  * Used for querying the space by a class + id.
  *
@@ -38,7 +40,7 @@ import java.io.ObjectOutput;
 @com.gigaspaces.api.InternalApi
 public class IdQueryPacket extends AbstractQueryPacket {
     private static final long serialVersionUID = 1L;
-
+    private static final boolean MATCH_BY_ROUTING = Boolean.getBoolean(MATCH_BY_ROUTING_PROPERTY);//see GS-6847
     private String _className;
     private Object _id;
     private int _version;
@@ -91,6 +93,9 @@ public class IdQueryPacket extends AbstractQueryPacket {
         }
         if (routing != null && hasRouting) {
             _routing = routing;
+            if (MATCH_BY_ROUTING) {
+                _values[_routingFieldIndex] = _routing;
+            }
         } else if (_typeDesc != null) {
             if (!_typeDesc.isRoutingSameAsId()) {
             } else _routing = super.getRoutingFieldValue();
