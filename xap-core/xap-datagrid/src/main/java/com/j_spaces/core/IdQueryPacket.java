@@ -90,7 +90,6 @@ public class IdQueryPacket extends AbstractQueryPacket {
             }
         }
         if (routing != null && hasRouting) {
-            _values[_routingFieldIndex] = routing;
             _routing = routing;
         } else if (_typeDesc != null) {
             if (!_typeDesc.isRoutingSameAsId()) {
