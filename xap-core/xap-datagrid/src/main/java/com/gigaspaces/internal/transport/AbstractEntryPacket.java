@@ -220,15 +220,6 @@ public abstract class AbstractEntryPacket extends AbstractExternalizable impleme
         return _previousVersion != 0;
     }
 
-//    public Object getRoutingFieldValue() {
-//        if (_typeDesc.isAutoGenerateRouting())
-//            return SpaceUidFactory.extractPartitionId(getUID());
-//
-//        int routingPropertyId = _typeDesc.getRoutingPropertyId();
-//        return routingPropertyId == -1 ? null : getFieldValue(routingPropertyId);
-//    }
-
-
     public Object getRoutingFieldValue() {
 
         if (_typeDesc.isAutoGenerateRouting())

@@ -289,38 +289,7 @@ public abstract class AbstractSpaceItem implements ISpaceItem, Textualizable {
         }
         return result;
     }
-
-
-//    public Object getRoutingValue() {
-//        IEntryData edata = getEntryData();
-//        if (edata.getNumOfFixedProperties() == 0)
-//            return null;
-//        ITypeDesc _typeDesc = edata.getEntryTypeDesc().getTypeDesc();
-//        String routingPropertyName = _typeDesc.getRoutingPropertyName();
-//        if (_typeDesc.isAutoGenerateRouting())
-//            return SpaceUidFactory.extractPartitionId(getUID());
-//        if (routingPropertyName == null) {
-//            return null;
-//        }
-//        int routingPropertyId = _typeDesc.getRoutingPropertyId();
-//        if (routingPropertyId == -1) return null;
-//
-//        List<String> properties = _typeDesc.getIdPropertiesNames();
-//        if (properties.size() == 1) {
-//            return edata.getPropertyValue(properties.get(routingPropertyId));
-//        }
-//        AbstractEntryPacket.RoutingFields result = new AbstractEntryPacket.RoutingFields();
-//        List<String> propertyNames = _typeDesc.getIdPropertiesNames();
-//        for (int i = 0; i < propertyNames.size(); i++) {
-//            Object propertyValue = edata.getPropertyValue(propertyNames.get(i));
-//            if (propertyValue == null) {
-//                return null;
-//            }
-//            result.sumValueHashCode(propertyValue);
-//        }
-//        return result;
-//    }
-
+    
     public Object getEntryId() {
         IEntryData entryData = getEntryData();
         ITypeDesc typeDesc = entryData.getEntryTypeDesc().getTypeDesc();
