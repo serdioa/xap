@@ -91,7 +91,12 @@ public class SystemProperties extends CommonSystemProperties {
     public final static String FAIL_ON_INVALID_ROLLBACK = "com.gs.xa.failOnInvalidRollback";
 
 
-    public final static String WAIT_FOR_ABORT_EXPIRED_TX = "com.gs.waitForAbortExpriedTx";
+    /**
+     * When set to true, will not wait on commit thread while aborting expired transaction
+     *
+     * @since 16.2.1
+     */
+    public final static String ABORT_NO_WAIT_FOR_EXPIRED_TX = "com.gs.abortNoWaitForExpiredTx";
 
     /**
      * if -Dcom.gs.XMLEnvCheck=true we flush info about the Jaxp environment and print it to a file
