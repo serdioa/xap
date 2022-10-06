@@ -274,7 +274,7 @@ public abstract class AbstractSpaceItem implements ISpaceItem, Textualizable {
 
         int routingPropertyId = typeDesc.getRoutingPropertyId();
         if (routingPropertyId == -1) return null;
-        if (typeDesc.hasRouting() || properties.size() == 1) {
+        if (typeDesc.hasRouting() || properties.size() < 2) {
             return edata.getFixedPropertyValue(routingPropertyId);
         }
         RoutingFields result = new RoutingFields();
@@ -289,7 +289,7 @@ public abstract class AbstractSpaceItem implements ISpaceItem, Textualizable {
         }
         return result;
     }
-    
+
     public Object getEntryId() {
         IEntryData entryData = getEntryData();
         ITypeDesc typeDesc = entryData.getEntryTypeDesc().getTypeDesc();
