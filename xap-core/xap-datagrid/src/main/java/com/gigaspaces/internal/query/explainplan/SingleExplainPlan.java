@@ -310,9 +310,6 @@ public class SingleExplainPlan implements SmartExternalizable {
 
     private static void validateIndexesTypes(Map<String, SpaceIndex> indexMap) {
         for (SpaceIndex spaceIndex : indexMap.values()) {
-            if(spaceIndex instanceof CompoundIndex){
-                throw new UnsupportedOperationException("Sql explain plan does not support compound index");
-            }
             if(spaceIndex instanceof SpaceCollectionIndex){
                 throw new UnsupportedOperationException("Sql explain plan does not support collection index");
             }
