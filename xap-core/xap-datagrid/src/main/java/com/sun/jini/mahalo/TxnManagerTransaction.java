@@ -24,6 +24,7 @@ import com.gigaspaces.internal.utils.concurrent.UncheckedAtomicIntegerFieldUpdat
 import com.gigaspaces.logger.LogUtils;
 import com.gigaspaces.lrmi.ILRMIProxy;
 import com.gigaspaces.time.SystemTime;
+import com.j_spaces.kernel.SystemProperties;
 import com.sun.jini.constants.TimeConstants;
 import com.sun.jini.constants.TxnConstants;
 import com.sun.jini.landlord.LeasedResource;
@@ -32,17 +33,13 @@ import com.sun.jini.mahalo.log.LogException;
 import com.sun.jini.mahalo.log.LogManager;
 import com.sun.jini.thread.TaskManager;
 import com.sun.jini.thread.WakeupManager;
-
 import net.jini.core.lease.LeaseDeniedException;
 import net.jini.core.lease.UnknownLeaseException;
 import net.jini.core.transaction.*;
-import net.jini.core.transaction.server.CrashCountException;
-import net.jini.core.transaction.server.ServerTransaction;
-import net.jini.core.transaction.server.TransactionConstants;
-import net.jini.core.transaction.server.TransactionManager;
-import net.jini.core.transaction.server.TransactionParticipant;
+import net.jini.core.transaction.server.*;
 import net.jini.id.Uuid;
 import net.jini.security.ProxyPreparer;
+import org.slf4j.Logger;
 
 import java.rmi.RemoteException;
 import java.util.ArrayList;
@@ -51,9 +48,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * TxnManagerTransaction is a class which captures the internal representation of a transaction in
@@ -70,6 +64,8 @@ class TxnManagerTransaction
         implements TransactionConstants, TimeConstants, LeasedResource {
     static final long serialVersionUID = -2088463193687796098L;
     private static final boolean _disableNewSpaceProxyRouter = Boolean.getBoolean("com.gigaspaces.client.router.disableNewRouter");
+    private static final boolean abortWithoutWaitingForExpiredTxn = Boolean.getBoolean(SystemProperties.ABORT_NO_WAIT_FOR_EXPIRED_TX);
+
 
     /*
      * Table of valid state transitions which a
@@ -408,7 +404,7 @@ class TxnManagerTransaction
      * changes and informs the caller if the change was successful. Calls to this method synchronize
      * around the manager-side state variable appropriately.
      *
-     * @param int state the new desired state
+     * @param state the new desired state
      */
     boolean modifyTxnState(int state) {
         if (finer_op_logger) {
@@ -645,7 +641,7 @@ class TxnManagerTransaction
         //is not amenable, don't even try to continue
         int curstate = getState();
         if ((curstate == ACTIVE) && !_leaseForEver && (ensureCurrent() == false)) {
-            doAbort(0);
+            doAbort(abortWithoutWaitingForExpiredTxn ? 0 : waitFor);
             throw new CannotCommitException("Lease expired [ID=" + +getTransaction().id + "]");
         }
 
