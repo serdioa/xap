@@ -16,7 +16,7 @@ public class RoutingFields implements SmartExternalizable {
     }
 
     public void sumValueHashCode(Object routingValue) {
-        sum += routingValue.hashCode();
+        sum += 31 * routingValue.hashCode();
     }
 
     @Override
