@@ -459,7 +459,7 @@ class TxnManagerTransaction
 
         if ((state == ACTIVE) && !_leaseForEver && !ensureCurrent()) {
             doAbort(0);
-            throw new CannotJoinException("Lease expired");
+            throw new CannotJoinException("Transaction lease expired [ID=" + getTransaction().id + "]");
         }
 
 
@@ -640,9 +640,9 @@ class TxnManagerTransaction
         //If the transaction has already expired or the state
         //is not amenable, don't even try to continue
         int curstate = getState();
-        if ((curstate == ACTIVE) && !_leaseForEver && (ensureCurrent() == false)) {
+        if ((curstate == ACTIVE) && !_leaseForEver && !ensureCurrent()) {
             doAbort(abortWithoutWaitingForExpiredTxn ? 0 : waitFor);
-            throw new CannotCommitException("Lease expired [ID=" + +getTransaction().id + "]");
+            throw new CannotCommitException("Transaction Lease expired [ID=" + +getTransaction().id + "]");
         }
 
         if (curstate == ABORTED)
@@ -1113,6 +1113,10 @@ class TxnManagerTransaction
             } else {
                 if (getState() == COMMITTED)
                     return;
+                if (getState() == ABORTED)
+                    throw new CannotCommitException("attempt to prepare/commit ABORTED transaction [ID="
+                            + (_externalXid == null ? str.id : _externalXid) + "]");
+
                 throw new CannotCommitException();
             }
         } catch (UnknownTransactionException e) {
@@ -1528,25 +1532,12 @@ class TxnManagerTransaction
 
     }
 
-    synchronized boolean ensureCurrent() {
-        if (finer_op_logger) {
-            LogUtils.entering(operationsLogger, TxnManagerTransaction.class,
-                    "ensureCurrent");
-        }
-        long useby = getExpiration();
-        if (useby == Long.MAX_VALUE)
+    private boolean ensureCurrent() {
+        final long expiration = getExpiration();
+        if (expiration == Long.MAX_VALUE)
             return true;
 
-        long cur = SystemTime.timeMillis();
-        boolean result = false;
-
-        if (useby > cur)
-            result = true;
-        if (finer_op_logger) {
-            LogUtils.exiting(operationsLogger, TxnManagerTransaction.class,
-                    "ensureCurrent", Boolean.valueOf(result));
-        }
-        return result;
+        return expiration > SystemTime.timeMillis();
     }
 
 
