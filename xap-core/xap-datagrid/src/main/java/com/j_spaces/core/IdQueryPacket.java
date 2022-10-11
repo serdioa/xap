@@ -92,6 +92,7 @@ public class IdQueryPacket extends AbstractQueryPacket {
         _routing = routing;
         if (routing == null) {
             if (isSameAsRouting) {
+                _routingFieldIndex = routingFieldIndex;
                 _routing = super.getRoutingFieldValue();
             }
         } else {
@@ -105,32 +106,7 @@ public class IdQueryPacket extends AbstractQueryPacket {
 
 
     }
-
-//    private void initValues(Object routing) {
-//        _values = new Object[_propertiesLength];
-//        if (_id != null) {
-//            if (_idFieldIndexes.length == 1)
-//                _values[_idFieldIndexes[0]] = _id;
-//            else {
-//                CompoundSpaceId compoundId = assertIsArray(_id, _idFieldIndexes.length);
-//                for (int i = 0; i < compoundId.length(); i++)
-//                    _values[_idFieldIndexes[i]] = compoundId.getValue(i);
-//
-//                if (routing == null && hasRouting) {
-//                    _routingFieldIndex = -1; //broadcast
-//                }
-//            }
-//        }
-//        if (routing != null && hasRouting) {
-//            _routing = routing;
-//            if (MATCH_BY_ROUTING) {
-//                _values[_routingFieldIndex] = _routing;
-//            }
-//        } else if (_typeDesc != null) {
-//            if (!_typeDesc.isRoutingSameAsId()) {
-//            } else _routing = super.getRoutingFieldValue();
-//        }
-//    }
+    
 
     private CompoundSpaceId assertIsArray(Object obj, int expectedSize) {
         try {
