@@ -57,8 +57,6 @@ public class IdQueryPacket extends AbstractQueryPacket {
 
     private Object _routing;
 
-    private int _routingFieldIndexTypeDesc;
-
     /**
      * Empty constructor required by Externalizable.
      */
@@ -76,13 +74,11 @@ public class IdQueryPacket extends AbstractQueryPacket {
         this.hasRouting = typeDesc.hasRoutingAnnotation();
         this._routingFieldIndex = -1;
         this.isSameAsRouting = _typeDesc.isRoutingSameAsId();
-        this._routingFieldIndexTypeDesc = typeDesc.getRoutingPropertyId();
         this._routing = routing;
-        this._values = new Object[_propertiesLength];
-        initValues(routing);
+        initValues(routing, typeDesc.getRoutingPropertyId());
     }
 
-    private void initValues(Object routing) {
+    private void initValues(Object routing, int routingFieldIndex) {
         _values = new Object[_propertiesLength];
         if (_id != null) {
             if (_idFieldIndexes.length == 1)
@@ -100,8 +96,8 @@ public class IdQueryPacket extends AbstractQueryPacket {
             }
         } else {
             if (MATCH_BY_ROUTING) {
-                if (_routingFieldIndexTypeDesc >= 0)
-                    _values[_routingFieldIndexTypeDesc] = routing;
+                if (routingFieldIndex >= 0)
+                    _values[routingFieldIndex] = routing;
             }
 
 
@@ -247,7 +243,9 @@ public class IdQueryPacket extends AbstractQueryPacket {
         if ((flags & HAS_PROJECTION) != 0)
             this._projectionTemplate = IOUtils.readObject(in);
 
-        initValues(_routing);
+        this.isSameAsRouting = in.readBoolean();
+
+        initValues(_routing, _routingFieldIndex);
     }
 
 
@@ -288,6 +286,10 @@ public class IdQueryPacket extends AbstractQueryPacket {
         }
         if (_projectionTemplate != null && version.greaterOrEquals(PlatformLogicalVersion.v9_5_0))
             IOUtils.writeObject(out, _projectionTemplate);
+
+        out.writeBoolean(isSameAsRouting);
+
+
     }
 
     private byte buildFlags(PlatformLogicalVersion version) {
