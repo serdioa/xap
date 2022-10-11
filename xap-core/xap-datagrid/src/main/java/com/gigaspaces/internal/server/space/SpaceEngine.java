@@ -3708,6 +3708,11 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
                 if (res != null)
                     return res;
             }
+
+            //We did not find the entry by id in both memory and disk - we can stop.
+            if (_cacheManager.isTieredStorageCachePolicy()) {
+                return null;
+            }
         }
         final IServerTypeDesc[] subTypes = serverTypeDesc.getAssignableTypes();
 
@@ -3724,6 +3729,11 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
                                 useSCN, context.getReadByIdsInfo().getEntries()[context.getReadByIdsInfo().getPos()]);
                 if (res != null)
                     return res;
+
+                //We did not find the entries by ids in both memory and disk - we can stop.
+                if (_cacheManager.isTieredStorageCachePolicy()) {
+                    return null;
+                }
             }
         }
 

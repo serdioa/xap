@@ -80,14 +80,14 @@ public interface ITransactionalEntryData extends IEntryData, MutableServerEntry 
     }
 
     default ITransactionalEntryData createCopyWithDummyTieredStorageTxnInfo() {
-        return createCopyWithDummyTieredStorageTxnContainsOtherXidOriginated(null);
+        return createCopyWithDummyTieredStorageTxnContainsOtherWriteLockOwner(null);
     }
 
-    default ITransactionalEntryData createCopyWithDummyTieredStorageTxnContainsOtherXidOriginated(EntryXtnInfo other) {
+    default ITransactionalEntryData createCopyWithDummyTieredStorageTxnContainsOtherWriteLockOwner(EntryXtnInfo other) {
         EntryXtnInfo newEntryXtnInfo = new EntryXtnInfo();
         if (other != null) {
-            XtnEntry otherXidOriginated = other.getXidOriginated();
-            newEntryXtnInfo.setXidOriginated(otherXidOriginated);
+            XtnEntry otherWriteLockOwner = other.getWriteLockOwner();
+            newEntryXtnInfo.setWriteLockOwner(otherWriteLockOwner);
         }
         return createCopy(getVersion(), Constants.TieredStorage.DUMMY_LEASE_FOR_TRANSACTION, newEntryXtnInfo, false);
     }

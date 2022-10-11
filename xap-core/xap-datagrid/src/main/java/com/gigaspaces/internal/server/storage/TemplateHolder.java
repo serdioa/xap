@@ -206,7 +206,7 @@ public class TemplateHolder extends AbstractSpaceItem implements ITemplateHolder
         if (Modifiers.contains(_operationModifiers, Modifiers.EXPLAIN_PLAN)) {
             QueryTemplatePacket templatePacket = (QueryTemplatePacket) packet;
             SingleExplainPlan plan = new SingleExplainPlan();
-            if ( hasValue(templatePacket) || hasMatchCodes(templatePacket)) {
+            if (hasValue(templatePacket) || hasMatchCodes(templatePacket)) {
                 plan.setRoot(ExplainPlanUtil.BuildMatchCodes(templatePacket));
                 if (templatePacket.getCustomQuery() != null) {
                     plan.getRoot().getChildren().add(ExplainPlanUtil.buildQueryTree(templatePacket.getCustomQuery()));
