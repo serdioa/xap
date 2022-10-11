@@ -32,7 +32,6 @@ import com.j_spaces.core.OperationID;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -224,21 +223,21 @@ public abstract class AbstractEntryPacket extends AbstractExternalizable impleme
 
         if (_typeDesc.isAutoGenerateRouting())
             return SpaceUidFactory.extractPartitionId(getUID());
-        List<String> properties = _typeDesc.getIdPropertiesNames();
+        int[] properties = _typeDesc.getIdentifierPropertiesId();
 
         int routingPropertyId = _typeDesc.getRoutingPropertyId();
         if (routingPropertyId == -1) return null;
-        if (_typeDesc.hasRouting() || properties.size() < 2) {
+        if (_typeDesc.hasRoutingAnnotation() || properties.length < 2) {
             return getFieldValue(routingPropertyId);
         }
-        RoutingFields result = new RoutingFields();
-        List<String> propertyNames = _typeDesc.getIdPropertiesNames();
-        for (int i = 0; i < propertyNames.size(); i++) {
-            Object propertyValue = getPropertyValue(propertyNames.get(i));
+        CompoundRoutingHashValue result = new CompoundRoutingHashValue();
+
+        for (int property : properties) {
+            Object propertyValue = getFieldValue(property);
             if (propertyValue == null) {
-                return null;
+                return null; // if one of the fields is null, will do broadcast
             }
-            result.sumValueHashCode(propertyValue);
+            result.concatValue(propertyValue);
         }
         return result;
 

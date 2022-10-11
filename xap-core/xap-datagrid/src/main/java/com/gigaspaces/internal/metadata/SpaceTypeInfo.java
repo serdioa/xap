@@ -77,7 +77,7 @@ public class SpaceTypeInfo implements SmartExternalizable {
     private transient final Object _lock = new Object();
     private Class<?> _type;
 
-    private boolean _hasRouting;
+    private boolean _hasRoutingAnnotation;
     private SpaceTypeInfo _superTypeInfo;
     private IConstructor<?> _constructor;
     private IParamsConstructor<?> _paramsConstructor;
@@ -257,8 +257,8 @@ public class SpaceTypeInfo implements SmartExternalizable {
         return _sequenceNumberPropertyName;
     }
 
-    public boolean hasRouting() {
-        return _hasRouting;
+    public boolean hasRoutingAnnotation() {
+        return _hasRoutingAnnotation;
     }
 
     public int indexOf(SpacePropertyInfo property) {
@@ -902,7 +902,7 @@ public class SpaceTypeInfo implements SmartExternalizable {
                 _idIndexType = idAnnotation.indexType();
             }
             if (getter.getAnnotation(SpaceRouting.class) != null)
-                _hasRouting = true;
+                _hasRoutingAnnotation = true;
             _routingProperty = updateProperty(_routingProperty, property, SpaceRouting.class);
             _versionProperty = updateProperty(_versionProperty, property, SpaceVersion.class);
             _persistProperty = updateProperty(_persistProperty, property, SpacePersist.class);
@@ -1644,7 +1644,6 @@ public class SpaceTypeInfo implements SmartExternalizable {
     }
 
     public void readExternal(ObjectInput in, PlatformLogicalVersion version) throws IOException, ClassNotFoundException {
-        _hasRouting = in.readBoolean();
         if (version.greaterOrEquals(PlatformLogicalVersion.v10_1_0))
             readExternalV10_1(in, version);
         else if (version.greaterOrEquals(PlatformLogicalVersion.v10_0_0))
@@ -1659,6 +1658,7 @@ public class SpaceTypeInfo implements SmartExternalizable {
             throws IOException, ClassNotFoundException {
         readExternalV10_0(in, version);
         _sequenceNumberPropertyName = IOUtils.readString(in);
+        _hasRoutingAnnotation = in.readBoolean();
     }
 
     private void readExternalV10_0(ObjectInput in, PlatformLogicalVersion version)
@@ -1808,7 +1808,6 @@ public class SpaceTypeInfo implements SmartExternalizable {
     }
 
     public void writeExternal(ObjectOutput out, PlatformLogicalVersion version) throws IOException {
-        out.writeBoolean(_hasRouting);
         if (version.greaterOrEquals(PlatformLogicalVersion.v10_1_0))
             writeExternalV10_1(out, version);
         else if (version.greaterOrEquals(PlatformLogicalVersion.v10_0_0))
@@ -1823,6 +1822,8 @@ public class SpaceTypeInfo implements SmartExternalizable {
             throws IOException {
         writeExternalV10_0(out, version);  //same prefix
         IOUtils.writeString(out, _sequenceNumberPropertyName);
+        out.writeBoolean(_hasRoutingAnnotation);
+
     }
 
     private void writeExternalV10_0(ObjectOutput out, PlatformLogicalVersion version)

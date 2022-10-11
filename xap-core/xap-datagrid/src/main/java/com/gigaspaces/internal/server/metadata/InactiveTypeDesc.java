@@ -158,7 +158,7 @@ import java.util.Set;
     }
 
     @Override
-    public boolean hasRouting() {
+    public boolean hasRoutingAnnotation() {
         return false;
     }
 

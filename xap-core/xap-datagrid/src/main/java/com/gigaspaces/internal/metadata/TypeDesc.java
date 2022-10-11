@@ -103,7 +103,7 @@ public class TypeDesc implements ITypeDesc {
     private String _documentWrapperClassName;
     private transient Class<? extends SpaceDocument> _documentWrapperClass;
 
-    private boolean _hasRouting;
+    private boolean _hasRoutingAnnotation;
 
     private transient ITypeIntrospector<? extends SpaceDocument> _documentIntrospector;
     private transient String[] _restrictedSuperClasses;
@@ -138,7 +138,7 @@ public class TypeDesc implements ITypeDesc {
                     Class<? extends ExternalEntry> externalEntryClass, Class<? extends SpaceDocument> documentWrapperClass,
                     String dotnetDocumentWrapperType, byte dotnetStorageType, boolean blobstoreEnabled, String sequenceNumberPropertyName,
                     TypeQueryExtensions queryExtensionsInfo, Class<? extends ClassBinaryStorageAdapter> binaryStorageAdapter, boolean broadcast,
-                    TieredStorageTableConfig tieredStorageTableConfig, boolean hasRouting) {
+                    TieredStorageTableConfig tieredStorageTableConfig, boolean hasRoutingAnnotation) {
 
         _typeName = typeName;
         _codeBase = codeBase;
@@ -186,7 +186,7 @@ public class TypeDesc implements ITypeDesc {
         addFifoGroupingIndexesIfNeeded(_indexes, _fifoGroupingName, _fifoGroupingIndexes);
         _broadcast = broadcast;
         _tieredStorageTableConfig = tieredStorageTableConfig;
-        _hasRouting = hasRouting;
+        _hasRoutingAnnotation = hasRoutingAnnotation;
     }
 
     private void initHybridProperties() {
@@ -444,8 +444,8 @@ public class TypeDesc implements ITypeDesc {
         return (propertyID != NO_SUCH_PROPERTY ? _fixedProperties[propertyID] : null);
     }
 
-    public boolean hasRouting() {
-        return _hasRouting;
+    public boolean hasRoutingAnnotation() {
+        return _hasRoutingAnnotation;
     }
 
     public boolean supportsDynamicProperties() {
@@ -795,8 +795,6 @@ public class TypeDesc implements ITypeDesc {
     void readExternal(ObjectInput in, PlatformLogicalVersion version, boolean swap)
             throws IOException, ClassNotFoundException {
         _sequenceNumberFixedPropertyPos = -1;
-        _hasRouting = in.readBoolean();
-
         if (version.greaterOrEquals(PlatformLogicalVersion.v11_0_0))
             readExternalV11_0_0(in, version, swap);
         else if (version.greaterOrEquals(PlatformLogicalVersion.v10_1_0))
@@ -954,6 +952,9 @@ public class TypeDesc implements ITypeDesc {
 
         initializeV9_0_0();
         initHybridProperties();
+        if (version.greaterOrEquals(PlatformLogicalVersion.v16_3_0)) {
+            _hasRoutingAnnotation = in.readBoolean();
+        }
     }
 
     private void writeObjectsAsByteArray(ObjectOutput out, PlatformLogicalVersion version) throws IOException {
@@ -1234,7 +1235,6 @@ public class TypeDesc implements ITypeDesc {
     }
 
     void writeExternal(ObjectOutput out, PlatformLogicalVersion version, boolean swap) throws IOException {
-        out.writeBoolean(_hasRouting);
         if (version.greaterOrEquals(PlatformLogicalVersion.v11_0_0))
             writeExternalV11_0_0(out, version, swap);
         else if (version.greaterOrEquals(PlatformLogicalVersion.v10_1_0))
@@ -1303,12 +1303,16 @@ public class TypeDesc implements ITypeDesc {
         // New in 15.8.0: Space class storage adapter
         if (version.greaterOrEquals(PlatformLogicalVersion.v15_8_0)) {
             out.writeBoolean(_broadcast);
-            if(classBinaryStorageAdapter != null){
+            if (classBinaryStorageAdapter != null) {
                 IOUtils.writeString(out, classBinaryStorageAdapter.getClass().getName());
-            }else {
+            } else {
                 IOUtils.writeString(out, null);
             }
         }
+        if (version.greaterOrEquals(PlatformLogicalVersion.v16_3_0)) {
+            out.writeBoolean(_hasRoutingAnnotation);
+        }
+
     }
 
     private void writeExternalV10_1(ObjectOutput out, PlatformLogicalVersion version, boolean swap) throws IOException {

@@ -95,7 +95,7 @@ public class TypeDescFactory {
         final FifoSupport fifoSupport = isFifoProxy() ? FifoSupport.ALL : typeInfo.getFifoSupport();
         final boolean blobstoreEnabled = typeInfo.isBlobstoreEnabled();
         final boolean broadcast = typeInfo.isBroadcast();
-        final boolean hasRouting = typeInfo.hasRouting();
+        final boolean hasRouting = typeInfo.hasRoutingAnnotation();
         final String sequenceNumberPropertyName = typeInfo.getSequenceNumberPropertyName();
         TypeQueryExtensions queryExtensionsInfo = new TypeQueryExtensionsImpl(typeInfo);
 
@@ -104,7 +104,7 @@ public class TypeDescFactory {
                 defaultPropertyName, routingPropertyName, fifoGroupingName, fifoGroupingIndexes, typeInfo.isSystemClass(), fifoSupport,
                 typeInfo.isReplicate(), supportsOptimisticLocking, defaultStorageType,
                 EntryType.OBJECT_JAVA, type, ExternalEntry.class, SpaceDocument.class, null, DotNetStorageType.NULL,
-                blobstoreEnabled, sequenceNumberPropertyName, queryExtensionsInfo, typeInfo.getSpaceClassStorageAdapter(), broadcast, typeInfo.getTieredStorageTableConfig(), typeInfo.hasRouting());
+                blobstoreEnabled, sequenceNumberPropertyName, queryExtensionsInfo, typeInfo.getSpaceClassStorageAdapter(), broadcast, typeInfo.getTieredStorageTableConfig(), typeInfo.hasRoutingAnnotation());
 
         if (typeDesc.isExternalizable() && shouldWarnExternalizable(typeInfo) && _deprecationLogger.isWarnEnabled())
             _deprecationLogger.warn("Current class [" + type.getName() + "] implements " + Externalizable.class + ", usage of Externalizable in order to serialize it to a space is deprecated, Use SpaceExclude, StorageType and nested object serialization where relevant instead."

@@ -75,6 +75,7 @@ public class SpaceTypeDescriptorBuilder {
     private Class<? extends ClassBinaryStorageAdapter> binaryStorageAdapterClass;
     private Boolean _broadcast;
     private TieredStorageTableConfig _tieredStorageTableConfig;
+    private boolean _hasRoutingAnnotation;
 
     /**
      * Initialize a type descriptor builder using the specified type name.
@@ -172,6 +173,7 @@ public class SpaceTypeDescriptorBuilder {
         _blobstoreEnabled = typeInfo.isBlobstoreEnabled();
         _broadcast = typeInfo.isBroadcast();
         _tieredStorageTableConfig = typeInfo.getTieredStorageTableConfig();
+        _hasRoutingAnnotation = typeInfo.hasRoutingAnnotation();
     }
 
     /**

@@ -20,7 +20,7 @@ import com.gigaspaces.internal.metadata.ITypeDesc;
 import com.gigaspaces.internal.metadata.TypeDescriptorUtils;
 import com.gigaspaces.internal.server.metadata.IServerTypeDesc;
 import com.gigaspaces.internal.server.space.SpaceUidFactory;
-import com.gigaspaces.internal.transport.RoutingFields;
+import com.gigaspaces.internal.transport.CompoundRoutingHashValue;
 import com.gigaspaces.internal.utils.Textualizable;
 import com.gigaspaces.internal.utils.Textualizer;
 import com.j_spaces.core.Constants;
@@ -262,29 +262,24 @@ public abstract class AbstractSpaceItem implements ISpaceItem, Textualizable {
             return null;
 
         ITypeDesc typeDesc = edata.getEntryTypeDesc().getTypeDesc();
+        List<String> routingProperties = typeDesc.getIdPropertiesNames();
 
-        String routingPropertyName = typeDesc.getRoutingPropertyName();
-        if (routingPropertyName == null)
-            return null;
-
-        if (typeDesc.isAutoGenerateRouting())
+        if (typeDesc.isAutoGenerateRouting()) {
             return SpaceUidFactory.extractPartitionId(getUID());
-
-        List<String> properties = typeDesc.getIdPropertiesNames();
-
+        }
         int routingPropertyId = typeDesc.getRoutingPropertyId();
-        if (routingPropertyId == -1) return null;
-        if (typeDesc.hasRouting() || properties.size() < 2) {
+        if (routingProperties == null || routingPropertyId == -1) return null;
+
+        if (typeDesc.hasRoutingAnnotation() || routingProperties.size() == 1) {
             return edata.getFixedPropertyValue(routingPropertyId);
         }
-        RoutingFields result = new RoutingFields();
-        List<String> propertyNames = typeDesc.getIdPropertiesNames();
-        for (int i = 0; i < propertyNames.size(); i++) {
-            Object propertyValue = edata.getPropertyValue(propertyNames.get(i));
-            if (propertyValue == null) {
+        CompoundRoutingHashValue result = new CompoundRoutingHashValue();
+        for (String propertyName : routingProperties) {
+            Object propertyValue = edata.getPropertyValue(propertyName);
+            if (propertyValue == null) { //if one of field values is null, perform broadcast
                 return null;
             }
-            result.sumValueHashCode(propertyValue);
+            result.concatValue(propertyValue);
 
         }
         return result;

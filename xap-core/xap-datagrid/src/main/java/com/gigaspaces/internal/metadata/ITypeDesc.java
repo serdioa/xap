@@ -68,7 +68,7 @@ public interface ITypeDesc extends SpaceTypeDescriptor, IDotnetTypeDescDetails, 
         return idPropertiesNames.size() == 1 && idPropertiesNames.get(0).equals(getRoutingPropertyName());
     }
 
-    boolean hasRouting();
+    boolean hasRoutingAnnotation();
 
     int[] getIdentifierPropertiesId();
 
