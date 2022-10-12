@@ -257,7 +257,7 @@ public abstract class AbstractSpaceItem implements ISpaceItem, Textualizable {
 
     public Object getRoutingValue() {
 
-        IEntryData edata = getEntryData();
+        IEntryData edata = getEntryData(); //similar code to abstractEntryPacket getRoutingValue()
         if (edata.getNumOfFixedProperties() == 0)
             return null;
 

@@ -73,7 +73,6 @@ public class IdQueryPacket extends AbstractQueryPacket {
         this._idFieldIndexes = typeDesc.getIdentifierPropertiesId();
         this.hasRouting = typeDesc.hasRoutingAnnotation();
         this._routingFieldIndex = -1;
-        this.isSameAsRouting = _typeDesc.isRoutingSameAsId();
         this._routing = routing;
         initValues(routing, typeDesc.getRoutingPropertyId());
     }
@@ -81,9 +80,10 @@ public class IdQueryPacket extends AbstractQueryPacket {
     private void initValues(Object routing, int routingFieldIndex) {
         _values = new Object[_propertiesLength];
         if (_id != null) {
-            if (_idFieldIndexes.length == 1)
+            if (_idFieldIndexes.length == 1) {
                 _values[_idFieldIndexes[0]] = _id;
-            else {
+                isSameAsRouting = ((Integer) _idFieldIndexes[0]).equals(super.getRoutingFieldValue());
+            } else {
                 CompoundSpaceId compoundId = assertIsArray(_id, _idFieldIndexes.length);
                 for (int i = 0; i < compoundId.length(); i++)
                     _values[_idFieldIndexes[i]] = compoundId.getValue(i);
@@ -218,9 +218,7 @@ public class IdQueryPacket extends AbstractQueryPacket {
 
         if ((flags & HAS_PROJECTION) != 0)
             this._projectionTemplate = IOUtils.readObject(in);
-
-        this.isSameAsRouting = in.readBoolean();
-
+        
         initValues(_routing, _routingFieldIndex);
     }
 
@@ -262,9 +260,6 @@ public class IdQueryPacket extends AbstractQueryPacket {
         }
         if (_projectionTemplate != null && version.greaterOrEquals(PlatformLogicalVersion.v9_5_0))
             IOUtils.writeObject(out, _projectionTemplate);
-
-        out.writeBoolean(isSameAsRouting);
-
 
     }
 
