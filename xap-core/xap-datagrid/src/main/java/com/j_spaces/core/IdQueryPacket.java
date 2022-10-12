@@ -41,7 +41,7 @@ import static com.j_spaces.kernel.SystemProperties.MATCH_BY_ROUTING_PROPERTY;
 public class IdQueryPacket extends AbstractQueryPacket {
     private static final long serialVersionUID = 1L;
     private static final boolean MATCH_BY_ROUTING = Boolean.getBoolean(MATCH_BY_ROUTING_PROPERTY);//see GS-6847
-    private boolean isSameAsRouting = false;
+    private boolean _isSameAsRouting;
     private String _className;
     private Object _id;
     private int _version;
@@ -52,9 +52,6 @@ public class IdQueryPacket extends AbstractQueryPacket {
     private AbstractProjectionTemplate _projectionTemplate;
 
     private transient String _uid;
-
-    private boolean hasRouting;
-
     private Object _routing;
 
     /**
@@ -71,7 +68,6 @@ public class IdQueryPacket extends AbstractQueryPacket {
         this._className = typeDesc.getTypeName();
         this._propertiesLength = typeDesc.getNumOfFixedProperties();
         this._idFieldIndexes = typeDesc.getIdentifierPropertiesId();
-        this.hasRouting = typeDesc.hasRoutingAnnotation();
         this._routingFieldIndex = -1;
         this._routing = routing;
         initValues(routing, typeDesc.getRoutingPropertyId());
@@ -82,7 +78,9 @@ public class IdQueryPacket extends AbstractQueryPacket {
         if (_id != null) {
             if (_idFieldIndexes.length == 1) {
                 _values[_idFieldIndexes[0]] = _id;
-                isSameAsRouting = ((Integer) _idFieldIndexes[0]).equals(super.getRoutingFieldValue());
+                if (_idFieldIndexes[0] == routingFieldIndex) {
+                    _isSameAsRouting = true;
+                }
             } else {
                 CompoundSpaceId compoundId = assertIsArray(_id, _idFieldIndexes.length);
                 for (int i = 0; i < compoundId.length(); i++)
@@ -91,7 +89,7 @@ public class IdQueryPacket extends AbstractQueryPacket {
         }
         _routing = routing;
         if (routing == null) {
-            if (isSameAsRouting) {
+            if (_isSameAsRouting) {
                 _routingFieldIndex = routingFieldIndex;
                 _routing = super.getRoutingFieldValue();
             }
@@ -218,7 +216,7 @@ public class IdQueryPacket extends AbstractQueryPacket {
 
         if ((flags & HAS_PROJECTION) != 0)
             this._projectionTemplate = IOUtils.readObject(in);
-        
+
         initValues(_routing, _routingFieldIndex);
     }
 
