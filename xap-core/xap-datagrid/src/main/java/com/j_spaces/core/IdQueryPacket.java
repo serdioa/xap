@@ -91,7 +91,7 @@ public class IdQueryPacket extends AbstractQueryPacket {
         if (routing == null) {
             if (_isSameAsRouting) {
                 _routingFieldIndex = routingFieldIndex;
-                _routing = super.getRoutingFieldValue();
+                _routing = _idFieldIndexes[0];
             }
         } else {
             if (MATCH_BY_ROUTING) {
