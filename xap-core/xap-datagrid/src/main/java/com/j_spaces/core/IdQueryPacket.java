@@ -41,7 +41,6 @@ import static com.j_spaces.kernel.SystemProperties.MATCH_BY_ROUTING_PROPERTY;
 public class IdQueryPacket extends AbstractQueryPacket {
     private static final long serialVersionUID = 1L;
     private static final boolean MATCH_BY_ROUTING = Boolean.getBoolean(MATCH_BY_ROUTING_PROPERTY);//see GS-6847
-    private boolean _isSameAsRouting;
     private String _className;
     private Object _id;
     private int _version;
@@ -74,6 +73,7 @@ public class IdQueryPacket extends AbstractQueryPacket {
     }
 
     private void initValues(Object routing, int routingFieldIndex) {
+        boolean _isSameAsRouting = false;
         _values = new Object[_propertiesLength];
         if (_id != null) {
             if (_idFieldIndexes.length == 1) {

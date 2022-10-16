@@ -223,16 +223,16 @@ public abstract class AbstractEntryPacket extends AbstractExternalizable impleme
 
         if (_typeDesc.isAutoGenerateRouting())
             return SpaceUidFactory.extractPartitionId(getUID());
-        int[] routingProperties = _typeDesc.getIdentifierPropertiesId();
+        int[] idIndexes = _typeDesc.getIdentifierPropertiesId();
 
         int routingPropertyId = _typeDesc.getRoutingPropertyId();
         if (routingPropertyId == -1) return null;
-        if (_typeDesc.hasRoutingAnnotation() || routingProperties.length < 2) {
+        if (_typeDesc.hasRoutingAnnotation() || idIndexes.length < 2) {
             return getFieldValue(routingPropertyId);
         }
         CompoundRoutingHashValue result = new CompoundRoutingHashValue();
 
-        for (int property : routingProperties) {
+        for (int property : idIndexes) {
             Object propertyValue = getFieldValue(property);
             if (propertyValue == null) {
                 return null; // if one of the fields is null, will do broadcast
