@@ -223,7 +223,7 @@ public class ReplicationNodeConfig {
             Matcher templateMatcher = templatePattern.matcher(matchingBuilder.getGroupNameTemplate());
             String newTemplate;
             if(templateMatcher.matches()) {
-                newTemplate = "(" + templateMatcher.group(1) + newPartitionId + "|" + templateMatcher.group(3) + newPartitionId + ")";
+                newTemplate = "(" + templateMatcher.group(1) + newPartitionId + ")|" + templateMatcher.group(3) + newPartitionId;
             }else {
                 throw new IllegalArgumentException("couldn't generate new group name template from " + matchingBuilder.getGroupNameTemplate());
             }
