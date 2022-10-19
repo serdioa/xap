@@ -950,11 +950,12 @@ public class TypeDesc implements ITypeDesc {
             _broadcast = false;
         }
 
+        if (version.greaterOrEquals(PlatformLogicalVersion.v16_3_0)) {
+            _hasRoutingAnnotation = in.readBoolean();
+        }
+
         initializeV9_0_0();
         initHybridProperties();
-//        if (version.greaterOrEquals(PlatformLogicalVersion.v16_3_0)) {
-            _hasRoutingAnnotation = in.readBoolean();
-//        }
     }
 
     private void writeObjectsAsByteArray(ObjectOutput out, PlatformLogicalVersion version) throws IOException {
@@ -1309,10 +1310,10 @@ public class TypeDesc implements ITypeDesc {
                 IOUtils.writeString(out, null);
             }
         }
-//        if (version.greaterOrEquals(PlatformLogicalVersion.v16_3_0)) {
-            out.writeBoolean(_hasRoutingAnnotation);
-//        }
 
+        if (version.greaterOrEquals(PlatformLogicalVersion.v16_3_0)) {
+            out.writeBoolean(_hasRoutingAnnotation);
+        }
     }
 
     private void writeExternalV10_1(ObjectOutput out, PlatformLogicalVersion version, boolean swap) throws IOException {

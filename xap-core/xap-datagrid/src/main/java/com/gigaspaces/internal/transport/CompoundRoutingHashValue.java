@@ -1,6 +1,7 @@
 package com.gigaspaces.internal.transport;
 
 
+import com.gigaspaces.entry.CompoundSpaceId;
 import com.gigaspaces.internal.io.IOUtils;
 import com.gigaspaces.serialization.SmartExternalizable;
 
@@ -15,6 +16,9 @@ public class CompoundRoutingHashValue implements SmartExternalizable {
 
     }
 
+    /**
+     * compute hash according to hashcode of {@link CompoundSpaceId#hashCode()} which uses Arrays.hashCode()
+     */
     public void concatValue(Object routingValue) {
         hash = 31 * hash + routingValue.hashCode();
     }

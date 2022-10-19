@@ -232,8 +232,8 @@ public abstract class AbstractEntryPacket extends AbstractExternalizable impleme
         }
         CompoundRoutingHashValue result = new CompoundRoutingHashValue();
 
-        for (int property : idIndexes) {
-            Object propertyValue = getFieldValue(property);
+        for (int index : idIndexes) {
+            Object propertyValue = getFieldValue(index);
             if (propertyValue == null) {
                 return null; // if one of the fields is null, will do broadcast
             }

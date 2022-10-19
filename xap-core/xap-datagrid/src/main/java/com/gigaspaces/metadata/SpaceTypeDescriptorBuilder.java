@@ -830,7 +830,8 @@ public class SpaceTypeDescriptorBuilder {
                 _queryExtensionsInfo,
                 binaryStorageAdapterClass,
                 _broadcast,
-                _tieredStorageTableConfig, false);
+                _tieredStorageTableConfig,
+                _hasRoutingAnnotation);
     }
 
     private void applyDefaults() {

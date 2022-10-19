@@ -93,16 +93,9 @@ public class IdQueryPacket extends AbstractQueryPacket {
                 _routingFieldIndex = routingFieldIndex;
                 _routing = super.getFieldValue(_idFieldIndexes[0]);
             }
-        } else {
-            if (MATCH_BY_ROUTING) {
-                if (routingFieldIndex >= 0)
-                    _values[routingFieldIndex] = routing;
-            }
-
-
+        } else if (MATCH_BY_ROUTING && routingFieldIndex != -1) {
+            _values[routingFieldIndex] = routing;
         }
-
-
     }
     
 
@@ -190,7 +183,7 @@ public class IdQueryPacket extends AbstractQueryPacket {
         deserialize(in, PlatformLogicalVersion.getLogicalVersion());
     }
 
-    private final void deserialize(ObjectInput in, PlatformLogicalVersion version) throws IOException,
+    private void deserialize(ObjectInput in, PlatformLogicalVersion version) throws IOException,
             ClassNotFoundException {
         byte flags = in.readByte();
 
@@ -211,7 +204,7 @@ public class IdQueryPacket extends AbstractQueryPacket {
         }
         if ((flags & HAS_ROUTING) != 0) {
             this._routingFieldIndex = in.readInt();
-            _routing = IOUtils.readObject(in);
+            this._routing = IOUtils.readObject(in);
         }
 
         if ((flags & HAS_PROJECTION) != 0)
@@ -234,7 +227,7 @@ public class IdQueryPacket extends AbstractQueryPacket {
         serialize(out, PlatformLogicalVersion.getLogicalVersion());
     }
 
-    private final void serialize(ObjectOutput out, PlatformLogicalVersion version) throws IOException {
+    private void serialize(ObjectOutput out, PlatformLogicalVersion version) throws IOException {
         byte flags = buildFlags(version);
         out.writeByte(flags);
 

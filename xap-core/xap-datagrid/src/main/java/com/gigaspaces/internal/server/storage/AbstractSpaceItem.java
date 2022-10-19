@@ -29,7 +29,6 @@ import com.j_spaces.kernel.locks.IEvictableLockObject;
 import org.slf4j.Logger;
 
 import java.rmi.MarshalledObject;
-import java.util.List;
 
 /**
  * @author Niv Ingberg
@@ -262,20 +261,20 @@ public abstract class AbstractSpaceItem implements ISpaceItem, Textualizable {
             return null;
 
         ITypeDesc typeDesc = edata.getEntryTypeDesc().getTypeDesc();
-        List<String> routingProperties = typeDesc.getIdPropertiesNames();
+        int[] idIndexes = typeDesc.getIdentifierPropertiesId();
 
         if (typeDesc.isAutoGenerateRouting()) {
             return SpaceUidFactory.extractPartitionId(getUID());
         }
         int routingPropertyId = typeDesc.getRoutingPropertyId();
-        if (routingProperties == null || routingPropertyId == -1) return null;
+        if (idIndexes == null || routingPropertyId == -1) return null;
 
-        if (typeDesc.hasRoutingAnnotation() || routingProperties.size() == 1) {
+        if (typeDesc.hasRoutingAnnotation() || idIndexes.length < 2) {
             return edata.getFixedPropertyValue(routingPropertyId);
         }
         CompoundRoutingHashValue result = new CompoundRoutingHashValue();
-        for (String propertyName : routingProperties) {
-            Object propertyValue = edata.getPropertyValue(propertyName);
+        for (int index : idIndexes) {
+            Object propertyValue = edata.getFixedPropertyValue(index);
             if (propertyValue == null) { //if one of field values is null, perform broadcast
                 return null;
             }
