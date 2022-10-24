@@ -308,7 +308,8 @@ public class GStatement implements Statement {
     }
 
     private boolean executePacket() {
-        if (packet.getResultEntry() != null) {
+
+        if (packet.getResultEntry() != null && packet.getIntResult() == -1) {
             buildResultSet(packet);
             return true;
         } else {
