@@ -22,6 +22,8 @@ import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.rmi.server.RMIClassLoader;
 
+import static com.j_spaces.kernel.SystemProperties.LRMI_SUPPORT_CODE_BASE;
+
 
 /**
  * An extension of <code>ObjectOutputStream</code> that implements the dynamic class loading
@@ -50,8 +52,6 @@ import java.rmi.server.RMIClassLoader;
 @com.gigaspaces.api.InternalApi
 public class AnnotatedObjectOutputStream
         extends ObjectOutputStream {
-
-    private static final boolean support_code_base = Boolean.getBoolean("com.gs.transport_protocol.lrmi.support-codebase");
 
     /**
      * Creates a new <code>AnnotatedObjectOutputStream</code> that writes marshaled data to the
@@ -133,7 +133,7 @@ public class AnnotatedObjectOutputStream
      **/
     protected void writeAnnotation(Class cl) throws IOException {
 
-        String annotation = support_code_base ? RMIClassLoader.getClassAnnotation(cl) : null;
+        String annotation = LRMI_SUPPORT_CODE_BASE ? RMIClassLoader.getClassAnnotation(cl) : null;
 
         writeUnshared(annotation);
     }

@@ -230,6 +230,10 @@ public class LeaseManager {
         register(entryCacheInfo, entryCacheInfo.getEntryHolder(_cacheManager), expiration, ObjectTypes.ENTRY);
     }
 
+    public void registerEntryLease(ILeasedEntryCacheInfo entryCacheInfo, IEntryHolder entryHolder, long expiration) {
+        register(entryCacheInfo, entryHolder, expiration, ObjectTypes.ENTRY);
+    }
+
     public Lease registerTemplateLease(TemplateCacheInfo templateCacheInfo) {
         final ITemplateHolder template = templateCacheInfo.m_TemplateHolder;
         final long expiration = template.getEntryData().getExpirationTime();
@@ -490,8 +494,8 @@ public class LeaseManager {
         if (duration == Lease.FOREVER || duration == Lease.ANY)
             return Long.MAX_VALUE;
 
-        if (duration == 0)
-            return 0;
+        if (duration == IJSpace.NO_WAIT)
+            return IJSpace.NO_WAIT;
 
         duration += current;
 
@@ -569,7 +573,7 @@ public class LeaseManager {
 
     /**
      * Calculates the absolute time for the given duration. Handles Lease.FOREVER, Lease.ANY, and
-     * NO_WAIT. Same {@link #toAbsoluteTime(long)} but uses a provided clock.
+     * NO_WAIT. Same {@link #toAbsoluteTime(long, long)} but uses a system clock.
      *
      * @param duration duration in milliseconds.
      * @return The absolute time of the requested given duration.
@@ -578,8 +582,8 @@ public class LeaseManager {
         if (duration == Lease.FOREVER || duration == Lease.ANY)
             return Long.MAX_VALUE;
 
-        if (duration == 0)
-            return 0;
+        if (duration == IJSpace.NO_WAIT)
+            return IJSpace.NO_WAIT;
 
         duration += SystemTime.timeMillis();
 
@@ -1302,8 +1306,9 @@ public class LeaseManager {
                                                 }
                                             }
 
-                                            if (entry.isDeleted())
+                                            if (entry.isDeleted()) {
                                                 continue; // already deleted
+                                            }
 
                                             if (!entry.isExpired(currentTime)) {
                                                 needUnpin = true;

@@ -19,7 +19,6 @@ package com.gigaspaces.internal.server.storage;
 import com.gigaspaces.internal.server.metadata.IServerTypeDesc;
 import com.j_spaces.core.XtnEntry;
 import com.j_spaces.kernel.locks.ISelfLockingSubject;
-
 import net.jini.core.transaction.server.ServerTransaction;
 
 /**
@@ -47,11 +46,20 @@ public interface ISpaceItem extends ISelfLockingSubject {
 
     boolean isMaybeUnderXtn();
 
-    void setMaybeUnderXtn(boolean value);
+    void setMaybeUnderXtn(boolean maybeUnderXtn);
 
-    boolean isHasWaitingFor();
+    //for tiered-storage
+    boolean isDummyLease();
 
-    void setHasWaitingFor(boolean value);
+    //for tiered-storage
+    boolean isDummyLeaseAndNotExpired();
+
+    //for tiered-storage
+    void setDummyLease();
+
+    boolean hasWaitingFor();
+
+    void setHasWaitingFor(boolean hasWaitingFor);
 
     String getUidToOperateBy();
 

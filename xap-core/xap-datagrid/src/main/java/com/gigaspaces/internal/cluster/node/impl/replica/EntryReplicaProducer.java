@@ -391,7 +391,6 @@ public class EntryReplicaProducer
 
 
         if (entry.isExpired()
-                && !(entry.getEntryData().getExpirationTime() == com.j_spaces.core.Constants.TieredStorage.DUMMY_LEASE_FOR_TRANSACTION)
                 && (!entry.isEntryUnderWriteLockXtn() || !_engine.getLeaseManager().isNoReapUnderXtnLeases())) {
             return null;
         }

@@ -90,6 +90,14 @@ public class SystemProperties extends CommonSystemProperties {
      */
     public final static String FAIL_ON_INVALID_ROLLBACK = "com.gs.xa.failOnInvalidRollback";
 
+
+    /**
+     * When set to true, will not wait on commit thread while aborting expired transaction
+     *
+     * @since 16.2.1
+     */
+    public final static String ABORT_NO_WAIT_FOR_EXPIRED_TX = "com.gs.abortNoWaitForExpiredTx";
+
     /**
      * if -Dcom.gs.XMLEnvCheck=true we flush info about the Jaxp environment and print it to a file
      * called GS_JAXP_EnvironmentCheck.xml in current directory.
@@ -282,6 +290,13 @@ public class SystemProperties extends CommonSystemProperties {
      */
     public final static String LRMI_SIMPLE_CLASSLOADING = "com.gs.transport_protocol.lrmi.simple-classloading";
     public final static String LRMI_SIMPLE_CLASSLOADING_DEFAULT = "false";
+
+    /**
+     * Set to true in order to set the codebase URL path that a remote party should use to download the definition
+     * for a specified class. Default is false.
+     */
+    public final static boolean LRMI_SUPPORT_CODE_BASE = Boolean.getBoolean("com.gs.transport_protocol.lrmi.support-codebase");
+
 
     /**
      * Set the space iterator type, allowed values: CURSOR, PREFETCH_UIDS

@@ -75,6 +75,9 @@ public class ZNodePathFactory {
     public static String pipelines() {
         return path(PIPELINES);
     }
+    public static String getConsumers() {
+        return path(CONSUMERS);
+    }
 
     public static String consumerUrl(String pipeline){ return path(PIPELINES, pipeline + "/consumer/url");}
     public static String consumerPu(String pipeline){ return path(PIPELINES, pipeline + "/consumer/pu");}

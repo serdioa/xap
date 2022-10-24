@@ -20,6 +20,8 @@ package com.sun.jini.reggie;
 import java.io.Serializable;
 import java.rmi.server.RMIClassLoader;
 
+import static com.j_spaces.kernel.SystemProperties.LRMI_SUPPORT_CODE_BASE;
+
 /**
  * An EntryClass annotated with a codebase.
  *
@@ -27,6 +29,8 @@ import java.rmi.server.RMIClassLoader;
  */
 @com.gigaspaces.api.InternalApi
 public class EntryClassBase implements Serializable {
+
+    private static final boolean support_code_base = Boolean.getBoolean("com.gs.transport_protocol.lrmi.support-codebase");
 
     private static final long serialVersionUID = 2L;
 
@@ -55,7 +59,7 @@ public class EntryClassBase implements Serializable {
      * Sets the codebase to the codebase of the given class.
      */
     public void setCodebase(Class cls) {
-        codebase = RMIClassLoader.getClassAnnotation(cls);
+        codebase = LRMI_SUPPORT_CODE_BASE ? RMIClassLoader.getClassAnnotation(cls) : null;
     }
 
     /**

@@ -23,7 +23,6 @@ import com.j_spaces.core.XtnEntry;
 import com.j_spaces.core.sadapter.SelectType;
 import com.j_spaces.kernel.IStoredList;
 import com.j_spaces.kernel.StoredListFactory;
-
 import net.jini.core.transaction.server.ServerTransaction;
 
 import java.util.*;
@@ -282,7 +281,6 @@ public class XtnData {
     public boolean isUpdatedEntry(IEntryHolder eh) {
         HashMap<String, Object> updatedEntries = _updatedEntries;
         return (updatedEntries != null && updatedEntries.containsKey(eh.getUID()));
-
     }
 
     public HashMap<String, Object> getUpdatedEntries() {

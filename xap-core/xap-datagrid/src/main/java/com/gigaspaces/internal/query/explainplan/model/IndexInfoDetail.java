@@ -5,6 +5,9 @@ import com.gigaspaces.internal.query.explainplan.IndexInfo;
 import com.gigaspaces.internal.query.explainplan.QueryOperator;
 import com.gigaspaces.metadata.index.SpaceIndexType;
 
+import java.util.Arrays;
+import java.util.stream.Collectors;
+
 import static com.gigaspaces.internal.query.explainplan.ExplainPlanUtil.getValueDesc;
 
 /**
@@ -124,8 +127,14 @@ public class IndexInfoDetail {
         return ExplainPlanUtil.getQueryOperatorDescription( operator );
     }
 
-    protected Object getValueDescription( Object value ){
-        return getValueDesc( value );
+    protected Object getValueDescription( Object value ) {
+        try {
+            return Arrays.stream((Object[]) value)
+                    .map(Object::toString)
+                    .collect(Collectors.joining("; "));
+        } catch (final RuntimeException e) {
+            return getValueDesc(value);
+       }
     }
 
     protected String getSizeDesc() {

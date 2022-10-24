@@ -3697,7 +3697,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
         long leaseFilter = SystemTime.timeMillis();
 
         //optimize performance for read-by-id
-        if (template.getID() != null && template.getExtendedMatchCodes() == null && !_cacheManager.isTieredStorageCachePolicy()) {
+        if (template.getID() != null && template.getExtendedMatchCodes() == null) {
             IScanListIterator<IEntryCacheInfo> toScan = _cacheManager.getEntryByUniqueId(context, serverTypeDesc, template.getID(), template);
             if (toScan != null && !toScan.isIterator()) {
                 res = getMatchedEntryAndOperateSA_Entry(context,
@@ -3707,6 +3707,11 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
 
                 if (res != null)
                     return res;
+            }
+
+            //We did not find the entry by id in both memory and disk - we can stop.
+            if (_cacheManager.isTieredStorageCachePolicy()) {
+                return null;
             }
         }
         final IServerTypeDesc[] subTypes = serverTypeDesc.getAssignableTypes();
@@ -3724,10 +3729,16 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
                                 useSCN, context.getReadByIdsInfo().getEntries()[context.getReadByIdsInfo().getPos()]);
                 if (res != null)
                     return res;
+
+                //We did not find the entries by ids in both memory and disk - we can stop.
+                if (_cacheManager.isTieredStorageCachePolicy()) {
+                    return null;
+                }
             }
         }
 
-        if (_cacheManager.isTieredStorageCachePolicy() || (getCacheManager().isEvictableFromSpaceCachePolicy() && !_cacheManager.isMemorySpace())) {
+        if ((_cacheManager.isTieredStorageCachePolicy() && context.getTemplateTieredState() != TemplateMatchTier.MATCH_HOT)
+                || (getCacheManager().isEvictableFromSpaceCachePolicy() && !_cacheManager.isMemorySpace())) {
             IScanListIterator<IEntryCacheInfo> toScan =
                     _cacheManager.makeScanableEntriesIter(context, template, serverTypeDesc,
                             scnFilter, leaseFilter, isMemoryOnlyOperation(template) /*memoryonly*/);
@@ -5171,7 +5182,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
         IEntryData edata;
         IEntryHolder newEntry;
         boolean reWrittenUnderXtn = false;
-        boolean needVerifyWF = entry.isHasWaitingFor();
+        boolean needVerifyWF = entry.hasWaitingFor();
         boolean fromReplication = false;
         int newVersionID;
         try {
@@ -5531,7 +5542,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
      */
     public void checkWFValidityAfterUpdate(Context context, IEntryHolder entry)
             throws SAException {
-        if (!entry.isHasWaitingFor() || entry.isDeleted())
+        if (!entry.hasWaitingFor() || entry.isDeleted())
             return;
 
         Collection<ITemplateHolder> wf = entry.getTemplatesWaitingForEntry();
@@ -5594,7 +5605,6 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
                               boolean ofReplicatableClass, EntryRemoveReasonCodes removeReason,
                               boolean disableReplication, boolean disableProcessorCall, boolean disableSADelete)
             throws SAException {
-        //TODO - tiered storage - handle lease expiration
         boolean fromLeaseExpiration = removeReason == EntryRemoveReasonCodes.LEASE_CANCEL || removeReason == EntryRemoveReasonCodes.LEASE_EXPIRED;
         // check for before-remove filter
         if ((fromLeaseExpiration || _general_purpose_remove_filters) && _filterManager._isFilter[FilterOperationCodes.BEFORE_REMOVE])
@@ -5616,7 +5626,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
 
         // handle waiting for templates, if exist
         boolean originalWF = false;
-        if (entry.isHasWaitingFor()) {
+        if (entry.hasWaitingFor()) {
             originalWF = true;
             // create and dispatch RemoveWaitingForInfoSABusPacket
             // so that the removal of waiting for info will be done
@@ -5711,8 +5721,9 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
                     entry.resetWriteLockOwner();
                 if (entry.getReadLockOwners() != null && entry.getReadLockOwners().size() > 0)
                     entry.getReadLockOwners().clear();
-            } else
+            } else {
                 entry.resetEntryXtnInfo();
+            }
         }
         //NOTE- fifo related info not removed - for NBR of fifo we need to check the deleted bit
         //at the end of fifocheck
