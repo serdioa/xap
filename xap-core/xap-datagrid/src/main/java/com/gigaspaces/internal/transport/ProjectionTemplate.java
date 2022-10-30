@@ -33,6 +33,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import java.util.stream.Stream;
 
 /**
  * Holds projection template data
@@ -211,6 +212,18 @@ public class ProjectionTemplate extends AbstractProjectionTemplate {
     public String toString() {
         return "ProjectionTemplate [fixedIndexes=" + _fixedIndexes
                 + ", dynamicProperties=" + _dynamicProperties + ", fixedPaths" + _fixedPaths + ", dynamicPaths" + _dynamicPaths + "]";
+    }
+
+
+    public void removeFixedPath(String fixedPath) {
+        String[] newFixedPaths = new String[_fixedPaths.length - 1];
+        for (int i = 0, index = 0; i < _fixedPaths.length; i++) {
+            if (!_fixedPaths[i].equals(fixedPath)) {
+                newFixedPaths[index] = _fixedPaths[i];
+                index++;
+            }
+        }
+        _fixedPaths = newFixedPaths;
     }
 
 
