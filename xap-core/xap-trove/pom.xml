@@ -7,7 +7,7 @@
     <parent>
         <groupId>org.gigaspaces</groupId>
         <artifactId>xap</artifactId>
-        <version>16.2.1-SNAPSHOT</version>
+        <version>16.3.0-PIC-833-setting-up-volumes-for-tiered-storage-wed-175</version>
         <relativePath>../../</relativePath>
     </parent>
     <artifactId>xap-trove</artifactId>
