@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.StringJoiner;
 
+import static com.j_spaces.core.Constants.TieredStorage.UID_DB_FIELD_NAME;
 import static com.j_spaces.core.Constants.TieredStorage.VERSION_DB_FIELD_NAME;
 
 
@@ -231,6 +232,10 @@ public class SqliteUtils {
 
     public static int getVersionValue(ResultSet resultSet) throws SQLException {
         return resultSet.getInt(VERSION_DB_FIELD_NAME);
+    }
+
+    public static String getUIDValue(ResultSet resultSet) throws SQLException {
+        return resultSet.getString(UID_DB_FIELD_NAME);
     }
 
     public static void setPropertyValue(boolean isUpdate, PreparedStatement statement, Class<?> propertyType, int index, Object value) throws SQLException {
