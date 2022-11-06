@@ -18,22 +18,16 @@ package com.gigaspaces.internal.query.predicate;
 
 import com.gigaspaces.annotation.pojo.FifoSupport;
 import com.gigaspaces.document.SpaceDocument;
-import com.gigaspaces.internal.metadata.DotNetStorageType;
-import com.gigaspaces.internal.metadata.EntryType;
-import com.gigaspaces.internal.metadata.ITypeDesc;
-import com.gigaspaces.internal.metadata.PropertyInfo;
-import com.gigaspaces.internal.metadata.TypeDesc;
+import com.gigaspaces.internal.metadata.*;
 import com.gigaspaces.internal.query.predicate.comparison.EqualsSpacePredicate;
 import com.gigaspaces.internal.query.predicate.comparison.NotEqualsSpacePredicate;
 import com.gigaspaces.internal.query.valuegetter.SpaceEntryPathGetter;
 import com.gigaspaces.internal.query.valuegetter.SpaceEntryPropertyGetter;
 import com.gigaspaces.internal.server.storage.FlatEntryData;
-import com.gigaspaces.metadata.SpaceDocumentSupport;
 import com.gigaspaces.metadata.StorageType;
 import com.gigaspaces.metadata.index.SpaceIndex;
 import com.gigaspaces.server.ServerEntry;
 import com.j_spaces.core.client.ExternalEntry;
-
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -153,7 +147,7 @@ public class SpaceValueGettersTests {
                 indexes, identifierPropertyName, idAutoGenerate, defaultPropertyName, routingPropertyName, null, null,
                 isSystemType, fifoMode, replicable, supportsOptimisticLocking, StorageType.OBJECT, entryType,
                 objectClass, ExternalEntry.class, SpaceDocument.class, null, DotNetStorageType.NULL,
-                false, null, null,null, false, null);
+                false, null, null, null, false, null, false);
     }
 
     public static class Name {

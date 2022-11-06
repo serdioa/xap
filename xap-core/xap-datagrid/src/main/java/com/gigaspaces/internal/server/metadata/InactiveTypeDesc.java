@@ -55,6 +55,7 @@ import java.util.Set;
         this._superClassesNames = superClassesNames;
     }
 
+
     @Override
     public String toString() {
         if (_description == null)
@@ -154,6 +155,11 @@ import java.util.Set;
 
     public String getCodeBase() {
         throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public boolean hasRoutingAnnotation() {
+        return false;
     }
 
     @Override
