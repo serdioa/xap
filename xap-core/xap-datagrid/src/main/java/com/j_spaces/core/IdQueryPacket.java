@@ -69,10 +69,10 @@ public class IdQueryPacket extends AbstractQueryPacket {
         this._idFieldIndexes = typeDesc.getIdentifierPropertiesId();
         this._routingFieldIndex = -1;
         this._routing = routing;
-        initValues(routing, typeDesc.getRoutingPropertyId());
+        initValues(typeDesc.getRoutingPropertyId());
     }
 
-    private void initValues(Object routing, int routingFieldIndex) {
+    private void initValues(int routingFieldIndex) {
         boolean _isSameAsRouting = false;
         _values = new Object[_propertiesLength];
         if (_id != null) {
@@ -87,15 +87,21 @@ public class IdQueryPacket extends AbstractQueryPacket {
                     _values[_idFieldIndexes[i]] = compoundId.getValue(i);
             }
         }
-        _routing = routing;
-        if (routing == null) {
+        if (_routing == null) {
             if (_isSameAsRouting) {
                 _routingFieldIndex = routingFieldIndex;
                 _routing = super.getFieldValue(_idFieldIndexes[0]);
             }
-        } else if (MATCH_BY_ROUTING && routingFieldIndex != -1) {
-            _values[routingFieldIndex] = routing;
+        } else {
+            if (MATCH_BY_ROUTING) {
+                if (routingFieldIndex >= 0)
+                    _values[routingFieldIndex] = _routing;
+            }
+
+
         }
+
+
     }
     
 
@@ -183,7 +189,7 @@ public class IdQueryPacket extends AbstractQueryPacket {
         deserialize(in, PlatformLogicalVersion.getLogicalVersion());
     }
 
-    private void deserialize(ObjectInput in, PlatformLogicalVersion version) throws IOException,
+    private final void deserialize(ObjectInput in, PlatformLogicalVersion version) throws IOException,
             ClassNotFoundException {
         byte flags = in.readByte();
 
@@ -204,13 +210,13 @@ public class IdQueryPacket extends AbstractQueryPacket {
         }
         if ((flags & HAS_ROUTING) != 0) {
             this._routingFieldIndex = in.readInt();
-            this._routing = IOUtils.readObject(in);
+            _routing = IOUtils.readObject(in);
         }
 
         if ((flags & HAS_PROJECTION) != 0)
             this._projectionTemplate = IOUtils.readObject(in);
 
-        initValues(_routing, _routingFieldIndex);
+        initValues(_routingFieldIndex);
     }
 
 
@@ -227,7 +233,7 @@ public class IdQueryPacket extends AbstractQueryPacket {
         serialize(out, PlatformLogicalVersion.getLogicalVersion());
     }
 
-    private void serialize(ObjectOutput out, PlatformLogicalVersion version) throws IOException {
+    private final void serialize(ObjectOutput out, PlatformLogicalVersion version) throws IOException {
         byte flags = buildFlags(version);
         out.writeByte(flags);
 
