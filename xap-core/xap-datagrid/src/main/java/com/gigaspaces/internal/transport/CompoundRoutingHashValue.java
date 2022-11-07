@@ -10,6 +10,7 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 
 public class CompoundRoutingHashValue implements SmartExternalizable {
+    private static final long serialVersionUID = -6784381691438604333L;
     int hash = 0;
 
     public CompoundRoutingHashValue() {
