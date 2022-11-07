@@ -238,8 +238,10 @@ public class TieredStorageManagerImpl implements TieredStorageManager {
                 logger.trace("Type {} is transient, TemplateMatchTier = MATCH_HOT", typeName);
                 return TemplateMatchTier.MATCH_HOT;
             } else {
-                logger.trace("Query for type {}, TemplateMatchTier = MATCH_HOT_AND_COLD", typeName);
-                return TemplateMatchTier.MATCH_HOT_AND_COLD;
+                TemplateMatchTier templateMatchTier = cacheRule.evaluate(templateHolder);
+
+                logger.trace("Query for type {}, TemplateMatchTier = " + templateMatchTier, typeName);
+                return templateMatchTier;
             }
         }
     }
