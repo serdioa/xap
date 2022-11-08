@@ -239,6 +239,9 @@ public class TieredStorageManagerImpl implements TieredStorageManager {
                 return TemplateMatchTier.MATCH_HOT;
             } else {
                 TemplateMatchTier templateMatchTier = cacheRule.evaluate(templateHolder);
+                templateMatchTier = templateMatchTier == TemplateMatchTier.MATCH_HOT
+                        ? TemplateMatchTier.MATCH_HOT
+                        : TemplateMatchTier.MATCH_HOT_AND_COLD;
 
                 logger.trace("Query for type {}, TemplateMatchTier = " + templateMatchTier, typeName);
                 return templateMatchTier;
