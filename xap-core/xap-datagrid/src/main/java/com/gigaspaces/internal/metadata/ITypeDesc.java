@@ -37,7 +37,7 @@ public interface ITypeDesc extends SpaceTypeDescriptor, IDotnetTypeDescDetails, 
     ITypeDesc clone();
 
     String getCodeBase();
-
+    
     boolean isExternalizable();
 
     String[] getSuperClassesNames();
@@ -67,6 +67,8 @@ public interface ITypeDesc extends SpaceTypeDescriptor, IDotnetTypeDescDetails, 
         List<String> idPropertiesNames = getIdPropertiesNames();
         return idPropertiesNames.size() == 1 && idPropertiesNames.get(0).equals(getRoutingPropertyName());
     }
+
+    boolean hasRoutingAnnotation();
 
     int[] getIdentifierPropertiesId();
 

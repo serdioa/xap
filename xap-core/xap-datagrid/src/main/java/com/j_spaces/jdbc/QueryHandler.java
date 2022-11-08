@@ -46,10 +46,6 @@ import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Optional;
-import java.util.stream.Stream;
-
-import static com.j_spaces.jdbc.RequestPacket.Type.PREPARED_STATEMENT;
-import static com.j_spaces.jdbc.RequestPacket.Type.PREPARED_VALUES_BATCH;
 
 /**
  * QueryHandler executes the JDBC  statements set by the {@link GConnection}. For each statement the

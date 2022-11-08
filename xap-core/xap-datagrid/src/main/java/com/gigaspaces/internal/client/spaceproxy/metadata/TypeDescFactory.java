@@ -31,15 +31,14 @@ import com.gigaspaces.query.extension.metadata.TypeQueryExtensions;
 import com.gigaspaces.query.extension.metadata.impl.TypeQueryExtensionsImpl;
 import com.j_spaces.core.client.ExternalEntry;
 import com.j_spaces.core.client.ReadModifiers;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.Externalizable;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.*;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * @author Niv Ingberg
@@ -104,7 +103,8 @@ public class TypeDescFactory {
                 defaultPropertyName, routingPropertyName, fifoGroupingName, fifoGroupingIndexes, typeInfo.isSystemClass(), fifoSupport,
                 typeInfo.isReplicate(), supportsOptimisticLocking, defaultStorageType,
                 EntryType.OBJECT_JAVA, type, ExternalEntry.class, SpaceDocument.class, null, DotNetStorageType.NULL,
-                blobstoreEnabled, sequenceNumberPropertyName, queryExtensionsInfo, typeInfo.getSpaceClassStorageAdapter(), broadcast, typeInfo.getTieredStorageTableConfig());
+                blobstoreEnabled, sequenceNumberPropertyName, queryExtensionsInfo, typeInfo.getSpaceClassStorageAdapter(),
+                broadcast, typeInfo.getTieredStorageTableConfig(), typeInfo.hasRoutingAnnotation());
 
         if (typeDesc.isExternalizable() && shouldWarnExternalizable(typeInfo) && _deprecationLogger.isWarnEnabled())
             _deprecationLogger.warn("Current class [" + type.getName() + "] implements " + Externalizable.class + ", usage of Externalizable in order to serialize it to a space is deprecated, Use SpaceExclude, StorageType and nested object serialization where relevant instead."
@@ -213,7 +213,7 @@ public class TypeDescFactory {
                 properties, supportsDynamicProperties, indexes, idPropertiesNames, idAutoGenerate, defaultPropertyName,
                 externalEntry.getRoutingFieldName(), null, null, isSystemType, fifoMode, externalEntry.isReplicatable(),
                 true, _storageType, EntryType.EXTERNAL_ENTRY, null, externalEntry.getClass(), SpaceDocument.class, null,
-                DotNetStorageType.NULL, PojoDefaults.BLOBSTORE_ENABLED, null, null, null, PojoDefaults.BROADCAST, null);
+                DotNetStorageType.NULL, PojoDefaults.BLOBSTORE_ENABLED, null, null, null, PojoDefaults.BROADCAST, null, false);
     }
 
     public static ITypeDesc createPbsTypeDesc(EntryType entryType, String className, String codeBase, String[] superClassesNames,
@@ -241,12 +241,15 @@ public class TypeDescFactory {
         final boolean isSystemType = false;
         List<String> idPropertiesNames = StringUtils.hasLength(idPropertyName) ? Collections.singletonList(idPropertyName) : Collections.emptyList();
         //TODO FG : add fifo grouping property and indexes
+        //TODO: hasRoutingAnnotation = false - although SpaceRouting annotation exists in .NET, it is only relevant in
+        //      usage with compound SpaceId (space id with multiple fields where routing is not one of them).
+        //      Fix - need to serialize the hasRoutingAnnotation from typeDesc if we want to support it
         // Create type descriptor:
         return new TypeDesc(className, codeBase, superClassesNames,
                 properties, supportsDynamicProperties, indexes, idPropertiesNames, idAutoGenerate, defaultPropertyName, routingPropertyName,
                 null, null, isSystemType, fifoMode, isReplicable, supportsOptimisticLocking, StorageType.OBJECT,
                 entryType, null, ExternalEntry.class, SpaceDocument.class, null, DotNetStorageType.NULL,
-                blobstoreEnabled, null, null, null, PojoDefaults.BROADCAST, null);
+                blobstoreEnabled, null, null, null, PojoDefaults.BROADCAST, null, false);
     }
 
     public static ITypeDesc createPbsExplicitTypeDesc(EntryType entryType, String className, String[] superClassesNames,
@@ -256,7 +259,7 @@ public class TypeDescFactory {
                                                       String documentWrapperType, boolean blobstoreEnabled) {
 
         // Create properties:
-
+        // TODO hasRoutingAnnotation - need to examine PBS for Space routing annotation
         final String defaultPropertyName = null;
         final boolean isSystemType = false;
         List<String> idPropertiesNames = StringUtils.hasLength(idPropertyName) ? Collections.singletonList(idPropertyName) : Collections.emptyList();
@@ -264,7 +267,7 @@ public class TypeDescFactory {
                 properties, supportsDynamicProperties, indexes, idPropertiesNames, idAutoGenerate, defaultPropertyName, routingPropertyName,
                 fifoGroupingPropertyPath, fifoGroupingIndexPaths, isSystemType, fifoMode, isReplicable, supportsOptimisticLocking, StorageType.OBJECT,
                 entryType, null, ExternalEntry.class, SpaceDocument.class, documentWrapperType,
-                dynamicPropertiesStorageType, blobstoreEnabled, null, null, null, PojoDefaults.BROADCAST, null);
+                dynamicPropertiesStorageType, blobstoreEnabled, null, null, null, PojoDefaults.BROADCAST, null, false);
     }
 
     private String getEntryIndices(Class<?> realClass, String[] fieldsNames, String[] fieldTypes, SpaceIndexType[] indexTypes) {

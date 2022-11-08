@@ -145,8 +145,10 @@ public class TieredStorageSA implements IStorageAdapter {
         if (logger.isDebugEnabled()) {
             logger.debug("call updateEntry");
         }
-        internalRDBMS.updateEntry(context, updatedEntry);
-        updatedEntry.getServerTypeDesc().getTypeCounters().incDiskModifyCounter();
+        if (!context.isMemoryOnlyEntry()) {
+            internalRDBMS.updateEntry(context, updatedEntry);
+            updatedEntry.getServerTypeDesc().getTypeCounters().incDiskModifyCounter();
+        }
     }
 
     @Override
@@ -254,7 +256,10 @@ public class TieredStorageSA implements IStorageAdapter {
                 templateHolder.getServerTypeDesc().getTypeCounters().incDiskReadCounter();
             }
         }
-        return internalRDBMS.getEntryByUID(classname, uid);
+        if (!context.isMemoryOnlyEntry()) {
+            return internalRDBMS.getEntryByUID(classname, uid);
+        }
+        return null;
     }
 
     @Override

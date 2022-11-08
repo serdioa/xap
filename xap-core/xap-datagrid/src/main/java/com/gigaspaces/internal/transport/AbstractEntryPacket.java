@@ -220,13 +220,29 @@ public abstract class AbstractEntryPacket extends AbstractExternalizable impleme
     }
 
     public Object getRoutingFieldValue() {
+
         if (_typeDesc.isAutoGenerateRouting())
             return SpaceUidFactory.extractPartitionId(getUID());
+        int[] idIndexes = _typeDesc.getIdentifierPropertiesId();
 
         int routingPropertyId = _typeDesc.getRoutingPropertyId();
-        return routingPropertyId == -1 ? null : getFieldValue(routingPropertyId);
-    }
+        if (routingPropertyId == -1) return null;
+        if (_typeDesc.hasRoutingAnnotation() || idIndexes.length < 2) {
+            return getFieldValue(routingPropertyId);
+        }
+        CompoundRoutingHashValue result = new CompoundRoutingHashValue();
 
+        for (int index : idIndexes) {
+            Object propertyValue = getFieldValue(index);
+            if (propertyValue == null) {
+                return null; // if one of the fields is null, will do broadcast
+            }
+            result.concatValue(propertyValue);
+        }
+        return result;
+
+
+    }
     public Object toObject(QueryResultTypeInternal resultType) {
         return toObject(resultType, StorageTypeDeserialization.EAGER);
     }
@@ -374,6 +390,8 @@ public abstract class AbstractEntryPacket extends AbstractExternalizable impleme
             }
         }
     }
+
+
 
     @Override
     public boolean isExternalizableEntryPacket() {

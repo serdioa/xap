@@ -103,6 +103,8 @@ public class TypeDesc implements ITypeDesc {
     private String _documentWrapperClassName;
     private transient Class<? extends SpaceDocument> _documentWrapperClass;
 
+    private boolean _hasRoutingAnnotation;
+
     private transient ITypeIntrospector<? extends SpaceDocument> _documentIntrospector;
     private transient String[] _restrictedSuperClasses;
     private transient int _checksum;
@@ -135,8 +137,8 @@ public class TypeDesc implements ITypeDesc {
                     StorageType storageType, EntryType entryType, Class<? extends Object> objectClass,
                     Class<? extends ExternalEntry> externalEntryClass, Class<? extends SpaceDocument> documentWrapperClass,
                     String dotnetDocumentWrapperType, byte dotnetStorageType, boolean blobstoreEnabled, String sequenceNumberPropertyName,
-                    TypeQueryExtensions queryExtensionsInfo, Class<? extends ClassBinaryStorageAdapter> binaryStorageAdapter,boolean broadcast,
-                    TieredStorageTableConfig tieredStorageTableConfig) {
+                    TypeQueryExtensions queryExtensionsInfo, Class<? extends ClassBinaryStorageAdapter> binaryStorageAdapter, boolean broadcast,
+                    TieredStorageTableConfig tieredStorageTableConfig, boolean hasRoutingAnnotation) {
 
         _typeName = typeName;
         _codeBase = codeBase;
@@ -184,6 +186,7 @@ public class TypeDesc implements ITypeDesc {
         addFifoGroupingIndexesIfNeeded(_indexes, _fifoGroupingName, _fifoGroupingIndexes);
         _broadcast = broadcast;
         _tieredStorageTableConfig = tieredStorageTableConfig;
+        _hasRoutingAnnotation = hasRoutingAnnotation;
     }
 
     private void initHybridProperties() {
@@ -439,6 +442,10 @@ public class TypeDesc implements ITypeDesc {
     public PropertyInfo getFixedProperty(String propertyName) {
         int propertyID = getFixedPropertyPosition(propertyName);
         return (propertyID != NO_SUCH_PROPERTY ? _fixedProperties[propertyID] : null);
+    }
+
+    public boolean hasRoutingAnnotation() {
+        return _hasRoutingAnnotation;
     }
 
     public boolean supportsDynamicProperties() {
@@ -788,7 +795,6 @@ public class TypeDesc implements ITypeDesc {
     void readExternal(ObjectInput in, PlatformLogicalVersion version, boolean swap)
             throws IOException, ClassNotFoundException {
         _sequenceNumberFixedPropertyPos = -1;
-
         if (version.greaterOrEquals(PlatformLogicalVersion.v11_0_0))
             readExternalV11_0_0(in, version, swap);
         else if (version.greaterOrEquals(PlatformLogicalVersion.v10_1_0))
@@ -942,6 +948,10 @@ public class TypeDesc implements ITypeDesc {
             }
         } else {
             _broadcast = false;
+        }
+
+        if (version.greaterOrEquals(PlatformLogicalVersion.v16_3_0)) {
+            _hasRoutingAnnotation = in.readBoolean();
         }
 
         initializeV9_0_0();
@@ -1107,7 +1117,7 @@ public class TypeDesc implements ITypeDesc {
         // load the class locally - document wrapper class is a proxy level feature and not propagated to the space
         _documentWrapperClass = ClassLoaderHelper.loadClass(_documentWrapperClassName, true, SpaceDocument.class);
         _documentIntrospector = new VirtualEntryIntrospector(this, _documentWrapperClass);
-        _autoGenerateRouting = _autoGenerateId && !_idPropertiesNames.isEmpty() && _idPropertiesNames.get(0).equals(_routingPropertyName);
+        _autoGenerateRouting = _autoGenerateId && isRoutingSameAsId();
 
         this._isAllPropertiesObjectStorageType = initializeAllPropertiesObjectStorageType();
         this._entryTypeDescs = initEntryTypeDescs();
@@ -1294,11 +1304,15 @@ public class TypeDesc implements ITypeDesc {
         // New in 15.8.0: Space class storage adapter
         if (version.greaterOrEquals(PlatformLogicalVersion.v15_8_0)) {
             out.writeBoolean(_broadcast);
-            if(classBinaryStorageAdapter != null){
+            if (classBinaryStorageAdapter != null) {
                 IOUtils.writeString(out, classBinaryStorageAdapter.getClass().getName());
-            }else {
+            } else {
                 IOUtils.writeString(out, null);
             }
+        }
+
+        if (version.greaterOrEquals(PlatformLogicalVersion.v16_3_0)) {
+            out.writeBoolean(_hasRoutingAnnotation);
         }
     }
 

@@ -20,6 +20,7 @@ import com.gigaspaces.internal.metadata.ITypeDesc;
 import com.gigaspaces.internal.metadata.TypeDescriptorUtils;
 import com.gigaspaces.internal.server.metadata.IServerTypeDesc;
 import com.gigaspaces.internal.server.space.SpaceUidFactory;
+import com.gigaspaces.internal.transport.CompoundRoutingHashValue;
 import com.gigaspaces.internal.utils.Textualizable;
 import com.gigaspaces.internal.utils.Textualizer;
 import com.j_spaces.core.Constants;
@@ -254,16 +255,33 @@ public abstract class AbstractSpaceItem implements ISpaceItem, Textualizable {
     }
 
     public Object getRoutingValue() {
-        IEntryData edata = getEntryData();
+
+        IEntryData edata = getEntryData(); //similar code to abstractEntryPacket getRoutingValue()
         if (edata.getNumOfFixedProperties() == 0)
             return null;
+
         ITypeDesc typeDesc = edata.getEntryTypeDesc().getTypeDesc();
-        String routingPropertyName = typeDesc.getRoutingPropertyName();
-        if (routingPropertyName == null)
-            return null;
-        if (typeDesc.isAutoGenerateRouting())
+        int[] idIndexes = typeDesc.getIdentifierPropertiesId();
+
+        if (typeDesc.isAutoGenerateRouting()) {
             return SpaceUidFactory.extractPartitionId(getUID());
-        return edata.getPropertyValue(routingPropertyName);
+        }
+        int routingPropertyId = typeDesc.getRoutingPropertyId();
+        if (idIndexes == null || routingPropertyId == -1) return null;
+
+        if (typeDesc.hasRoutingAnnotation() || idIndexes.length < 2) {
+            return edata.getFixedPropertyValue(routingPropertyId);
+        }
+        CompoundRoutingHashValue result = new CompoundRoutingHashValue();
+        for (int index : idIndexes) {
+            Object propertyValue = edata.getFixedPropertyValue(index);
+            if (propertyValue == null) { //if one of field values is null, perform broadcast
+                return null;
+            }
+            result.concatValue(propertyValue);
+
+        }
+        return result;
     }
 
     public Object getEntryId() {

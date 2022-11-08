@@ -29,6 +29,8 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 
+import static com.j_spaces.kernel.SystemProperties.MATCH_BY_ROUTING_PROPERTY;
+
 /**
  * Used for querying the space by a class + id.
  *
@@ -38,7 +40,7 @@ import java.io.ObjectOutput;
 @com.gigaspaces.api.InternalApi
 public class IdQueryPacket extends AbstractQueryPacket {
     private static final long serialVersionUID = 1L;
-
+    private static final boolean MATCH_BY_ROUTING = Boolean.getBoolean(MATCH_BY_ROUTING_PROPERTY);//see GS-6847
     private String _className;
     private Object _id;
     private int _version;
@@ -49,6 +51,7 @@ public class IdQueryPacket extends AbstractQueryPacket {
     private AbstractProjectionTemplate _projectionTemplate;
 
     private transient String _uid;
+    private Object _routing;
 
     /**
      * Empty constructor required by Externalizable.
@@ -64,27 +67,36 @@ public class IdQueryPacket extends AbstractQueryPacket {
         this._className = typeDesc.getTypeName();
         this._propertiesLength = typeDesc.getNumOfFixedProperties();
         this._idFieldIndexes = typeDesc.getIdentifierPropertiesId();
-        this._routingFieldIndex = typeDesc.getRoutingPropertyId();
-        initValues(routing);
+        this._routingFieldIndex = -1;
+        this._routing = routing;
+        initValues(typeDesc.getRoutingPropertyId());
     }
 
-    private void initValues(Object routing) {
+    private void initValues(int routingFieldIndex) {
+        boolean _isSameAsRouting = false;
         _values = new Object[_propertiesLength];
         if (_id != null) {
-            if (_idFieldIndexes.length == 1)
+            if (_idFieldIndexes.length == 1) {
                 _values[_idFieldIndexes[0]] = _id;
-            else {
+                if (_idFieldIndexes[0] == routingFieldIndex) {
+                    _isSameAsRouting = true;
+                }
+            } else {
                 CompoundSpaceId compoundId = assertIsArray(_id, _idFieldIndexes.length);
                 for (int i = 0; i < compoundId.length(); i++)
                     _values[_idFieldIndexes[i]] = compoundId.getValue(i);
             }
         }
-        if (routing != null) {
-            int index = _routingFieldIndex;
-            if (index >= 0)
-                _values[index] = routing;
+        if (_routing == null) {
+            if (_isSameAsRouting) {
+                _routingFieldIndex = routingFieldIndex;
+                _routing = super.getFieldValue(_idFieldIndexes[0]);
+            }
+        } else if (MATCH_BY_ROUTING && routingFieldIndex != -1) {
+            _values[routingFieldIndex] = _routing;
         }
     }
+    
 
     private CompoundSpaceId assertIsArray(Object obj, int expectedSize) {
         try {
@@ -130,7 +142,7 @@ public class IdQueryPacket extends AbstractQueryPacket {
 
     @Override
     public Object getRoutingFieldValue() {
-        return _routingFieldIndex == -1 ? null : _values[_routingFieldIndex];
+        return _routing;
     }
 
     @Override
@@ -170,7 +182,7 @@ public class IdQueryPacket extends AbstractQueryPacket {
         deserialize(in, PlatformLogicalVersion.getLogicalVersion());
     }
 
-    private final void deserialize(ObjectInput in, PlatformLogicalVersion version) throws IOException,
+    private void deserialize(ObjectInput in, PlatformLogicalVersion version) throws IOException,
             ClassNotFoundException {
         byte flags = in.readByte();
 
@@ -186,18 +198,18 @@ public class IdQueryPacket extends AbstractQueryPacket {
             if (version.greaterOrEquals(PlatformLogicalVersion.v16_1_1))
                 this._idFieldIndexes = IOUtils.readIntegerArray(in);
             else
-                this._idFieldIndexes = new int[] {in.readInt()};
+                this._idFieldIndexes = new int[]{in.readInt()};
             this._id = IOUtils.readObject(in);
         }
-        Object routing = null;
         if ((flags & HAS_ROUTING) != 0) {
             this._routingFieldIndex = in.readInt();
-            routing = IOUtils.readObject(in);
+            this._routing = IOUtils.readObject(in);
         }
+
         if ((flags & HAS_PROJECTION) != 0)
             this._projectionTemplate = IOUtils.readObject(in);
 
-        initValues(routing);
+        initValues(_routingFieldIndex);
     }
 
 
@@ -215,9 +227,7 @@ public class IdQueryPacket extends AbstractQueryPacket {
     }
 
     private final void serialize(ObjectOutput out, PlatformLogicalVersion version) throws IOException {
-        Object routing = getRoutingFieldValue();
-
-        byte flags = buildFlags(routing, version);
+        byte flags = buildFlags(version);
         out.writeByte(flags);
 
         if (_className != null)
@@ -234,15 +244,16 @@ public class IdQueryPacket extends AbstractQueryPacket {
                 out.writeInt(this._idFieldIndexes[0]);
             IOUtils.writeObject(out, _id);
         }
-        if (routing != null) {
+        if (_routing != null) {
             out.writeInt(this._routingFieldIndex);
-            IOUtils.writeObject(out, routing);
+            IOUtils.writeObject(out, _routing);
         }
         if (_projectionTemplate != null && version.greaterOrEquals(PlatformLogicalVersion.v9_5_0))
             IOUtils.writeObject(out, _projectionTemplate);
+
     }
 
-    private byte buildFlags(Object routing, PlatformLogicalVersion version) {
+    private byte buildFlags(PlatformLogicalVersion version) {
         byte flags = 0;
 
         if (this._className != null)
@@ -253,7 +264,7 @@ public class IdQueryPacket extends AbstractQueryPacket {
             flags |= HAS_PROPERTIES;
         if (_id != null)
             flags |= HAS_ID;
-        if (routing != null)
+        if (_routing != null)
             flags |= HAS_ROUTING;
         if (this._projectionTemplate != null && version.greaterOrEquals(PlatformLogicalVersion.v9_5_0))
             flags |= HAS_PROJECTION;

@@ -28,7 +28,6 @@ import com.gigaspaces.lrmi.LRMIInvocationContext;
 import com.gigaspaces.metadata.SpaceMetadataException;
 import com.gigaspaces.metadata.SpacePropertyDescriptor;
 import com.j_spaces.core.IGSEntry;
-
 import net.jini.space.InternalSpaceException;
 
 import java.io.IOException;

@@ -76,6 +76,8 @@ public class SpaceTypeInfo implements SmartExternalizable {
 
     private transient final Object _lock = new Object();
     private Class<?> _type;
+
+    private boolean _hasRoutingAnnotation;
     private SpaceTypeInfo _superTypeInfo;
     private IConstructor<?> _constructor;
     private IParamsConstructor<?> _paramsConstructor;
@@ -253,6 +255,10 @@ public class SpaceTypeInfo implements SmartExternalizable {
 
     public String getSequenceNumberPropertyName() {
         return _sequenceNumberPropertyName;
+    }
+
+    public boolean hasRoutingAnnotation() {
+        return _hasRoutingAnnotation;
     }
 
     public int indexOf(SpacePropertyInfo property) {
@@ -895,7 +901,8 @@ public class SpaceTypeInfo implements SmartExternalizable {
                 _idAutoGenerate = idAnnotation.autoGenerate();
                 _idIndexType = idAnnotation.indexType();
             }
-
+            if (getter.getAnnotation(SpaceRouting.class) != null)
+                _hasRoutingAnnotation = true;
             _routingProperty = updateProperty(_routingProperty, property, SpaceRouting.class);
             _versionProperty = updateProperty(_versionProperty, property, SpaceVersion.class);
             _persistProperty = updateProperty(_persistProperty, property, SpacePersist.class);
@@ -1651,6 +1658,10 @@ public class SpaceTypeInfo implements SmartExternalizable {
             throws IOException, ClassNotFoundException {
         readExternalV10_0(in, version);
         _sequenceNumberPropertyName = IOUtils.readString(in);
+
+        if (version.greaterOrEquals(PlatformLogicalVersion.v16_3_0)) {
+            _hasRoutingAnnotation = in.readBoolean();
+        }
     }
 
     private void readExternalV10_0(ObjectInput in, PlatformLogicalVersion version)
@@ -1814,6 +1825,10 @@ public class SpaceTypeInfo implements SmartExternalizable {
             throws IOException {
         writeExternalV10_0(out, version);  //same prefix
         IOUtils.writeString(out, _sequenceNumberPropertyName);
+
+        if (version.greaterOrEquals(PlatformLogicalVersion.v16_3_0)) {
+            out.writeBoolean(_hasRoutingAnnotation);
+        }
     }
 
     private void writeExternalV10_0(ObjectOutput out, PlatformLogicalVersion version)
