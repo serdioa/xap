@@ -6,7 +6,7 @@
     <parent>
         <artifactId>xap</artifactId>
         <groupId>org.gigaspaces</groupId>
-        <version>16.2.2-SNAPSHOT</version>
+        <version>16.2.2-16.2.2-build-fri-219</version>
         <relativePath>../../</relativePath>
     </parent>
 
