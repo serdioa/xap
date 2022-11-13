@@ -94,7 +94,7 @@ public class CPeer extends BaseClientPeer {
 
     private static final int SELECTOR_BUG_CONNECT_RETRY = Integer.getInteger(SystemProperties.LRMI_SELECTOR_BUG_CONNECT_RETRY, 5);
 
-    // should the thread name be changed to include socket information during sychonous invocations
+    // should the thread name be changed to include socket information during synchronous invocations
     private static final boolean CHANGE_THREAD_NAME_ON_INVOCATION = Boolean.getBoolean("com.gs.lrmi.change.thread.name");
 
     private static final LongAdder connections = new LongAdder();
