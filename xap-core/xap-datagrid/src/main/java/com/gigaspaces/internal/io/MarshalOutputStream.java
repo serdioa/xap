@@ -100,6 +100,13 @@ public class MarshalOutputStream
         _context = new Context();
     }
 
+    public MarshalOutputStream(OutputStream out, MarshalOutputStream base) throws IOException {
+        super(out);
+        _optimize = base._optimize;
+        _context = base._context;
+        _nextClassId = base._nextClassId;
+    }
+
     /**
      * Writes a repetitive object. If this is the first time this object is written, it is assigned
      * a code which is written along the object. The next time the object is written using this
