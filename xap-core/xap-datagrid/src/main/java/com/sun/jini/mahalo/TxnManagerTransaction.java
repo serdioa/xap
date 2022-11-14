@@ -459,7 +459,7 @@ class TxnManagerTransaction
 
         if ((state == ACTIVE) && !_leaseForEver && !ensureCurrent()) {
             doAbort(0);
-            throw new CannotJoinException("Lease expired");
+            throw new CannotJoinException("Transaction lease expired [ID=" + getTransaction().id + "]");
         }
 
 
@@ -640,9 +640,9 @@ class TxnManagerTransaction
         //If the transaction has already expired or the state
         //is not amenable, don't even try to continue
         int curstate = getState();
-        if ((curstate == ACTIVE) && !_leaseForEver && (ensureCurrent() == false)) {
+        if ((curstate == ACTIVE) && !_leaseForEver && !ensureCurrent()) {
             doAbort(abortWithoutWaitingForExpiredTxn ? 0 : waitFor);
-            throw new CannotCommitException("Lease expired [ID=" + +getTransaction().id + "]");
+            throw new CannotCommitException("Transaction Lease expired [ID=" + +getTransaction().id + "]");
         }
 
         if (curstate == ABORTED)
@@ -695,7 +695,7 @@ class TxnManagerTransaction
         }
 
 
-        long starttime = SystemTime.timeMillis();
+        final long startTime = SystemTime.timeMillis();
 
         //Check to see if anyone joined the transaction.  Even
         //if no one has joined, at this point, attempt to
@@ -719,10 +719,6 @@ class TxnManagerTransaction
             setJobLockIfNeed();
 
         try {
-
-            long now = starttime;
-            long transpired = 0;
-            long remainder = 0;
 
             ClientLog log = logmgr.logFor(str.id);
 
@@ -876,14 +872,8 @@ class TxnManagerTransaction
                     break;
 
                 case ABORTED:
-                    now = SystemTime.timeMillis();
-                    transpired = now - starttime;
-                    remainder = waitFor - transpired;
-
-                    if (remainder >= 0)
-                        doAbort(remainder);
-                    else
-                        doAbort(0);
+                    final long remainderAbort = calculateRemainderTimeout(waitFor, startTime);
+                    doAbort(remainderAbort);
 
                     if (alternateException == null) {
                         throw new CannotCommitException(
@@ -980,9 +970,6 @@ class TxnManagerTransaction
                                 TxnConstants.getName(result.intValue()));
 
 
-                    now = SystemTime.timeMillis();
-                    transpired = now - starttime;
-
                     boolean committed = false;
 
                     //If the commit is asynchronous then...
@@ -992,13 +979,13 @@ class TxnManagerTransaction
                     // b) If it hasn't, sleep for what's left from the wait time
 
                     try {
-                        remainder = waitFor - transpired;
+                        final long remainderCommit = calculateRemainderTimeout(waitFor, startTime);
                         synchronized (jobLock) {
-                            if (remainder <= 0 || !job.isCompleted(remainder)) {
-   							 /*
-   							  * Note - SettlerTask will kick off another Commit/Abort task for the same txn
-   							  * which will try go through the VOTING->Commit states again.
-   							  */
+                            if (remainderCommit <= 0 || !job.isCompleted(remainderCommit)) {
+                                /*
+                                 * Note - SettlerTask will kick off another Commit/Abort task for the same txn
+                                 * which will try go through the VOTING->Commit states again.
+                                 */
                                 //TODO - Kill off existing task? Postpone SettlerTask?
                                 if (_externalXid != null)
                                     settler.noteUnsettledTxn(_externalXid);
@@ -1113,6 +1100,10 @@ class TxnManagerTransaction
             } else {
                 if (getState() == COMMITTED)
                     return;
+                if (getState() == ABORTED)
+                    throw new CannotCommitException("attempt to prepare/commit ABORTED transaction [ID="
+                            + (_externalXid == null ? str.id : _externalXid) + "]");
+
                 throw new CannotCommitException();
             }
         } catch (UnknownTransactionException e) {
@@ -1255,7 +1246,6 @@ class TxnManagerTransaction
             synchronized (this) {
                 if (_parts == null && _singleHandle != null)
                     use_light_abort = true;
-                ;
             }
         }
         if (use_light_abort) {
@@ -1267,7 +1257,7 @@ class TxnManagerTransaction
         if (jobLock == null)
             setJobLockIfNeed();
 
-        long starttime = SystemTime.timeMillis();
+        final long startTime = SystemTime.timeMillis();
         boolean directAbortCall = false;
    	 /*
    	  * Since lease cancellation process sets expiration to 0 
@@ -1333,23 +1323,20 @@ class TxnManagerTransaction
             //on behalf of the thread which exits when
             //the TimeoutExpiredException is thrown.
 
-            long now = SystemTime.timeMillis();
-            long transpired = now - starttime;
-
             Integer result = new Integer(ACTIVE);
             boolean aborted = false;
 
-            long remainder = waitFor - transpired;
+            final long remainderAbort = calculateRemainderTimeout(waitFor, startTime);
 
             try {
                 synchronized (jobLock) {
-                    if (remainder <= 0 || !job.isCompleted(remainder)) {
+                    if (remainderAbort <= 0 || !job.isCompleted(remainderAbort)) {
                         if (_externalXid != null)
                             settler.noteUnsettledTxn(_externalXid);
                         else
                             settler.noteUnsettledTxn(str.id);
                         throw new TimeoutExpiredException(
-                                "timeout expired", false);
+                                "timeout expired [ID=" + (_externalXid != null ? _externalXid : str.id) + "]", false);
                     } else {
                         result = (Integer) job.computeResult();
                         aborted = true;
@@ -1401,6 +1388,19 @@ class TxnManagerTransaction
         }
     }
 
+    /**
+     * calculate the remaining time to wait for participants to complete the job. Should the wait time expire before
+     * completing the abort/commit job a SettlerTask is scheduled to complete the task.
+     *
+     * @param waitFor   either zero, Long.MAX_VALUE or user defined timeout
+     * @param startTime start time of commit/abort operation
+     * @return the remainder time to wait for job to complete, or zero if timeout transpired
+     */
+    private long calculateRemainderTimeout(long waitFor, long startTime) {
+        final long now = SystemTime.timeMillis();
+        final long transpired = now - startTime;
+        return Math.max(0, waitFor - transpired); //remainder time
+    }
 
     private void setJobLockIfNeed() {
         synchronized (this) {
@@ -1528,25 +1528,15 @@ class TxnManagerTransaction
 
     }
 
-    synchronized boolean ensureCurrent() {
-        if (finer_op_logger) {
-            LogUtils.entering(operationsLogger, TxnManagerTransaction.class,
-                    "ensureCurrent");
-        }
-        long useby = getExpiration();
-        if (useby == Long.MAX_VALUE)
+    /**
+     * @return false if expired, true if valid
+     */
+    private boolean ensureCurrent() {
+        final long expiration = getExpiration();
+        if (expiration == Long.MAX_VALUE)
             return true;
 
-        long cur = SystemTime.timeMillis();
-        boolean result = false;
-
-        if (useby > cur)
-            result = true;
-        if (finer_op_logger) {
-            LogUtils.exiting(operationsLogger, TxnManagerTransaction.class,
-                    "ensureCurrent", Boolean.valueOf(result));
-        }
-        return result;
+        return expiration > SystemTime.timeMillis();
     }
 
 

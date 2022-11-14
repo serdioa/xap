@@ -21,30 +21,14 @@ import com.gigaspaces.internal.client.spaceproxy.IDirectSpaceProxy;
 import com.gigaspaces.logger.LogUtils;
 import com.gigaspaces.time.SystemTime;
 import com.sun.jini.config.Config;
-import com.sun.jini.landlord.Landlord;
-import com.sun.jini.landlord.LandlordLease;
-import com.sun.jini.landlord.LandlordUtil;
-import com.sun.jini.landlord.LeaseFactory;
-import com.sun.jini.landlord.LeasePeriodPolicy;
+import com.sun.jini.landlord.*;
 import com.sun.jini.landlord.LeasePeriodPolicy.Result;
-import com.sun.jini.landlord.LeasedResource;
-import com.sun.jini.landlord.LocalLandlord;
-import com.sun.jini.landlord.SystemTimeFixedLeasePeriodPolicy;
-import com.sun.jini.mahalo.log.ClientLog;
-import com.sun.jini.mahalo.log.LogException;
-import com.sun.jini.mahalo.log.LogManager;
-import com.sun.jini.mahalo.log.LogRecord;
-import com.sun.jini.mahalo.log.LogRecovery;
-import com.sun.jini.mahalo.log.MockLogManager;
-import com.sun.jini.mahalo.log.MultiLogManager;
-import com.sun.jini.mahalo.log.MultiLogManagerAdmin;
+import com.sun.jini.mahalo.log.*;
 import com.sun.jini.start.LifeCycle;
 import com.sun.jini.thread.InterruptedStatusThread;
 import com.sun.jini.thread.ReadyState;
 import com.sun.jini.thread.TaskManager;
 import com.sun.jini.thread.WakeupManager;
-
-
 import net.jini.config.Configuration;
 import net.jini.config.ConfigurationProvider;
 import net.jini.core.constraint.RemoteMethodControl;
@@ -53,13 +37,7 @@ import net.jini.core.entry.Entry;
 import net.jini.core.lease.LeaseDeniedException;
 import net.jini.core.lease.UnknownLeaseException;
 import net.jini.core.lookup.ServiceID;
-import net.jini.core.transaction.CannotAbortException;
-import net.jini.core.transaction.CannotCommitException;
-import net.jini.core.transaction.CannotJoinException;
-import net.jini.core.transaction.TimeoutExpiredException;
-import net.jini.core.transaction.Transaction;
-import net.jini.core.transaction.TransactionException;
-import net.jini.core.transaction.UnknownTransactionException;
+import net.jini.core.transaction.*;
 import net.jini.core.transaction.server.CrashCountException;
 import net.jini.core.transaction.server.ServerTransaction;
 import net.jini.core.transaction.server.TransactionManager;
@@ -73,30 +51,22 @@ import net.jini.security.BasicProxyPreparer;
 import net.jini.security.ProxyPreparer;
 import net.jini.security.TrustVerifier;
 import net.jini.security.proxytrust.ServerProxyTrust;
-
-import java.io.File;
-import java.io.IOException;
-import java.io.Serializable;
-import java.rmi.MarshalledObject;
-import java.rmi.RemoteException;
-import java.security.PrivilegedActionException;
-import java.security.PrivilegedExceptionAction;
-import java.security.SecureRandom;
-import java.util.Arrays;
-import java.util.Hashtable;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Vector;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.security.auth.Subject;
 import javax.security.auth.login.LoginContext;
 import javax.security.auth.login.LoginException;
+import java.io.File;
+import java.io.IOException;
+import java.io.Serializable;
+import java.rmi.RemoteException;
+import java.security.PrivilegedActionException;
+import java.security.PrivilegedExceptionAction;
+import java.security.SecureRandom;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 /**
  * An implementation of the Jini(TM) Transaction Specification.
@@ -867,7 +837,7 @@ public class TxnManagerImpl /*extends RemoteServer*/
 
         TxnManagerTransaction txntr = _txns.get(id);
         if (txntr == null)
-            throw new UnknownTransactionException("unknown transaction");
+            throw new UnknownTransactionException("unknown transaction [ID=" + id + "]");
 
 
         // txntr.join does expiration check
@@ -912,7 +882,7 @@ public class TxnManagerImpl /*extends RemoteServer*/
         TxnManagerTransaction txntr = _txns.get(id);
 
         if (txntr == null)
-            throw new UnknownTransactionException("unknown transaction");
+            throw new UnknownTransactionException("unknown transaction [ID=" + id + "]");
 
         // txntr.join does expiration check
         boolean res = txntr.disJoin(preparedTarget);
@@ -936,7 +906,7 @@ public class TxnManagerImpl /*extends RemoteServer*/
         TxnManagerTransaction txntr = _txns.get(xid);
 
         if (txntr == null)
-            throw new UnknownTransactionException("unknown transaction");
+            throw new UnknownTransactionException("unknown transaction [ID=" + xid + "]");
 
         return txntr.prepare(Long.MAX_VALUE /*timeout*/);
 
@@ -958,7 +928,7 @@ public class TxnManagerImpl /*extends RemoteServer*/
         TxnManagerTransaction txntr = _txns.get(id);
 
         if (txntr == null)
-            throw new UnknownTransactionException("unknown transaction");
+            throw new UnknownTransactionException("unknown transaction [ID=" + id + "]");
         /* Expiration checks are only meaningful for active transactions. */
         /* NOTE:
 	 * 1) Cancellation sets expiration to 0 without changing state
@@ -973,7 +943,7 @@ public class TxnManagerImpl /*extends RemoteServer*/
 //TODO - need better locking here. getState and expiration need to be checked atomically
         int state = txntr.getState();
         if (state == ACTIVE && !ensureCurrent(txntr))
-            throw new UnknownTransactionException("unknown transaction");
+            throw new UnknownTransactionException("unknown transaction [ID=" + id + "]");
 
         if (operationsLogger.isDebugEnabled()) {
             LogUtils.exiting(operationsLogger, TxnManagerImpl.class, "getState", new Integer(state));
@@ -1020,7 +990,7 @@ public class TxnManagerImpl /*extends RemoteServer*/
         }
 
         if (txntr == null)
-            throw new UnknownTransactionException("Unknown transaction");
+            throw new UnknownTransactionException("Unknown transaction [ID=" + id + "]");
 
         // txntr.commit does expiration check
         txntr.commit(waitFor);
@@ -1286,7 +1256,7 @@ public class TxnManagerImpl /*extends RemoteServer*/
                 _txns.get(id);
 
         if (txntr == null)
-            throw new UnknownTransactionException("unknown transaction");
+            throw new UnknownTransactionException("unknown transaction [ID=" + id + "]");
 
         Transaction tn = txntr.getTransaction();
         ServerTransaction tr = serverTransaction(tn);
