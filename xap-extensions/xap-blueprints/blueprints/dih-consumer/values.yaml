@@ -1,0 +1,13 @@
+project:
+  consumer-name: MyPipeline
+  consumer-name-lower-case: mypipeline
+  version: 0.1
+gs.version: 16.3.0-SNAPSHOT
+java.version: 1.8
+slf4j.version: 1.7.26
+kafka:
+  web-port: 8180
+resources:
+  types-metadata-json:
+  default-type-conversion-map:
+type-registrar.class-names:

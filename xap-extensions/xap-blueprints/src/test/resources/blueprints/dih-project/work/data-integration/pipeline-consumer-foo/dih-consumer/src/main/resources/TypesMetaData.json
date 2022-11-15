@@ -1,0 +1,52 @@
+[
+  {
+    "typeName": "companyDb_companySchema_Employee",
+    "fields": [
+      {
+        "fieldName": "employeeId",
+        "originalType": "INTEGER"
+      },
+      {
+        "fieldName": "name",
+        "originalType": "NVARCHAR"
+      },{
+        "fieldName": "age",
+        "originalType": "TINYINT"
+      }
+    ]
+  },
+  {
+    "typeName": "companyDb_companySchemaOverride_Employee",
+    "fields": [
+      {
+        "fieldName": "employeeId",
+        "originalType": "INTEGER"
+      },
+      {
+        "fieldName": "name",
+        "originalType": "NVARCHAR"
+      },
+      {
+        "fieldName": "age",
+        "originalType": "SMALLINT"
+      }
+    ]
+  },
+  {
+    "typeName": "app_db_dbo_COMPANY",
+    "fields": [
+      {
+        "fieldName": "ID",
+        "originalType": "INTEGER"
+      },
+      {
+        "fieldName": "AGE",
+        "originalType": "INTEGER"
+      },
+      {
+        "fieldName": "NAME",
+        "originalType": "VARCHAR2"
+      }
+    ]
+  }
+]
