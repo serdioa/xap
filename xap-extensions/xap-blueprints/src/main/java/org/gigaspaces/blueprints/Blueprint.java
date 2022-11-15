@@ -9,7 +9,10 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.*;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -20,7 +23,6 @@ public class Blueprint {
     private static final String TEMPLATES_PATH = "templates";
     private static final String INFO_PATH = "blueprint.yaml";
     private static final String VALUES_PATH = "values.yaml";
-    private static final String DIH_ROOT_PATH = "dih-consumer";
 
     private final String name;
     private final Path content;
@@ -43,8 +45,7 @@ public class Blueprint {
         return Files.exists(path) &&
                 Files.exists(path.resolve(TEMPLATES_PATH)) &&
                 Files.exists(path.resolve(INFO_PATH)) &&
-                Files.exists(path.resolve(VALUES_PATH)) &&
-                !path.endsWith(DIH_ROOT_PATH);
+                Files.exists(path.resolve(VALUES_PATH));
     }
 
     public static Collection<Blueprint> fromPath(Path path) throws IOException {
