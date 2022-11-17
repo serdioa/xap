@@ -2378,6 +2378,8 @@ public interface GigaSpace {
      */
     <T> AggregationResult aggregate(ISpaceQuery<T> query, AggregationSet aggregationSet);
 
+    <T> AggregationResult aggregate(ISpaceQuery<T> query, AggregationSet aggregationSet, ReadModifiers readModifiers);
+
     /**
      * Changes existing objects in space, returning a change result which provides details of the
      * operation affect. The change operation is designed for performance optimization, By allowing

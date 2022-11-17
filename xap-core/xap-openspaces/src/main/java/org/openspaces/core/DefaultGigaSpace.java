@@ -1033,6 +1033,14 @@ public class DefaultGigaSpace implements GigaSpace, InternalGigaSpace {
         }
     }
 
+    public <T> AggregationResult aggregate(ISpaceQuery<T> query, AggregationSet aggregationSet, ReadModifiers readModifiers) {
+        try {
+            return wrap("aggregate", () -> space.aggregate(query, aggregationSet, getCurrentTransaction(), readModifiers.getCode()));
+        } catch (Exception e) {
+            throw exTranslator.translate(e);
+        }
+    }
+
     @Override
     public <T> ChangeResult<T> change(ISpaceQuery<T> query, ChangeSet changeSet) {
         try {
