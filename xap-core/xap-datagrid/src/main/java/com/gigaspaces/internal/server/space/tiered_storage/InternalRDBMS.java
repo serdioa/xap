@@ -41,6 +41,8 @@ public interface InternalRDBMS {
 
     void createTable(ITypeDesc typeDesc) throws SAException;
 
+    void createIndex(ITypeDesc typeDesc, boolean isUnique, String indexName) throws SAException;
+
     void dropTable(ITypeDesc typeDesc) throws SAException;
 
     /**
