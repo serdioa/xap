@@ -25,8 +25,10 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.rmi.RemoteException;
 import java.sql.SQLException;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class TieredStorageManagerImpl implements TieredStorageManager {
@@ -238,7 +240,7 @@ public class TieredStorageManagerImpl implements TieredStorageManager {
                 logger.trace("Type {} is transient, TemplateMatchTier = MATCH_HOT", typeName);
                 return TemplateMatchTier.MATCH_HOT;
             } else {
-                if (templateHolder.getID() != null) {
+                if (isSearchById(templateHolder)) {
                     return TemplateMatchTier.MATCH_HOT_AND_COLD;
                 }
                 TemplateMatchTier templateMatchTier = cacheRule.evaluate(templateHolder) == TemplateMatchTier.MATCH_HOT
@@ -249,6 +251,11 @@ public class TieredStorageManagerImpl implements TieredStorageManager {
                 return templateMatchTier;
             }
         }
+    }
+
+    private boolean isSearchById(ITemplateHolder templateHolder) {
+        long values = Arrays.stream(templateHolder.getTemplateEntryData().getFixedPropertiesValues()).filter(Objects::nonNull).count();
+        return templateHolder.getID() != null && values == 1;
     }
 
     @Override
