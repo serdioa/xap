@@ -254,8 +254,20 @@ public class TieredStorageManagerImpl implements TieredStorageManager {
     }
 
     private boolean isSearchById(ITemplateHolder templateHolder) {
-        long values = Arrays.stream(templateHolder.getTemplateEntryData().getFixedPropertiesValues()).filter(Objects::nonNull).count();
-        return templateHolder.getID() != null && values == 1;
+        if (templateHolder.getID() == null) {
+            return false;
+        }
+        Object[] properties = templateHolder.getTemplateEntryData().getFixedPropertiesValues();
+        if (properties == null) {
+            return false;
+        }
+        int values = 0;
+        for (int i = 0; i < properties.length; i++) {
+            if (properties[i] != null) {
+                values++;
+            }
+        }
+        return values == 1;
     }
 
     @Override
