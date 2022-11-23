@@ -148,9 +148,10 @@ public class TemplateEntryData implements IEntryData {
 
     @Override
     public Object getFixedPropertyValue(int index) {
-        return _fieldsValues != null
+        /*return _fieldsValues != null
                 ? _fieldsValues[index]
-                : null;
+                : null;*/
+        return _fieldsValues[index];
     }
 
     @Override
