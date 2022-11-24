@@ -240,7 +240,7 @@ public class TieredStorageManagerImpl implements TieredStorageManager {
                 logger.trace("Type {} is transient, TemplateMatchTier = MATCH_HOT", typeName);
                 return TemplateMatchTier.MATCH_HOT;
             } else {
-                if (isSearchById(templateHolder)) {
+                if (isSearchById(templateHolder) || templateHolder.getTemplateEntryData().getFixedPropertiesValues() == null) {
                     return TemplateMatchTier.MATCH_HOT_AND_COLD;
                 }
                 TemplateMatchTier templateMatchTier = cacheRule.evaluate(templateHolder) == TemplateMatchTier.MATCH_HOT
