@@ -1491,6 +1491,9 @@ public class JSpaceContainerImpl implements IJSpaceContainer, IJSpaceContainerAd
         spaceAttr.setProxyDetectorFrequency(Long.parseLong(configReader.getSpaceProperty(Constants.SpaceProxy.OldRouter.DETECTOR_FREQUENCY_FULL, Constants.SpaceProxy.OldRouter.DETECTOR_FREQUENCY_DEFAULT)));
         spaceAttr.setProxyConnectionRetries(Integer.parseInt(configReader.getSpaceProperty(Constants.SpaceProxy.OldRouter.CONNECTION_RETRIES_FULL, Constants.SpaceProxy.OldRouter.CONNECTION_RETRIES_DEFAULT)));
 
+        //mvcc
+        spaceAttr.setMvccEnabled((configReader.getBooleanSpaceProperty(Constants.Mvcc.MVCC_ENABLED_PROP, Constants.Mvcc.MVCC_ENABLED_DEFAULT, false)));
+
         isFirstSpaceCreated = true;
         return spaceImpl;
     }
