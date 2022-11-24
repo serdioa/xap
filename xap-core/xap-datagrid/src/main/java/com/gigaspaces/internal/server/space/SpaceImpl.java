@@ -1027,6 +1027,10 @@ public class SpaceImpl extends AbstractService implements IRemoteSpace, IInterna
         return _configReader.getBooleanSpaceProperty(Mirror.MIRROR_SERVICE_ENABLED_PROP, Mirror.MIRROR_SERVICE_ENABLED_DEFAULT);
     }
 
+    public boolean isMvcc() {
+        return _configReader.getBooleanSpaceProperty(Mvcc.MVCC_ENABLED_PROP, Mvcc.MVCC_ENABLED_DEFAULT);
+    }
+
     public void removeClusterInfoChangedListener(IClusterInfoChangedListener listener) {
         this.clusterInfoChangedListeners.removeListener(listener);
     }
@@ -3263,6 +3267,9 @@ public class SpaceImpl extends AbstractService implements IRemoteSpace, IInterna
             spaceConfig.setDCacheConfigName(spaceAttr.getDCacheConfigName());
             spaceConfig.setDCacheProperties(spaceAttr.getDCacheProperties());
         }
+
+        //mvcc
+        spaceConfig.setMvccEnabled(configReader.getBooleanSpaceProperty(Mvcc.MVCC_ENABLED_PROP, Mvcc.MVCC_ENABLED_DEFAULT));
 
         // build filter information
         int filterCounter = 0;

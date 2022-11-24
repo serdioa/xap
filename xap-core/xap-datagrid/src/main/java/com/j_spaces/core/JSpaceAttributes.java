@@ -55,6 +55,8 @@ import static com.j_spaces.core.Constants.LookupManager.FULL_LOOKUP_IS_PRIVATE_P
 import static com.j_spaces.core.Constants.LookupManager.LOOKUP_IS_PRIVATE_DEFAULT;
 import static com.j_spaces.core.Constants.Mirror.FULL_MIRROR_SERVICE_ENABLED_PROP;
 import static com.j_spaces.core.Constants.Mirror.MIRROR_SERVICE_ENABLED_DEFAULT;
+import static com.j_spaces.core.Constants.Mvcc.FULL_MVCC_ENABLED_PROP;
+import static com.j_spaces.core.Constants.Mvcc.MVCC_ENABLED_DEFAULT;
 import static com.j_spaces.core.Constants.QueryProcessorInfo.*;
 import static com.j_spaces.core.Constants.RemoteCode.*;
 import static com.j_spaces.core.Constants.Schemas.FULL_SCHEMA_ELEMENT;
@@ -1400,6 +1402,14 @@ public class JSpaceAttributes
 
     private String getSystemProperty(String key, String def) {
         return System.getProperty(key, def);
+    }
+
+    public boolean isMvccEnabled() {
+        return Boolean.parseBoolean(getProperty(FULL_MVCC_ENABLED_PROP, MVCC_ENABLED_DEFAULT));
+    }
+
+    public void setMvccEnabled(boolean isMvccEnabled) {
+        this.setProperty(FULL_MVCC_ENABLED_PROP, String.valueOf(isMvccEnabled));
     }
 
     /**

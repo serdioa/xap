@@ -961,4 +961,11 @@ public interface Constants {
         byte IS_DELETED = 1 << 1;
         byte HAS_WAITING_FOR = 1 << 2;
     }
+
+    interface Mvcc {
+        String MVCC_PREFIX = "mvcc.";
+        String MVCC_ENABLED_PROP = MVCC_PREFIX + "enabled";
+        String MVCC_ENABLED_DEFAULT = "false";
+        String FULL_MVCC_ENABLED_PROP = SPACE_CONFIG_PREFIX + MVCC_ENABLED_PROP;
+    }
 }
