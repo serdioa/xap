@@ -241,8 +241,8 @@ public class ProxySettings implements SmartExternalizable {
     }
 
     public boolean isMvccEnabled() {
-        final String cachePolicyValue = _customProperties.getProperty(Constants.Mvcc.FULL_MVCC_ENABLED_PROP);
-        return cachePolicyValue != null ? "true".equals(cachePolicyValue) : getSpaceAttributes().isMvccEnabled();
+        final String propertyValue = _customProperties.getProperty(Constants.Mvcc.FULL_MVCC_ENABLED_PROP);
+        return propertyValue != null ? "true".equals(propertyValue) : getSpaceAttributes().isMvccEnabled();
     }
 
     @Override
