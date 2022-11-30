@@ -16,6 +16,7 @@
 
 package com.gigaspaces.internal.client.spaceproxy;
 
+import com.gigaspaces.admin.demote.DemoteFailedException;
 import com.gigaspaces.admin.quiesce.QuiesceToken;
 import com.gigaspaces.client.DirectSpaceProxyFactory;
 import com.gigaspaces.internal.client.spaceproxy.events.SpaceProxyDataEventsManager;
@@ -25,7 +26,6 @@ import com.gigaspaces.internal.cluster.SpaceClusterInfo;
 import com.gigaspaces.internal.metadata.ITypeDesc;
 import com.gigaspaces.internal.server.space.IRemoteSpace;
 import com.gigaspaces.internal.server.space.SpaceImpl;
-import com.gigaspaces.admin.demote.DemoteFailedException;
 import com.gigaspaces.query.ISpaceQuery;
 import com.gigaspaces.security.directory.CredentialsProvider;
 import com.j_spaces.core.IJSpace;
@@ -118,7 +118,7 @@ public interface IDirectSpaceProxy extends ISpaceProxy {
 
     ITypeDesc getTypeDescFromServer(String typeName);
 
-    ITypeDesc registerTypeDescInServers(ITypeDesc typeDesc);
+    void registerTypeDescInServers(ITypeDesc typeDesc);
 
     boolean isGatewayProxy();
 

@@ -20,12 +20,12 @@ import com.gigaspaces.document.SpaceDocument;
 import com.gigaspaces.internal.client.spaceproxy.IDirectSpaceProxy;
 import com.gigaspaces.internal.metadata.ITypeDesc;
 import com.gigaspaces.internal.reflection.ReflectionUtil;
-import com.gigaspaces.internal.server.space.tiered_storage.error.TieredStorageMetadataException;
 import com.gigaspaces.internal.transport.IEntryPacket;
 import com.gigaspaces.internal.transport.ITransportPacket;
 import com.gigaspaces.internal.utils.ClassLoaderUtils;
 import com.gigaspaces.internal.utils.collections.CopyOnUpdateMap;
 import com.gigaspaces.metadata.SpaceMetadataException;
+import com.gigaspaces.metadata.SpaceMetadataValidationException;
 import com.j_spaces.core.UidQueryPacket;
 import com.j_spaces.core.UnknownTypeException;
 import com.j_spaces.core.client.ExternalEntry;
@@ -452,6 +452,11 @@ public class ClientTypeDescRepository {
                     // TODO: Validate new typeDesc does not contradict oldTypeDesc.
                 }
 
+                if (_spaceProxy.getProxySettings().isMvccEnabled() && typeDesc.isAutoGenerateId()) {
+                    throw new SpaceMetadataValidationException(typeDesc.getTypeName(),
+                            "Auto-generated id is not allowed when MVCC is enabled.");
+                }
+
                 try {
                     //check if type already exists in the space
                     ITypeDesc typeDescFromServer = _spaceProxy.getTypeDescFromServer(typeName);
@@ -459,10 +464,7 @@ public class ClientTypeDescRepository {
                     // Register new type descriptor in server(s) BEFORE caching:
                     if (typeDescFromServer == null)
                         _spaceProxy.registerTypeDescInServers(typeDesc);
-                } catch (TieredStorageMetadataException e) {
-                    throw e;
                 } catch (SpaceMetadataException e) {
-
                     if (ignoreException) {
                         if (_logger.isDebugEnabled())
                             _logger.debug("Failed to register type descriptor in server", e);

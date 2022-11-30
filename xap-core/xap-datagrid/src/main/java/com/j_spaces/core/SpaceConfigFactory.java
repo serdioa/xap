@@ -28,85 +28,27 @@ import com.j_spaces.kernel.JSpaceUtilities;
 import com.j_spaces.kernel.ResourceLoader;
 import com.j_spaces.kernel.log.JProperties;
 import com.j_spaces.sadapter.datasource.DataAdaptorIterator;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.xml.sax.SAXException;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.PrintStream;
-import java.util.Properties;
-import java.util.StringTokenizer;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
+import java.io.*;
+import java.util.Properties;
+import java.util.StringTokenizer;
 
-import static com.j_spaces.core.Constants.CacheManager.CACHE_MANAGER_SIZE_DEFAULT;
-import static com.j_spaces.core.Constants.CacheManager.CACHE_MANAGER_SIZE_PROP;
-import static com.j_spaces.core.Constants.CacheManager.CACHE_POLICY_ALL_IN_CACHE;
-import static com.j_spaces.core.Constants.CacheManager.CACHE_POLICY_LRU;
-import static com.j_spaces.core.Constants.CacheManager.CACHE_POLICY_PROP;
-import static com.j_spaces.core.Constants.Cluster.CLUSTER_CONFIG_URL_DEFAULT;
-import static com.j_spaces.core.Constants.Cluster.CLUSTER_CONFIG_URL_PROP;
-import static com.j_spaces.core.Constants.Cluster.IS_CLUSTER_SPACE_PROP;
+import static com.j_spaces.core.Constants.CacheManager.*;
+import static com.j_spaces.core.Constants.Cluster.*;
 import static com.j_spaces.core.Constants.DCache.CONFIG_NAME_PROP;
 import static com.j_spaces.core.Constants.DCache.DCACHE_CONFIG_NAME_DEFAULT;
-import static com.j_spaces.core.Constants.DataAdapter.DATA_CLASS_DEFAULT;
-import static com.j_spaces.core.Constants.DataAdapter.DATA_CLASS_PROP;
-import static com.j_spaces.core.Constants.DataAdapter.DATA_PROPERTIES;
-import static com.j_spaces.core.Constants.DataAdapter.DATA_PROPERTIES_DEFAULT;
-import static com.j_spaces.core.Constants.DataAdapter.DATA_SOURCE_CLASS_DEFAULT;
-import static com.j_spaces.core.Constants.DataAdapter.DATA_SOURCE_CLASS_PROP;
-import static com.j_spaces.core.Constants.DataAdapter.DATA_SOURCE_SHARE_ITERATOR_ENABLED_DEFAULT;
-import static com.j_spaces.core.Constants.DataAdapter.DATA_SOURCE_SHARE_ITERATOR_ENABLED_PROP;
-import static com.j_spaces.core.Constants.DataAdapter.DATA_SOURCE_SHARE_ITERATOR_TTL_PROP;
-import static com.j_spaces.core.Constants.DataAdapter.SUPPORTS_INHERITANCE_DEFAULT;
-import static com.j_spaces.core.Constants.DataAdapter.SUPPORTS_INHERITANCE_PROP;
-import static com.j_spaces.core.Constants.DataAdapter.SUPPORTS_PARTIAL_UPDATE_DEFAULT;
-import static com.j_spaces.core.Constants.DataAdapter.SUPPORTS_PARTIAL_UPDATE_PROP;
-import static com.j_spaces.core.Constants.DataAdapter.SUPPORTS_REMOVE_BY_ID_DEFAULT;
-import static com.j_spaces.core.Constants.DataAdapter.SUPPORTS_REMOVE_BY_ID_PROP;
-import static com.j_spaces.core.Constants.DataAdapter.SUPPORTS_VERSION_DEFAULT;
-import static com.j_spaces.core.Constants.DataAdapter.SUPPORTS_VERSION_PROP;
-import static com.j_spaces.core.Constants.DataAdapter.USAGE;
-import static com.j_spaces.core.Constants.DataAdapter.USAGE_DEFAULT;
-import static com.j_spaces.core.Constants.Engine.ENGINE_MAX_THREADS_DEFAULT;
-import static com.j_spaces.core.Constants.Engine.ENGINE_MAX_THREADS_PROP;
-import static com.j_spaces.core.Constants.Engine.ENGINE_MEMORY_USAGE_ENABLED_DEFAULT;
-import static com.j_spaces.core.Constants.Engine.ENGINE_MEMORY_USAGE_ENABLED_PROP;
-import static com.j_spaces.core.Constants.Engine.ENGINE_MEMORY_USAGE_EVICTION_BATCH_SIZE_DEFAULT;
-import static com.j_spaces.core.Constants.Engine.ENGINE_MEMORY_USAGE_EVICTION_BATCH_SIZE_PROP;
-import static com.j_spaces.core.Constants.Engine.ENGINE_MEMORY_USAGE_HIGH_PERCENTAGE_RATIO_DEFAULT;
-import static com.j_spaces.core.Constants.Engine.ENGINE_MEMORY_USAGE_HIGH_PERCENTAGE_RATIO_PROP;
-import static com.j_spaces.core.Constants.Engine.ENGINE_MEMORY_USAGE_LOW_PERCENTAGE_RATIO_DEFAULT;
-import static com.j_spaces.core.Constants.Engine.ENGINE_MEMORY_USAGE_LOW_PERCENTAGE_RATIO_PROP;
-import static com.j_spaces.core.Constants.Engine.ENGINE_MEMORY_USAGE_RETRY_COUNT_DEFAULT;
-import static com.j_spaces.core.Constants.Engine.ENGINE_MEMORY_USAGE_RETRY_COUNT_PROP;
-import static com.j_spaces.core.Constants.Engine.ENGINE_MEMORY_USAGE_WR_ONLY_BLOCK_PERCENTAGE_RATIO_DEFAULT;
-import static com.j_spaces.core.Constants.Engine.ENGINE_MEMORY_USAGE_WR_ONLY_BLOCK_PERCENTAGE_RATIO_PROP;
-import static com.j_spaces.core.Constants.Engine.ENGINE_MEMORY_USAGE_WR_ONLY_CHECK_PERCENTAGE_RATIO_DEFAULT;
-import static com.j_spaces.core.Constants.Engine.ENGINE_MEMORY_USAGE_WR_ONLY_CHECK_PERCENTAGE_RATIO_PROP;
-import static com.j_spaces.core.Constants.Engine.ENGINE_MIN_THREADS_DEFAULT;
-import static com.j_spaces.core.Constants.Engine.ENGINE_MIN_THREADS_PROP;
-import static com.j_spaces.core.Constants.Engine.ENGINE_NOTIFIER_RETRIES_DEFAULT;
-import static com.j_spaces.core.Constants.Engine.ENGINE_NOTIFIER_TTL_PROP;
-import static com.j_spaces.core.Constants.Engine.ENGINE_SERIALIZATION_TYPE_DEFAULT;
-import static com.j_spaces.core.Constants.Engine.ENGINE_SERIALIZATION_TYPE_PROP;
+import static com.j_spaces.core.Constants.DataAdapter.*;
+import static com.j_spaces.core.Constants.Engine.*;
 import static com.j_spaces.core.Constants.Filter.DEFAULT_FILTER_SECURITY_NAME;
-import static com.j_spaces.core.Constants.LeaseManager.LM_EXPIRATION_TIME_INTERVAL_DEFAULT;
-import static com.j_spaces.core.Constants.LeaseManager.LM_EXPIRATION_TIME_INTERVAL_PROP;
-import static com.j_spaces.core.Constants.LeaseManager.LM_EXPIRATION_TIME_RECENT_DELETES_DEFAULT;
-import static com.j_spaces.core.Constants.LeaseManager.LM_EXPIRATION_TIME_RECENT_DELETES_PROP;
-import static com.j_spaces.core.Constants.LeaseManager.LM_EXPIRATION_TIME_RECENT_UPDATES_DEFAULT;
-import static com.j_spaces.core.Constants.LeaseManager.LM_EXPIRATION_TIME_RECENT_UPDATES_PROP;
-import static com.j_spaces.core.Constants.LeaseManager.LM_EXPIRATION_TIME_STALE_REPLICAS_DEFAULT;
-import static com.j_spaces.core.Constants.LeaseManager.LM_EXPIRATION_TIME_STALE_REPLICAS_PROP;
+import static com.j_spaces.core.Constants.LeaseManager.*;
 import static com.j_spaces.core.Constants.LookupManager.LOOKUP_IS_PRIVATE_PROP;
 import static com.j_spaces.core.Constants.Mirror.MIRROR_SERVICE_ENABLED_DEFAULT;
 import static com.j_spaces.core.Constants.Mirror.MIRROR_SERVICE_ENABLED_PROP;
@@ -338,6 +280,9 @@ public class SpaceConfigFactory {
         // Distributed Cache
         spaceConfig.setDCacheConfigName(schemaProps.getProperty(Constants.SPACE_CONFIG_PREFIX + CONFIG_NAME_PROP, DCACHE_CONFIG_NAME_DEFAULT));//, false );
         spaceConfig.setDCacheProperties(JProperties.loadConfigDCache(spaceConfig.getDCacheConfigName()));
+
+        //mvcc
+        spaceConfig.setMvccEnabled(Boolean.parseBoolean(schemaProps.getProperty(Constants.Mvcc.FULL_MVCC_ENABLED_PROP, Constants.Mvcc.MVCC_ENABLED_DEFAULT)));
 
         // build filter information
         int filterCounter = 0;
