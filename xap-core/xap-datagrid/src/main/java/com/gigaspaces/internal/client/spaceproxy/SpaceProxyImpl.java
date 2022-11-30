@@ -41,7 +41,6 @@ import com.gigaspaces.internal.metadata.ITypeDesc;
 import com.gigaspaces.internal.server.space.IClusterInfoChangedListener;
 import com.gigaspaces.internal.server.space.IRemoteSpace;
 import com.gigaspaces.internal.server.space.SpaceImpl;
-import com.gigaspaces.internal.server.space.tiered_storage.error.TieredStorageMetadataException;
 import com.gigaspaces.internal.transport.ITemplatePacket;
 import com.gigaspaces.internal.version.PlatformLogicalVersion;
 import com.gigaspaces.logger.Constants;
@@ -529,17 +528,13 @@ public class SpaceProxyImpl extends AbstractDirectSpaceProxy implements SameProx
     }
 
     @Override
-    public ITypeDesc registerTypeDescInServers(ITypeDesc typeDesc) {
+    public void registerTypeDescInServers(ITypeDesc typeDesc) {
         try {
             RegisterEntryTypeDescriptorSpaceOperationRequest request = new RegisterEntryTypeDescriptorSpaceOperationRequest()
                     .setTypeDesc(typeDesc)
                     .setGatewayProxy(isGatewayProxy());
             getProxyRouter().execute(request);
             request.processExecutionException();
-            // TODO: Return type descriptor from server instead.
-            return typeDesc;
-        } catch (TieredStorageMetadataException e){
-            throw e;
         } catch (Throwable e) {
             throw new SpaceMetadataException("Error in registerTypeDescInServers() remote task execution. TypeName=" + typeDesc.getTypeName(), e);
         }

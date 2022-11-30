@@ -104,6 +104,7 @@ import com.gigaspaces.lrmi.TransportProtocolHelper;
 import com.gigaspaces.lrmi.nio.IResponseContext;
 import com.gigaspaces.lrmi.nio.ResponseContext;
 import com.gigaspaces.management.space.SpaceQueryDetails;
+import com.gigaspaces.metadata.SpaceMetadataValidationException;
 import com.gigaspaces.metrics.*;
 import com.gigaspaces.query.aggregators.SpaceEntriesAggregator;
 import com.gigaspaces.security.authorities.SpaceAuthority.SpacePrivilege;
@@ -7422,6 +7423,11 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
      * necessary.
      */
     public void registerTypeDesc(ITypeDesc typeDesc, boolean fromGateway) throws DetailedUnusableEntryException {
+        if (getSpaceImpl().isMvccEnabled() && typeDesc.isAutoGenerateId()) {
+            throw new SpaceMetadataValidationException(typeDesc.getTypeName(),
+                    "Auto-generated id is not allowed when MVCC is enabled.");
+        }
+
         final AddTypeDescResult result = getTypeManager().addTypeDesc(typeDesc);
 
         if (result.getResultType() == AddTypeDescResultType.NONE)

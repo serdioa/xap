@@ -1027,7 +1027,7 @@ public class SpaceImpl extends AbstractService implements IRemoteSpace, IInterna
         return _configReader.getBooleanSpaceProperty(Mirror.MIRROR_SERVICE_ENABLED_PROP, Mirror.MIRROR_SERVICE_ENABLED_DEFAULT);
     }
 
-    public boolean isMvcc() {
+    public boolean isMvccEnabled() {
         return _configReader.getBooleanSpaceProperty(Mvcc.MVCC_ENABLED_PROP, Mvcc.MVCC_ENABLED_DEFAULT);
     }
 

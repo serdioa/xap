@@ -240,6 +240,11 @@ public class ProxySettings implements SmartExternalizable {
         return config != null ? config : getSpaceAttributes().getTieredStorageConfig();
     }
 
+    public boolean isMvccEnabled() {
+        final String cachePolicyValue = _customProperties.getProperty(Constants.Mvcc.FULL_MVCC_ENABLED_PROP);
+        return cachePolicyValue != null ? "true".equals(cachePolicyValue) : getSpaceAttributes().isMvccEnabled();
+    }
+
     @Override
     public void writeExternal(ObjectOutput out) throws IOException {
         if (LRMIInvocationContext.getEndpointLogicalVersion().greaterOrEquals(PlatformLogicalVersion.v11_0_0))
