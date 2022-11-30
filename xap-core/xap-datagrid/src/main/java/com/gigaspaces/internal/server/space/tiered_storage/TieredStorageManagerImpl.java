@@ -25,8 +25,10 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.rmi.RemoteException;
 import java.sql.SQLException;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class TieredStorageManagerImpl implements TieredStorageManager {
@@ -238,10 +240,39 @@ public class TieredStorageManagerImpl implements TieredStorageManager {
                 logger.trace("Type {} is transient, TemplateMatchTier = MATCH_HOT", typeName);
                 return TemplateMatchTier.MATCH_HOT;
             } else {
-                logger.trace("Query for type {}, TemplateMatchTier = MATCH_HOT_AND_COLD", typeName);
-                return TemplateMatchTier.MATCH_HOT_AND_COLD;
+                if (isSearchById(templateHolder) || templateHolder.getTemplateEntryData().getFixedPropertiesValues() == null) {
+                    return TemplateMatchTier.MATCH_HOT_AND_COLD;
+                }
+                TemplateMatchTier templateMatchTier = cacheRule.evaluate(templateHolder) == TemplateMatchTier.MATCH_HOT
+                        ? TemplateMatchTier.MATCH_HOT
+                        : TemplateMatchTier.MATCH_HOT_AND_COLD;
+
+                logger.trace("Query for type {}, TemplateMatchTier = " + templateMatchTier, typeName);
+                return templateMatchTier;
             }
         }
+    }
+
+    private boolean isSearchById(ITemplateHolder templateHolder) {
+        Object id = templateHolder.getID();
+        String[] multipleUids = templateHolder.getMultipleUids();
+        if (id == null && multipleUids == null) {
+            return false;
+        }
+        if (multipleUids != null) {
+            return true;
+        }
+        Object[] properties = templateHolder.getTemplateEntryData().getFixedPropertiesValues();
+        if (properties == null) {
+            return false;
+        }
+        int values = 0;
+        for (int i = 0; i < properties.length; i++) {
+            if (properties[i] != null) {
+                values++;
+            }
+        }
+        return values == 1;
     }
 
     @Override

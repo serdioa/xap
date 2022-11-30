@@ -345,9 +345,18 @@ public class SqliteUtils {
             return evalCustomQuery(criteria, customQuery, timeType);
         } else {
             ITypeDesc typeDesc = template.getServerTypeDesc().getTypeDesc();
-            int index = ((PropertyInfo) typeDesc.getFixedProperty(criteria.getPath())).getOriginalIndex();
             TemplateEntryData entryData = template.getTemplateEntryData();
-            Object value = entryData.getFixedPropertyValue(index);
+            PropertyInfo propertyInfo = (PropertyInfo) typeDesc.getFixedProperty(criteria.getPath());
+
+            int index;
+            Object value;
+            if (propertyInfo != null) {
+                index = propertyInfo.getOriginalIndex();
+                value = entryData.getFixedPropertyValue(index);
+            } else {
+                index = -1;
+                value = null;
+            }
 
             if (template.getExtendedMatchCodes() == null || (template.isIdQuery() && typeDesc.getIdPropertiesNames().contains(criteria.getPath()))) {
                 if (value == null) {
