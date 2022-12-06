@@ -330,14 +330,15 @@ public class TieredStorageSA implements IStorageAdapter {
     }
 
     @Override
-    public void addIndexes(String typeName, SpaceIndex[] indexes) {
-        Arrays.stream(indexes).forEach(index -> {
+    public void addIndexes(String typeName, SpaceIndex[] indexes) throws SAException {
+        for (SpaceIndex index : indexes) {
             try {
-                internalRDBMS.createIndex(typeName, index.isUnique(), index.getName());
+                internalRDBMS.addIndex(typeName, index.isUnique(), index.getName());
             } catch (SAException e) {
                 logger.error("Could not add index into tiered storage ", e.getMessage());
+                throw new SAException("Failed to add index: " + index.getName() + " to Sqlite DB.", e);
             }
-        });
+        }
     }
 
     public void deleteData() throws SAException {

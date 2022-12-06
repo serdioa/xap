@@ -26,6 +26,7 @@ import com.gigaspaces.internal.space.responses.AddTypeIndexesResponseInfo;
 import com.gigaspaces.internal.space.responses.SpaceResponseInfo;
 import com.gigaspaces.metadata.SpaceMetadataException;
 import com.gigaspaces.security.authorities.SpaceAuthority;
+import com.j_spaces.core.sadapter.SAException;
 
 /**
  * @author Niv Ingberg
@@ -62,6 +63,8 @@ public class SpaceAddTypeIndexesExecutor extends SpaceActionExecutor {
             context.release();
         } catch (SpaceMetadataException e) {
             responseInfo.setMetadataException(e);
+        } catch (SAException e) {
+            responseInfo.setMetadataException(new SpaceMetadataException(e.getMessage()));
         }
 
         return responseInfo;

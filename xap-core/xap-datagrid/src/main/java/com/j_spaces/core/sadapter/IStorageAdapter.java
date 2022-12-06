@@ -186,5 +186,5 @@ public interface IStorageAdapter {
 
     Class<?> getDataClass();
 
-    void addIndexes(String typeName, SpaceIndex[] indexes);
+    void addIndexes(String typeName, SpaceIndex[] indexes) throws SAException;
 }
