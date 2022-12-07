@@ -64,7 +64,7 @@ public class SpaceAddTypeIndexesExecutor extends SpaceActionExecutor {
         } catch (SpaceMetadataException e) {
             responseInfo.setMetadataException(e);
         } catch (SAException e) {
-            responseInfo.setMetadataException(new SpaceMetadataException(e.getMessage()));
+            responseInfo.setMetadataException(new SpaceMetadataException(e.getMessage(), e));
         }
 
         return responseInfo;
