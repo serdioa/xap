@@ -29,13 +29,18 @@ import static com.j_spaces.core.Constants.CacheManager.CACHE_MANAGER_EVICTABLE_L
  * object we use a representing object
  */
 @com.gigaspaces.api.InternalApi
-public class BasicEvictableLockManager<T extends ISelfLockingSubject>
+public class BasicEvictableLockManager<T extends ILockObject>
         implements IBasicLockManager<T> {
     private static class LockObject implements ILockObject {
 
         @Override
         public boolean isLockSubject() {
             return false;
+        }
+
+        @Override
+        public String getUID() {
+            return null;
         }
     }
 

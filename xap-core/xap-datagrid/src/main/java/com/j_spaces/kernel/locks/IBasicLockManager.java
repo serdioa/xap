@@ -19,26 +19,25 @@ package com.j_spaces.kernel.locks;
 
 
 /**
- *
  * @author Yechiel Fefer
  * @version 1.0
  * @since 6.5 contains the basic methods for acuring a lock object- i.e. an object that will be
  * locked in order to lock the entity (entry or template) represented by it
  */
-public interface IBasicLockManager<T extends ILockedSubject> {
+public interface IBasicLockManager<T extends ILockObject> {
 
     /**
      * based on subject, return a lock object in order to lock the represented subject.
-     *
+     * <p>
      * If the subject is part of evictable from space (like lru)
      * or evicatble from cache (like in TieredStorage with cache rule)
      * we use the subject itself, otherwise we use per-logical subject a different object.
-     *
+     * <p>
      * Note - template and transient entry are not evictable.
      *
      * @return the lock object
      */
-    public ILockObject getLockObject(T subject);
+    ILockObject getLockObject(T subject);
 
     /**
      * based only on subject's uid, return a lock object in order to lock the represented subject
@@ -46,20 +45,21 @@ public interface IBasicLockManager<T extends ILockedSubject> {
      *
      * @return the lock object
      */
-    public ILockObject getLockObject(String subjectUid);
+    ILockObject getLockObject(String subjectUid);
 
     /**
      * free the lock object - no more needed by this thread
      *
      * @param lockObject the lock object
      */
-    public void freeLockObject(ILockObject lockObject);
+    void freeLockObject(ILockObject lockObject);
 
     /**
      * true if the lock object is the subject itself (i.e. entry or template), false if it is representing object.
      * Note - this method is for entries only!.
+     *
      * @return true if is the subject itself
      */
-    public boolean isEntryLocksItsSelf(T entry);
+    boolean isEntryLocksItsSelf(T entry);
 
 }

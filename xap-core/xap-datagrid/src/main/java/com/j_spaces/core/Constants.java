@@ -967,5 +967,7 @@ public interface Constants {
         String MVCC_ENABLED_PROP = MVCC_PREFIX + "enabled";
         String MVCC_ENABLED_DEFAULT = "false";
         String FULL_MVCC_ENABLED_PROP = SPACE_CONFIG_PREFIX + MVCC_ENABLED_PROP;
+        String CACHE_MANAGER_MVCC_LOCKS_SIZE_PROP = "engine.mvcc.locks-size";
+        String CACHE_MANAGER_MVCC_LOCKS_SIZE_DEFAULT = "10000";
     }
 }

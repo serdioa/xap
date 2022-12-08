@@ -25,12 +25,18 @@ package com.j_spaces.kernel.locks;
  */
 
 @com.gigaspaces.api.InternalApi
-public class BlobStoreLockManager<T extends ISelfLockingSubject>
+public class BlobStoreLockManager<T extends ILockObject>
         implements IBasicLockManager<T> {
 
     @Override
     public ILockObject getLockObject(T subject) {
-        return subject.getExternalLockObject() != null ? subject.getExternalLockObject() : subject;
+        if (subject instanceof IBlobStoreLockObject) {
+            final ILockObject externalLockObject = ((IBlobStoreLockObject) subject).getExternalLockObject();
+            if (externalLockObject != null) {
+                return externalLockObject;
+            }
+        }
+        return subject;
     }
 
     @Override

@@ -19,7 +19,6 @@ package com.gigaspaces.internal.server.storage;
 import com.gigaspaces.internal.server.metadata.IServerTypeDesc;
 import com.j_spaces.core.XtnEntry;
 import com.j_spaces.core.server.transaction.EntryXtnInfo;
-import com.j_spaces.kernel.locks.ILockObject;
 import net.jini.core.transaction.server.ServerTransaction;
 import org.slf4j.Logger;
 
@@ -439,12 +438,6 @@ public class EntryHolder extends AbstractSpaceItem implements IEntryHolder {
     @Override
     public IEntryHolder getOriginalEntryHolder() {
         return this;
-    }
-
-    //+++++++++++++ ILockObject methods
-    @Override
-    public ILockObject getExternalLockObject() {
-        return null;
     }
 
     @Override
