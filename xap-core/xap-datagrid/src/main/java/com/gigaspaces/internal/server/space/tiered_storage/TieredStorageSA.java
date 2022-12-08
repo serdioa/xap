@@ -23,7 +23,10 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.sql.SQLException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class TieredStorageSA implements IStorageAdapter {
     private final Logger logger;
@@ -331,11 +334,13 @@ public class TieredStorageSA implements IStorageAdapter {
 
     @Override
     public void addIndexes(String typeName, SpaceIndex[] indexes) throws SAException {
+        final SpaceTypeManager typeManager = engine.getTypeManager();
+        final ITypeDesc typeDesc = typeManager.getTypeDesc(typeName);
         for (SpaceIndex index : indexes) {
+            typeManager.validateIndexSupportInTieredStorage(typeDesc);
             try {
                 internalRDBMS.addIndex(typeName, index.isUnique(), index.getName());
             } catch (SAException e) {
-                logger.error("Could not add index into tiered storage ", e.getMessage());
                 throw new SAException("Failed to add index: " + index.getName() + " to Sqlite DB.", e);
             }
         }
