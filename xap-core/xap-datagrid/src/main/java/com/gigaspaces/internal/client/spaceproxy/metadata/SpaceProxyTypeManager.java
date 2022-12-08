@@ -302,6 +302,7 @@ public class SpaceProxyTypeManager implements ISpaceProxyTypeManager {
                 //Reset dynamic properties because the template do not need it anymore
                 packet.setDynamicProperties(null);
             }
+            //
         } else if (objectType == ObjectType.DOCUMENT) {
             final String typeName = ((SpaceDocument) object).getTypeName();
             final ITypeDesc typeDesc = _typeDescRepository.getTypeDescByName(typeName, null);

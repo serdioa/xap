@@ -76,6 +76,9 @@ public class SqliteUtils {
             StringJoiner stringValues = new StringJoiner(", ");
             for (Object val : inRange.getInValues()) {
                 stringValues.add("?");
+                if (val instanceof BigDecimal){
+                    val = ((BigDecimal) val).stripTrailingZeros();
+                }
                 queryParams.addParameter(range.getPath(), val);
             }
             queryBuilder.append(stringValues);
@@ -88,6 +91,12 @@ public class SqliteUtils {
             String path = range.getPath();
             Comparable min = segmentRange.getMin();
             Comparable max = segmentRange.getMax();
+            if (min instanceof BigDecimal){
+                min = ((BigDecimal) min).stripTrailingZeros();
+            }
+            if (max instanceof BigDecimal){
+                max = ((BigDecimal) max).stripTrailingZeros();
+            }
             String includeMinSign = segmentRange.isIncludeMin() ? "= " : " ";
             String includeMaxSign = segmentRange.isIncludeMax() ? "= " : " ";
             queryBuilder.append(range.getPath());
@@ -170,7 +179,7 @@ public class SqliteUtils {
             if (bigDecimal == null) return null;
             return bigDecimal.toBigInteger();
         });
-        map.put(BigDecimal.class.getName(), ResultSet::getBigDecimal);
+        map.put(BigDecimal.class.getName(), (res,i) -> res.getBigDecimal(i).stripTrailingZeros());
         map.put(Float.class.getName(), ResultSet::getFloat);
         map.put(Double.class.getName(), ResultSet::getDouble);
         map.put(Byte[].class.getName(), ResultSet::getBytes);

@@ -27,12 +27,12 @@ import com.gigaspaces.metadata.SpaceMetadataException;
 import com.gigaspaces.metadata.SpaceMetadataValidationException;
 import com.gigaspaces.time.SystemTime;
 import com.j_spaces.core.IGSEntry;
-
 import net.jini.core.lease.Lease;
 
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -256,8 +256,13 @@ public class PojoIntrospector<T> extends AbstractTypeIntrospector<T> {
 
                 if (_isAutoPkGen && property == _autoPkGenProperty)
                     values[i] = null;
-                else
-                    values[i] = property.convertToNullIfNeeded(values[i]);
+                else {
+                    Object value = property.convertToNullIfNeeded(values[i]);
+                    if (value instanceof BigDecimal){
+                        value = ((BigDecimal) value).stripTrailingZeros();
+                    }
+                    values[i] = value;
+                }
             }
 
             return values;
@@ -387,8 +392,12 @@ public class PojoIntrospector<T> extends AbstractTypeIntrospector<T> {
         // generate the uid from the id property and the type's name:
         Object id = TypeDescriptorUtils.toSpaceId(_idProperties, p -> {
             Object value = getValue(target, p);
-            if (value == null)
+            if (value == null) {
                 throw new SpaceMetadataException("SpaceId(autoGenerate=false) property " + p.getName() + " value cannot be null.");
+            }
+            if (value instanceof BigDecimal){
+                value = ((BigDecimal) value).stripTrailingZeros();
+            }
             return value;
         });
         return SpaceUidFactory.createUidFromTypeAndId(getTypeDesc(), id);

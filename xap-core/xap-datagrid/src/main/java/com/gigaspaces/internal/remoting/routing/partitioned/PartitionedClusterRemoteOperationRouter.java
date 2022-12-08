@@ -30,6 +30,7 @@ import com.gigaspaces.internal.remoting.routing.clustered.RemoteOperationsExecut
 import com.gigaspaces.internal.utils.concurrent.CyclicAtomicInteger;
 import org.slf4j.Logger;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -209,6 +210,9 @@ public class PartitionedClusterRemoteOperationRouter extends AbstractRemoteOpera
     private <T extends RemoteOperationResult> void executeSingle(RemoteOperationRequest<T> request, boolean oneway)
             throws InterruptedException {
         Object routingValue = request.getPartitionedClusterRoutingValue(this);
+        if (routingValue instanceof BigDecimal){
+            routingValue = ((BigDecimal) routingValue).stripTrailingZeros();
+        }
         int partitionId = PartitionedClusterUtils.getPartitionId(routingValue, _clusterInfo);
         if (partitionId == PartitionedClusterUtils.NO_PARTITION) {
             request.setRemoteOperationExecutionError(new RemoteOperationRouterException("Cannot execute operation on partitioned cluster without routing value"));

@@ -21,11 +21,7 @@ import com.gigaspaces.internal.metadata.ITypeDesc;
 import com.gigaspaces.internal.query.IQueryIndexScanner;
 import com.gigaspaces.internal.query.QueryIndexes;
 import com.gigaspaces.internal.query.predicate.ISpacePredicate;
-import com.gigaspaces.internal.query.predicate.comparison.BetweenSpacePredicate;
-import com.gigaspaces.internal.query.predicate.comparison.GreaterEqualsSpacePredicate;
-import com.gigaspaces.internal.query.predicate.comparison.GreaterSpacePredicate;
-import com.gigaspaces.internal.query.predicate.comparison.LessEqualsSpacePredicate;
-import com.gigaspaces.internal.query.predicate.comparison.LessSpacePredicate;
+import com.gigaspaces.internal.query.predicate.comparison.*;
 import com.j_spaces.core.client.SQLQuery;
 import com.j_spaces.jdbc.SQLFunctions;
 import com.j_spaces.jdbc.builder.QueryTemplatePacket;
@@ -33,18 +29,14 @@ import com.j_spaces.jdbc.builder.QueryTemplatePacket;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.math.BigDecimal;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 
-import static com.j_spaces.core.client.TemplateMatchCodes.GE;
-import static com.j_spaces.core.client.TemplateMatchCodes.GT;
-import static com.j_spaces.core.client.TemplateMatchCodes.LE;
-import static com.j_spaces.core.client.TemplateMatchCodes.LT;
-import static com.j_spaces.sadapter.datasource.DefaultSQLQueryBuilder.AND;
-import static com.j_spaces.sadapter.datasource.DefaultSQLQueryBuilder.BIND_PARAMETER;
-import static com.j_spaces.sadapter.datasource.DefaultSQLQueryBuilder.mapCodeToSign;
+import static com.j_spaces.core.client.TemplateMatchCodes.*;
+import static com.j_spaces.sadapter.datasource.DefaultSQLQueryBuilder.*;
 
 /**
  * Defines a range of objects. The range is defined by two objects - _min and _max. And represents a
@@ -75,8 +67,8 @@ public class SegmentRange extends Range {
     public SegmentRange(String colName, FunctionCallDescription functionCallDescription, Comparable<?> value1, boolean includeMin,
                         Comparable<?> value2, boolean includeMax) {
         super(colName, functionCallDescription, createSpacePredicate(value1, includeMin, value2, includeMax));
-        this._min = value1;
-        this._max = value2;
+        this._min = value1 instanceof BigDecimal ? ((BigDecimal) value1).stripTrailingZeros() : value1;
+        this._max = value2 instanceof BigDecimal ? ((BigDecimal) value2).stripTrailingZeros() : value2;
 
         //noinspection unchecked
         if (_min != null && _max != null && _min.compareTo(_max) > 0)
@@ -476,8 +468,14 @@ public class SegmentRange extends Range {
         super.readExternal(in);
 
         _min = IOUtils.readObject(in);
+        if (_min instanceof BigDecimal){
+            _min = ((BigDecimal) _min).stripTrailingZeros();
+        }
         _includeMin = in.readBoolean();
         _max = IOUtils.readObject(in);
+        if (_max instanceof BigDecimal){
+            _max = ((BigDecimal) _max).stripTrailingZeros();
+        }
         _includeMax = in.readBoolean();
     }
 

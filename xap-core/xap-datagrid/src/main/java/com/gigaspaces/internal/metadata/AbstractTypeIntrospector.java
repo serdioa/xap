@@ -33,6 +33,7 @@ import net.jini.space.InternalSpaceException;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.math.BigDecimal;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -166,8 +167,13 @@ public abstract class AbstractTypeIntrospector<T> implements ITypeIntrospector<T
             return;
 
         try {
-            for (int i = 0; i < values.length; i++)
-                values[i] = _typeDesc.getFixedProperty(i).beforeSerialize(values[i]);
+            for (int i = 0; i < values.length; i++) {
+                Object serializedObject = _typeDesc.getFixedProperty(i).beforeSerialize(values[i]);
+                if (serializedObject instanceof BigDecimal){
+                    serializedObject =((BigDecimal) serializedObject).stripTrailingZeros();
+                }
+                values[i] = serializedObject;
+            }
         } catch (IOException e) {
             throw new ConversionException(e);
         }

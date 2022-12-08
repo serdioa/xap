@@ -19,6 +19,9 @@ package com.gigaspaces.internal.remoting.routing.partitioned;
 import com.gigaspaces.internal.cluster.ClusterTopology;
 import com.gigaspaces.internal.cluster.SpaceClusterInfo;
 import com.gigaspaces.internal.utils.GsEnv;
+import com.j_spaces.kernel.JSpaceUtilities;
+
+import java.math.BigDecimal;
 
 /**
  * @author Niv Ingberg
@@ -31,6 +34,7 @@ public class PartitionedClusterUtils {
 
     public static final String DYNAMIC_PARTITIONING_PROPERTY = "pu.dynamic-partitioning";
     private static final boolean DYNAMIC_PARTITIONING_DEFAULT = GsEnv.propertyBoolean("com.gs.pu.dynamic-partitioning").get(false);
+//    private static final Logger logger = Logger.getLogger(String.valueOf(PartitionedClusterUtils.class));
 
     public static boolean isDynamicPartitioningEnabled(String propValue, boolean isPartitioned) {
         if (propValue != null)
@@ -44,16 +48,28 @@ public class PartitionedClusterUtils {
     public static int getPartitionId(Object routingValue, SpaceClusterInfo clusterInfo) {
         if (routingValue == null)
             return NO_PARTITION;
+        if (routingValue instanceof BigDecimal){
+            JSpaceUtilities.DEBUG_LOGGER.info("### routingValue pre-strip: " + routingValue);
+            routingValue = ((BigDecimal) routingValue).stripTrailingZeros();
+            JSpaceUtilities.DEBUG_LOGGER.info("### routingValue post-strip: " + routingValue);
+        }
         int numberOfPartitions = clusterInfo.getNumberOfPartitions() != 0 ? clusterInfo.getNumberOfPartitions() : 1;
         if (routingValue instanceof Long && PRECISE_LONG_ROUTING) {
             return clusterInfo.isChunksRouting() ? clusterInfo.getPartitionId((safeAbs((Long) routingValue))) : (int) (safeAbs((Long) routingValue) % numberOfPartitions);
         }
-        return clusterInfo.isChunksRouting() ? clusterInfo.getPartitionId(safeAbs(routingValue.hashCode())) : safeAbs(routingValue.hashCode()) % numberOfPartitions;
+        int i = clusterInfo.isChunksRouting() ? clusterInfo.getPartitionId(safeAbs(routingValue.hashCode())) : safeAbs(routingValue.hashCode()) % numberOfPartitions;
+        JSpaceUtilities.DEBUG_LOGGER.info("### partition returned: " + i + ", hashcode: " + safeAbs(routingValue.hashCode()) + ", number of partiotions: " + numberOfPartitions);
+        return i;
     }
 
     public static int getPartitionId(Object routingValue, ClusterTopology topology) {
         if (routingValue == null)
             return NO_PARTITION;
+        if (routingValue instanceof BigDecimal){
+            JSpaceUtilities.DEBUG_LOGGER.info("$$$ routingValue pre-strip: " + routingValue);
+            routingValue = ((BigDecimal) routingValue).stripTrailingZeros();
+            JSpaceUtilities.DEBUG_LOGGER.info("$$$ routingValue post-strip: " + routingValue);
+        }
         if (routingValue instanceof Long && PRECISE_LONG_ROUTING) {
             return  topology.getPartitionId((safeAbs((Long) routingValue)));
         }
