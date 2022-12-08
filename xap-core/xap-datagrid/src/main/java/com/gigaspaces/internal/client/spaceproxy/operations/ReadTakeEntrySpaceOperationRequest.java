@@ -82,10 +82,13 @@ public class ReadTakeEntrySpaceOperationRequest extends SpaceOperationRequest<Re
         if (timeout < 0)
             throw new IllegalArgumentException("Timeout should be greater or equals 0");
         _templatePacket = templatePacket;
-        for(int i = 0; i < templatePacket.getFieldValues().length; i++){
-            if (templatePacket.getFieldValues()[i] instanceof BigDecimal){
-                Object fieldValue = templatePacket.getFieldValues()[i];
-                templatePacket.getFieldValues()[i] = ((BigDecimal) fieldValue).stripTrailingZeros();
+        Object[] fieldValues = templatePacket.getFieldValues();
+        if (fieldValues != null) {
+            for (int i = 0; i < fieldValues.length; i++) {
+                if (fieldValues[i] instanceof BigDecimal) {
+                    Object fieldValue = fieldValues[i];
+                    fieldValues[i] = ((BigDecimal) fieldValue).stripTrailingZeros();
+                }
             }
         }
         _txn = txn;
