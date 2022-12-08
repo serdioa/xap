@@ -40,6 +40,7 @@ import com.j_spaces.core.client.MetaDataEntry;
 import com.j_spaces.kernel.ClassLoaderHelper;
 import net.jini.core.entry.Entry;
 
+
 import java.io.*;
 import java.util.*;
 
@@ -122,6 +123,8 @@ public class TypeDesc implements ITypeDesc {
     private transient PropertyInfo[] _serializedProperties;
     private transient PropertyInfo[] _nonSerializedProperties;
     private transient int[] _positionsForSplitting;
+
+
 
     /**
      * Default constructor for Externalizable.
@@ -252,9 +255,8 @@ public class TypeDesc implements ITypeDesc {
         newTypeDesc.queryExtensionsInfo = typeDesc.getQueryExtensions();
         newTypeDesc._broadcast = typeDesc.isBroadcast();
         newTypeDesc.classBinaryStorageAdapter = typeDesc.getClassBinaryStorageAdapter();
-
         newTypeDesc.initializeV9_0_0();
-
+        newTypeDesc.initHybridProperties();
         return newTypeDesc;
     }
 
@@ -376,6 +378,7 @@ public class TypeDesc implements ITypeDesc {
             TypeDesc copy = (TypeDesc) super.clone();
             copy._indexes = new HashMap<String, SpaceIndex>(this._indexes);
             copy.buildCompoundIndexesList();
+            copy.initHybridProperties();
             return copy;
         } catch (CloneNotSupportedException e) {
             // this shouldn't happen, since we are Cloneable
@@ -1465,6 +1468,10 @@ public class TypeDesc implements ITypeDesc {
     }
 
     public int[] getPositionsForScanning() {
+        if (positionsForScanning == null){
+            initHybridProperties();
+        }
+
         return positionsForScanning;
     }
 
