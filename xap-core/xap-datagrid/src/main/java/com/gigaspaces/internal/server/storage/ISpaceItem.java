@@ -18,14 +18,14 @@ package com.gigaspaces.internal.server.storage;
 
 import com.gigaspaces.internal.server.metadata.IServerTypeDesc;
 import com.j_spaces.core.XtnEntry;
-import com.j_spaces.kernel.locks.ISelfLockingSubject;
+import com.j_spaces.kernel.locks.ILockObject;
 import net.jini.core.transaction.server.ServerTransaction;
 
 /**
  * @author Niv Ingberg
  * @since 7.0
  */
-public interface ISpaceItem extends ISelfLockingSubject {
+public interface ISpaceItem extends ILockObject {
     IServerTypeDesc getServerTypeDesc();
 
     String getClassName();

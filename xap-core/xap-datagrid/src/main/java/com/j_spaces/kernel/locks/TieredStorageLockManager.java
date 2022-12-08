@@ -24,13 +24,18 @@ import static com.j_spaces.core.Constants.TieredStorage.CACHE_MANAGER_TIERED_STO
 
 
 @com.gigaspaces.api.InternalApi
-public class TieredStorageLockManager<T extends ISelfLockingSubject>
+public class TieredStorageLockManager<T extends ILockObject>
         implements IBasicLockManager<T> {
     private static class LockObject implements ILockObject {
 
         @Override
         public boolean isLockSubject() {
             return false;
+        }
+
+        @Override
+        public String getUID() {
+            return null;
         }
     }
 
@@ -54,9 +59,8 @@ public class TieredStorageLockManager<T extends ISelfLockingSubject>
 
     @Override
     public ILockObject getLockObject(String subjectUid) {
-        return getLockObject_impl(subjectUid);
+        throw new RuntimeException("TieredStorageLockManager::getLockObject based on uid is not supported");
     }
-
 
     private ILockObject getLockObject_impl(String subjectUid) {
         return _locks[Math.abs(subjectUid.hashCode() % _locks.length)];

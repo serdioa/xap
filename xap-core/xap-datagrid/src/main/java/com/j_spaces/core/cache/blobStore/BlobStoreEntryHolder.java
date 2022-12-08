@@ -33,10 +33,11 @@ import com.j_spaces.core.cache.CacheManager;
 import com.j_spaces.core.cache.CacheOperationReason;
 import com.j_spaces.core.cache.blobStore.storage.bulks.BlobStoreBulkInfo;
 import com.j_spaces.core.cache.context.Context;
+import com.j_spaces.kernel.locks.IBlobStoreLockObject;
 import com.j_spaces.kernel.locks.ILockObject;
 
 @com.gigaspaces.api.InternalApi
-public class BlobStoreEntryHolder extends EntryHolder implements IBlobStoreEntryHolder {
+public class BlobStoreEntryHolder extends EntryHolder implements IBlobStoreEntryHolder, IBlobStoreLockObject {
 
     /**
      * for off heap only- contains the resident part that is always hooked

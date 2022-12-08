@@ -25,7 +25,7 @@ package com.j_spaces.kernel.locks;
  * @since 6.6 lock manager implementation for all-in-cache, we always lock the object itself
  */
 @com.gigaspaces.api.InternalApi
-public class AllInCacheLockManager<T extends ISelfLockingSubject>
+public class AllInCacheLockManager<T extends ILockObject>
         implements IBasicLockManager<T> {
 
     @Override

@@ -27,12 +27,25 @@ package com.j_spaces.kernel.locks;
  */
 public interface ILockObject {
 
-
     /**
      * returns true if the lock object is the subject itself (i.e. entry or template) or a
      * representing object
      *
      * @return true if is the subject itself
      */
-    public boolean isLockSubject();
+    boolean isLockSubject();
+
+    /**
+     * get the uid for the subject
+     *
+     * @return the uid
+     */
+    String getUID();
+
+    /**
+     * @return if this subject need to be locked by its uid or by itself.
+     */
+    default LockSubjectType getLockSubjectType() {
+        return LockSubjectType.ENTRY;
+    }
 }

@@ -25,7 +25,6 @@ import com.gigaspaces.internal.utils.Textualizable;
 import com.gigaspaces.internal.utils.Textualizer;
 import com.j_spaces.core.Constants;
 import com.j_spaces.core.client.NotifyModifiers;
-import com.j_spaces.kernel.locks.IEvictableLockObject;
 import org.slf4j.Logger;
 
 import java.rmi.MarshalledObject;
@@ -199,7 +198,7 @@ public abstract class AbstractSpaceItem implements ISpaceItem, Textualizable {
     }
 
     /*******************************
-     * ISelfLockingSubject Members *
+     * ILockObject Members *
      ******************************/
 
     /**
@@ -210,16 +209,6 @@ public abstract class AbstractSpaceItem implements ISpaceItem, Textualizable {
      */
     public boolean isLockSubject() {
         return true;
-    }
-
-    /**
-     * if the lock object is an evictable lock object, return the interface (preferable to casing)
-     *
-     * @return IEvictableLockObject if implemented
-     */
-    public IEvictableLockObject getEvictableLockObject() {
-        // Not relevant for entryHolder as a lock object
-        return null;
     }
 
     /************************

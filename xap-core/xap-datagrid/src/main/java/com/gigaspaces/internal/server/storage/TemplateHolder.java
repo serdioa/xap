@@ -42,7 +42,6 @@ import com.j_spaces.core.cache.context.Context;
 import com.j_spaces.core.client.*;
 import com.j_spaces.core.filters.FilterManager;
 import com.j_spaces.jdbc.builder.QueryTemplatePacket;
-import com.j_spaces.kernel.locks.ILockObject;
 import net.jini.core.transaction.server.ServerTransaction;
 import org.slf4j.Logger;
 
@@ -1166,12 +1165,6 @@ public class TemplateHolder extends AbstractSpaceItem implements ITemplateHolder
     @Override
     public void setServerIteratorInfo(ServerIteratorInfo serverIteratorInfo) {
         this._serverIteratorInfo = serverIteratorInfo;
-    }
-
-    //+++++++++++++ ILockObject methods
-    @Override
-    public ILockObject getExternalLockObject() {
-        return null;
     }
 
     //blob store

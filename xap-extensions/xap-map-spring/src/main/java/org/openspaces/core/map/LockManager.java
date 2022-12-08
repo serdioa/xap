@@ -23,11 +23,9 @@ import com.j_spaces.core.client.ReadModifiers;
 import com.j_spaces.map.IMap;
 import com.j_spaces.map.MapEntryFactory;
 import com.j_spaces.map.SpaceMapEntry;
-
 import net.jini.core.transaction.Transaction;
 import net.jini.core.transaction.TransactionException;
 import net.jini.core.transaction.TransactionFactory;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.openspaces.core.SpaceTimeoutException;
@@ -57,7 +55,7 @@ public class LockManager {
         return (value instanceof String) && ((String) value).length() == 0;
     }
 
-    private static Log logger = LogFactory.getLog(LockManager.class);
+    private static final Log logger = LogFactory.getLog(LockManager.class);
 
     private final IMap map;
 
