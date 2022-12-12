@@ -468,14 +468,8 @@ public class SegmentRange extends Range {
         super.readExternal(in);
 
         _min = IOUtils.readObject(in);
-        if (_min instanceof BigDecimal){
-            _min = ((BigDecimal) _min).stripTrailingZeros();
-        }
         _includeMin = in.readBoolean();
         _max = IOUtils.readObject(in);
-        if (_max instanceof BigDecimal){
-            _max = ((BigDecimal) _max).stripTrailingZeros();
-        }
         _includeMax = in.readBoolean();
     }
 

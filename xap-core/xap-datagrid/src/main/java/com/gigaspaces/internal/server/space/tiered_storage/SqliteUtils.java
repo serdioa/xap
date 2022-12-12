@@ -91,12 +91,6 @@ public class SqliteUtils {
             String path = range.getPath();
             Comparable min = segmentRange.getMin();
             Comparable max = segmentRange.getMax();
-            if (min instanceof BigDecimal){
-                min = ((BigDecimal) min).stripTrailingZeros();
-            }
-            if (max instanceof BigDecimal){
-                max = ((BigDecimal) max).stripTrailingZeros();
-            }
             String includeMinSign = segmentRange.isIncludeMin() ? "= " : " ";
             String includeMaxSign = segmentRange.isIncludeMax() ? "= " : " ";
             queryBuilder.append(range.getPath());
