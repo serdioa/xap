@@ -168,11 +168,11 @@ public abstract class AbstractTypeIntrospector<T> implements ITypeIntrospector<T
 
         try {
             for (int i = 0; i < values.length; i++) {
-                Object serializedObject = _typeDesc.getFixedProperty(i).beforeSerialize(values[i]);
-                if (serializedObject instanceof BigDecimal){
-                    serializedObject =((BigDecimal) serializedObject).stripTrailingZeros();
+                Object value = _typeDesc.getFixedProperty(i).beforeSerialize(values[i]);
+                if (value instanceof BigDecimal){
+                    value =((BigDecimal) value).stripTrailingZeros();
                 }
-                values[i] = serializedObject;
+                values[i] = value;
             }
         } catch (IOException e) {
             throw new ConversionException(e);

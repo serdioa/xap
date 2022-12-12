@@ -289,6 +289,9 @@ public class PojoIntrospector<T> extends AbstractTypeIntrospector<T> {
 
     private Object getValue(T target, SpacePropertyInfo property) {
         Object value = property.getValue(target);
+        if(value instanceof BigDecimal){
+            value = ((BigDecimal) value).stripTrailingZeros();
+        }
         return property.convertToNullIfNeeded(value);
     }
 
@@ -394,9 +397,6 @@ public class PojoIntrospector<T> extends AbstractTypeIntrospector<T> {
             Object value = getValue(target, p);
             if (value == null) {
                 throw new SpaceMetadataException("SpaceId(autoGenerate=false) property " + p.getName() + " value cannot be null.");
-            }
-            if (value instanceof BigDecimal){
-                value = ((BigDecimal) value).stripTrailingZeros();
             }
             return value;
         });
