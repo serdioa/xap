@@ -335,6 +335,12 @@ public class SystemConfig {
         classpathBuilder.appendOptionalJars("data-integration");
         classpathBuilder.appendPlatformJars("jdbc" );
 
+        // new security implementation
+        classpathBuilder.appendRequiredJar("spring-security-oauth2-jose.jar");
+        classpathBuilder.appendRequiredJar("spring-security-oauth2-resource-server.jar");
+        classpathBuilder.appendRequiredJar("spring-security-oauth2-core.jar");
+        classpathBuilder.appendRequiredJar("nimbus-jose-jwt.jar");
+
         return classpathBuilder.toURLs();
     }
 
@@ -639,6 +645,7 @@ public class SystemConfig {
         if (svcDesc == null) {
             ClasspathBuilder classpath = new ClasspathBuilder();
             classpath.appendLibRequiredJars(ClassLoaderType.SERVICE);
+            classpath.appendLibRequiredJars(ClassLoaderType.SERVICE);
             classpath.appendOptionalJars("spring");
             classpath.appendJars(locations.libOptionalSecurity());
 
@@ -662,6 +669,12 @@ public class SystemConfig {
                             gscClasspath,
                             "com.gigaspaces.grid.gsc.GSCImpl",
                             confArgs);
+            logger.error("Classpath define as " + gscClasspath);
+        } else {
+            logger.error("Used service descriptior from config!");
+            if (svcDesc instanceof RioServiceDescriptor) {
+                logger.error("classpath is " + ((RioServiceDescriptor) svcDesc).getClasspath());
+            }
         }
         return (svcDesc);
     }
