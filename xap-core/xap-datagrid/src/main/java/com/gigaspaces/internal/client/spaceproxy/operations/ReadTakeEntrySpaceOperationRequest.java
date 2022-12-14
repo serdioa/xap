@@ -20,7 +20,6 @@ import com.gigaspaces.internal.client.spaceproxy.metadata.ISpaceProxyTypeManager
 import com.gigaspaces.internal.io.IOUtils;
 import com.gigaspaces.internal.query.QueryUtils;
 import com.gigaspaces.internal.query.explainplan.ExplainPlanImpl;
-import com.gigaspaces.query.explainplan.ExplainPlan;
 import com.gigaspaces.internal.remoting.RemoteOperationRequest;
 import com.gigaspaces.internal.remoting.routing.partitioned.PartitionedClusterExecutionType;
 import com.gigaspaces.internal.remoting.routing.partitioned.PartitionedClusterRemoteOperationRouter;
@@ -29,22 +28,22 @@ import com.gigaspaces.internal.transport.IEntryPacket;
 import com.gigaspaces.internal.transport.ITemplatePacket;
 import com.gigaspaces.internal.utils.Textualizer;
 import com.gigaspaces.logger.Constants;
+import com.gigaspaces.query.explainplan.ExplainPlan;
 import com.j_spaces.core.client.Modifiers;
 import com.j_spaces.core.client.ReadModifiers;
 import com.j_spaces.core.exception.internal.InterruptedSpaceException;
-
 import net.jini.core.entry.UnusableEntryException;
 import net.jini.core.transaction.Transaction;
 import net.jini.core.transaction.TransactionException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.math.BigDecimal;
 import java.rmi.RemoteException;
 import java.util.List;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * @author anna
@@ -83,6 +82,15 @@ public class ReadTakeEntrySpaceOperationRequest extends SpaceOperationRequest<Re
         if (timeout < 0)
             throw new IllegalArgumentException("Timeout should be greater or equals 0");
         _templatePacket = templatePacket;
+        Object[] fieldValues = templatePacket.getFieldValues();
+        if (fieldValues != null) {
+            for (int i = 0; i < fieldValues.length; i++) {
+                if (fieldValues[i] instanceof BigDecimal) {
+                    Object fieldValue = fieldValues[i];
+                    fieldValues[i] = ((BigDecimal) fieldValue).stripTrailingZeros();
+                }
+            }
+        }
         _txn = txn;
         _isTake = isTake;
         _ifExists = ifExists;

@@ -170,7 +170,7 @@ public class SqliteUtils {
             if (bigDecimal == null) return null;
             return bigDecimal.toBigInteger();
         });
-        map.put(BigDecimal.class.getName(), ResultSet::getBigDecimal);
+        map.put(BigDecimal.class.getName(), (res,i) -> res.getBigDecimal(i) == null ? null : res.getBigDecimal(i).stripTrailingZeros());
         map.put(Float.class.getName(), ResultSet::getFloat);
         map.put(Double.class.getName(), ResultSet::getDouble);
         map.put(Byte[].class.getName(), ResultSet::getBytes);
