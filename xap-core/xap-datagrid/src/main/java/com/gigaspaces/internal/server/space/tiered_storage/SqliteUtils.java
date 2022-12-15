@@ -131,6 +131,34 @@ public class SqliteUtils {
 
         });
 
+        map.put(RegexRange.class.getName(), (range, queryBuilder, queryParams) -> {
+            RegexRange regexRange = (RegexRange) range;
+            String regex = regexRange.getValue().toString()
+                    .replaceAll("\\.\\*", "%")
+                    .replaceAll("\\.", "_");
+
+            queryBuilder
+                    .append(regexRange.getPath())
+                    .append(" LiKE ")
+                    .append("'")
+                    .append(regex)
+                    .append("'");
+        });
+
+        map.put(NotRegexRange.class.getName(), (range, queryBuilder, queryParams) -> {
+            NotRegexRange regexRange = (NotRegexRange) range;
+            String regex = regexRange.getValue().toString()
+                    .replaceAll("\\.\\*", "%")
+                    .replaceAll("\\.", "_");
+
+            queryBuilder
+                    .append(regexRange.getPath())
+                    .append(" NOT LiKE ")
+                    .append("'")
+                    .append(regex)
+                    .append("'");
+
+        });
         return map;
     }
 
