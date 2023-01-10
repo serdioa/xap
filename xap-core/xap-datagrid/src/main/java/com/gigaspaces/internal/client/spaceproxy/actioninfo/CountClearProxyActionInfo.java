@@ -17,7 +17,6 @@
 package com.gigaspaces.internal.client.spaceproxy.actioninfo;
 
 import com.gigaspaces.internal.client.spaceproxy.ISpaceProxy;
-
 import net.jini.core.transaction.Transaction;
 
 /**
@@ -35,5 +34,10 @@ public class CountClearProxyActionInfo extends QueryProxyActionInfo {
     public CountClearProxyActionInfo(ISpaceProxy spaceProxy, Object query, Transaction txn, int modifiers, boolean isTake) {
         super(spaceProxy, query, txn, modifiers, isTake);
         this.isTake = isTake;
+    }
+
+    @Override
+    public boolean requireTransactionForMVCC() {
+        return isTake;
     }
 }

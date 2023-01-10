@@ -22,7 +22,6 @@ import com.gigaspaces.internal.client.spaceproxy.metadata.ObjectType;
 import com.gigaspaces.internal.transport.IEntryPacket;
 import com.gigaspaces.internal.transport.ITransportPacket;
 import com.j_spaces.core.client.ReadModifiers;
-
 import net.jini.core.transaction.Transaction;
 
 public abstract class CommonProxyActionInfo implements Cloneable {
@@ -60,6 +59,11 @@ public abstract class CommonProxyActionInfo implements Cloneable {
     protected void validateReadModifiers(ISpaceProxy spaceProxy) {
         if (ReadModifiers.isExclusiveReadLock(modifiers) && txn == null && spaceProxy.getContextTransaction() == null)
             throw new IllegalArgumentException("Using EXCLUSIVE_READ_LOCK modifier without a transaction is illegal.");
+    }
+
+
+    public boolean requireTransactionForMVCC(){
+        return true;
     }
 
 

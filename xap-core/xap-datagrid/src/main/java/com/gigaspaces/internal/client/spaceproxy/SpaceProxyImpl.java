@@ -417,6 +417,9 @@ public class SpaceProxyImpl extends AbstractDirectSpaceProxy implements SameProx
     }
 
     public void beforeSpaceAction(CommonProxyActionInfo action) {
+        if (action.txn == null && getProxySettings().isMvccEnabled() && action.requireTransactionForMVCC()) {
+            throw new UnsupportedOperationException("Operation without transaction are not allowed when MVCC is enabled.");
+        }
         action.txn = _transactionManager.beforeSpaceAction(action.txn);
     }
 
