@@ -13,7 +13,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class ZKScaleOutUtils {
+public class ZookeeperScaleOutHandler {
     private static Logger logger = LoggerFactory.getLogger("com.gigaspaces.internal.server.space.repartitioning.ZookeeperScaleOutUtils");
 
     public static String getScaleOutPath(String puName){
@@ -25,31 +25,31 @@ public class ZKScaleOutUtils {
     }
 
     public static String getStepDetails(AttributeStore attributeStore, String puName, String step, String key) throws IOException {
-        return attributeStore.get(ZKScaleOutUtils.getScaleStepsPath(puName, step) + "/" + key);
+        return attributeStore.get(ZookeeperScaleOutHandler.getScaleStepsPath(puName, step) + "/" + key);
     }
 
     public static void setScaleOutMetaData(AttributeStore attributeStore, String puName, String key, String value) throws IOException {
-        attributeStore.set(ZKScaleOutUtils.getScaleOutPath(puName) + "/" + key, value);
+        attributeStore.set(ZookeeperScaleOutHandler.getScaleOutPath(puName) + "/" + key, value);
     }
 
     public static String getScaleOutMetaData(AttributeStore attributeStore, String puName, String key) throws IOException {
-        return attributeStore.get(ZKScaleOutUtils.getScaleOutPath(puName) + "/" + key);
+        return attributeStore.get(ZookeeperScaleOutHandler.getScaleOutPath(puName) + "/" + key);
     }
 
     public static void setScaleOutLastStep(AttributeStore attributeStore, String puName, String step) throws IOException {
-        attributeStore.set(ZKScaleOutUtils.getScaleOutPath(puName) + "/last-step", step);
+        attributeStore.set(ZookeeperScaleOutHandler.getScaleOutPath(puName) + "/last-step", step);
     }
 
     public static void setQuiesceToken(AttributeStore attributeStore, String puName, Object value) throws IOException {
-        attributeStore.setObject(ZKScaleOutUtils.getScaleOutPath(puName) + "/quiesce-token", value);
+        attributeStore.setObject(ZookeeperScaleOutHandler.getScaleOutPath(puName) + "/quiesce-token", value);
     }
 
     public static QuiesceToken getQuiesceToken(AttributeStore attributeStore, String puName) throws IOException {
-        return attributeStore.getObject(ZKScaleOutUtils.getScaleOutPath(puName) + "/quiesce-token");
+        return attributeStore.getObject(ZookeeperScaleOutHandler.getScaleOutPath(puName) + "/quiesce-token");
     }
 
     public static String getScaleOutLastStep(AttributeStore attributeStore, String puName) throws IOException {
-        return attributeStore.get(ZKScaleOutUtils.getScaleOutPath(puName) + "/last-step");
+        return attributeStore.get(ZookeeperScaleOutHandler.getScaleOutPath(puName) + "/last-step");
     }
 
     public static List<Integer> getParticipantPartitions(AttributeStore attributeStore, String puName) throws IOException {
@@ -60,7 +60,7 @@ public class ZKScaleOutUtils {
 
     public static boolean setStepIfPossible(AttributeStore attributeStore, String puName, String step, String key, String value)  {
         try{
-            attributeStore.set(ZKScaleOutUtils.getScaleStepsPath(puName, step) + "/" + key, value);
+            attributeStore.set(ZookeeperScaleOutHandler.getScaleStepsPath(puName, step) + "/" + key, value);
             return true;
         } catch (IOException e){
             logger.warn("Failed to set on Zookeeper: " + key + " " + value , e);
@@ -106,7 +106,7 @@ public class ZKScaleOutUtils {
 
     public static void setOldTopologyState(AttributeStore attributeStore, String puName, ClusterTopologyState topologyState) {
         try {
-            attributeStore.setObject(ZKScaleOutUtils.getScaleOutPath(puName) + "/old cluster topology state", topologyState);
+            attributeStore.setObject(ZookeeperScaleOutHandler.getScaleOutPath(puName) + "/old cluster topology state", topologyState);
         } catch (IOException e) {
             if (logger.isErrorEnabled()) logger.error("Failed to set cluster topology state", e);
             throw new UncheckedIOException("Failed to set cluster topology state for pu [" + puName + "]", e);
@@ -115,7 +115,7 @@ public class ZKScaleOutUtils {
 
     public static ClusterTopologyState getOldTopologyState(AttributeStore attributeStore, String puName) {
         try {
-            return attributeStore.getObject(ZKScaleOutUtils.getScaleOutPath(puName) + "/old cluster topology state");
+            return attributeStore.getObject(ZookeeperScaleOutHandler.getScaleOutPath(puName) + "/old cluster topology state");
         } catch (IOException e) {
             if (logger.isErrorEnabled()) logger.error("Failed to set cluster topology state", e);
             throw new UncheckedIOException("Failed to set cluster topology state for pu [" + puName + "]", e);

@@ -15,18 +15,14 @@
  */
 package com.gigaspaces.attribute_store;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.IOException;
-import java.io.RandomAccessFile;
-import java.io.Serializable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
 import java.util.Properties;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Note that this is a technology preview feature may be changed in the future.
@@ -113,6 +109,11 @@ public class PropertiesFileAttributeStore implements AttributeStore, Serializabl
     @Override
     public SharedLockProvider getSharedLockProvider() {
         throw new UnsupportedOperationException("This attribute store does not support shared locks");
+    }
+
+    @Override
+    public SharedReentrantReadWriteLockProvider getSharedReentrantReadWriteLockProvider() {
+        throw new UnsupportedOperationException("This attribute store does not support shared reentrant read write locks");
     }
 
     public <T> T withProperties(PropertiesHandler<T> propertiesHandler) throws IOException {

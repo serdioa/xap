@@ -92,7 +92,7 @@ import com.gigaspaces.internal.server.space.recovery.direct_persistency.StorageC
 import com.gigaspaces.internal.server.space.recovery.strategy.SpaceRecoverStrategy;
 import com.gigaspaces.internal.server.space.repartitioning.Status;
 import com.gigaspaces.internal.server.space.repartitioning.Step;
-import com.gigaspaces.internal.server.space.repartitioning.ZKScaleOutUtils;
+import com.gigaspaces.internal.server.space.repartitioning.ZookeeperScaleOutHandler;
 import com.gigaspaces.internal.server.space.suspend.SuspendTypeChangedInternalListener;
 import com.gigaspaces.internal.server.space.tiered_storage.TieredStorageUtils;
 import com.gigaspaces.internal.server.storage.EntryTieredMetaData;
@@ -4121,7 +4121,7 @@ public class SpaceImpl extends AbstractService implements IRemoteSpace, IInterna
 
     public void waitForZkUpdate(Step step, String key, Status status)  {
         try {
-            while (!ZKScaleOutUtils.setStepIfPossible(attributeStore, _puName, step.getName(), key, status.getStatus())) {
+            while (!ZookeeperScaleOutHandler.setStepIfPossible(attributeStore, _puName, step.getName(), key, status.getStatus())) {
                 Thread.sleep(1000);
             }
         } catch (InterruptedException e) {
