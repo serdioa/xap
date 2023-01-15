@@ -29,7 +29,6 @@ import com.gigaspaces.internal.transport.AbstractProjectionTemplate;
 import com.gigaspaces.internal.transport.IEntryPacket;
 import com.gigaspaces.internal.transport.ProjectionTemplate;
 import com.gigaspaces.internal.transport.TemplatePacketFactory;
-import com.gigaspaces.internal.utils.ObjectUtils;
 import com.gigaspaces.metadata.SpaceMetadataException;
 import com.j_spaces.core.AbstractIdsQueryPacket;
 import com.j_spaces.core.UnknownTypeException;
@@ -179,5 +178,10 @@ public class ReadTakeByIdsProxyActionInfo extends CommonProxyActionInfo {
         if (projectionTemplate != null)
             queryPacket.setProjectionTemplate(null);
         return projectionTemplate;
+    }
+
+    @Override
+    public boolean requireTransactionForMVCC() {
+        return isTake;
     }
 }
