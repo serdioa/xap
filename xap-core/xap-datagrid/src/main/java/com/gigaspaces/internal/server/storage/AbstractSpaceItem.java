@@ -153,12 +153,12 @@ public abstract class AbstractSpaceItem implements ISpaceItem, Textualizable {
         setFlag(Constants.SpaceItem.IS_DELETED, isDeleted);
     }
 
-    private boolean getFlag(byte mask) {
+    protected boolean getFlag(byte mask) {
         return (flags & mask) > 0; // bit is 1
     }
 
     //NOTE - to be called under lock
-    private void setFlag(byte mask, boolean value) {
+    protected void setFlag(byte mask, boolean value) {
         if (value) {
             //set true (set the bit to 1)
             flags |= mask;

@@ -960,6 +960,8 @@ public interface Constants {
         byte IS_MAYBE_UNDER_TRANSACTION = 1 << 0;
         byte IS_DELETED = 1 << 1;
         byte HAS_WAITING_FOR = 1 << 2;
+        byte IS_LOGICALLY_DELETED = 1 << 3;
+        byte IS_OVERRIDING_ANOTHER = 1 << 4;
     }
 
     interface Mvcc {
