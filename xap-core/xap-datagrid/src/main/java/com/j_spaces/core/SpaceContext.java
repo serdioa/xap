@@ -19,12 +19,12 @@ package com.j_spaces.core;
 
 import com.gigaspaces.admin.quiesce.QuiesceToken;
 import com.gigaspaces.internal.io.IOUtils;
+import com.gigaspaces.internal.server.space.mvcc.MVCCGenerationsState;
 import com.gigaspaces.internal.version.PlatformLogicalVersion;
 import com.gigaspaces.lrmi.LRMIInvocationContext;
 import com.gigaspaces.security.service.SecurityContext;
 import com.gigaspaces.serialization.SmartExternalizable;
 
-import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
@@ -47,6 +47,8 @@ public class SpaceContext implements SmartExternalizable {
 
     private boolean clustered;
 
+    private MVCCGenerationsState generationsState;
+
     /**
      * Empty constructor for Externalizable impl.
      */
@@ -66,6 +68,7 @@ public class SpaceContext implements SmartExternalizable {
     public SpaceContext createCopy(SecurityContext newSecurityContext) {
         SpaceContext newContext = new SpaceContext(fromGateway, chunksMapGeneration, clustered);
         newContext.securityContext = newSecurityContext;
+        newContext.generationsState = this.generationsState;
         return newContext;
     }
 
@@ -83,14 +86,31 @@ public class SpaceContext implements SmartExternalizable {
 
     public boolean isClustered(){ return clustered;}
 
+    /**
+     * @since  16.3.0
+     */
+    public MVCCGenerationsState getGenerationsState() {
+        return generationsState;
+    }
+
+    /**
+     * @since  16.3.0
+     */
+    public void setGenerationsState(MVCCGenerationsState generationsState) {
+        this.generationsState = generationsState;
+    }
+
     private static final short FLAG_SECURITY = 1 << 0;
     private static final short FLAG_FROM_GATEWAY = 1 << 1;
     private static final short FLAG_QUIESCE_TOKEN = 1 << 2;
     private static final short FLAG_CLUSTERED = 1 << 3;
+    private static final short FLAG_MVCC_GENERATIONS_STATE = 1 << 4;
 
     public void writeExternal(ObjectOutput out) throws IOException {
         PlatformLogicalVersion version = LRMIInvocationContext.getEndpointLogicalVersion();
-        if(version.greaterOrEquals(PlatformLogicalVersion.v15_5_0))
+        if (version.greaterOrEquals(PlatformLogicalVersion.v16_3_0)) {
+            writeExternalV16_3_0(out);
+        } else if(version.greaterOrEquals(PlatformLogicalVersion.v15_5_0))
             writeExternalV15_5_0(out);
         else if (version.greaterOrEquals(PlatformLogicalVersion.v10_1_0))
             writeExternalV10_1_0(out);
@@ -98,6 +118,19 @@ public class SpaceContext implements SmartExternalizable {
             writeExternalV9_7_0(out);
         else
             writeExternalV8_0_3(out);
+    }
+
+    private void writeExternalV16_3_0(ObjectOutput out) throws IOException {
+        final short flags = buildFlags();
+        out.writeShort(flags);
+        if (securityContext != null)
+            IOUtils.writeObject(out, securityContext);
+        if (quiesceToken != null)
+            IOUtils.writeObject(out, quiesceToken);
+        out.writeShort(((short) this.chunksMapGeneration));
+        if (generationsState != null) {
+            IOUtils.writeObject(out, generationsState);
+        }
     }
 
     private void writeExternalV15_5_0(ObjectOutput out) throws IOException {
@@ -149,13 +182,18 @@ public class SpaceContext implements SmartExternalizable {
             flags |= FLAG_QUIESCE_TOKEN;
         if(clustered)
             flags |= FLAG_CLUSTERED;
+        if (generationsState != null) {
+            flags |= FLAG_MVCC_GENERATIONS_STATE;
+        }
 
         return flags;
     }
 
     public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         PlatformLogicalVersion version = LRMIInvocationContext.getEndpointLogicalVersion();
-        if (version.greaterOrEquals(PlatformLogicalVersion.v15_8_0))
+        if (version.greaterOrEquals(PlatformLogicalVersion.v16_3_0)) {
+            readExternalV16_3_0(in);
+        }else if (version.greaterOrEquals(PlatformLogicalVersion.v15_8_0))
             readExternalV15_8_0(in);
         else if (version.greaterOrEquals(PlatformLogicalVersion.v15_5_0))
             readExternalV15_5_0(in);
@@ -165,6 +203,24 @@ public class SpaceContext implements SmartExternalizable {
             readExternalV9_7_0(in);
         else
             readExternalV8_0_3(in);
+    }
+
+    private void readExternalV16_3_0(ObjectInput in) throws IOException, ClassNotFoundException {
+        short flags = in.readShort();
+        this.fromGateway = (flags & FLAG_FROM_GATEWAY) != 0;
+        this.clustered = (flags & FLAG_CLUSTERED) != 0;
+
+        if ((flags & FLAG_SECURITY) != 0)
+            securityContext = IOUtils.readObject(in);
+
+        if ((flags & FLAG_QUIESCE_TOKEN) != 0)
+            quiesceToken = IOUtils.readObject(in);
+
+        this.chunksMapGeneration = in.readShort();
+
+        if ((flags & FLAG_MVCC_GENERATIONS_STATE) != 0) {
+            this.generationsState = IOUtils.readObject(in);
+        }
     }
 
     private void readExternalV15_8_0(ObjectInput in) throws IOException, ClassNotFoundException {

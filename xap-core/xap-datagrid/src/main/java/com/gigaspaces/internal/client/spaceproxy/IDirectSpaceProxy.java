@@ -26,6 +26,7 @@ import com.gigaspaces.internal.cluster.SpaceClusterInfo;
 import com.gigaspaces.internal.metadata.ITypeDesc;
 import com.gigaspaces.internal.server.space.IRemoteSpace;
 import com.gigaspaces.internal.server.space.SpaceImpl;
+import com.gigaspaces.internal.server.space.mvcc.MVCCGenerationsState;
 import com.gigaspaces.query.ISpaceQuery;
 import com.gigaspaces.security.directory.CredentialsProvider;
 import com.j_spaces.core.IJSpace;
@@ -130,6 +131,11 @@ public interface IDirectSpaceProxy extends ISpaceProxy {
 
     void setQuiesceToken(QuiesceToken token);
 
+    /**
+     * @since  16.3.0
+     */
+    void setMVCCGenerationsState(MVCCGenerationsState generationsState);
+
     ISpaceQuery prepareTemplate(Object template);
 
     /**
@@ -142,5 +148,4 @@ public interface IDirectSpaceProxy extends ISpaceProxy {
      * @since 14.0.0
      */
     void demote(long maxSuspendTime, TimeUnit timeUnit, CredentialsProvider credentialsProvider) throws DemoteFailedException, RemoteException;
-
 }
