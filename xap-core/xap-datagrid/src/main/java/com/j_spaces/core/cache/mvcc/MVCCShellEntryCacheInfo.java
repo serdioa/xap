@@ -1,5 +1,6 @@
 package com.j_spaces.core.cache.mvcc;
 
+import com.gigaspaces.internal.server.storage.EntryHolderFactory;
 import com.gigaspaces.internal.server.storage.IEntryHolder;
 import com.j_spaces.core.cache.MemoryBasedEntryCacheInfo;
 
@@ -8,29 +9,37 @@ import java.util.concurrent.ConcurrentLinkedDeque;
 
 public class MVCCShellEntryCacheInfo extends MemoryBasedEntryCacheInfo {
 
-    private final ConcurrentLinkedDeque<MemoryBasedEntryCacheInfo> allEntryGenerations = new ConcurrentLinkedDeque<>();
+    private final ConcurrentLinkedDeque<MVCCEntryCacheInfo> allEntryGenerations = new ConcurrentLinkedDeque<>();
+    private MVCCEntryCacheInfo dirtyEntry;
 
-    public MVCCShellEntryCacheInfo(IEntryHolder entryHolder) {
-        super(entryHolder);
+
+    public MVCCShellEntryCacheInfo(IEntryHolder entryHolder, MVCCEntryCacheInfo pEntry) {
+        super(EntryHolderFactory.createMvccShellHollowEntry(entryHolder.getServerTypeDesc(), entryHolder.getUID()));
+        dirtyEntry = pEntry;
     }
 
-    public MVCCShellEntryCacheInfo(IEntryHolder entryHolder, int backRefsSize) {
-        super(entryHolder, backRefsSize);
-    }
-
-    public Iterator<MemoryBasedEntryCacheInfo> ascIterator(){
+    public Iterator<MVCCEntryCacheInfo> ascIterator(){
         return allEntryGenerations.iterator();
     }
 
-    public Iterator<MemoryBasedEntryCacheInfo> descIterator(){
+    public Iterator<MVCCEntryCacheInfo> descIterator(){
         return allEntryGenerations.descendingIterator();
     }
 
-    public void addEntryGeneration(MemoryBasedEntryCacheInfo entryCacheInfo) {
-        allEntryGenerations.add(entryCacheInfo);
+    public void addEntryGeneration() {
+        allEntryGenerations.add(dirtyEntry);
+        dirtyEntry = null;
     }
 
-    public void removeEntryGeneration(MemoryBasedEntryCacheInfo entryCacheInfo) {
+    public void removeEntryGeneration(MVCCEntryCacheInfo entryCacheInfo) {
         allEntryGenerations.remove(entryCacheInfo); //remove by reference
+    }
+
+    public MVCCEntryCacheInfo getDirtyEntry() {
+        return dirtyEntry;
+    }
+
+    public void setDirtyEntry(MVCCEntryCacheInfo dirtyEntry) {
+        this.dirtyEntry = dirtyEntry;
     }
 }

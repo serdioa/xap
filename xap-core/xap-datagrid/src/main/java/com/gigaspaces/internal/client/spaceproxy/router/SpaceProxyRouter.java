@@ -331,7 +331,7 @@ public class SpaceProxyRouter {
     }
 
     private void updateDefaultSpaceContext(QuiesceToken token) {
-        final  MVCCGenerationsState generationsState = _defaultSpaceContext != null ? _defaultSpaceContext.getGenerationsState() : null;
+        final  MVCCGenerationsState generationsState = _defaultSpaceContext != null ? _defaultSpaceContext.getMVCCGenerationsState() : null;
 
         this._defaultSpaceContext = isSecured || isGateway || token != null || _clusterInfo.isChunksRouting() || clusteredProxy
                 ? new SpaceContext(isGateway, getChunksMapGeneration(), clusteredProxy) : null;
@@ -341,7 +341,7 @@ public class SpaceProxyRouter {
         quiesceTokenProvider.setToken(token);
 
         if (_defaultSpaceContext != null) {
-            this._defaultSpaceContext.setGenerationsState(generationsState);
+            this._defaultSpaceContext.setMVCCGenerationsState(generationsState);
         }
     }
 
@@ -352,7 +352,7 @@ public class SpaceProxyRouter {
         if (this._defaultSpaceContext == null) {
             this._defaultSpaceContext  = new SpaceContext();
         }
-        this._defaultSpaceContext.setGenerationsState(generationsState);
+        this._defaultSpaceContext.setMVCCGenerationsState(generationsState);
     }
 
     public SpaceProxyRemoteOperationRouter getOperationRouter() {

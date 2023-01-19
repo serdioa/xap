@@ -30,6 +30,7 @@ import com.j_spaces.core.cache.EntryCacheInfoFactory;
 import com.j_spaces.core.cache.IEntryCacheInfo;
 import com.j_spaces.core.cache.blobStore.BlobStoreEntryHolder;
 import com.j_spaces.core.cache.context.Context;
+import com.j_spaces.core.cache.mvcc.MVCCEntryHolder;
 import com.j_spaces.core.server.transaction.EntryXtnInfo;
 import com.j_spaces.kernel.IObjectInfo;
 import com.j_spaces.kernel.IStoredList;
@@ -48,21 +49,29 @@ public class EntryHolderFactory {
     }
 
     public static IEntryHolder createEntryHolder(IServerTypeDesc typeDesc, IEntryPacket entryPacket,
-                                                 EntryDataType entryDataType, String uid, long expirationTime, XtnEntry xidOriginated, long scn, boolean blobStoreEntryHolder) {
+                                                 EntryDataType entryDataType, String uid, long expirationTime, XtnEntry xidOriginated, long scn,
+                                                 boolean blobStoreEntryHolder, boolean isMvcc) {
         return createEntryHolder(typeDesc, entryPacket,
                 entryDataType, uid, expirationTime, xidOriginated, scn,
-                -1 /*versionID*/, false /*keepExpiration*/, blobStoreEntryHolder);
+                -1 /*versionID*/, false /*keepExpiration*/, blobStoreEntryHolder, isMvcc);
     }
 
 
     public static IEntryHolder createEntryHolder(IServerTypeDesc typeDesc, IEntryPacket entryPacket,
                                                  EntryDataType entryDataType, String uid, long expirationTime,
-                                                 XtnEntry xidOriginated, long scn, int versionID, boolean keepExpiration, boolean blobStoreEntryHolder) {
+                                                 XtnEntry xidOriginated, long scn, int versionID, boolean keepExpiration,
+                                                 boolean blobStoreEntryHolder, boolean isMvcc) {
         if (blobStoreEntryHolder)
             return
                     createBlobStoreEntryHolder(typeDesc, entryPacket,
                             entryDataType, uid, expirationTime,
                             xidOriginated, scn, versionID, keepExpiration);
+
+        if (isMvcc){
+            return createMvccEntryHolder(typeDesc, entryPacket, entryDataType, uid, expirationTime,
+                    xidOriginated, scn, versionID, keepExpiration);
+
+        }
 
         ITransactionalEntryData entryData =
                 createEntryData(entryPacket, entryDataType, versionID,
@@ -121,6 +130,20 @@ public class EntryHolderFactory {
         return entryHolder;
     }
 
+    private static IEntryHolder createMvccEntryHolder(IServerTypeDesc typeDesc, IEntryPacket entryPacket,
+                                                      EntryDataType entryDataType, String uid, long expirationTime,
+                                                      XtnEntry xidOriginated, long scn, int versionID, boolean keepExpiration) {
+        ITransactionalEntryData entryData =
+                createEntryData(entryPacket, entryDataType, versionID,
+                        expirationTime, xidOriginated != null, keepExpiration);
+
+        if (xidOriginated != null)
+            entryData.setXidOriginated(xidOriginated);
+
+        IEntryHolder entryHolder = new MVCCEntryHolder(typeDesc, uid, scn, entryPacket.isTransient(), entryData);
+        return entryHolder;
+    }
+
     private static ITransactionalEntryData createEntryData(IEntryPacket entryPacket,
                                                            EntryDataType entryDataType, int versionID, long expiration, boolean createXtnEntryInfo, boolean keepExpiration) {
         final EntryType entryType = entryPacket.getEntryType();
@@ -147,6 +170,10 @@ public class EntryHolderFactory {
 
     public static IEntryHolder createTieredStorageHollowEntry(Context context, IServerTypeDesc typeDesc, String uid, boolean isTransient){
         return new EntryHolder(typeDesc, uid, SystemTime.timeMillis(), isTransient, null);
+    }
+
+    public static IEntryHolder createMvccShellHollowEntry(IServerTypeDesc typeDesc, String uid){
+        return new MVCCEntryHolder(typeDesc, uid, SystemTime.timeMillis(), true, null);
     }
 
 }

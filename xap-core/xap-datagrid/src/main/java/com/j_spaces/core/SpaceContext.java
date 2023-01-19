@@ -89,14 +89,14 @@ public class SpaceContext implements SmartExternalizable {
     /**
      * @since  16.3.0
      */
-    public MVCCGenerationsState getGenerationsState() {
+    public MVCCGenerationsState getMVCCGenerationsState() {
         return generationsState;
     }
 
     /**
      * @since  16.3.0
      */
-    public void setGenerationsState(MVCCGenerationsState generationsState) {
+    public void setMVCCGenerationsState(MVCCGenerationsState generationsState) {
         this.generationsState = generationsState;
     }
 

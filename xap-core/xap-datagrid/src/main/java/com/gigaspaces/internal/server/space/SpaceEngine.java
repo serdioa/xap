@@ -128,6 +128,7 @@ import com.j_spaces.core.cache.blobStore.storage.preFetch.BlobStorePreFetchItera
 import com.j_spaces.core.cache.context.Context;
 import com.j_spaces.core.cache.context.TemplateMatchTier;
 import com.j_spaces.core.cache.context.TieredState;
+import com.j_spaces.core.cache.mvcc.MVCCSpaceEngineHandler;
 import com.j_spaces.core.client.*;
 import com.j_spaces.core.cluster.*;
 import com.j_spaces.core.exception.internal.EngineInternalSpaceException;
@@ -281,6 +282,9 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
 
     private TieredStorageManager tieredStorageManager;
 
+    private final MVCCSpaceEngineHandler _mvccSpaceEngineHandler;
+    private final boolean _isMvccEnabled;
+
     public SpaceEngine(SpaceImpl spaceImpl) throws CreateException, RemoteException {
         _logger = LoggerFactory.getLogger(com.gigaspaces.logger.Constants.LOGGER_ENGINE + "." + spaceImpl.getNodeName());
         _operationLogger = LoggerFactory.getLogger(com.gigaspaces.logger.Constants.LOGGER_ENGINE_OPERATIONS + "." + spaceImpl.getNodeName());
@@ -352,6 +356,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
         _isReplicated = _replicationManager.isReplicated();
         _isReplicatedPersistentBlobstore = _replicationManager.isReplicatedPersistentBlobstore();
         _isSyncReplication = _replicationManager.isSyncReplication();
+        _isMvccEnabled = spaceImpl.isMvccEnabled();
 
         _cacheManager = new CacheManager(_configReader, _clusterPolicy, _typeManager,
                 _replicationManager.getReplicationNode(), storageAdapter, this, _spaceImpl.getCustomProperties());
@@ -378,11 +383,13 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
 
         _templateScanner = new TemplateScanner(_typeManager, _cacheManager, _dataEventManager, this);
         _fifoGroupsHandler = new FifoGroupsHandler(this);
+        _mvccSpaceEngineHandler = new MVCCSpaceEngineHandler(this);
         _duplicateOperationIDFilter = createDuplicateOperationIDFilter();
         _resultsSizeLimit = _configReader.getIntSpaceProperty(ENGINE_QUERY_RESULT_SIZE_LIMIT, ENGINE_QUERY_RESULT_SIZE_LIMIT_DEFAULT);
         _resultsSizeLimitMemoryCheckBatchSize = _configReader.getIntSpaceProperty(ENGINE_QUERY_RESULT_SIZE_LIMIT_MEMORY_CHECK_BATCH_SIZE, ENGINE_QUERY_RESULT_SIZE_LIMIT_MEMORY_CHECK_BATCH_SIZE_DEFAULT);
-        if (!_isLocalCache)
+        if (!_isLocalCache) {
             registerSpaceMetrics(_metricRegistrator);
+        }
         _serverIteratorsManager = new ServerIteratorsManager(_spaceImpl.getPartitionId());
         spaceImpl.registerToClusterInfoChangedEvent(this);
     }
@@ -847,6 +854,9 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
         }
 
         final XtnEntry txnEntry = initTransactionEntry(txn, sc, fromReplication);
+        if(_isMvccEnabled){
+            txnEntry.setMVCCGenerationsState(sc.getMVCCGenerationsState());
+        }
 
         /**
          * build Entry Holder .
@@ -864,7 +874,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
         long expiration = _leaseManager.getExpirationOnWriteByLeaseOrByTimeRule(lease, current, entryPacket, fromReplication);
 
         IEntryHolder eHolder = EntryHolderFactory.createEntryHolder(serverTypeDesc, entryPacket, _entryDataType,
-                entryUid, expiration, txnEntry, current, (_cacheManager.isBlobStoreCachePolicy() && serverTypeDesc.getTypeDesc().isBlobstoreEnabled() && !UpdateModifiers.isUpdateOnly(modifiers)));
+                entryUid, expiration, txnEntry, current, (_cacheManager.isBlobStoreCachePolicy() && serverTypeDesc.getTypeDesc().isBlobstoreEnabled() && !UpdateModifiers.isUpdateOnly(modifiers)), _isMvccEnabled);
 
         /** set write lease mode */
         if (!reInsertedEntry && _filterManager._isFilter[FilterOperationCodes.BEFORE_WRITE])
@@ -2527,7 +2537,9 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
             versionID = Math.max(tHolder.getEntryData().getVersion() + 1, 2);
 
         IEntryHolder updated_eh = EntryHolderFactory.createEntryHolder(serverTypeDesc, updated_entry, _entryDataType,
-                entryId, expiration_time, (XtnEntry) null, SystemTime.timeMillis(), versionID, true /*keepExpiration*/, _cacheManager.isBlobStoreCachePolicy() && serverTypeDesc.getTypeDesc().isBlobstoreEnabled() && !UpdateModifiers.isUpdateOnly(modifiers));
+                entryId, expiration_time, (XtnEntry) null, SystemTime.timeMillis(), versionID, true /*keepExpiration*/,
+                _cacheManager.isBlobStoreCachePolicy() && serverTypeDesc.getTypeDesc().isBlobstoreEnabled() && !UpdateModifiers.isUpdateOnly(modifiers),
+                _isMvccEnabled);
         tHolder.setUpdatedEntry(updated_eh);
 
         // invoke before_update filter
@@ -5875,6 +5887,10 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
                 context.setOperationID(operationID);
                 _cacheManager.commit(context, xtnEntry, xtnEntry.m_SingleParticipant, xtnEntry.m_AnyUpdates, supportsTwoPhaseReplication);
 
+                if(isMvccEnabled()){
+                    _mvccSpaceEngineHandler.commitMVCCEntries(context, xtnEntry);
+                }
+
                 xtnEntry.setStatus(XtnStatus.COMMITING);
                 //fifo group op performed under this xtn
                 if (!xtnEntry.m_SingleParticipant && xtnEntry.getXtnData().anyFifoGroupOperations())
@@ -7554,6 +7570,10 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
 
     public void renewServerIteratorLease(UUID uuid) {
         _serverIteratorsManager.tryRenewServerIteratorLease(uuid);
+    }
+
+    public boolean isMvccEnabled() {
+        return _isMvccEnabled;
     }
 
     public Logger getLogger() {

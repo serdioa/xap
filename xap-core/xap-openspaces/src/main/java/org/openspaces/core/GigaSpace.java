@@ -2964,7 +2964,7 @@ public interface GigaSpace {
     /**
      * @since  16.3.0
      */
-    void setGenerationsState(MVCCGenerationsState generationsState);
+    void setMVCCGenerationsState(MVCCGenerationsState generationsState);
 
     /**
      * Translates the template object into pre-processed packet which will be sent to the space. The

@@ -93,6 +93,8 @@ import com.j_spaces.core.cache.context.IndexMetricsContext;
 import com.j_spaces.core.cache.context.TemplateMatchTier;
 import com.j_spaces.core.cache.context.TieredState;
 import com.j_spaces.core.cache.fifoGroup.FifoGroupCacheImpl;
+import com.j_spaces.core.cache.mvcc.MVCCCacheManagerHandler;
+import com.j_spaces.core.cache.mvcc.MVCCEntryCacheInfo;
 import com.j_spaces.core.client.*;
 import com.j_spaces.core.cluster.ClusterPolicy;
 import com.j_spaces.core.exception.internal.EngineInternalSpaceException;
@@ -210,6 +212,8 @@ public class CacheManager extends AbstractCacheManager
 
     private final FifoBackgroundDispatcher _fifoBackgroundDispatcher;
     private final FifoGroupCacheImpl _fifoGroupCacheImpl;
+
+    private MVCCCacheManagerHandler _mvccCacheManagerHandler;
 
     private final IEvictionReplicationsMarkersRepository _evictionReplicationsMarkersRepository;
 
@@ -377,6 +381,9 @@ public class CacheManager extends AbstractCacheManager
         _templatesManager = new TemplatesManager(this, numNotifyFifoThreads, numNonNotifyFifoThreads);
         _templateExpirationManager = new TemplateExpirationManager(this);
         _fifoGroupCacheImpl = new FifoGroupCacheImpl(this, _logger);
+        if (_engine.isMvccEnabled()){
+            _mvccCacheManagerHandler = new MVCCCacheManagerHandler(this);
+        }
 
         _isVersionedExternalDB = _engine.getSpaceImpl().getJspaceAttr().isSupportsVersionEnabled();
         _readOnlySA = _storageAdapter.isReadOnly();
@@ -465,8 +472,10 @@ public class CacheManager extends AbstractCacheManager
 
         //create the lock manager
         _lockManager = isBlobStoreCachePolicy() ? new BlobStoreLockManager() :
-                (isTieredStorageCachePolicy() ? new TieredStorageLockManager<>(configReader) :
-                        (isAllInCachePolicy() ? new AllInCacheLockManager<>() : new BasicEvictableLockManager<>(configReader)));
+                (_engine.isMvccEnabled() ? new MVCCLockManager<>() :
+                    (isTieredStorageCachePolicy() ? new TieredStorageLockManager<>(configReader) :
+                        (isAllInCachePolicy() ? new AllInCacheLockManager<>() :
+                                (new BasicEvictableLockManager<>(configReader)))));
 
 		/* get min extd' index activation size  */
         _minExtendedIndexActivationSize = configReader.getIntSpaceProperty(
@@ -2502,6 +2511,10 @@ public class CacheManager extends AbstractCacheManager
         }
     }
 
+    public void disconnectMVCCEntryFromXtn(Context context, MVCCEntryCacheInfo pEntry, XtnEntry xtnEntry, boolean xtnEnd) throws SAException {
+        _mvccCacheManagerHandler.disconnectPEntryFromXtn(context, pEntry, xtnEntry, xtnEnd);
+    }
+
 
     public void prepare(Context context, XtnEntry xtnEntry, boolean supportsTwoPhaseReplication, boolean handleReplication, boolean handleSA) throws SAException {
 
@@ -2681,7 +2694,10 @@ public class CacheManager extends AbstractCacheManager
                         pXtn.getNeedNotifyEntries(true).add(pe);
                     } else //notify for operation
                     {
-                        IEntryCacheInfo pe = EntryCacheInfoFactory.createEntryCacheInfo(eh.createCopy());
+                        IEntryCacheInfo pe =
+                                _mvccCacheManagerHandler != null ?
+                                    EntryCacheInfoFactory.createMvccEntryCacheInfo(eh.createCopy()):
+                                    EntryCacheInfoFactory.createEntryCacheInfo(eh.createCopy());
                         pe.getEntryHolder(this).setWriteLockOperation(eh.getWriteLockOperation(), false /*createSnapshot*/);
                         pXtn.getNeedNotifyEntries(true).add(pe);
                     }
@@ -3646,7 +3662,12 @@ public class CacheManager extends AbstractCacheManager
             while (true) {
                 insertedToEvictionStrategy = false;
                 alreadyIn = false;
-                IEntryCacheInfo oldEntry = _entries.putIfAbsent(pEntry.getUID(), pEntry);
+                IEntryCacheInfo oldEntry;
+                if(pEntry instanceof  MVCCEntryCacheInfo){
+                    oldEntry = _mvccCacheManagerHandler.insertMvccEntryToCache((MVCCEntryCacheInfo) pEntry, _entries);
+                } else {
+                     oldEntry = _entries.putIfAbsent(pEntry.getUID(), pEntry);
+                }
 
                 if (oldEntry == null)
                     break;
