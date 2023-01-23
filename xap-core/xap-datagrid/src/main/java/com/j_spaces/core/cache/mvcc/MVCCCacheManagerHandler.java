@@ -21,11 +21,12 @@ public class MVCCCacheManagerHandler {
 
     public IEntryCacheInfo insertMvccEntryToCache(MVCCEntryCacheInfo pEntry, ConcurrentMap<String, IEntryCacheInfo> entries) {
         String uid = pEntry.getUID();
-        MVCCEntryCacheInfo oldEntry = (MVCCEntryCacheInfo) entries.putIfAbsent(uid, new MVCCShellEntryCacheInfo(pEntry.getEntryHolder(), pEntry));
-        if (oldEntry != null){
-            ((MVCCShellEntryCacheInfo)entries.get(uid)).addEntryGeneration();
+        MVCCShellEntryCacheInfo oldEntry = (MVCCShellEntryCacheInfo) entries.get(uid);
+        if (oldEntry == null){
+            oldEntry = new MVCCShellEntryCacheInfo(pEntry.getEntryHolder(), pEntry);
+            entries.put(uid,oldEntry);
         }
-        return oldEntry;
+        return null;
     }
 
     public void disconnectPEntryFromXtn(Context context, MVCCEntryCacheInfo pEntry, XtnEntry xtnEntry, boolean xtnEnd)
