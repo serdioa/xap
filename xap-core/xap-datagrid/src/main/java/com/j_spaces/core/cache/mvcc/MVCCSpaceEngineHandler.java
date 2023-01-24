@@ -20,26 +20,21 @@ public class MVCCSpaceEngineHandler {
         _cacheManager = spaceEngine.getCacheManager();
     }
 
-    public void commitMVCCEntries(Context context, XtnEntry xtnEntry) {
+    public void commitMVCCEntries(Context context, XtnEntry xtnEntry) throws SAException {
         MVCCGenerationsState mvccGenerationsState = xtnEntry.getMVCCGenerationsState();
         ISAdapterIterator<IEntryHolder> entriesIter = null;
-        try {
-            entriesIter = _cacheManager.makeUnderXtnEntriesIter(context,
-                    xtnEntry, SelectType.ALL_ENTRIES, false /* returnPEntry*/);
-            if (entriesIter != null) {
-                while (true) {
-                    MVCCEntryHolder entry = (MVCCEntryHolder) entriesIter.next();
-                    if (entry == null)
-                        break;
-                    MVCCShellEntryCacheInfo mvccShellEntryCacheInfo = (MVCCShellEntryCacheInfo) _cacheManager.getPEntryByUid(entry.getUID());
-                    long nextGeneration = mvccGenerationsState.getNextGeneration();
-                    entry.setCreatedGeneration(nextGeneration);
-                    mvccShellEntryCacheInfo.addEntryGeneration();
-                }
+        entriesIter = _cacheManager.makeUnderXtnEntriesIter(context,
+                xtnEntry, SelectType.ALL_ENTRIES, false /* returnPEntry*/);
+        if (entriesIter != null) {
+            while (true) {
+                MVCCEntryHolder entry = (MVCCEntryHolder) entriesIter.next();
+                if (entry == null)
+                    break;
+                MVCCShellEntryCacheInfo mvccShellEntryCacheInfo = (MVCCShellEntryCacheInfo) _cacheManager.getPEntryByUid(entry.getUID());
+                long nextGeneration = mvccGenerationsState.getNextGeneration();
+                entry.setCreatedGeneration(nextGeneration);
+                mvccShellEntryCacheInfo.addEntryGeneration();
             }
-        } catch (SAException e) {
-            throw new RuntimeException(e);
         }
-
     }
 }

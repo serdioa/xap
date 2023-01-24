@@ -26,6 +26,7 @@ public class MVCCCacheManagerHandler {
             oldEntry = new MVCCShellEntryCacheInfo(pEntry.getEntryHolder(), pEntry);
             entries.put(uid,oldEntry);
         }
+        //TODO: handle MVCCShellEntryCacheInfo's dirtyEntry when oldEntry != null
         return null;
     }
 

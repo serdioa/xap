@@ -283,7 +283,6 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
     private TieredStorageManager tieredStorageManager;
 
     private final MVCCSpaceEngineHandler _mvccSpaceEngineHandler;
-    private final boolean _isMvccEnabled;
 
     public SpaceEngine(SpaceImpl spaceImpl) throws CreateException, RemoteException {
         _logger = LoggerFactory.getLogger(com.gigaspaces.logger.Constants.LOGGER_ENGINE + "." + spaceImpl.getNodeName());
@@ -356,7 +355,6 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
         _isReplicated = _replicationManager.isReplicated();
         _isReplicatedPersistentBlobstore = _replicationManager.isReplicatedPersistentBlobstore();
         _isSyncReplication = _replicationManager.isSyncReplication();
-        _isMvccEnabled = spaceImpl.isMvccEnabled();
 
         _cacheManager = new CacheManager(_configReader, _clusterPolicy, _typeManager,
                 _replicationManager.getReplicationNode(), storageAdapter, this, _spaceImpl.getCustomProperties());
@@ -854,7 +852,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
         }
 
         final XtnEntry txnEntry = initTransactionEntry(txn, sc, fromReplication);
-        if(_isMvccEnabled && txnEntry != null){
+        if(isMvccEnabled() && txnEntry != null){
             txnEntry.setMVCCGenerationsState(sc.getMVCCGenerationsState());
         }
 
@@ -874,7 +872,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
         long expiration = _leaseManager.getExpirationOnWriteByLeaseOrByTimeRule(lease, current, entryPacket, fromReplication);
 
         IEntryHolder eHolder = EntryHolderFactory.createEntryHolder(serverTypeDesc, entryPacket, _entryDataType,
-                entryUid, expiration, txnEntry, current, (_cacheManager.isBlobStoreCachePolicy() && serverTypeDesc.getTypeDesc().isBlobstoreEnabled() && !UpdateModifiers.isUpdateOnly(modifiers)), _isMvccEnabled);
+                entryUid, expiration, txnEntry, current, (_cacheManager.isBlobStoreCachePolicy() && serverTypeDesc.getTypeDesc().isBlobstoreEnabled() && !UpdateModifiers.isUpdateOnly(modifiers)), isMvccEnabled());
 
         /** set write lease mode */
         if (!reInsertedEntry && _filterManager._isFilter[FilterOperationCodes.BEFORE_WRITE])
@@ -2539,7 +2537,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
         IEntryHolder updated_eh = EntryHolderFactory.createEntryHolder(serverTypeDesc, updated_entry, _entryDataType,
                 entryId, expiration_time, (XtnEntry) null, SystemTime.timeMillis(), versionID, true /*keepExpiration*/,
                 _cacheManager.isBlobStoreCachePolicy() && serverTypeDesc.getTypeDesc().isBlobstoreEnabled() && !UpdateModifiers.isUpdateOnly(modifiers),
-                _isMvccEnabled);
+                isMvccEnabled());
         tHolder.setUpdatedEntry(updated_eh);
 
         // invoke before_update filter

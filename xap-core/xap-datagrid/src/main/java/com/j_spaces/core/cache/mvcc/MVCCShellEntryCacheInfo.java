@@ -33,6 +33,7 @@ public class MVCCShellEntryCacheInfo extends MemoryBasedEntryCacheInfo {
 
     public void removeEntryGeneration(MVCCEntryCacheInfo entryCacheInfo) {
         allEntryGenerations.remove(entryCacheInfo); //remove by reference
+        assert dirtyEntry == null;
     }
 
     public MVCCEntryCacheInfo getDirtyEntry() {
