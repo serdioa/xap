@@ -381,7 +381,7 @@ public class CacheManager extends AbstractCacheManager
         _templatesManager = new TemplatesManager(this, numNotifyFifoThreads, numNonNotifyFifoThreads);
         _templateExpirationManager = new TemplateExpirationManager(this);
         _fifoGroupCacheImpl = new FifoGroupCacheImpl(this, _logger);
-        if (_engine.isMvccEnabled()){
+        if (_engine.getSpaceImpl().isMvccEnabled()){
             _mvccCacheManagerHandler = new MVCCCacheManagerHandler(this);
         }
 
