@@ -471,11 +471,11 @@ public class CacheManager extends AbstractCacheManager
         _evictionStrategy = createEvictionStrategy(configReader, properties);
 
         //create the lock manager
-        _lockManager = isBlobStoreCachePolicy() ? new BlobStoreLockManager() :
-                (_engine.isMvccEnabled() ? new MVCCLockManager<>() :
-                    (isTieredStorageCachePolicy() ? new TieredStorageLockManager<>(configReader) :
-                        (isAllInCachePolicy() ? new AllInCacheLockManager<>() :
-                                (new BasicEvictableLockManager<>(configReader)))));
+        _lockManager = isBlobStoreCachePolicy() ? new BlobStoreLockManager<>() :
+                (isEvictableFromSpaceCachePolicy() ? new BasicEvictableLockManager<>(configReader) :
+                    (_engine.isMvccEnabled() ? new MVCCLockManager<>() :
+                        (isTieredStorageCachePolicy() ? new TieredStorageLockManager<>(configReader) :
+                            new AllInCacheLockManager<>() )));
 
 		/* get min extd' index activation size  */
         _minExtendedIndexActivationSize = configReader.getIntSpaceProperty(
@@ -2695,7 +2695,7 @@ public class CacheManager extends AbstractCacheManager
                     } else //notify for operation
                     {
                         IEntryCacheInfo pe =
-                                _mvccCacheManagerHandler != null ?
+                                isMVCCEnabled() ?
                                     EntryCacheInfoFactory.createMvccEntryCacheInfo(eh.createCopy()):
                                     EntryCacheInfoFactory.createEntryCacheInfo(eh.createCopy());
                         pe.getEntryHolder(this).setWriteLockOperation(eh.getWriteLockOperation(), false /*createSnapshot*/);
@@ -2704,6 +2704,10 @@ public class CacheManager extends AbstractCacheManager
                 }
             }
         }
+    }
+
+    private boolean isMVCCEnabled() {
+        return _mvccCacheManagerHandler != null;
     }
 
     /**
@@ -3663,7 +3667,7 @@ public class CacheManager extends AbstractCacheManager
                 insertedToEvictionStrategy = false;
                 alreadyIn = false;
                 IEntryCacheInfo oldEntry;
-                if(pEntry instanceof  MVCCEntryCacheInfo){
+                if(isMVCCEnabled()){
                     oldEntry = _mvccCacheManagerHandler.insertMvccEntryToCache((MVCCEntryCacheInfo) pEntry, _entries);
                 } else {
                      oldEntry = _entries.putIfAbsent(pEntry.getUID(), pEntry);

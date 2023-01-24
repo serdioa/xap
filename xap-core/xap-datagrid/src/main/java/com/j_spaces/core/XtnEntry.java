@@ -35,7 +35,7 @@ public class XtnEntry extends XtnInfo {
     private final transient FifoBackgroundRequest.AllowFifoNotificationsForNonFifoType _allowFifoNotificationsForNonFifoType;
     private final transient boolean _createdOnNonBackup;
 
-    private MVCCGenerationsState mvccGenerationsState;
+    private transient MVCCGenerationsState mvccGenerationsState;
 
     /**
      * Constructs a new Xtn Entry.

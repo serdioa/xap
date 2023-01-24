@@ -10,8 +10,6 @@ import com.j_spaces.core.sadapter.ISAdapterIterator;
 import com.j_spaces.core.sadapter.SAException;
 import com.j_spaces.core.sadapter.SelectType;
 
-import java.util.Iterator;
-
 public class MVCCSpaceEngineHandler {
 
     private final SpaceEngine _spaceEngine;
@@ -36,12 +34,6 @@ public class MVCCSpaceEngineHandler {
                     MVCCShellEntryCacheInfo mvccShellEntryCacheInfo = (MVCCShellEntryCacheInfo) _cacheManager.getPEntryByUid(entry.getUID());
                     long nextGeneration = mvccGenerationsState.getNextGeneration();
                     entry.setCreatedGeneration(nextGeneration);
-                    Iterator<MVCCEntryCacheInfo> shellIterator = mvccShellEntryCacheInfo.descIterator();
-                    if (shellIterator.hasNext()){
-                        MVCCEntryCacheInfo overrideEntry = shellIterator.next();
-                        entry.setOverridingAnother(true);
-                        ((MVCCEntryHolder)overrideEntry.getEntryHolder()).setOverrideGeneration(nextGeneration);
-                    }
                     mvccShellEntryCacheInfo.addEntryGeneration();
                 }
             }

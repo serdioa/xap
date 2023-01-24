@@ -383,7 +383,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
 
         _templateScanner = new TemplateScanner(_typeManager, _cacheManager, _dataEventManager, this);
         _fifoGroupsHandler = new FifoGroupsHandler(this);
-        _mvccSpaceEngineHandler = new MVCCSpaceEngineHandler(this);
+        _mvccSpaceEngineHandler = _spaceImpl.isMvccEnabled() ? new MVCCSpaceEngineHandler(this) : null;
         _duplicateOperationIDFilter = createDuplicateOperationIDFilter();
         _resultsSizeLimit = _configReader.getIntSpaceProperty(ENGINE_QUERY_RESULT_SIZE_LIMIT, ENGINE_QUERY_RESULT_SIZE_LIMIT_DEFAULT);
         _resultsSizeLimitMemoryCheckBatchSize = _configReader.getIntSpaceProperty(ENGINE_QUERY_RESULT_SIZE_LIMIT_MEMORY_CHECK_BATCH_SIZE, ENGINE_QUERY_RESULT_SIZE_LIMIT_MEMORY_CHECK_BATCH_SIZE_DEFAULT);
@@ -854,7 +854,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
         }
 
         final XtnEntry txnEntry = initTransactionEntry(txn, sc, fromReplication);
-        if(_isMvccEnabled){
+        if(_isMvccEnabled && txnEntry != null){
             txnEntry.setMVCCGenerationsState(sc.getMVCCGenerationsState());
         }
 
@@ -7573,7 +7573,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
     }
 
     public boolean isMvccEnabled() {
-        return _isMvccEnabled;
+        return _mvccSpaceEngineHandler != null;
     }
 
     public Logger getLogger() {
