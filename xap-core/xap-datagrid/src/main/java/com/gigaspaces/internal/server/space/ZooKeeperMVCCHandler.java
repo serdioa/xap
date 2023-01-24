@@ -50,7 +50,9 @@ public class ZooKeeperMVCCHandler extends AbstractZooKeeperMVCCHandler{
             final MVCCGenerationsState generationsState =
                     attributeStore.getObject(mvccGenerationsStatePath);
             generationsState.removeFromUncompletedGenerations(completedSet);
-            generationsState.setCompletedGeneration(maxGeneration);
+            if (generationsState.getCompletedGeneration() < maxGeneration) {
+                generationsState.setCompletedGeneration(maxGeneration);
+            }
             attributeStore.setObject(mvccGenerationsStatePath, generationsState);
             return generationsState;
         } catch (IOException | InterruptedException | TimeoutException e) {
