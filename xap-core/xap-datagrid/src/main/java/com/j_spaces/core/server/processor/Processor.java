@@ -46,6 +46,7 @@ import com.j_spaces.core.cache.blobStore.IBlobStoreEntryHolder;
 import com.j_spaces.core.cache.blobStore.IBlobStoreRefCacheInfo;
 import com.j_spaces.core.cache.context.Context;
 import com.j_spaces.core.cache.context.TieredState;
+import com.j_spaces.core.cache.mvcc.MVCCEntryCacheInfo;
 import com.j_spaces.core.client.*;
 import com.j_spaces.core.cluster.ReplicationOperationType;
 import com.j_spaces.core.fifo.FifoBackgroundDispatcher;
@@ -1287,11 +1288,16 @@ public class Processor implements IConsumerObject<BusPacket<Processor>> {
                                 if (!entry.isSameEntryInstance(eh)
                                         && _cacheManager.getLockManager().isEntryLocksItsSelf(entry))
                                     continue ENTRY_LOOP;
-                                entry = eh;
-
+                                if (!_engine.isMvccEnabled()) {
+                                    entry = eh;
+                                }
                                 boolean updatedEntry = pXtn.isUpdatedEntry(entry);
 
-                                _cacheManager.disconnectEntryFromXtn(context, entry, xtnEntry, true /*xtnEnd*/);
+                                if (_engine.isMvccEnabled()) {
+                                    _cacheManager.disconnectMVCCEntryFromXtn(context, (MVCCEntryCacheInfo) entryCacheHolder, xtnEntry, true);
+                                } else {
+                                    _cacheManager.disconnectEntryFromXtn(context, entry, xtnEntry, true /*xtnEnd*/);
+                                }
 
                                 if (entry.isExpired(xtnEntry.m_CommitRollbackTimeStamp) && !entry.isEntryUnderWriteLockXtn() && !_engine.isExpiredEntryStayInSpace(entry)) {//recheck expired- space volatile touch
                                     if (entry.isExpired(_engine.getLeaseManager().getEffectiveEntryLeaseTime(xtnEntry.m_CommitRollbackTimeStamp))) {

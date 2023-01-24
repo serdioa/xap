@@ -1673,7 +1673,7 @@ public class DefaultGigaSpace implements GigaSpace, InternalGigaSpace {
     }
 
     @Override
-    public void setGenerationsState(MVCCGenerationsState generationsState) {
+    public void setMVCCGenerationsState(MVCCGenerationsState generationsState) {
         space.getDirectProxy().setMVCCGenerationsState(generationsState);
     }
 
