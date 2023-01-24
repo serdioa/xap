@@ -79,6 +79,7 @@ import com.gigaspaces.internal.server.space.broadcast_table.BroadcastTableHandle
 import com.gigaspaces.internal.server.space.demote.DemoteHandler;
 import com.gigaspaces.internal.server.space.executors.SpaceActionExecutor;
 import com.gigaspaces.internal.server.space.iterator.ServerIteratorRequestInfo;
+import com.gigaspaces.internal.server.space.mvcc.MVCCUtils;
 import com.gigaspaces.internal.server.space.operations.SpaceOperationsExecutor;
 import com.gigaspaces.internal.server.space.operations.WriteEntriesResult;
 import com.gigaspaces.internal.server.space.operations.WriteEntryResult;
@@ -96,6 +97,7 @@ import com.gigaspaces.internal.server.space.repartitioning.ZookeeperScaleOutHand
 import com.gigaspaces.internal.server.space.suspend.SuspendTypeChangedInternalListener;
 import com.gigaspaces.internal.server.space.tiered_storage.TieredStorageUtils;
 import com.gigaspaces.internal.server.storage.EntryTieredMetaData;
+import com.gigaspaces.internal.server.storage.MVCCEntryMetaData;
 import com.gigaspaces.internal.service.ServiceRegistrationException;
 import com.gigaspaces.internal.space.responses.SpaceResponseInfo;
 import com.gigaspaces.internal.space.transport.xnio.XNioSettings;
@@ -2581,6 +2583,10 @@ public class SpaceImpl extends AbstractService implements IRemoteSpace, IInterna
 
     public Map<Object, EntryTieredMetaData> getEntriesTieredMetaDataByIds(String typeName, Object[] ids) throws Exception {
         return TieredStorageUtils.getEntriesTieredMetaDataByIds(getEngine(), typeName, ids);
+    }
+
+    public ArrayList<MVCCEntryMetaData> getMVCCEntryMetaData(String typeName, Object id) {
+        return MVCCUtils.getMVCCEntryMetaData(getEngine(), typeName, id);
     }
 
     public GSEventRegistration notify(ITemplatePacket template, Transaction txn, long lease, SpaceContext sc,
