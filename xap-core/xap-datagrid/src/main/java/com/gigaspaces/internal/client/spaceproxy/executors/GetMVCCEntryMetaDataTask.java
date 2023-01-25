@@ -1,11 +1,15 @@
 package com.gigaspaces.internal.client.spaceproxy.executors;
 
 import com.gigaspaces.async.AsyncResult;
+import com.gigaspaces.internal.io.IOUtils;
 import com.gigaspaces.internal.server.storage.MVCCEntryMetaData;
 import com.gigaspaces.internal.space.requests.GetMVCCEntryMetaDataRequestInfo;
 import com.gigaspaces.internal.space.requests.SpaceRequestInfo;
 import com.gigaspaces.internal.space.responses.GetMVCCEntryMetaDataResponseInfo;
 
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import java.util.List;
 import java.util.Map;
 
@@ -41,5 +45,17 @@ public class GetMVCCEntryMetaDataTask extends SystemDistributedTask<GetMVCCEntry
     @Override
     public SpaceRequestInfo getSpaceRequestInfo() {
         return requestInfo;
+    }
+
+    @Override
+    public void writeExternal(ObjectOutput out) throws IOException {
+        super.writeExternal(out);
+        IOUtils.writeObject(out, requestInfo);
+    }
+
+    @Override
+    public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        super.readExternal(in);
+        requestInfo = IOUtils.readObject(in);
     }
 }
