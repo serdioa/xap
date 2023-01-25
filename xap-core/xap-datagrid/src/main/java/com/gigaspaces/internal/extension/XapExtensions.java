@@ -81,6 +81,7 @@ public class XapExtensions {
         registerSystemTaskExecutor(DrainTask.class, new SpaceDrainExecutor());
         registerSystemTaskExecutor(CopyChunksPartitionTask.class, new SpaceCopyChunksPartitionExecutor());
         registerSystemTaskExecutor(DeleteChunksPartitionTask.class, new SpaceDeleteChunksPartitionExecutor());
+        registerSystemTaskExecutor(GetMVCCEntryMetaDataTask.class, new SpaceGetMVCCEntryMetaDataExecutor());
     }
 
     public ReplicationRouterBuilderFactory getReplicationRouterBuilderFactory() {
