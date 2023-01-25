@@ -8,12 +8,16 @@ import java.io.ObjectOutput;
 
 public class GetMVCCEntryMetaDataRequestInfo extends AbstractSpaceRequestInfo{
 
+    private static final long serialVersionUID = -8600456640392621464L;
     private String typeName;
     private Object[] ids;
 
     public GetMVCCEntryMetaDataRequestInfo(String typeName, Object[] ids) {
         this.typeName = typeName;
         this.ids = ids;
+    }
+
+    public GetMVCCEntryMetaDataRequestInfo() {
     }
 
     public String getTypeName() {
@@ -34,12 +38,14 @@ public class GetMVCCEntryMetaDataRequestInfo extends AbstractSpaceRequestInfo{
 
     @Override
     public void writeExternal(ObjectOutput out) throws IOException {
+        super.writeExternal(out);
         IOUtils.writeString(out, typeName);
         IOUtils.writeObjectArray(out, ids);
     }
 
     @Override
     public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException{
+        super.readExternal(in);
         this.typeName = IOUtils.readString(in);
         this.ids = IOUtils.readObjectArray(in);
     }
