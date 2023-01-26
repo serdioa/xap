@@ -34,11 +34,13 @@ public class GetMVCCEntryMetaDataResponseInfo extends AbstractSpaceResponseInfo{
 
     @Override
     public void writeExternal(ObjectOutput out) throws IOException {
+        super.writeExternal(out);
         IOUtils.writeObject(out, this.entriesMetaData);
     }
 
     @Override
     public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        super.readExternal(in);
         this.entriesMetaData = IOUtils.readObject(in);
     }
 }
