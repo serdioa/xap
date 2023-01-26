@@ -84,6 +84,7 @@ public class SystemConfig {
     private final Map<String, ServiceFactory> serviceFactoryMap = initServiceFactories();
 
     private static Map<String, ServiceFactory> initServiceFactories() {
+        // todo : generate native build based on service's instances
         ServiceFactory[] serviceFactories = new ServiceFactory[] {
                 new RestServiceFactory(),
                 new ZooKeeperServiceFactory(),
@@ -573,6 +574,7 @@ public class SystemConfig {
 
     public ServiceDescriptor getServiceDescriptor(String key)
             throws BindException, ConfigurationException, UnknownHostException {
+        // todo : cteate native build per descriptor
         if (key.equals(SystemBoot.GSC))
             return getGSCServiceDescriptor();
         if (key.equals(SystemBoot.GSA))

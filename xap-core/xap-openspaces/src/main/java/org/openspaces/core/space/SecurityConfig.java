@@ -35,9 +35,14 @@ public class SecurityConfig {
 
     private String username;
     private String password;
+    private String token;
     private CredentialsProvider credentialsProvider;
 
     public SecurityConfig() {
+    }
+
+    public SecurityConfig(String token) {
+        this.token = token;
     }
 
     public SecurityConfig(String username, String password) {
@@ -77,6 +82,14 @@ public class SecurityConfig {
         this.password = password;
     }
 
+    public String getToken() {
+        return token;
+    }
+
+    public void setToken(String token) {
+        this.token = token;
+    }
+
     public CredentialsProvider getCredentialsProvider() {
         if (credentialsProvider != null)
             return credentialsProvider;
@@ -95,4 +108,5 @@ public class SecurityConfig {
         CredentialsProvider credentials = CredentialsProviderHelper.extractMarshalledCredentials(properties, false);
         return credentials == null ? null : new SecurityConfig(credentials);
     }
+
 }
