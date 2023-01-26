@@ -4119,7 +4119,8 @@ public class CacheManager extends AbstractCacheManager
             }
         } else {//regular delete
             if (pEntry == null)
-                pEntry = _entries.remove(entryHolder.getUID());
+                //right now we arrive here when we rollback a mvcc write under transaction so we deal with the dirty entry only, assuming it's not null
+                pEntry = isMVCCEnabled() ? _entries.get(entryHolder.getUID()).getMVCCShellEntryCacheInfo().getDirtyEntry() : _entries.remove(entryHolder.getUID());
             else
                 _entries.remove(entryHolder.getUID(), pEntry);
         }
@@ -4144,17 +4145,21 @@ public class CacheManager extends AbstractCacheManager
             _cacheSize.decrementAndGet();
         // clean Xtn reference, if exists
         XtnData pXtn = null;
-        if (pEntry.getEntryHolder(this).getXidOriginatedTransaction() != null) {
-            pXtn = pEntry.getEntryHolder(this).getXidOriginated().getXtnData();
+        IEntryHolder eh = pEntry.getEntryHolder(this);
+        if (eh.getXidOriginatedTransaction() != null) {
+            pXtn = eh.getXidOriginated().getXtnData();
             if (pXtn != null)
                 pXtn.removeFromNewEntries(pEntry);
         }
-        if (pEntry.getEntryHolder(this).getWriteLockTransaction() != null) {
-            if (pEntry.getEntryHolder(this).getXidOriginatedTransaction() == null || !pEntry.getEntryHolder(this).getXidOriginatedTransaction().equals(pEntry.getEntryHolder(this).getWriteLockTransaction()))
-                pXtn = pEntry.getEntryHolder(this).getWriteLockOwner().getXtnData();
+        if (eh.getWriteLockTransaction() != null) {
+            if (eh.getXidOriginatedTransaction() == null || !eh.getXidOriginatedTransaction().equals(eh.getWriteLockTransaction()))
+                pXtn = eh.getWriteLockOwner().getXtnData();
             if (pXtn != null) {
                 removeLockedEntry(pXtn, pEntry);
                 pXtn.removeTakenEntry(pEntry);
+                if(isMVCCEnabled()) {
+                    _entries.get(entryHolder.getUID()).getMVCCShellEntryCacheInfo().clearDirtyEntry();
+                }
             }
         }
 

@@ -15,12 +15,12 @@ import java.util.Iterator;
 public class MVCCUtils {
     public static ArrayList<MVCCEntryMetaData> getMVCCEntryMetaData(SpaceEngine engine, String typeName, Object id) {
         Context context = engine.getCacheManager().getCacheContext();
+        ArrayList<MVCCEntryMetaData> metaDataList = new ArrayList<>();
 
         IServerTypeDesc typeDesc = engine.getTypeManager().getServerTypeDesc(typeName);
         String uid = SpaceUidFactory.createUidFromTypeAndId(typeDesc.getTypeDesc(), id);
-        MVCCShellEntryCacheInfo entryCacheInfo = (MVCCShellEntryCacheInfo) engine.getCacheManager().getPEntryByUid(uid);
-        Iterator<MVCCEntryCacheInfo> mvccEntryCacheInfoIterator = entryCacheInfo.descIterator();
-        ArrayList<MVCCEntryMetaData> metaDataList = new ArrayList<>();
+        MVCCShellEntryCacheInfo mvccShellEntryCacheInfo = engine.getCacheManager().getPEntryByUid(uid).getMVCCShellEntryCacheInfo();
+        Iterator<MVCCEntryCacheInfo> mvccEntryCacheInfoIterator = mvccShellEntryCacheInfo.descIterator();
         while(mvccEntryCacheInfoIterator.hasNext()){
             MVCCEntryHolder next = (MVCCEntryHolder) mvccEntryCacheInfoIterator.next().getEntryHolder();
             MVCCEntryMetaData metaData = new MVCCEntryMetaData();
