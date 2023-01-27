@@ -654,6 +654,7 @@
                             <xsd:complexType>
                                 <xsd:attribute name="username" type="xsd:string"/>
                                 <xsd:attribute name="password" type="xsd:string"/>
+                                <xsd:attribute name="token" type="xsd:string"/>
                                 <xsd:attribute name="user-details" type="xsd:string">
                                     <xsd:annotation>
                                         <xsd:documentation>
