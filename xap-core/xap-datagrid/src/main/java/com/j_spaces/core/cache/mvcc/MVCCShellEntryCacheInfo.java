@@ -48,8 +48,4 @@ public class MVCCShellEntryCacheInfo extends MemoryBasedEntryCacheInfo {
         this.dirtyEntry = null;
     }
 
-    @Override
-    public MVCCShellEntryCacheInfo getMVCCShellEntryCacheInfo() {
-        return this;
-    }
 }

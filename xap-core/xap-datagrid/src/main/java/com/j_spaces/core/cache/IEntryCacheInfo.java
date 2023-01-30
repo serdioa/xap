@@ -30,7 +30,6 @@ import com.gigaspaces.internal.server.storage.IEntryHolder;
 import com.gigaspaces.internal.server.storage.ITemplateHolder;
 import com.gigaspaces.server.eviction.EvictableServerEntry;
 import com.j_spaces.core.cache.context.Context;
-import com.j_spaces.core.cache.mvcc.MVCCShellEntryCacheInfo;
 import com.j_spaces.kernel.IObjectInfo;
 import com.j_spaces.kernel.IStoredList;
 import com.j_spaces.kernel.IStoredListIterator;
@@ -110,7 +109,4 @@ public interface IEntryCacheInfo extends EvictableServerEntry, IObjectInfo<IEntr
     @Override
     default int size() { return 1; }
 
-    default MVCCShellEntryCacheInfo getMVCCShellEntryCacheInfo(){
-        throw new UnsupportedOperationException("This operation is not supported for: " + this.getClass().getName());
-    }
 }

@@ -42,6 +42,7 @@ import com.gigaspaces.internal.server.space.eviction.*;
 import com.gigaspaces.internal.server.space.metadata.IServerTypeDescListener;
 import com.gigaspaces.internal.server.space.metadata.SpaceTypeManager;
 import com.gigaspaces.internal.server.space.metadata.TypeDataFactory;
+import com.gigaspaces.internal.server.space.mvcc.MVCCUtils;
 import com.gigaspaces.internal.server.space.operations.WriteEntryResult;
 import com.gigaspaces.internal.server.space.recovery.direct_persistency.ConsistencyFile;
 import com.gigaspaces.internal.server.space.recovery.direct_persistency.DirectPersistencyRecoveryException;
@@ -4120,7 +4121,7 @@ public class CacheManager extends AbstractCacheManager
         } else {//regular delete
             if (pEntry == null)
                 //right now we arrive here when we rollback a mvcc write under transaction so we deal with the dirty entry only, assuming it's not null
-                pEntry = isMVCCEnabled() ? _entries.get(entryHolder.getUID()).getMVCCShellEntryCacheInfo().getDirtyEntry() : _entries.remove(entryHolder.getUID());
+                pEntry = isMVCCEnabled() ? MVCCUtils.getMVCCShellEntryCacheInfo(_entries.get(entryHolder.getUID())).getDirtyEntry() : _entries.remove(entryHolder.getUID());
             else
                 _entries.remove(entryHolder.getUID(), pEntry);
         }
@@ -4158,7 +4159,7 @@ public class CacheManager extends AbstractCacheManager
                 removeLockedEntry(pXtn, pEntry);
                 pXtn.removeTakenEntry(pEntry);
                 if(isMVCCEnabled()) {
-                    _entries.get(entryHolder.getUID()).getMVCCShellEntryCacheInfo().clearDirtyEntry();
+                    MVCCUtils.getMVCCShellEntryCacheInfo(_entries.get(entryHolder.getUID())).clearDirtyEntry();
                 }
             }
         }

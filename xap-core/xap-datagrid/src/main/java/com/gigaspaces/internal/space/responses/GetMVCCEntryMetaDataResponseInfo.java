@@ -43,4 +43,11 @@ public class GetMVCCEntryMetaDataResponseInfo extends AbstractSpaceResponseInfo{
         super.readExternal(in);
         this.entriesMetaData = IOUtils.readObject(in);
     }
+
+    @Override
+    public String toString() {
+        return "GetMVCCEntryMetaDataResponseInfo{" +
+                "entriesMetaData=" + entriesMetaData +
+                '}';
+    }
 }
