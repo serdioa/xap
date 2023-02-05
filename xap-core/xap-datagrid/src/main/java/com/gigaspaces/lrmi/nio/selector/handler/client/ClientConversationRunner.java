@@ -18,6 +18,9 @@ package com.gigaspaces.lrmi.nio.selector.handler.client;
 
 import com.gigaspaces.async.SettableFuture;
 import com.gigaspaces.logger.Constants;
+import com.j_spaces.kernel.ManagedRunnable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.channels.ClosedSelectorException;
@@ -29,14 +32,11 @@ import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 /**
  * Created by Barak Bar Orion 12/29/14.
  */
 @com.gigaspaces.api.InternalApi
-public class ClientConversationRunner implements Runnable {
+public class ClientConversationRunner extends ManagedRunnable implements Runnable {
     private static final Logger logger = LoggerFactory.getLogger(Constants.LOGGER_LRMI);
     private static final long SELECT_TIMEOUT = Long.getLong("com.gs.lrmi.nio.selector.select-timeout", 10000L);
 
@@ -55,7 +55,7 @@ public class ClientConversationRunner implements Runnable {
 
     @Override
     public void run() {
-        while (selector.isOpen()) {
+        while (!shouldShutdown() && selector.isOpen()) {
             doSelect();
         }
     }
@@ -112,4 +112,14 @@ public class ClientConversationRunner implements Runnable {
         }
     }
 
+    @Override
+    protected void waitWhileFinish() {
+        if (selector.isOpen()) {
+            try {
+                selector.close();
+            } catch (IOException e) {
+                logger.warn("Caught exception while closing " + this.getClass().getSimpleName(), e);
+            }
+        }
+    }
 }
