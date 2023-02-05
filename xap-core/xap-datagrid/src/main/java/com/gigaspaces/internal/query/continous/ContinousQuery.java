@@ -28,7 +28,6 @@ import com.gigaspaces.internal.utils.concurrent.GSThread;
 import com.j_spaces.core.IJSpace;
 import com.j_spaces.core.client.EntryArrivedRemoteEvent;
 import com.j_spaces.core.exception.internal.ProxyInternalSpaceException;
-
 import net.jini.core.entry.UnusableEntryException;
 import net.jini.core.event.EventRegistration;
 import net.jini.core.event.RemoteEvent;
@@ -146,7 +145,7 @@ public class ContinousQuery implements RemoteEventListener, BatchRemoteEventList
         @Override
         public void run() {
             // Process pending events:
-            while (true && !_closed) {
+            while (!_closed) {
                 synchronized (_pendingEvents) {
                     EntryArrivedRemoteEvent event = _pendingEvents.poll();
                     if (event == null) {
