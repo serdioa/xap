@@ -108,4 +108,5 @@ public interface IEntryCacheInfo extends EvictableServerEntry, IObjectInfo<IEntr
     default boolean hasSize() { return true; }
     @Override
     default int size() { return 1; }
+
 }

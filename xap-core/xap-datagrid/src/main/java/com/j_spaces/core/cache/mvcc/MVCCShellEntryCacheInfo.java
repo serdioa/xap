@@ -43,4 +43,9 @@ public class MVCCShellEntryCacheInfo extends MemoryBasedEntryCacheInfo {
     public void setDirtyEntry(MVCCEntryCacheInfo dirtyEntry) {
         this.dirtyEntry = dirtyEntry;
     }
+
+    public void clearDirtyEntry() {
+        this.dirtyEntry = null;
+    }
+
 }

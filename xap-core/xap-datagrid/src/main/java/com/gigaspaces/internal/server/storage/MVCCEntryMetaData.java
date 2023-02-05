@@ -44,4 +44,14 @@ public class MVCCEntryMetaData implements Serializable {
     public void setLogicallyDeleted(boolean logicallyDeleted) {
         isLogicallyDeleted = logicallyDeleted;
     }
+
+    @Override
+    public String toString() {
+        return "MVCCEntryMetaData{" +
+                "createdGeneration=" + createdGeneration +
+                ", overrideGeneration=" + overrideGeneration +
+                ", isOverridingAnother=" + isOverridingAnother +
+                ", isLogicallyDeleted=" + isLogicallyDeleted +
+                '}';
+    }
 }
