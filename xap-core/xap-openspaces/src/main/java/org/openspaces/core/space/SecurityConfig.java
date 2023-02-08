@@ -21,6 +21,7 @@ import com.gigaspaces.security.directory.CredentialsProvider;
 import com.gigaspaces.security.directory.CredentialsProviderHelper;
 import com.gigaspaces.security.directory.DefaultCredentialsProvider;
 
+import com.gigaspaces.security.directory.TokenCredentialsProvider;
 import org.springframework.util.StringUtils;
 
 import java.util.Properties;
@@ -93,7 +94,13 @@ public class SecurityConfig {
     public CredentialsProvider getCredentialsProvider() {
         if (credentialsProvider != null)
             return credentialsProvider;
-        return isFilled() ? new DefaultCredentialsProvider(username, password) : null;
+        if (isFilled()) {
+            return new DefaultCredentialsProvider(username, password);
+        }
+        if (StringUtils.hasText(token)) {
+            return new TokenCredentialsProvider(token);
+        }
+        return null;
     }
 
     public boolean isFilled() {
