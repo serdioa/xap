@@ -20,10 +20,7 @@ import com.gigaspaces.CommonSystemProperties;
 import com.gigaspaces.internal.io.FileUtils;
 import com.gigaspaces.internal.jmx.JMXUtilities;
 import com.gigaspaces.internal.jvm.JavaUtils;
-import com.gigaspaces.internal.services.RestServiceFactory;
-import com.gigaspaces.internal.services.ServiceFactory;
-import com.gigaspaces.internal.services.WebuiServiceFactory;
-import com.gigaspaces.internal.services.ZooKeeperServiceFactory;
+import com.gigaspaces.internal.services.*;
 import com.gigaspaces.internal.utils.GsEnv;
 import com.gigaspaces.start.manager.XapManagerConfig;
 import com.sun.jini.start.ServiceDescriptor;
@@ -88,7 +85,8 @@ public class SystemConfig {
         ServiceFactory[] serviceFactories = new ServiceFactory[] {
                 new RestServiceFactory(),
                 new ZooKeeperServiceFactory(),
-                new WebuiServiceFactory()
+                new WebuiServiceFactory(),
+                new AuthServiceFactory()
         };
         Map<String, ServiceFactory> result = new HashMap<>();
         for (ServiceFactory serviceFactory : serviceFactories)

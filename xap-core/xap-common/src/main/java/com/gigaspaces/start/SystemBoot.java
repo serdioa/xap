@@ -36,6 +36,8 @@ import java.io.*;
 import java.lang.annotation.Annotation;
 import java.lang.ref.ReferenceQueue;
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
@@ -82,6 +84,11 @@ public class SystemBoot {
      * Token indicating a GigaSpace instance should be started
      */
     public static final String SPACE = "GS";
+
+    /**
+     * Token indicating an Authorization Service should be started
+     */
+    public static final String AUTH = "AUTH";
     /**
      * Configuration and logger property
      */
@@ -253,12 +260,12 @@ public class SystemBoot {
     /**
      * Convert comma-separated String to array of Strings
      */
-    private static Set<String> toSet(String s) {
+    private static List<String> toList(String s) {
         if (s.endsWith("]")) {
             s = s.substring(s.indexOf("[")+1, s.length()-1);
         }
 
-        final Set<String> result = new LinkedHashSet<String>();
+        final List<String> result = new ArrayList<>();
         for (StringTokenizer tok = new StringTokenizer(s, " ,") ; tok.hasMoreTokens() ; ) {
             result.add(tok.nextToken());
         }
@@ -310,7 +317,8 @@ public class SystemBoot {
             Configuration config = systemConfig.getConfiguration();
             loadPlatform();
 
-            final Set<String> services = toSet((String) config.getEntry(COMPONENT, "services", String.class, GSC));
+            final List<String> services = toList((String) config.getEntry(COMPONENT, "services", String.class, GSC));
+            injectAuthService(services);
             if (!isSilent)
                 initJmxIfNeeded(services, systemConfig, config);
             enableDynamicLocatorsIfNeeded();
@@ -371,6 +379,27 @@ public class SystemBoot {
             else
                 reportError(t, false);
             System.exit(1);
+        }
+    }
+
+    private static void injectAuthService(List<String> services) {
+        if (services.isEmpty() || !services.contains(GSA)) {
+            return;
+        }
+        if (Boolean.getBoolean("com.gs.security.enabled") && securityManagerIsOpenId()) {
+            services.add(0, AUTH);
+        }
+    }
+
+    private static boolean securityManagerIsOpenId() {
+        try (InputStream input = Thread.currentThread().getContextClassLoader().getResourceAsStream("config/security/security.properties")) {
+            Properties prop = new Properties();
+            prop.load(input);
+            String classname = prop.getProperty("com.gs.security.security-manager.class", "");
+            return classname.equals("com.gigaspaces.security.openid.OpenIdSecurityManager");
+        } catch (IOException ex) {
+            ex.printStackTrace();
+            return false;
         }
     }
 
@@ -511,7 +540,7 @@ public class SystemBoot {
         }
     }
 
-    private static void initJmxIfNeeded(Set<String> services, SystemConfig systemConfig, Configuration config) {
+    private static void initJmxIfNeeded(List<String> services, SystemConfig systemConfig, Configuration config) {
         /* If NO_JMX is not defined, start JMX and required infrastructure services */
         if (!services.contains(NO_JMX)) {
             try {
