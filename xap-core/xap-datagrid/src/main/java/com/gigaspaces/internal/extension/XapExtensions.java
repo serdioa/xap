@@ -122,7 +122,7 @@ public class XapExtensions {
 
     public void registerSystemTaskExecutor(Class<? extends SystemTask> taskClass, SpaceActionExecutor executor) {
         if (logger.isDebugEnabled())
-            logger.debug("Registering system task" + taskClass.getName() + " => " + executor.getClass().getName());
+            logger.debug("Registering system task " + taskClass.getName() + " => " + executor.getClass().getName());
         actionExecutors.put(taskClass, executor);
     }
 
