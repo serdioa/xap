@@ -12,9 +12,9 @@
     </parent>
 
     <properties>
-        <cassandraJdbcVersion>1.1.2</cassandraJdbcVersion>
+        <cassandraVersion>1.2.5</cassandraVersion>
+        <cassandraJdbcVersion>1.2.5</cassandraJdbcVersion>
         <hectorVersion>1.1-2</hectorVersion>
-        <cassandraVersion>1.1.6</cassandraVersion>
         <junitVersion>4.12</junitVersion>
         <skipTests>false</skipTests>
     </properties>
@@ -47,7 +47,7 @@
         </dependency>
 
         <dependency>
-            <groupId>org.apache.cassandra</groupId>
+            <groupId>org.apache-extras.cassandra-jdbc</groupId>
             <artifactId>cassandra-jdbc</artifactId>
             <version>${cassandraJdbcVersion}</version>
         </dependency>
