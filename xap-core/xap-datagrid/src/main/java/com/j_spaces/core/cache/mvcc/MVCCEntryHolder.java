@@ -11,7 +11,7 @@ import com.j_spaces.kernel.locks.IMVCCLockObject;
 @com.gigaspaces.api.InternalApi
 public class MVCCEntryHolder extends EntryHolder implements IMVCCLockObject {
 
-    private volatile long createdGeneration = -1;
+    private volatile long committedGeneration = -1;
     private volatile long overrideGeneration = -1;
 
     public MVCCEntryHolder(IServerTypeDesc typeDesc, String uid, long scn, boolean isTransient, ITransactionalEntryData entryData) {
@@ -21,7 +21,7 @@ public class MVCCEntryHolder extends EntryHolder implements IMVCCLockObject {
 
     protected MVCCEntryHolder(MVCCEntryHolder other) {
         super(other);
-        this.createdGeneration = other.getCreatedGeneration();
+        this.committedGeneration = other.getCommittedGeneration();
         this.overrideGeneration = other.getOverrideGeneration();
     }
 
@@ -35,12 +35,12 @@ public class MVCCEntryHolder extends EntryHolder implements IMVCCLockObject {
         return Math.abs(getUID().hashCode());
     }
 
-    public long getCreatedGeneration() {
-        return createdGeneration;
+    public long getCommittedGeneration() {
+        return committedGeneration;
     }
 
-    public void setCreatedGeneration(long createdGeneration) {
-        this.createdGeneration = createdGeneration;
+    public void setCommittedGeneration(long committedGeneration) {
+        this.committedGeneration = committedGeneration;
     }
 
     public long getOverrideGeneration() {

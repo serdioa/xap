@@ -105,6 +105,14 @@ public class TransactionHandler {
         return m_XtnTable;
     }
 
+    public XtnEntry removeXtnEntry(ServerTransaction key) {
+        return m_XtnTable.remove(key);
+    }
+
+    public boolean removeXtnEntry(ServerTransaction key, XtnEntry value) {
+        return m_XtnTable.remove(key, value);
+    }
+
 
     /**
      * @return the timedLocalXtns
@@ -143,7 +151,7 @@ public class TransactionHandler {
         try {
             xtnEntry.lock();
 
-            ((ConcurrentHashMap<ServerTransaction, XtnEntry>) getXtnTable()).remove(xtnEntry.m_Transaction, xtnEntry);
+            removeXtnEntry(xtnEntry.m_Transaction, xtnEntry);
             m_TimedXtns.remove(xtnEntry.m_Transaction);
         } finally {
             xtnEntry.unlock();
@@ -159,7 +167,7 @@ public class TransactionHandler {
             if (needLock)
                 xtnEntry.lock();
 
-            if (((ConcurrentHashMap<ServerTransaction, XtnEntry>) getXtnTable()).remove(xtnEntry.m_Transaction, xtnEntry))
+            if (removeXtnEntry(xtnEntry.m_Transaction, xtnEntry))
                 m_TimedXtns.remove(xtnEntry.m_Transaction);
         } finally {
             if (needLock)
@@ -324,7 +332,7 @@ public class TransactionHandler {
                             lockXtnEntry = null;
                             try {
                                 if (xtnEntry.getStatus() == XtnStatus.UNINITIALIZED_FAILED) {//help removing
-                                    ((ConcurrentHashMap<ServerTransaction, XtnEntry>) getXtnTable()).remove(xtnEntry.m_Transaction, xtnEntry);
+                                    removeXtnEntry(xtnEntry.m_Transaction, xtnEntry);
                                     xtnEntry = null;
                                     continue;
                                 }
@@ -341,14 +349,14 @@ public class TransactionHandler {
                             } catch (TransactionException te) {  //join failed , remove uninitialized xtn
                                 if (xtnEntry.getStatus() == XtnStatus.UNINITIALIZED) {
                                     xtnEntry.setStatus(XtnStatus.UNINITIALIZED_FAILED);
-                                    ((ConcurrentHashMap<ServerTransaction, XtnEntry>) getXtnTable()).remove(xtnEntry.m_Transaction, xtnEntry);
+                                    removeXtnEntry(xtnEntry.m_Transaction, xtnEntry);
                                 }
                                 xtnEntry = null;
                                 throw te;
                             } catch (RemoteException re) {  //join failed , remove uninitialized xtn
                                 if (xtnEntry.getStatus() == XtnStatus.UNINITIALIZED) {
                                     xtnEntry.setStatus(XtnStatus.UNINITIALIZED_FAILED);
-                                    ((ConcurrentHashMap<ServerTransaction, XtnEntry>) getXtnTable()).remove(xtnEntry.m_Transaction, xtnEntry);
+                                    removeXtnEntry(xtnEntry.m_Transaction, xtnEntry);
                                 }
                                 xtnEntry = null;
                                 throw re;

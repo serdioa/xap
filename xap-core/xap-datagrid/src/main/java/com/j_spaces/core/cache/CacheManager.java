@@ -96,6 +96,7 @@ import com.j_spaces.core.cache.context.TieredState;
 import com.j_spaces.core.cache.fifoGroup.FifoGroupCacheImpl;
 import com.j_spaces.core.cache.mvcc.MVCCCacheManagerHandler;
 import com.j_spaces.core.cache.mvcc.MVCCEntryCacheInfo;
+import com.j_spaces.core.cache.mvcc.MVCCEntryHolder;
 import com.j_spaces.core.client.*;
 import com.j_spaces.core.cluster.ClusterPolicy;
 import com.j_spaces.core.exception.internal.EngineInternalSpaceException;
@@ -2333,7 +2334,8 @@ public class CacheManager extends AbstractCacheManager
         xtnEntry.setOperatedUpon();
         TypeData typeData = _typeDataMap.get(entryHolder.getServerTypeDesc());
 
-        IEntryCacheInfo pEntry = getPEntryByUid(entryHolder.getUID());
+        IEntryCacheInfo pEntry = isMVCCEnabled() ?
+                getMVCCEntryCacheInfoByEntryHolder((MVCCEntryHolder) entryHolder) : getPEntryByUid(entryHolder.getUID());
         if (!pEntry.isPinned())
             throw new RuntimeException("associateEntryWithXtn: internal error- entry uid =" + pEntry.getUID() + " not pinned");
 
@@ -2458,6 +2460,20 @@ public class CacheManager extends AbstractCacheManager
     public IEntryHolder getEntryByUidFromPureCache(String uid) {
         IEntryCacheInfo pEntry = getPEntryByUid(uid);
         return pEntry != null ? pEntry.getEntryHolder(this) : null;
+    }
+
+    public IEntryCacheInfo getMVCCEntryCacheInfoByEntryHolder(MVCCEntryHolder entryHolder) {
+        IEntryCacheInfo pEntry = _entries.get(entryHolder.getUID());
+        if (pEntry != null) {
+            Iterator<MVCCEntryCacheInfo> mvccEntryCacheInfoIterator = MVCCUtils.getMVCCShellEntryCacheInfo(pEntry).descIterator();
+            while (mvccEntryCacheInfoIterator.hasNext()) {
+                MVCCEntryCacheInfo next = mvccEntryCacheInfoIterator.next();
+                if (next.getEntryHolder() == entryHolder) { //by reference
+                    return next;
+                }
+            }
+        }
+        return null;
     }
 
     /**

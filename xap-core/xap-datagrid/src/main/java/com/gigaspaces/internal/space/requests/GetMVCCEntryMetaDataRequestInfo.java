@@ -8,13 +8,15 @@ import java.io.ObjectOutput;
 
 public class GetMVCCEntryMetaDataRequestInfo extends AbstractSpaceRequestInfo{
 
-    private static final long serialVersionUID = -8600456640392621464L;
+    private static final long serialVersionUID = -7255029922496067038L;
     private String typeName;
     private Object[] ids;
+    private long transactionId;
 
-    public GetMVCCEntryMetaDataRequestInfo(String typeName, Object[] ids) {
+    public GetMVCCEntryMetaDataRequestInfo(String typeName, Object[] ids, long transactionId) {
         this.typeName = typeName;
         this.ids = ids;
+        this.transactionId = transactionId;
     }
 
     public GetMVCCEntryMetaDataRequestInfo() {
@@ -24,16 +26,13 @@ public class GetMVCCEntryMetaDataRequestInfo extends AbstractSpaceRequestInfo{
         return typeName;
     }
 
-    public void setTypeName(String typeName) {
-        this.typeName = typeName;
-    }
-
     public Object[] getIds() {
         return ids;
     }
 
-    public void setId(Object[] ids) {
-        this.ids = ids;
+
+    public long getTransactionId() {
+        return transactionId;
     }
 
     @Override
@@ -41,6 +40,7 @@ public class GetMVCCEntryMetaDataRequestInfo extends AbstractSpaceRequestInfo{
         super.writeExternal(out);
         IOUtils.writeString(out, typeName);
         IOUtils.writeObjectArray(out, ids);
+        IOUtils.writeLong(out, transactionId);
     }
 
     @Override
@@ -48,5 +48,6 @@ public class GetMVCCEntryMetaDataRequestInfo extends AbstractSpaceRequestInfo{
         super.readExternal(in);
         this.typeName = IOUtils.readString(in);
         this.ids = IOUtils.readObjectArray(in);
+        this.transactionId = IOUtils.readLong(in);
     }
 }
