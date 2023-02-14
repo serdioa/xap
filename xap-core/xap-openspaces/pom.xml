@@ -83,6 +83,13 @@
             <scope>compile</scope>
         </dependency>
 
+        <!-- Starting java 11, java.xml.bind (JAXB) has been removed -->
+        <dependency>
+            <groupId>com.sun.xml.bind</groupId>
+            <artifactId>jaxb-impl</artifactId>
+            <version>2.3.8</version>
+        </dependency>
+
         <!-- spring dependencies identified by mvn dependency:analyze must be <scope>compile</scope>
              otherwise PUs that depend no this pom will have compilation problems -->
         <dependency>
