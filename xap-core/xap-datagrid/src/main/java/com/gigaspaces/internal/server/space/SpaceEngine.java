@@ -128,7 +128,7 @@ import com.j_spaces.core.cache.blobStore.storage.preFetch.BlobStorePreFetchItera
 import com.j_spaces.core.cache.context.Context;
 import com.j_spaces.core.cache.context.TemplateMatchTier;
 import com.j_spaces.core.cache.context.TieredState;
-import com.j_spaces.core.cache.mvcc.MVCCEntryHolder;
+import com.j_spaces.core.cache.mvcc.MVCCShellEntryCacheInfo;
 import com.j_spaces.core.cache.mvcc.MVCCSpaceEngineHandler;
 import com.j_spaces.core.client.*;
 import com.j_spaces.core.cluster.*;
@@ -3888,13 +3888,14 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
             return null;
         if (scnFilter != 0 && entry.getSCN() < scnFilter)
             return null;
-        if (entry.isExpired(leaseFilter) && disqualifyExpiredEntry(entry) && template.isReadOperation()) {
-            context.setPendingExpiredEntriesExist(true);
-            return null;
+        if (!(isMvccEnabled() && entry.isHollowEntry())){
+            if (entry.isExpired(leaseFilter) && disqualifyExpiredEntry(entry) && template.isReadOperation()) {
+                context.setPendingExpiredEntriesExist(true);
+                return null;
+            }
+            if (needMatch && !_templateScanner.match(context, entry, template, skipAlreadyMatchedFixedPropertyIndex, skipAlreadyMatchedIndexPath, false))
+                return null;
         }
-
-        if (needMatch && !_templateScanner.match(context, entry, template, skipAlreadyMatchedFixedPropertyIndex, skipAlreadyMatchedIndexPath, false))
-            return null;
         if (!template.isNonBlockingRead() && entry.isDeleted())
             return null;
 
@@ -3903,7 +3904,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
                 return _mvccSpaceEngineHandler.getMatchedEntryAndOperateSA_Entry(context,
                         template,
                         makeWaitForInfo,
-                        ((MVCCEntryHolder) entry));
+                        (MVCCShellEntryCacheInfo) pEntry);
             }
             performTemplateOnEntrySA(context, template, entry,
                     makeWaitForInfo);
