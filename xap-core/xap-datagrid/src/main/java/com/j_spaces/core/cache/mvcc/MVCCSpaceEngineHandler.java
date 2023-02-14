@@ -3,7 +3,8 @@ package com.j_spaces.core.cache.mvcc;
 import com.gigaspaces.internal.server.space.SpaceEngine;
 import com.gigaspaces.internal.server.space.mvcc.MVCCGenerationsState;
 import com.gigaspaces.internal.server.storage.IEntryHolder;
-import com.j_spaces.core.XtnEntry;
+import com.gigaspaces.internal.server.storage.ITemplateHolder;
+import com.j_spaces.core.*;
 import com.j_spaces.core.cache.CacheManager;
 import com.j_spaces.core.cache.context.Context;
 import com.j_spaces.core.sadapter.ISAdapterIterator;
@@ -21,7 +22,8 @@ public class MVCCSpaceEngineHandler {
     }
 
     public void commitMVCCEntries(Context context, XtnEntry xtnEntry) throws SAException {
-        MVCCGenerationsState mvccGenerationsState = xtnEntry.getMVCCGenerationsState();
+        final MVCCGenerationsState mvccGenerationsState = xtnEntry.getMVCCGenerationsState();
+        final long nextGeneration = mvccGenerationsState.getNextGeneration();
         ISAdapterIterator<IEntryHolder> entriesIter = null;
         entriesIter = _cacheManager.makeUnderXtnEntriesIter(context,
                 xtnEntry, SelectType.ALL_ENTRIES, false /* returnPEntry*/);
@@ -31,10 +33,47 @@ public class MVCCSpaceEngineHandler {
                 if (entry == null)
                     break;
                 MVCCShellEntryCacheInfo mvccShellEntryCacheInfo = (MVCCShellEntryCacheInfo) _cacheManager.getPEntryByUid(entry.getUID());
-                long nextGeneration = mvccGenerationsState.getNextGeneration();
-                entry.setCreatedGeneration(nextGeneration);
-                mvccShellEntryCacheInfo.addEntryGeneration();
+                if (entry.getWriteLockOwner() == xtnEntry) {
+                    entry.setCommittedGeneration(nextGeneration);
+                    mvccShellEntryCacheInfo.addEntryGeneration();
+                }
+                if (entry.anyReadLockXtn() && entry.getReadLockOwners().contains(xtnEntry)) {
+                    // todo: right now do nothing.
+                }
             }
         }
+    }
+
+    public IEntryHolder getMatchedEntryAndOperateSA_Entry(Context context,
+                                                          ITemplateHolder template,
+                                                          boolean makeWaitForInfo,
+                                                          MVCCEntryHolder entry) throws TemplateDeletedException, TransactionNotActiveException, TransactionConflictException, FifoException, SAException, NoMatchException, EntryDeletedException {
+        final XtnEntry xidOriginated = template.getXidOriginated();
+        MVCCGenerationsState mvccGenerationsState = null;
+        if (xidOriginated != null) {
+           mvccGenerationsState = xidOriginated.getMVCCGenerationsState();
+        } else {
+            // TODO: no transaction - get from context.
+            // mvccGenerationsState = context.getMVCCGenerationsState()
+        }
+
+        final long completedGeneration = mvccGenerationsState.getCompletedGeneration();
+        final long overrideGeneration = entry.getOverrideGeneration();
+        final long committedGeneration = entry.getCommittedGeneration();
+        final boolean logicallyDeleted = entry.isLogicallyDeleted();
+        if (
+                (!logicallyDeleted)
+                && (committedGeneration != -1)
+                && (committedGeneration <= completedGeneration)
+                && (!mvccGenerationsState.isUncompletedGeneration(committedGeneration))
+                && ((overrideGeneration == -1)
+                    || (overrideGeneration > completedGeneration)
+                    || (overrideGeneration <= committedGeneration && mvccGenerationsState.isUncompletedGeneration(overrideGeneration)))
+        ) {
+            _spaceEngine.performTemplateOnEntrySA(context, template, entry,
+                    makeWaitForInfo);
+            return entry;
+        }
+        return null; // continue
     }
 }

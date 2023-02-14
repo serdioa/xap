@@ -128,6 +128,7 @@ import com.j_spaces.core.cache.blobStore.storage.preFetch.BlobStorePreFetchItera
 import com.j_spaces.core.cache.context.Context;
 import com.j_spaces.core.cache.context.TemplateMatchTier;
 import com.j_spaces.core.cache.context.TieredState;
+import com.j_spaces.core.cache.mvcc.MVCCEntryHolder;
 import com.j_spaces.core.cache.mvcc.MVCCSpaceEngineHandler;
 import com.j_spaces.core.client.*;
 import com.j_spaces.core.cluster.*;
@@ -852,9 +853,6 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
         }
 
         final XtnEntry txnEntry = initTransactionEntry(txn, sc, fromReplication);
-        if(isMvccEnabled() && txnEntry != null){
-            txnEntry.setMVCCGenerationsState(sc.getMVCCGenerationsState());
-        }
 
         /**
          * build Entry Holder .
@@ -2628,6 +2626,9 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
         XtnEntry txnEntry = attachToXtn((ServerTransaction) txn, fromReplication);
         txnEntry.setFromReplication(fromReplication);
         attachFromGatewayStateToTransactionIfNeeded(sc, txnEntry);
+        if (isMvccEnabled() && txnEntry.getMVCCGenerationsState() == null) {
+            txnEntry.setMVCCGenerationsState(sc.getMVCCGenerationsState());
+        }
         return txnEntry;
     }
 
@@ -3898,9 +3899,14 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
             return null;
 
         try {
+            if (isMvccEnabled()) {
+                return _mvccSpaceEngineHandler.getMatchedEntryAndOperateSA_Entry(context,
+                        template,
+                        makeWaitForInfo,
+                        ((MVCCEntryHolder) entry));
+            }
             performTemplateOnEntrySA(context, template, entry,
                     makeWaitForInfo);
-
             return entry;
         } catch (EntryDeletedException ex) {
             return null;

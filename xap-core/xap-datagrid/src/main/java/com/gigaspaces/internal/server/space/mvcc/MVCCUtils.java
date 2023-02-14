@@ -26,7 +26,7 @@ public class MVCCUtils {
         while(mvccEntryCacheInfoIterator.hasNext()){
             MVCCEntryHolder next = (MVCCEntryHolder) mvccEntryCacheInfoIterator.next().getEntryHolder();
             MVCCEntryMetaData metaData = new MVCCEntryMetaData();
-            metaData.setCreatedGeneration(next.getCreatedGeneration());
+            metaData.setCommittedGeneration(next.getCommittedGeneration());
             metaData.setOverrideGeneration(next.getOverrideGeneration());
             metaData.setLogicallyDeleted(next.isLogicallyDeleted());
             metaData.setOverridingAnother(next.isOverridingAnother());
@@ -34,6 +34,19 @@ public class MVCCUtils {
         }
         engine.getCacheManager().freeCacheContext(context);
         return metaDataList;
+    }
+
+    public static boolean isMVCCEntryDirtyUnderTransaction(SpaceEngine engine, String typeName, Object id,
+                                                           long transactionId) {
+        IServerTypeDesc typeDesc = engine.getTypeManager().getServerTypeDesc(typeName);
+        String uid = SpaceUidFactory.createUidFromTypeAndId(typeDesc.getTypeDesc(), id);
+        MVCCShellEntryCacheInfo mvccShellEntryCacheInfo = MVCCUtils.getMVCCShellEntryCacheInfo(engine.getCacheManager().getPEntryByUid(uid));
+        long dirtyId = -1;
+        if (mvccShellEntryCacheInfo != null && mvccShellEntryCacheInfo.getDirtyEntry() != null) {
+            MVCCEntryCacheInfo dirtyEntry = mvccShellEntryCacheInfo.getDirtyEntry();
+            dirtyId = dirtyEntry.getEntryHolder().getXidOriginated().m_Transaction.id;
+        }
+        return dirtyId != -1 && dirtyId == transactionId;
     }
 
     public static MVCCShellEntryCacheInfo getMVCCShellEntryCacheInfo(IEntryCacheInfo mvccShellEntryCacheInfo) {
