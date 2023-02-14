@@ -17,31 +17,16 @@
 package com.gigaspaces.lrmi.nio.filters;
 
 import com.gigaspaces.start.SystemInfo;
-import sun.security.x509.AlgorithmId;
-import sun.security.x509.CertificateAlgorithmId;
-import sun.security.x509.CertificateIssuerName;
-import sun.security.x509.CertificateSerialNumber;
-import sun.security.x509.CertificateSubjectName;
-import sun.security.x509.CertificateValidity;
-import sun.security.x509.CertificateVersion;
-import sun.security.x509.CertificateX509Key;
-import sun.security.x509.X500Name;
-import sun.security.x509.X509CertImpl;
-import sun.security.x509.X509CertInfo;
-
-import java.math.BigInteger;
-import java.security.KeyPair;
-import java.security.KeyPairGenerator;
-import java.security.KeyStore;
-import java.security.NoSuchAlgorithmException;
-import java.security.PrivateKey;
-import java.security.SecureRandom;
-import java.security.cert.Certificate;
-import java.security.cert.CertificateException;
-import java.util.Date;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import sun.security.x509.*;
+
+import java.math.BigInteger;
+import java.security.*;
+import java.security.cert.Certificate;
+import java.security.cert.CertificateException;
+import java.security.spec.AlgorithmParameterSpec;
+import java.util.Date;
 
 /**
  * Created by Barak Bar Orion 2/1/15.
@@ -102,7 +87,12 @@ public class SelfSignedCertificate {
     }
 
     private KeyStore generateKeyStore(String fqdn, KeyPair keypair, SecureRandom random) throws Exception {
-        PrivateKey key = keypair.getPrivate();
+        PrivateKey privateKey = keypair.getPrivate();
+
+        //code added after removal of sha1WithRSAEncryption_oid
+        String sigAlgName = AlgorithmId.getDefaultSigAlgForKey(privateKey);
+        AlgorithmParameterSpec params = AlgorithmId.getDefaultAlgorithmParameterSpec(sigAlgName, privateKey);
+        AlgorithmId algID = AlgorithmId.getWithParameterSpec(sigAlgName, params);
 
         // Prepare the information required for generating an X.509 certificate.
         X509CertInfo info = new X509CertInfo();
@@ -121,24 +111,23 @@ public class SelfSignedCertificate {
         }
         info.set(X509CertInfo.VALIDITY, new CertificateValidity(NOT_BEFORE, NOT_AFTER));
         info.set(X509CertInfo.KEY, new CertificateX509Key(keypair.getPublic()));
-        info.set(X509CertInfo.ALGORITHM_ID,
-                new CertificateAlgorithmId(new AlgorithmId(AlgorithmId.sha1WithRSAEncryption_oid)));
+        info.set(X509CertInfo.ALGORITHM_ID, new CertificateAlgorithmId(algID));
 
         // Sign the cert to identify the algorithm that's used.
         X509CertImpl cert = new X509CertImpl(info);
-        cert.sign(key, "SHA1withRSA");
+        cert.sign(privateKey, "SHA1withRSA");
 
         // Update the algorithm and sign again.
         info.set(CertificateAlgorithmId.NAME + '.' + CertificateAlgorithmId.ALGORITHM, cert.get(X509CertImpl.SIG_ALG));
         cert = new X509CertImpl(info);
-        cert.sign(key, "SHA1withRSA");
+        cert.sign(privateKey, "SHA1withRSA");
         cert.verify(keypair.getPublic());
 
         String keyStoreType = KeyStore.getDefaultType();
         final KeyStore keyStore = KeyStore.getInstance(keyStoreType);
         keyStore.load(null, null);
 //        keyStore.setCertificateEntry("CAcert-root", cert);
-        keyStore.setKeyEntry("key", keypair.getPrivate(), "foo".toCharArray(), new Certificate[]{cert});
+        keyStore.setKeyEntry("privateKey", keypair.getPrivate(), "foo".toCharArray(), new Certificate[]{cert});
         return keyStore;
     }
 }
