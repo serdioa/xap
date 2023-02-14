@@ -14,7 +14,7 @@ public class MVCCShellEntryCacheInfo extends MemoryBasedEntryCacheInfo {
 
 
     public MVCCShellEntryCacheInfo(IEntryHolder entryHolder, MVCCEntryCacheInfo pEntry) {
-        super(EntryHolderFactory.createMvccShellHollowEntry(entryHolder.getServerTypeDesc(), entryHolder.getUID()));
+        super(EntryHolderFactory.createMvccShellHollowEntry(entryHolder.getServerTypeDesc(), entryHolder.getUID()), pEntry.getBackRefs().size());
         dirtyEntry = pEntry;
     }
 
