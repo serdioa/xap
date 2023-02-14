@@ -41,7 +41,7 @@ import java.security.PrivilegedAction;
  * time is currently limited to in-memory space.</li> </p>
  */
 public final class RelativeTime implements ITimeProvider {
-    final sun.misc.Perf _perf;
+    final jdk.internal.perf.Perf _perf;
     final long TICKS_PER_SECOND;
     final static long TO_MILLISECONDS = 1000;
 
@@ -52,9 +52,9 @@ public final class RelativeTime implements ITimeProvider {
      */
     public RelativeTime() {
         _perf =
-                AccessController.doPrivileged(new PrivilegedAction<sun.misc.Perf>() {
-                    public sun.misc.Perf run() {
-                        return sun.misc.Perf.getPerf();
+                AccessController.doPrivileged(new PrivilegedAction<jdk.internal.perf.Perf>() {
+                    public jdk.internal.perf.Perf run() {
+                        return jdk.internal.perf.Perf.getPerf();
                     }
                 });
 
