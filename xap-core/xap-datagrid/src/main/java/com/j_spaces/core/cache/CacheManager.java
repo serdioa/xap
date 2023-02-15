@@ -2723,7 +2723,7 @@ public class CacheManager extends AbstractCacheManager
         }
     }
 
-    private boolean isMVCCEnabled() {
+    public boolean isMVCCEnabled() {
         return _mvccCacheManagerHandler != null;
     }
 
@@ -3850,8 +3850,9 @@ public class CacheManager extends AbstractCacheManager
                             pEntry.getBackRefs().add(TypeDataIndex._DummyOI);
                     } else
                         sequenceNumPlaceHolderPos = -1;   //for off-heap without backrefs
-                } else
+                } else {
                     index.insertEntryIndexedField(pEntry, index.getIndexValue(entryData), pType);
+                }
 
                 if (pType.supportsDynamicIndexing() && index.getIndexCreationNumber() > indexBuildNumber)
                     indexBuildNumber = index.getIndexCreationNumber();

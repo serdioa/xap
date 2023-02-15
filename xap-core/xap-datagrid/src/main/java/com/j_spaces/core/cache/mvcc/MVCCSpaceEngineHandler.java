@@ -11,6 +11,8 @@ import com.j_spaces.core.sadapter.ISAdapterIterator;
 import com.j_spaces.core.sadapter.SAException;
 import com.j_spaces.core.sadapter.SelectType;
 
+import java.util.Iterator;
+
 public class MVCCSpaceEngineHandler {
 
     private final SpaceEngine _spaceEngine;
@@ -47,7 +49,7 @@ public class MVCCSpaceEngineHandler {
     public IEntryHolder getMatchedEntryAndOperateSA_Entry(Context context,
                                                           ITemplateHolder template,
                                                           boolean makeWaitForInfo,
-                                                          MVCCEntryHolder entry) throws TemplateDeletedException, TransactionNotActiveException, TransactionConflictException, FifoException, SAException, NoMatchException, EntryDeletedException {
+                                                          MVCCShellEntryCacheInfo shellEntry) throws TemplateDeletedException, TransactionNotActiveException, TransactionConflictException, FifoException, SAException, NoMatchException, EntryDeletedException {
         final XtnEntry xidOriginated = template.getXidOriginated();
         MVCCGenerationsState mvccGenerationsState = null;
         if (xidOriginated != null) {
@@ -56,23 +58,27 @@ public class MVCCSpaceEngineHandler {
             // TODO: no transaction - get from context.
             // mvccGenerationsState = context.getMVCCGenerationsState()
         }
-
-        final long completedGeneration = mvccGenerationsState.getCompletedGeneration();
-        final long overrideGeneration = entry.getOverrideGeneration();
-        final long committedGeneration = entry.getCommittedGeneration();
-        final boolean logicallyDeleted = entry.isLogicallyDeleted();
-        if (
-                (!logicallyDeleted)
-                && (committedGeneration != -1)
-                && (committedGeneration <= completedGeneration)
-                && (!mvccGenerationsState.isUncompletedGeneration(committedGeneration))
-                && ((overrideGeneration == -1)
-                    || (overrideGeneration > completedGeneration)
-                    || (overrideGeneration <= committedGeneration && mvccGenerationsState.isUncompletedGeneration(overrideGeneration)))
-        ) {
-            _spaceEngine.performTemplateOnEntrySA(context, template, entry,
-                    makeWaitForInfo);
-            return entry;
+        final Iterator<MVCCEntryCacheInfo> generationIterator = shellEntry.descIterator();
+        while (generationIterator.hasNext()) {
+            final MVCCEntryCacheInfo entryCacheInfo = generationIterator.next();
+            final MVCCEntryHolder entryHolder = (MVCCEntryHolder) entryCacheInfo.getEntryHolder();
+            final long completedGeneration = mvccGenerationsState.getCompletedGeneration();
+            final long overrideGeneration = entryHolder.getOverrideGeneration();
+            final long committedGeneration = entryHolder.getCommittedGeneration();
+            final boolean logicallyDeleted = entryHolder.isLogicallyDeleted();
+            if (
+                    (!logicallyDeleted)
+                            && (committedGeneration != -1)
+                            && (committedGeneration <= completedGeneration)
+                            && (!mvccGenerationsState.isUncompletedGeneration(committedGeneration))
+                            && ((overrideGeneration == -1)
+                            || (overrideGeneration > completedGeneration)
+                            || (overrideGeneration <= committedGeneration && mvccGenerationsState.isUncompletedGeneration(overrideGeneration)))
+            ) {
+                _spaceEngine.performTemplateOnEntrySA(context, template, entryHolder,
+                        makeWaitForInfo);
+                return entryHolder;
+            }
         }
         return null; // continue
     }
