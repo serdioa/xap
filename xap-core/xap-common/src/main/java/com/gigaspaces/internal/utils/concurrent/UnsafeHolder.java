@@ -16,12 +16,11 @@
 
 package com.gigaspaces.internal.utils.concurrent;
 
-import sun.misc.Unsafe;
-
-import java.lang.reflect.Field;
-
+import jdk.internal.misc.Unsafe;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.lang.reflect.Field;
 
 /**
  * @author kimchy
@@ -63,7 +62,7 @@ public class UnsafeHolder {
     }
 
     public static boolean compareAndSwapObject(Object instance, long offset, Object expected, Object newValue) {
-        return _unsafe.compareAndSwapObject(instance, offset, expected, newValue);
+        return _unsafe.compareAndSetObject(instance, offset, expected, newValue);
     }
 
     public static int getIntVolatile(Object instance, long offset) {
@@ -75,11 +74,11 @@ public class UnsafeHolder {
     }
 
     public static boolean compareAndSwapInt(Object instance, long offset, int expected, int newValue) {
-        return _unsafe.compareAndSwapInt(instance, offset, expected, newValue);
+        return _unsafe.compareAndSetInt(instance, offset, expected, newValue);
     }
 
     public static boolean compareAndSwapLong(Object instance, long offset, long expected, long newValue) {
-        return _unsafe.compareAndSwapLong(instance, offset, expected, newValue);
+        return _unsafe.compareAndSetLong(instance, offset, expected, newValue);
     }
 
     public static long allocateMemory(long size) {
