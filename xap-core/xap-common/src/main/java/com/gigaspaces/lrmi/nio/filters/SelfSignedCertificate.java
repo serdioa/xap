@@ -25,7 +25,6 @@ import java.math.BigInteger;
 import java.security.*;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
-import java.security.spec.AlgorithmParameterSpec;
 import java.util.Date;
 
 /**
@@ -38,6 +37,7 @@ public class SelfSignedCertificate {
     static final SecureRandom random = new SecureRandom();
     static final Date NOT_BEFORE = new Date(System.currentTimeMillis() - 86400000L * 365);
     static final Date NOT_AFTER = new Date(253402300799000L);
+    private static final String ALGORITHM_ID = "SHA256WithRSA";
 
     private final KeyStore keyStore;
     private static SelfSignedCertificate instance;
@@ -76,10 +76,6 @@ public class SelfSignedCertificate {
         }
 
         keyStore = generateKeyStore(fqdn, keypair, random);
-//        String[] paths = generate(fqdn, keypair, random);
-//
-//        certificate = new File(paths[0]);
-//        privateKey = new File(paths[1]);
     }
 
     public KeyStore getKeyStore() {
@@ -88,11 +84,6 @@ public class SelfSignedCertificate {
 
     private KeyStore generateKeyStore(String fqdn, KeyPair keypair, SecureRandom random) throws Exception {
         PrivateKey privateKey = keypair.getPrivate();
-
-        //code added after removal of sha1WithRSAEncryption_oid
-        String sigAlgName = AlgorithmId.getDefaultSigAlgForKey(privateKey);
-        AlgorithmParameterSpec params = AlgorithmId.getDefaultAlgorithmParameterSpec(sigAlgName, privateKey);
-        AlgorithmId algID = AlgorithmId.getWithParameterSpec(sigAlgName, params);
 
         // Prepare the information required for generating an X.509 certificate.
         X509CertInfo info = new X509CertInfo();
@@ -111,22 +102,21 @@ public class SelfSignedCertificate {
         }
         info.set(X509CertInfo.VALIDITY, new CertificateValidity(NOT_BEFORE, NOT_AFTER));
         info.set(X509CertInfo.KEY, new CertificateX509Key(keypair.getPublic()));
-        info.set(X509CertInfo.ALGORITHM_ID, new CertificateAlgorithmId(algID));
+        info.set(X509CertInfo.ALGORITHM_ID, new CertificateAlgorithmId(AlgorithmId.get(ALGORITHM_ID)));
 
         // Sign the cert to identify the algorithm that's used.
         X509CertImpl cert = new X509CertImpl(info);
-        cert.sign(privateKey, "SHA1withRSA");
+        cert.sign(privateKey, ALGORITHM_ID);
 
         // Update the algorithm and sign again.
         info.set(CertificateAlgorithmId.NAME + '.' + CertificateAlgorithmId.ALGORITHM, cert.get(X509CertImpl.SIG_ALG));
         cert = new X509CertImpl(info);
-        cert.sign(privateKey, "SHA1withRSA");
+        cert.sign(privateKey, ALGORITHM_ID);
         cert.verify(keypair.getPublic());
 
         String keyStoreType = KeyStore.getDefaultType();
         final KeyStore keyStore = KeyStore.getInstance(keyStoreType);
         keyStore.load(null, null);
-//        keyStore.setCertificateEntry("CAcert-root", cert);
         keyStore.setKeyEntry("privateKey", keypair.getPrivate(), "foo".toCharArray(), new Certificate[]{cert});
         return keyStore;
     }
