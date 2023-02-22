@@ -10,6 +10,7 @@ import com.j_spaces.core.cache.context.Context;
 import com.j_spaces.core.sadapter.ISAdapterIterator;
 import com.j_spaces.core.sadapter.SAException;
 import com.j_spaces.core.sadapter.SelectType;
+import com.j_spaces.kernel.locks.ILockObject;
 
 import java.util.Iterator;
 
@@ -23,24 +24,51 @@ public class MVCCSpaceEngineHandler {
         _cacheManager = spaceEngine.getCacheManager();
     }
 
+    public void prepareMVCCEntries(Context context, XtnEntry xtnEntry) throws SAException {
+        final MVCCGenerationsState mvccGenerationsState = xtnEntry.getMVCCGenerationsState();
+        final long nextGeneration = mvccGenerationsState.getNextGeneration();
+        ISAdapterIterator<IEntryHolder> entriesIter = null;
+        entriesIter = _cacheManager.makeUnderXtnEntriesIter(context,
+                xtnEntry, SelectType.ALL_ENTRIES, false /* returnPEntry*/);
+        ILockObject entryLock = null;
+        if (entriesIter != null) {
+            while (true) {
+                MVCCEntryHolder entry = (MVCCEntryHolder) entriesIter.next();
+                if (entry == null) {
+                    break;
+                }
+                entryLock = _cacheManager.getLockManager().getLockObject(entry);
+                synchronized (entryLock) {
+                    if (entry.getWriteLockOwner() == xtnEntry) {
+                        entry.setCommittedGeneration(nextGeneration);
+                    }
+                    if (entry.anyReadLockXtn() && entry.getReadLockOwners().contains(xtnEntry)) {
+                        // todo: right now do nothing.
+                    }
+                }
+            }
+        }
+    }
+
     public void commitMVCCEntries(Context context, XtnEntry xtnEntry) throws SAException {
         final MVCCGenerationsState mvccGenerationsState = xtnEntry.getMVCCGenerationsState();
         final long nextGeneration = mvccGenerationsState.getNextGeneration();
         ISAdapterIterator<IEntryHolder> entriesIter = null;
         entriesIter = _cacheManager.makeUnderXtnEntriesIter(context,
                 xtnEntry, SelectType.ALL_ENTRIES, false /* returnPEntry*/);
+        ILockObject entryLock = null;
         if (entriesIter != null) {
             while (true) {
                 MVCCEntryHolder entry = (MVCCEntryHolder) entriesIter.next();
-                if (entry == null)
+                if (entry == null) {
                     break;
-                MVCCShellEntryCacheInfo mvccShellEntryCacheInfo = (MVCCShellEntryCacheInfo) _cacheManager.getPEntryByUid(entry.getUID());
-                if (entry.getWriteLockOwner() == xtnEntry) {
-                    entry.setCommittedGeneration(nextGeneration);
-                    mvccShellEntryCacheInfo.addEntryGeneration();
                 }
-                if (entry.anyReadLockXtn() && entry.getReadLockOwners().contains(xtnEntry)) {
-                    // todo: right now do nothing.
+                entryLock = _cacheManager.getLockManager().getLockObject(entry);
+                synchronized (entryLock) {
+                    MVCCShellEntryCacheInfo mvccShellEntryCacheInfo = (MVCCShellEntryCacheInfo) _cacheManager.getPEntryByUid(entry.getUID());
+                    if (entry.getWriteLockOwner() == xtnEntry && mvccShellEntryCacheInfo.getDirtyEntry().getEntryHolder() == entry) {
+                        mvccShellEntryCacheInfo.addEntryGeneration();
+                    }
                 }
             }
         }
