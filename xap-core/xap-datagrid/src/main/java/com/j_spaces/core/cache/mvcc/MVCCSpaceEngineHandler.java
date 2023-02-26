@@ -66,16 +66,16 @@ public class MVCCSpaceEngineHandler {
                     break;
                 }
                 entryLock = _cacheManager.getLockManager().getLockObject(entry);
-                synchronized (entryLock) {
-                    try {
+                try {
+                    synchronized (entryLock) {
                         MVCCShellEntryCacheInfo mvccShellEntryCacheInfo = (MVCCShellEntryCacheInfo) _cacheManager.getPEntryByUid(entry.getUID());
                         if (entry.getWriteLockOperation() == SpaceOperations.WRITE &&
                                 entry.getWriteLockOwner() == xtnEntry && mvccShellEntryCacheInfo.getDirtyEntry().getEntryHolder() == entry) {
                             mvccShellEntryCacheInfo.addEntryGeneration();
                         }
-                    } finally {
-                        _cacheManager.getLockManager().freeLockObject(entryLock);
                     }
+                } finally {
+                    _cacheManager.getLockManager().freeLockObject(entryLock);
                 }
             }
         }
