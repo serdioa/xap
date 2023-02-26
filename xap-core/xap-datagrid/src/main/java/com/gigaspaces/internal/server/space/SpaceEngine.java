@@ -3236,11 +3236,10 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
 
                 boolean considerNotifyFifoForNonFifoEvents = false;
 
-                if (xtnEntry.m_SingleParticipant)
+                if (xtnEntry.m_SingleParticipant) {
                     considerNotifyFifoForNonFifoEvents = _coreProcessor.handleNotifyFifoInCommit(context, xtnEntry, true /*fifoNotifyForNonFifoEvents*/);
-
-                if (xtnEntry.m_SingleParticipant)
                     _fifoGroupsHandler.prepareForFifoGroupsAfterXtnScans(context, xtnEntry);
+                }
 
                 if(isMvccEnabled() && xtnEntry.m_SingleParticipant){
                     _mvccSpaceEngineHandler.prepareMVCCEntries(context, xtnEntry);
@@ -3249,13 +3248,15 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
                 xtnEntry.setStatus(XtnStatus.PREPARED);
                 xtnEntry.m_AlreadyPrepared = true;
 
+
+                //add info of  prepared2PCXtns info in order to handle stuck tm or participant
+                if (!xtnEntry.m_SingleParticipant) {
+                    getTransactionHandler().addToPrepared2PCXtns(xtnEntry);
+                }
+
                 if(isMvccEnabled() && xtnEntry.m_SingleParticipant){
                     _mvccSpaceEngineHandler.commitMVCCEntries(context, xtnEntry);
                 }
-
-                //add info of  prepared2PCXtns info in order to handle stuck tm or participant
-                if (!xtnEntry.m_SingleParticipant)
-                    getTransactionHandler().addToPrepared2PCXtns(xtnEntry);
 
                 //fifo group op performed under this xtn
                 if (xtnEntry.m_SingleParticipant && xtnEntry.getXtnData().anyFifoGroupOperations())
@@ -5630,7 +5631,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
                               boolean ofReplicatableClass, EntryRemoveReasonCodes removeReason,
                               boolean disableReplication, boolean disableProcessorCall, boolean disableSADelete)
             throws SAException {
-         boolean fromLeaseExpiration = removeReason == EntryRemoveReasonCodes.LEASE_CANCEL || removeReason == EntryRemoveReasonCodes.LEASE_EXPIRED;
+        boolean fromLeaseExpiration = removeReason == EntryRemoveReasonCodes.LEASE_CANCEL || removeReason == EntryRemoveReasonCodes.LEASE_EXPIRED;
         // check for before-remove filter
         if ((fromLeaseExpiration || _general_purpose_remove_filters) && _filterManager._isFilter[FilterOperationCodes.BEFORE_REMOVE])
             _filterManager.invokeFilters(FilterOperationCodes.BEFORE_REMOVE, null, entry);
@@ -5890,11 +5891,10 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
                 }
                 boolean considerNotifyFifoForNonFifoEvents = false;
 
-                if (!xtnEntry.m_SingleParticipant)
+                if (!xtnEntry.m_SingleParticipant) {
                     considerNotifyFifoForNonFifoEvents = _coreProcessor.handleNotifyFifoInCommit(context, xtnEntry, true /*fifoNotifyForNonFifoEvents*/);
-
-                if (!xtnEntry.m_SingleParticipant)
                     _fifoGroupsHandler.prepareForFifoGroupsAfterXtnScans(context, xtnEntry);
+                }
 
                 context.setOperationID(operationID);
                 _cacheManager.commit(context, xtnEntry, xtnEntry.m_SingleParticipant, xtnEntry.m_AnyUpdates, supportsTwoPhaseReplication);

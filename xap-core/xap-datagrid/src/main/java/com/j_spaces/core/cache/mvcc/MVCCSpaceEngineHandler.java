@@ -38,21 +38,23 @@ public class MVCCSpaceEngineHandler {
                     break;
                 }
                 entryLock = _cacheManager.getLockManager().getLockObject(entry);
-                synchronized (entryLock) {
-                    if (entry.getWriteLockOwner() == xtnEntry) {
-                        entry.setCommittedGeneration(nextGeneration);
+                try {
+                    synchronized (entryLock) {
+                        if (entry.getWriteLockOperation() == SpaceOperations.WRITE && entry.getWriteLockOwner() == xtnEntry) {
+                            entry.setCommittedGeneration(nextGeneration);
+                        }
+                        if (entry.anyReadLockXtn() && entry.getReadLockOwners().contains(xtnEntry)) {
+                            // todo: right now do nothing.
+                        }
                     }
-                    if (entry.anyReadLockXtn() && entry.getReadLockOwners().contains(xtnEntry)) {
-                        // todo: right now do nothing.
-                    }
+                } finally {
+                    _cacheManager.getLockManager().freeLockObject(entryLock);
                 }
             }
         }
     }
 
     public void commitMVCCEntries(Context context, XtnEntry xtnEntry) throws SAException {
-        final MVCCGenerationsState mvccGenerationsState = xtnEntry.getMVCCGenerationsState();
-        final long nextGeneration = mvccGenerationsState.getNextGeneration();
         ISAdapterIterator<IEntryHolder> entriesIter = null;
         entriesIter = _cacheManager.makeUnderXtnEntriesIter(context,
                 xtnEntry, SelectType.ALL_ENTRIES, false /* returnPEntry*/);
@@ -65,9 +67,14 @@ public class MVCCSpaceEngineHandler {
                 }
                 entryLock = _cacheManager.getLockManager().getLockObject(entry);
                 synchronized (entryLock) {
-                    MVCCShellEntryCacheInfo mvccShellEntryCacheInfo = (MVCCShellEntryCacheInfo) _cacheManager.getPEntryByUid(entry.getUID());
-                    if (entry.getWriteLockOwner() == xtnEntry && mvccShellEntryCacheInfo.getDirtyEntry().getEntryHolder() == entry) {
-                        mvccShellEntryCacheInfo.addEntryGeneration();
+                    try {
+                        MVCCShellEntryCacheInfo mvccShellEntryCacheInfo = (MVCCShellEntryCacheInfo) _cacheManager.getPEntryByUid(entry.getUID());
+                        if (entry.getWriteLockOperation() == SpaceOperations.WRITE &&
+                                entry.getWriteLockOwner() == xtnEntry && mvccShellEntryCacheInfo.getDirtyEntry().getEntryHolder() == entry) {
+                            mvccShellEntryCacheInfo.addEntryGeneration();
+                        }
+                    } finally {
+                        _cacheManager.getLockManager().freeLockObject(entryLock);
                     }
                 }
             }

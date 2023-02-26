@@ -1781,7 +1781,7 @@ public class Processor implements IConsumerObject<BusPacket<Processor>> {
                                             entry.getWriteLockOperation() == SpaceOperations.TAKE_IE)) {
                                 IServerTypeDesc tte = _engine.getTypeManager().getServerTypeDesc(entry.getClassName());
                                 context.setOperationID(pXtn.getOperationID(entry.getUID()));
-                                    _engine.removeEntrySA(context, entry, tte, xtnEntry.isFromReplication() /*fromReplication*/,
+                                _engine.removeEntrySA(context, entry, tte, xtnEntry.isFromReplication() /*fromReplication*/,
                                             true /*origin*/, SpaceEngine.EntryRemoveReasonCodes.TAKE,
                                             true/* disable replication */, false /* disable processor call */,
                                             true /*disableSADelete*/);
