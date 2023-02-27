@@ -2,6 +2,7 @@ package com.gigaspaces.internal.services;
 
 import com.gigaspaces.classloader.CustomURLClassLoader;
 import com.gigaspaces.start.ClasspathBuilder;
+import com.gigaspaces.start.SystemBoot;
 import com.gigaspaces.start.XapModules;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,7 +18,9 @@ import static com.gigaspaces.start.SystemBoot.AUTH;
 public class AuthServiceFactory extends ServiceFactory {
 
     private static Logger logger = LoggerFactory.getLogger(AUTH);
+    private static final String AUTH_CONFIG_LOCATION_PROPERTY = "spring.config.location";
     private Path bootJarPath;
+
 
     public AuthServiceFactory() {
         this.bootJarPath = XapModules.AUTH_SERVER.getJarFilePath();
@@ -43,7 +46,9 @@ public class AuthServiceFactory extends ServiceFactory {
 
         Method launchMethod = getServiceLauncherMethod(classLoader, "launch");
         launchMethod.setAccessible(true);
-        launchMethod.invoke(newJarLauncher(classLoader), new Object[]{new String[0]});
+        //todo check not empty SystemBoot.AUTH_PROPERTIES.get(AUTH_CONFIG_LOCATION_PROPERTY) or throw exception
+        String propertiesConfig = "--".concat(AUTH_CONFIG_LOCATION_PROPERTY).concat("=").concat(SystemBoot.AUTH_PROPERTIES.get(AUTH_CONFIG_LOCATION_PROPERTY));
+        launchMethod.invoke(newJarLauncher(classLoader), new Object[]{new String[] { propertiesConfig }});
 
         return () -> logger.info("{} service terminated", AUTH);
     }

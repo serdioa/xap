@@ -89,6 +89,7 @@ public class SystemBoot {
      * Token indicating an Authorization Service should be started
      */
     public static final String AUTH = "AUTH";
+    public static Map<String, String> AUTH_PROPERTIES = new HashMap<>();
     /**
      * Configuration and logger property
      */
@@ -386,20 +387,25 @@ public class SystemBoot {
         if (services.isEmpty() || !services.contains(GSA)) {
             return;
         }
+        substituteSecurityProperties();
         if (Boolean.getBoolean("com.gs.security.enabled") && securityManagerIsOpenId()) {
             services.add(0, AUTH);
         }
     }
 
     private static boolean securityManagerIsOpenId() {
+        String classname = AUTH_PROPERTIES.get("com.gs.security.security-manager.class");
+        return "com.gigaspaces.security.openid.OpenIdSecurityManager".equals(classname);
+    }
+
+    private static void substituteSecurityProperties() {
         try (InputStream input = Thread.currentThread().getContextClassLoader().getResourceAsStream("config/security/security.properties")) {
             Properties prop = new Properties();
             prop.load(input);
-            String classname = prop.getProperty("com.gs.security.security-manager.class", "");
-            return classname.equals("com.gigaspaces.security.openid.OpenIdSecurityManager");
+            prop.forEach((key, value) -> AUTH_PROPERTIES.put((String) key, (String) value));
         } catch (IOException ex) {
-            ex.printStackTrace();
-            return false;
+            //todo ???
+            logger.error("Error while reading security properties - " + ex.getMessage());
         }
     }
 

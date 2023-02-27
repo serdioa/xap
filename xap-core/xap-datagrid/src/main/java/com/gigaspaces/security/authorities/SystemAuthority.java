@@ -50,7 +50,11 @@ public class SystemAuthority implements InternalAuthority {
         /**
          * managing of users
          */
-        MANAGE_USERS;
+        MANAGE_USERS,
+        /**
+         * managing of identity provider settings
+         */
+        MANAGE_IDENTITY_PROVIDERS;
 
         @Override
         public String toString() {
@@ -59,6 +63,8 @@ public class SystemAuthority implements InternalAuthority {
                     return "Manage Roles";
                 case MANAGE_USERS:
                     return "Manage Users";
+                case MANAGE_IDENTITY_PROVIDERS:
+                    return "Manage Identity Provider Settings";
                 default:
                     return super.toString();
             }
