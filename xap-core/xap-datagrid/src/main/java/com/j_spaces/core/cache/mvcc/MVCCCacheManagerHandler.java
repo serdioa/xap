@@ -1,6 +1,7 @@
 package com.j_spaces.core.cache.mvcc;
 
 import com.gigaspaces.internal.server.storage.IEntryHolder;
+import com.j_spaces.core.SpaceOperations;
 import com.j_spaces.core.XtnEntry;
 import com.j_spaces.core.cache.CacheManager;
 import com.j_spaces.core.cache.IEntryCacheInfo;
@@ -30,7 +31,7 @@ public class MVCCCacheManagerHandler {
         return null;
     }
 
-    public void disconnectPEntryFromXtn(Context context, MVCCEntryCacheInfo pEntry, XtnEntry xtnEntry, boolean xtnEnd)
+    public void disconnectPEntryFromXtn(Context context, MVCCEntryCacheInfo pEntry, XtnEntry xtnEntry, boolean xtnEnd) //todo: call this function with the new dummy entry on take and the original taken entry
             throws SAException {
         if (pEntry == null)
             return; //already disconnected (writelock replaced)
@@ -66,4 +67,22 @@ public class MVCCCacheManagerHandler {
         }
     }
 
+    public void handleNewMvccGeneration(Context context, IEntryHolder entry, XtnEntry xtnEntry) throws SAException {
+        MVCCShellEntryCacheInfo mvccShellEntryCacheInfo = (MVCCShellEntryCacheInfo) cacheManager.getPEntryByUid(entry.getUID());
+        MVCCEntryCacheInfo dirtyEntryCacheInfo = mvccShellEntryCacheInfo.getDirtyEntry();
+        if (dirtyEntryCacheInfo != null) {
+            MVCCEntryHolder dirtyEntryHolder = dirtyEntryCacheInfo.getMVCCEntryHolder();
+            if (entry.getWriteLockOperation() == SpaceOperations.WRITE &&
+                    entry.getWriteLockOwner() == xtnEntry && dirtyEntryHolder == entry) {
+                mvccShellEntryCacheInfo.addEntryGeneration();
+            }
+            if (dirtyEntryHolder.getWriteLockOperation() == SpaceOperations.TAKE &&
+                    dirtyEntryHolder.getWriteLockOwner() == xtnEntry) {
+                if (dirtyEntryHolder.isLogicallyDeleted() && dirtyEntryHolder.getCommittedGeneration() == ((MVCCEntryHolder) entry).getOverrideGeneration()) { //check by reference
+                    disconnectPEntryFromXtn(context, dirtyEntryCacheInfo, xtnEntry, true);
+                    mvccShellEntryCacheInfo.addEntryGeneration();
+                }
+            }
+        }
+    }
 }

@@ -1277,27 +1277,26 @@ public class Processor implements IConsumerObject<BusPacket<Processor>> {
                             synchronized (entryLock) {
                                 IEntryHolder eh = null;
                                 //NOTE: taken entries are handled in handleCommittedTakenEntries
-                                if (!entry.isBlobStoreEntry())
-                                    eh = _cacheManager.getEntry(context, entry.getUID(), null, null, true /*tryInsertToCache*/,
-                                            true /*lockedEntry*/, true /*useOnlyCache*/);
-                                else
-                                    eh = _cacheManager.getEntry(context, entry, true /*tryInsertToCache*/, true /*lockedEntry*/, true /*useOnlyCache*/);
 
-                                if (eh == null || eh.isDeleted())
-                                    continue ENTRY_LOOP;
-                                if (!entry.isSameEntryInstance(eh)
-                                        && _cacheManager.getLockManager().isEntryLocksItsSelf(entry))
-                                    continue ENTRY_LOOP;
-                                if (!_engine.isMvccEnabled()) {
+                                if(!_engine.isMvccEnabled()) {
+                                    if (!entry.isBlobStoreEntry())
+                                        eh = _cacheManager.getEntry(context, entry.getUID(), null, null, true /*tryInsertToCache*/,
+                                                true /*lockedEntry*/, true /*useOnlyCache*/);
+                                    else
+                                        eh = _cacheManager.getEntry(context, entry, true /*tryInsertToCache*/, true /*lockedEntry*/, true /*useOnlyCache*/);
+
+                                    if (eh == null || eh.isDeleted())
+                                        continue ENTRY_LOOP;
+                                    if (!entry.isSameEntryInstance(eh)
+                                            && _cacheManager.getLockManager().isEntryLocksItsSelf(entry))
+                                        continue ENTRY_LOOP;
                                     entry = eh;
+                                    _cacheManager.disconnectEntryFromXtn(context, entry, xtnEntry, true /*xtnEnd*/);
+                                } else{
+                                    _cacheManager.handleNewMvccGeneration(context, entry, xtnEntry);
+                                    _cacheManager.disconnectMVCCEntryFromXtn(context, (MVCCEntryCacheInfo) entryCacheHolder, xtnEntry, true); //todo: disconnect dirty + original
                                 }
                                 boolean updatedEntry = pXtn.isUpdatedEntry(entry);
-
-                                if (_engine.isMvccEnabled()) {
-                                    _cacheManager.disconnectMVCCEntryFromXtn(context, (MVCCEntryCacheInfo) entryCacheHolder, xtnEntry, true);
-                                } else {
-                                    _cacheManager.disconnectEntryFromXtn(context, entry, xtnEntry, true /*xtnEnd*/);
-                                }
 
                                 if (entry.isExpired(xtnEntry.m_CommitRollbackTimeStamp) && !entry.isEntryUnderWriteLockXtn() && !_engine.isExpiredEntryStayInSpace(entry)) {//recheck expired- space volatile touch
                                     if (entry.isExpired(_engine.getLeaseManager().getEffectiveEntryLeaseTime(xtnEntry.m_CommitRollbackTimeStamp))) {
@@ -1901,22 +1900,26 @@ public class Processor implements IConsumerObject<BusPacket<Processor>> {
                                 if (!entry.isSameEntryInstance(eh)
                                         && _cacheManager.getLockManager().isEntryLocksItsSelf(entry))
                                     continue ENTRY_LOOP;
-                                entry = eh;
-                                boolean updatedEntry = pXtn.isUpdatedEntry(entry);
-                                _cacheManager.disconnectEntryFromXtn(context, entry, xtnEntry, true /*xtnEnd*/);
-                                if (entry.isExpired(xtnEntry.m_CommitRollbackTimeStamp) && !entry.isEntryUnderWriteLockXtn()) {//recheck- spare touching a volatile
-                                    if (!_engine.isExpiredEntryStayInSpace(entry) && entry.isExpired(_engine.getLeaseManager().getEffectiveEntryLeaseTime(xtnEntry.m_CommitRollbackTimeStamp))) {
-                                        if (entry.isBlobStoreEntry())
-                                            _cacheManager.getEntry(context, entry, true /*tryInsertToCache*/, true /*lockedEntry*/, true /*useOnlyCache*/);
+                                if (!_engine.isMvccEnabled()) {
+                                    entry = eh;
+                                    _cacheManager.disconnectEntryFromXtn(context, entry, xtnEntry, true /*xtnEnd*/);
+                                    if (entry.isExpired(xtnEntry.m_CommitRollbackTimeStamp) && !entry.isEntryUnderWriteLockXtn()) {//recheck- spare touching a volatile
+                                        if (!_engine.isExpiredEntryStayInSpace(entry) && entry.isExpired(_engine.getLeaseManager().getEffectiveEntryLeaseTime(xtnEntry.m_CommitRollbackTimeStamp))) {
+                                            if (entry.isBlobStoreEntry())
+                                                _cacheManager.getEntry(context, entry, true /*tryInsertToCache*/, true /*lockedEntry*/, true /*useOnlyCache*/);
 
-                                        IServerTypeDesc typeDesc = _engine.getTypeManager().getServerTypeDesc(entry.getClassName());
-                                        _engine.removeEntrySA(context, entry, typeDesc,
-                                                false /*fromRepl*/, true /*origin*/,
-                                                SpaceEngine.EntryRemoveReasonCodes.LEASE_EXPIRED /*fromLeaseExpiration*/,
-                                                false/*disableReplication*/, false /*disableProcessorCall*/, false /*disableSADelete*/);
-                                        continue ENTRY_LOOP;
+                                            IServerTypeDesc typeDesc = _engine.getTypeManager().getServerTypeDesc(entry.getClassName());
+                                            _engine.removeEntrySA(context, entry, typeDesc,
+                                                    false /*fromRepl*/, true /*origin*/,
+                                                    SpaceEngine.EntryRemoveReasonCodes.LEASE_EXPIRED /*fromLeaseExpiration*/,
+                                                    false/*disableReplication*/, false /*disableProcessorCall*/, false /*disableSADelete*/);
+                                            continue ENTRY_LOOP;
+                                        }
                                     }
+                                } else{
+                                    _cacheManager.disconnectMVCCEntryFromXtn(context, (MVCCEntryCacheInfo) entryCacheHolder, xtnEntry, true); //todo: both for dirty and original taken entry
                                 }
+                                boolean updatedEntry = pXtn.isUpdatedEntry(entry);
 
                                 //remove WF connections for rolled-updated entries in which some WF
                                 // templates may be irrelevant (no match anymore)

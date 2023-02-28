@@ -3647,6 +3647,10 @@ public class CacheManager extends AbstractCacheManager
         return result;
     }
 
+    public void handleNewMvccGeneration(Context context, IEntryHolder entry, XtnEntry xtnEntry) throws SAException {
+        _mvccCacheManagerHandler.handleNewMvccGeneration(context, entry, xtnEntry);
+    }
+
     /**
      * INITIALLOAD INFO.
      */

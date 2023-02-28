@@ -3242,7 +3242,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
                 }
 
                 if(isMvccEnabled() && xtnEntry.m_SingleParticipant){
-                    _mvccSpaceEngineHandler.prepareMVCCEntries(context, xtnEntry);
+                    _mvccSpaceEngineHandler.preCommitMvccEntries(context, xtnEntry);
                 }
 
                 xtnEntry.setStatus(XtnStatus.PREPARED);
@@ -3254,15 +3254,11 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
                     getTransactionHandler().addToPrepared2PCXtns(xtnEntry);
                 }
 
-                if(isMvccEnabled() && xtnEntry.m_SingleParticipant){
-                    _mvccSpaceEngineHandler.commitMVCCEntries(context, xtnEntry);
-                }
-
                 //fifo group op performed under this xtn
                 if (xtnEntry.m_SingleParticipant && xtnEntry.getXtnData().anyFifoGroupOperations())
                     _cacheManager.handleFifoGroupsCacheOnXtnEnd(context, xtnEntry);
                 //for 1PC- handle taken entries under xtn
-                if (xtnEntry.m_SingleParticipant) {
+                if (xtnEntry.m_SingleParticipant && !isMvccEnabled()) {
                     _coreProcessor.handleCommittedTakenEntries(context, xtnEntry);
                 }
 
@@ -5900,19 +5896,16 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
                 _cacheManager.commit(context, xtnEntry, xtnEntry.m_SingleParticipant, xtnEntry.m_AnyUpdates, supportsTwoPhaseReplication);
 
                 if(isMvccEnabled() && !xtnEntry.m_SingleParticipant){
-                    _mvccSpaceEngineHandler.prepareMVCCEntries(context, xtnEntry);
+                    _mvccSpaceEngineHandler.preCommitMvccEntries(context, xtnEntry);
                 }
 
                 xtnEntry.setStatus(XtnStatus.COMMITING);
 
-                if(isMvccEnabled() && !xtnEntry.m_SingleParticipant){
-                    _mvccSpaceEngineHandler.commitMVCCEntries(context, xtnEntry);
-                }
                 //fifo group op performed under this xtn
                 if (!xtnEntry.m_SingleParticipant && xtnEntry.getXtnData().anyFifoGroupOperations())
                     _cacheManager.handleFifoGroupsCacheOnXtnEnd(context, xtnEntry);
                 //for 2PC- handle taken entries under xtn
-                if (!xtnEntry.m_SingleParticipant) {
+                if (!xtnEntry.m_SingleParticipant && !isMvccEnabled()) {
                     _coreProcessor.handleCommittedTakenEntries(context, xtnEntry);
                 }
 
@@ -6082,6 +6075,10 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
                 if (xtnEntry.getXtnData().anyFifoGroupOperations())
                     _cacheManager.handleFifoGroupsCacheOnXtnEnd(context, xtnEntry);
                 _fifoGroupsHandler.prepareForFifoGroupsAfterXtnScans(context, xtnEntry);
+
+//                if(isMvccEnabled()){
+//                    _mvccSpaceEngineHandler.rollbackMvccEntry(context, xtnEntry);
+//                }
 
                 //handle new entries under xtn-remove from cache
                 boolean new_entries_deleted = false;
