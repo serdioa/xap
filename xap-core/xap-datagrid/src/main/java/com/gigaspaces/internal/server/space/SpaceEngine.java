@@ -128,6 +128,7 @@ import com.j_spaces.core.cache.blobStore.storage.preFetch.BlobStorePreFetchItera
 import com.j_spaces.core.cache.context.Context;
 import com.j_spaces.core.cache.context.TemplateMatchTier;
 import com.j_spaces.core.cache.context.TieredState;
+import com.j_spaces.core.cache.mvcc.MVCCEntryHolder;
 import com.j_spaces.core.cache.mvcc.MVCCShellEntryCacheInfo;
 import com.j_spaces.core.cache.mvcc.MVCCSpaceEngineHandler;
 import com.j_spaces.core.client.*;
@@ -1186,6 +1187,9 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
                              boolean returnOnlyUid, boolean fromReplication, boolean origin,
                              int operationModifiers)
             throws TransactionException, UnusableEntryException, UnknownTypeException, RemoteException, InterruptedException {
+        if (isMvccEnabled() && ReadModifiers.isRepeatableRead(operationModifiers)) { //set default isolation level for MVCC
+            operationModifiers = Modifiers.add(operationModifiers, ReadModifiers.READ_COMMITTED);
+        }
         if (Modifiers.contains(operationModifiers, Modifiers.EXPLAIN_PLAN)) {
             SingleExplainPlan.validate(timeout, _cacheManager.isBlobStoreCachePolicy(), operationModifiers, template.getCustomQuery(), getClassTypeInfo(template.getTypeName()).getIndexes());
         }
@@ -1972,6 +1976,9 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
                                      List<SpaceEntriesAggregator> aggregators, ServerIteratorRequestInfo serverIteratorRequestInfo)
             throws TransactionException, UnusableEntryException, UnknownTypeException, RemoteException, InterruptedException {
         monitorMemoryUsage(false);
+        if (isMvccEnabled() && ReadModifiers.isRepeatableRead(operationModifiers)) { //set default isolation level for MVCC
+            operationModifiers = Modifiers.add(operationModifiers, ReadModifiers.READ_COMMITTED);
+        }
         if (Modifiers.contains(operationModifiers, Modifiers.EXPLAIN_PLAN)) {
             SingleExplainPlan.validate(timeout, _cacheManager.isBlobStoreCachePolicy(), operationModifiers, template.getCustomQuery(), getClassTypeInfo(template.getTypeName()).getIndexes());
         }
@@ -2139,6 +2146,9 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
     public Pair<Integer, SingleExplainPlan> count(ITemplatePacket template, Transaction txn, SpaceContext sc, int operationModifiers)
             throws UnusableEntryException, UnknownTypeException, TransactionException, RemoteException {
         monitorMemoryUsage(false);
+        if (isMvccEnabled() && ReadModifiers.isRepeatableRead(operationModifiers)) { //set default isolation level for MVCC
+            operationModifiers = Modifiers.add(operationModifiers, ReadModifiers.READ_COMMITTED);
+        }
         if (Modifiers.contains(operationModifiers, Modifiers.EXPLAIN_PLAN)) {
             SingleExplainPlan.validate(0, _cacheManager.isBlobStoreCachePolicy(), operationModifiers, template.getCustomQuery(), getClassTypeInfo(template.getTypeName()).getIndexes());
         }
@@ -3905,10 +3915,17 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
 
         try {
             if (isMvccEnabled()) {
-                return _mvccSpaceEngineHandler.getMatchedEntryAndOperateSA_Entry(context,
-                        template,
-                        makeWaitForInfo,
-                        (MVCCShellEntryCacheInfo) pEntry);
+                if (pEntry instanceof MVCCShellEntryCacheInfo) { // in case of using id index.
+                    return _mvccSpaceEngineHandler.getMatchedEntryAndOperateSA_Entry(context,
+                            template,
+                            makeWaitForInfo,
+                            (MVCCShellEntryCacheInfo) pEntry);
+                } else {
+                    return _mvccSpaceEngineHandler.getMatchedEntryAndOperateSA_Entry(context,
+                            template,
+                            makeWaitForInfo,
+                            (MVCCEntryHolder) entry);
+                }
             }
             performTemplateOnEntrySA(context, template, entry,
                     makeWaitForInfo);
@@ -4455,8 +4472,11 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
                 } else {
                     need_xtn_lock = need_xtn_lock || (!context.isNonBlockingReadOp() && (template.getXidOriginated() != null || entry.isMaybeUnderXtn()));
                 }
-                if (!need_xtn_lock) {
-                    need_xtn_lock = _cacheManager.isTieredStorageCachePolicy() && template.isMaybeUnderXtn() && !context.isMemoryOnlyEntry();
+                if (_cacheManager.isTieredStorageCachePolicy() && !need_xtn_lock) {
+                    need_xtn_lock = template.isMaybeUnderXtn() && !context.isMemoryOnlyEntry();
+                }
+                if (isMvccEnabled() && !need_xtn_lock && template.isActiveRead(this)) {
+                    need_xtn_lock = _cacheManager.getMVCCShellEntryCacheInfoByUid(entry.getUID()).getDirtyEntry() != null;
                 }
 
                 try {
@@ -4464,7 +4484,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
                         // if the operation is multiple - the lock was already acquired.
                         if (need_xtn_lock) {
                             if (!context.isTransactionalMultipleOperation())
-                                getTransactionHandler().xtnLockEntryOnTemplateOperation(context, entry, template, (context.isTransactionalMultipleOperation() ? template.getXidOriginated() : null));
+                                getTransactionHandler().xtnLockEntryOnTemplateOperation(context, entry, template, null);
                             if (template.isFifoSearch())
                                 getTransactionHandler().getTxReadLock().lock();
                         }
@@ -6132,7 +6152,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
         XtnEntry xtnEntry = getTransactionHandler().getXtnTable().get(st);
 
         if (xtnEntry != null) {
-            ServerTransaction internalTx = xtnEntry.getXtnData().getXtn();
+            ServerTransaction internalTx = xtnEntry.getServerTransaction();
 
             if (internalTx != null)
                 internalTx.setMetaData(st.getMetaData());

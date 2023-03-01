@@ -179,6 +179,17 @@ public class ReadModifiers {
     }
 
     /**
+     * Checks if the REPEATABLE_READ bit was set for this modifier.
+     *
+     * @param mod a set of modifiers
+     * @return <code>true</code> if <code>mod</code> includes the {@link #REPEATABLE_READ} bit is
+     * set.
+     */
+    public static boolean isRepeatableRead(int mod) {
+        return !isReadCommitted(mod) && !isDirtyRead(mod);
+    }
+
+    /**
      * Checks if the MATCH_BY_ID bit was set for this modifier.
      *
      * @param mod a set of modifiers
