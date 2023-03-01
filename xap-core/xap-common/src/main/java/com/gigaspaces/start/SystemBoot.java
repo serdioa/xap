@@ -219,7 +219,7 @@ public class SystemBoot {
      */
     public static void loadPlatform()
             throws ConfigurationException, IOException {
-        //ensureSecurityManager();        
+        //ensureSecurityManager();
         SystemConfig sysConfig = SystemConfig.getInstance();
 
         /* Load system properties, to check if a logging configuration file

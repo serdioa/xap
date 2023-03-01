@@ -18,9 +18,8 @@ import static com.gigaspaces.start.SystemBoot.AUTH;
 public class AuthServiceFactory extends ServiceFactory {
 
     private static Logger logger = LoggerFactory.getLogger(AUTH);
-    private static final String AUTH_CONFIG_LOCATION_PROPERTY = "spring.config.location";
+    private static final String AUTH_ADD_CONFIG_LOCATION_PROPERTY = "spring.config.additional-location";
     private Path bootJarPath;
-
 
     public AuthServiceFactory() {
         this.bootJarPath = XapModules.AUTH_SERVER.getJarFilePath();
@@ -46,9 +45,13 @@ public class AuthServiceFactory extends ServiceFactory {
 
         Method launchMethod = getServiceLauncherMethod(classLoader, "launch");
         launchMethod.setAccessible(true);
-        //todo check not empty SystemBoot.AUTH_PROPERTIES.get(AUTH_CONFIG_LOCATION_PROPERTY) or throw exception
-        String propertiesConfig = "--".concat(AUTH_CONFIG_LOCATION_PROPERTY).concat("=").concat(SystemBoot.AUTH_PROPERTIES.get(AUTH_CONFIG_LOCATION_PROPERTY));
-        launchMethod.invoke(newJarLauncher(classLoader), new Object[]{new String[] { propertiesConfig }});
+        String[] args = new String[] {};
+        if (SystemBoot.AUTH_PROPERTIES.get(AUTH_ADD_CONFIG_LOCATION_PROPERTY) != null) {
+            String additionalPropertiesConfig = "--".concat(AUTH_ADD_CONFIG_LOCATION_PROPERTY).concat("=").concat(SystemBoot.AUTH_PROPERTIES.get(AUTH_ADD_CONFIG_LOCATION_PROPERTY));
+            args = new String[] { additionalPropertiesConfig };
+        }
+
+        launchMethod.invoke(newJarLauncher(classLoader), new Object[]{ args });
 
         return () -> logger.info("{} service terminated", AUTH);
     }
