@@ -14,9 +14,9 @@ public class SpaceGetMVCCEntryMetaDataExecutor extends SpaceActionExecutor{
         GetMVCCEntryMetaDataRequestInfo request = (GetMVCCEntryMetaDataRequestInfo) spaceRequestInfo;
         for (Object id : request.getIds()) {
             response.addEntryMetaData(id, space.getMVCCEntryMetaData(request.getTypeName(), id));
-//            if (space.isMVCCEntryDirtyUnderTransaction(request.getTypeName(), id, request.getTransactionId())) {
-//                response.setIsDirty(id);
-//            }
+            if (space.isMVCCEntryDirtyUnderTransaction(request.getTypeName(), id, request.getTransactionId())) {
+                response.setIsDirty(id);
+            }
         }
         return response;
     }

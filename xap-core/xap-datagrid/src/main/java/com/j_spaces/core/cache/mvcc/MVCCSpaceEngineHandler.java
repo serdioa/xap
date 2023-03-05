@@ -75,7 +75,7 @@ public class MVCCSpaceEngineHandler {
                                                           MVCCShellEntryCacheInfo shellEntry) throws TemplateDeletedException, TransactionNotActiveException, TransactionConflictException, FifoException, SAException, NoMatchException, EntryDeletedException {
         final MVCCGenerationsState mvccGenerationsState = getMvccGenerationsState(context, template);
         final Iterator<MVCCEntryCacheInfo> generationIterator = shellEntry.descIterator();
-        if (!generationIterator.hasNext() && shellEntry.getDirtyEntry() != null) {
+        if (!generationIterator.hasNext() && shellEntry.getDirtyEntry() != null){
             return getMatchMvccEntryHolder(context, template, makeWaitForInfo,
                     (MVCCEntryHolder) shellEntry.getDirtyEntry().getEntryHolder(), mvccGenerationsState);
         }
@@ -112,7 +112,9 @@ public class MVCCSpaceEngineHandler {
     }
 
     private MVCCEntryHolder getMatchMvccEntryHolder(Context context, ITemplateHolder template, boolean makeWaitForInfo, MVCCEntryHolder entryHolder, MVCCGenerationsState mvccGenerationsState) throws TransactionConflictException, EntryDeletedException, TemplateDeletedException, TransactionNotActiveException, SAException, NoMatchException, FifoException {
-        if (template.isActiveRead(_spaceEngine)) {
+        boolean isTakeDirtyEntry = template.isTakeOperation()
+                && entryHolder.getWriteLockOwner() != null && entryHolder.getWriteLockOperation() == SpaceOperations.WRITE;
+        if (template.isActiveRead(_spaceEngine) || isTakeDirtyEntry) {
             _spaceEngine.performTemplateOnEntrySA(context, template, entryHolder, makeWaitForInfo);
             return entryHolder;
         }

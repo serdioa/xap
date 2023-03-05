@@ -3735,8 +3735,9 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
                     return res;
             }
 
-            //We did not find the entry by id in both memory and disk - we can stop.
-            if (_cacheManager.isTieredStorageCachePolicy()) {
+            //For tiered storage: We did not find the entry by id in both memory and disk - we can stop.
+            //For MVCC: We did not find any entry generation by id (the shell is empty) - we can stop.
+            if (_cacheManager.isTieredStorageCachePolicy() || _cacheManager.isMVCCEnabled()) {
                 return null;
             }
         }
