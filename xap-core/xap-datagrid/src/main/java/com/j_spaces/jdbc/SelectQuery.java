@@ -296,15 +296,9 @@ public class SelectQuery extends AbstractDMLQuery implements Externalizable {
 
 
             prepareResult(packet, entries);
-
-            // clean aggregationSet from queryTemplatePacket because it contains results that kept in the cache at
-            // SqlQueryParser {@link com.j_spaces.core.client.sql.SqlQueryParser#_queryCache}
-            final QueryTemplatePacket queryTemplatePacket = getTemplatePacketIfExists();
-            if (queryTemplatePacket != null) {
-                queryTemplatePacket.setAggregationSet(null);
-            }
-
-        } catch (AccessDeniedException | BatchQueryException e) {
+        } catch (AccessDeniedException e) {
+            throw e;
+        } catch (BatchQueryException e) {
             throw e;
         } catch (Exception e) {
             if (_logger.isDebugEnabled()) {
