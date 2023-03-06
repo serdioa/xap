@@ -52,7 +52,6 @@ public class MVCCSpaceEngineHandler {
                             entry.setOverrideGeneration(nextGeneration);
                             entry.resetEntryXtnInfo();
                             entry.setMaybeUnderXtn(true);
-                            //todo: move from dirty to deque for all operations
                             continue;
                         }
                         if (entry.getWriteLockOperation() == SpaceOperations.WRITE && entry.getWriteLockOwner() == xtnEntry) {

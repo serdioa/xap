@@ -6097,10 +6097,6 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
                     _cacheManager.handleFifoGroupsCacheOnXtnEnd(context, xtnEntry);
                 _fifoGroupsHandler.prepareForFifoGroupsAfterXtnScans(context, xtnEntry);
 
-//                if(isMvccEnabled()){
-//                    _mvccSpaceEngineHandler.rollbackMvccEntry(context, xtnEntry);
-//                }
-
                 //handle new entries under xtn-remove from cache
                 boolean new_entries_deleted = false;
                 if (!xtnEntry.m_AlreadyPrepared) {

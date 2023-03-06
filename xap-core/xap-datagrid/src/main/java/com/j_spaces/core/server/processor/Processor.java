@@ -1294,7 +1294,7 @@ public class Processor implements IConsumerObject<BusPacket<Processor>> {
                                     _cacheManager.disconnectEntryFromXtn(context, entry, xtnEntry, true /*xtnEnd*/);
                                 } else{
                                     _cacheManager.handleNewMvccGeneration(context, entry, xtnEntry);
-                                    _cacheManager.disconnectMVCCEntryFromXtn(context, (MVCCEntryCacheInfo) entryCacheHolder, xtnEntry, true); //todo: disconnect dirty + original
+                                    _cacheManager.disconnectMVCCEntryFromXtn(context, (MVCCEntryCacheInfo) entryCacheHolder, xtnEntry, true);
                                 }
                                 boolean updatedEntry = pXtn.isUpdatedEntry(entry);
 
@@ -1894,13 +1894,13 @@ public class Processor implements IConsumerObject<BusPacket<Processor>> {
                         try {
                             entryLock = getEntryLockObject(entry);
                             synchronized (entryLock) {
-                                IEntryHolder eh = _cacheManager.getEntry(context, entry, true /*tryInsertToCache*/, true /*lockedEntry*/, true /*useOnlyCache*/);
-                                if (eh == null || eh.isDeleted())
-                                    continue ENTRY_LOOP;
-                                if (!entry.isSameEntryInstance(eh)
-                                        && _cacheManager.getLockManager().isEntryLocksItsSelf(entry))
-                                    continue ENTRY_LOOP;
                                 if (!_engine.isMvccEnabled()) {
+                                    IEntryHolder eh = _cacheManager.getEntry(context, entry, true /*tryInsertToCache*/, true /*lockedEntry*/, true /*useOnlyCache*/);
+                                    if (eh == null || eh.isDeleted())
+                                        continue ENTRY_LOOP;
+                                    if (!entry.isSameEntryInstance(eh)
+                                            && _cacheManager.getLockManager().isEntryLocksItsSelf(entry))
+                                        continue ENTRY_LOOP;
                                     entry = eh;
                                     _cacheManager.disconnectEntryFromXtn(context, entry, xtnEntry, true /*xtnEnd*/);
                                     if (entry.isExpired(xtnEntry.m_CommitRollbackTimeStamp) && !entry.isEntryUnderWriteLockXtn()) {//recheck- spare touching a volatile
@@ -1917,7 +1917,7 @@ public class Processor implements IConsumerObject<BusPacket<Processor>> {
                                         }
                                     }
                                 } else{
-                                    _cacheManager.disconnectMVCCEntryFromXtn(context, (MVCCEntryCacheInfo) entryCacheHolder, xtnEntry, true); //todo: both for dirty and original taken entry
+                                    _cacheManager.disconnectMVCCEntryFromXtn(context, (MVCCEntryCacheInfo) entryCacheHolder, xtnEntry, true);
                                 }
                                 boolean updatedEntry = pXtn.isUpdatedEntry(entry);
 

@@ -34,7 +34,7 @@ public class MVCCEntryHolder extends EntryHolder implements IMVCCLockObject {
 
     public MVCCEntryHolder createLogicallyDeletedDummyEntry(EntryXtnInfo entryXtnInfo) {
         ITransactionalEntryData ed = new FlatEntryData(
-                new Object[getEntryData().getNumOfFixedProperties()],
+                new Object[0],
                 null,
                 getEntryData().getEntryTypeDesc(),
                 1 /*versionID*/,

@@ -31,7 +31,7 @@ public class MVCCCacheManagerHandler {
         return null;
     }
 
-    public void disconnectPEntryFromXtn(Context context, MVCCEntryCacheInfo pEntry, XtnEntry xtnEntry, boolean xtnEnd) //todo: call this function with the new dummy entry on take and the original taken entry
+    public void disconnectPEntryFromXtn(Context context, MVCCEntryCacheInfo pEntry, XtnEntry xtnEntry, boolean xtnEnd)
             throws SAException {
         if (pEntry == null)
             return; //already disconnected (writelock replaced)
@@ -68,7 +68,7 @@ public class MVCCCacheManagerHandler {
     }
 
     public void handleNewMvccGeneration(Context context, IEntryHolder entry, XtnEntry xtnEntry) throws SAException {
-        MVCCShellEntryCacheInfo mvccShellEntryCacheInfo = (MVCCShellEntryCacheInfo) cacheManager.getPEntryByUid(entry.getUID());
+        MVCCShellEntryCacheInfo mvccShellEntryCacheInfo = cacheManager.getMVCCShellEntryCacheInfoByUid(entry.getUID());
         MVCCEntryCacheInfo dirtyEntryCacheInfo = mvccShellEntryCacheInfo.getDirtyEntry();
         if (dirtyEntryCacheInfo != null) {
             MVCCEntryHolder dirtyEntryHolder = dirtyEntryCacheInfo.getMVCCEntryHolder();
@@ -77,11 +77,11 @@ public class MVCCCacheManagerHandler {
                 mvccShellEntryCacheInfo.addEntryGeneration();
             }
             if (dirtyEntryHolder.getWriteLockOperation() == SpaceOperations.TAKE &&
-                    dirtyEntryHolder.getWriteLockOwner() == xtnEntry) {
-                if (dirtyEntryHolder.isLogicallyDeleted() && dirtyEntryHolder.getCommittedGeneration() == ((MVCCEntryHolder) entry).getOverrideGeneration()) { //check by reference
+                    dirtyEntryHolder.getWriteLockOwner() == xtnEntry &&
+                    dirtyEntryHolder.isLogicallyDeleted() &&
+                    dirtyEntryHolder.getCommittedGeneration() == ((MVCCEntryHolder) entry).getOverrideGeneration()){
                     disconnectPEntryFromXtn(context, dirtyEntryCacheInfo, xtnEntry, true);
                     mvccShellEntryCacheInfo.addEntryGeneration();
-                }
             }
         }
     }
