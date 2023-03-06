@@ -104,26 +104,18 @@ public class MVCCSpaceEngineHandler {
         MVCCGenerationsState mvccGenerationsState = null;
         if (xidOriginated != null) {
             mvccGenerationsState = xidOriginated.getMVCCGenerationsState();
-        } else {
-            // TODO: no transaction - get from context.
-            // mvccGenerationsState = context.getMVCCGenerationsState()
         }
+        // TODO: no transaction - get from context/template
         return mvccGenerationsState;
     }
 
-    private MVCCEntryHolder getMatchMvccEntryHolder(Context context, ITemplateHolder template, boolean makeWaitForInfo, MVCCEntryHolder entryHolder, MVCCGenerationsState mvccGenerationsState) throws TransactionConflictException, EntryDeletedException, TemplateDeletedException, TransactionNotActiveException, SAException, NoMatchException, FifoException {
-        boolean isTakeDirtyEntry = template.isTakeOperation()
-                && entryHolder.getWriteLockOwner() != null && entryHolder.getWriteLockOperation() == SpaceOperations.WRITE;
-        if (template.isActiveRead(_spaceEngine) || isTakeDirtyEntry) {
-            _spaceEngine.performTemplateOnEntrySA(context, template, entryHolder, makeWaitForInfo);
-            return entryHolder;
-        }
-        final long completedGeneration = mvccGenerationsState.getCompletedGeneration();
-        final long overrideGeneration = entryHolder.getOverrideGeneration();
-        final long committedGeneration = entryHolder.getCommittedGeneration();
-        final boolean logicallyDeleted = entryHolder.isLogicallyDeleted();
-        if (isEntryMatchedByGenerationsState(mvccGenerationsState, completedGeneration, overrideGeneration, committedGeneration)) {
-            if  (logicallyDeleted){
+    private MVCCEntryHolder getMatchMvccEntryHolder(Context context, ITemplateHolder template, boolean makeWaitForInfo,
+                                                    MVCCEntryHolder entryHolder, MVCCGenerationsState mvccGenerationsState) throws TransactionConflictException, EntryDeletedException, TemplateDeletedException, TransactionNotActiveException, SAException, NoMatchException, FifoException {
+
+        if (template.isActiveRead(_spaceEngine)
+                || isEntryMatchedByGenerationsState(mvccGenerationsState, entryHolder)
+                || entryHolder.getCommittedGeneration() == -1 /*dirty entry*/) {
+            if  (entryHolder.isLogicallyDeleted()){
                 throw new EntryDeletedException();
             }
             _spaceEngine.performTemplateOnEntrySA(context, template, entryHolder, makeWaitForInfo);
@@ -132,7 +124,10 @@ public class MVCCSpaceEngineHandler {
         return null; // continue
     }
 
-    private boolean isEntryMatchedByGenerationsState(MVCCGenerationsState mvccGenerationsState, long completedGeneration, long overrideGeneration, long committedGeneration) {
+    private boolean isEntryMatchedByGenerationsState(MVCCGenerationsState mvccGenerationsState, MVCCEntryHolder entryHolder) {
+        final long completedGeneration = mvccGenerationsState.getCompletedGeneration();
+        final long overrideGeneration = entryHolder.getOverrideGeneration();
+        final long committedGeneration = entryHolder.getCommittedGeneration();
         return ((committedGeneration != -1)
                 && (committedGeneration <= completedGeneration)
                 && (!mvccGenerationsState.isUncompletedGeneration(committedGeneration))
