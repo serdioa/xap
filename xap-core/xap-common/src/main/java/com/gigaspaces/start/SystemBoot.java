@@ -319,7 +319,10 @@ public class SystemBoot {
             loadPlatform();
 
             final List<String> services = toList((String) config.getEntry(COMPONENT, "services", String.class, GSC));
-            injectAuthService(services);
+            // todo : move it after manager init
+            substituteSecurityProperties();
+//            injectAuthService(services);
+
             if (!isSilent)
                 initJmxIfNeeded(services, systemConfig, config);
             enableDynamicLocatorsIfNeeded();
@@ -380,16 +383,6 @@ public class SystemBoot {
             else
                 reportError(t, false);
             System.exit(1);
-        }
-    }
-
-    private static void injectAuthService(List<String> services) {
-        if (services.isEmpty() || !services.contains(GSA)) {
-            return;
-        }
-        substituteSecurityProperties();
-        if (Boolean.getBoolean("com.gs.security.enabled") && securityManagerIsOpenId()) {
-            services.add(0, AUTH);
         }
     }
 

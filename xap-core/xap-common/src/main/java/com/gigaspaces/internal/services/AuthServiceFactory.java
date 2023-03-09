@@ -3,6 +3,7 @@ package com.gigaspaces.internal.services;
 import com.gigaspaces.classloader.CustomURLClassLoader;
 import com.gigaspaces.start.ClasspathBuilder;
 import com.gigaspaces.start.SystemBoot;
+import com.gigaspaces.start.SystemInfo;
 import com.gigaspaces.start.XapModules;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,9 +47,16 @@ public class AuthServiceFactory extends ServiceFactory {
         Method launchMethod = getServiceLauncherMethod(classLoader, "launch");
         launchMethod.setAccessible(true);
         String[] args = new String[] {};
+        // todo : change condition!
         if (SystemBoot.AUTH_PROPERTIES.get(AUTH_ADD_CONFIG_LOCATION_PROPERTY) != null) {
             String additionalPropertiesConfig = "--".concat(AUTH_ADD_CONFIG_LOCATION_PROPERTY).concat("=").concat(SystemBoot.AUTH_PROPERTIES.get(AUTH_ADD_CONFIG_LOCATION_PROPERTY));
-            args = new String[] { additionalPropertiesConfig };
+
+            logger.info("zk connection string is " + SystemInfo.singleton().getManagerClusterInfo().getZookeeperConnectionString() );
+
+            String zkConfig = "--spring.application.json={\"zk_connection\":\"" + SystemInfo.singleton().getManagerClusterInfo().getZookeeperConnectionString() + "\"}";
+            logger.info("zk connection string from cluster " + SystemInfo.singleton().getManagerClusterInfo().getZookeeperConnectionString() );
+            logger.info("zk connection string from env " + System.getenv("ZK_CON_STR") );
+            args = new String[] { additionalPropertiesConfig, zkConfig };
         }
 
         launchMethod.invoke(newJarLauncher(classLoader), new Object[]{ args });
@@ -57,6 +65,7 @@ public class AuthServiceFactory extends ServiceFactory {
     }
 
     private Object newJarLauncher(CustomURLClassLoader classLoader) throws Exception {
+
         Class jarFileArchiveClass = classLoader.loadClass("org.springframework.boot.loader.archive.JarFileArchive");
         Class archiveClass = 	classLoader.loadClass("org.springframework.boot.loader.archive.Archive");
         Class jarLauncherClass = classLoader.loadClass(getServiceClassName());
