@@ -28,7 +28,6 @@ import com.gigaspaces.metadata.SpaceMetadataException;
 import com.j_spaces.core.client.Modifiers;
 import com.j_spaces.core.client.ReadModifiers;
 import com.j_spaces.core.multiple.query.QueryMultiplePartialFailureException;
-
 import net.jini.core.transaction.Transaction;
 
 import java.util.ArrayList;
@@ -161,5 +160,10 @@ public class ReadTakeMultipleProxyActionInfo extends QueryProxyActionInfo {
 
     public List<ReplicationLevel> getSyncReplicationLevels() {
         return syncReplicationLevels;
+    }
+
+    @Override
+    public boolean requireTransactionForMVCC() {
+        return isTake;
     }
 }

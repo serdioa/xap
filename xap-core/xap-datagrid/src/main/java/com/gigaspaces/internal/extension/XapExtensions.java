@@ -81,6 +81,7 @@ public class XapExtensions {
         registerSystemTaskExecutor(DrainTask.class, new SpaceDrainExecutor());
         registerSystemTaskExecutor(CopyChunksPartitionTask.class, new SpaceCopyChunksPartitionExecutor());
         registerSystemTaskExecutor(DeleteChunksPartitionTask.class, new SpaceDeleteChunksPartitionExecutor());
+        registerSystemTaskExecutor(GetMVCCEntryMetaDataTask.class, new SpaceGetMVCCEntryMetaDataExecutor());
     }
 
     public ReplicationRouterBuilderFactory getReplicationRouterBuilderFactory() {
@@ -121,7 +122,7 @@ public class XapExtensions {
 
     public void registerSystemTaskExecutor(Class<? extends SystemTask> taskClass, SpaceActionExecutor executor) {
         if (logger.isDebugEnabled())
-            logger.debug("Registering system task" + taskClass.getName() + " => " + executor.getClass().getName());
+            logger.debug("Registering system task " + taskClass.getName() + " => " + executor.getClass().getName());
         actionExecutors.put(taskClass, executor);
     }
 

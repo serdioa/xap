@@ -84,22 +84,22 @@ public class ProcessMemoryManager implements IProcessMemoryManager {
         }
     }
 
-    public class MemorySampler implements Runnable {
+    public static class MemorySampler implements Runnable {
         @Override
         public void run() {
             while (true) {
-                while (!_samplerThreadShouldRun) {
+                if (_samplerThreadShouldRun) {
+                    _samplerThreadShouldRun = false;
+                    _freeMemory = _runtime.freeMemory();
+                } else {
                     try {
                         Thread.sleep(_samplerThreadSleepDurationInMs);
                     } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                        return;
                     }
-                }
-                while (_samplerThreadShouldRun) {
-                    _samplerThreadShouldRun = false;
-                    _freeMemory = _runtime.freeMemory();
                 }
             }
         }
     }
-
 }

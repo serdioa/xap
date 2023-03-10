@@ -23,12 +23,10 @@ import com.gigaspaces.internal.transport.AbstractProjectionTemplate;
 import com.gigaspaces.internal.transport.IEntryPacket;
 import com.gigaspaces.internal.transport.ProjectionTemplate;
 import com.gigaspaces.internal.transport.TemplatePacketFactory;
-import com.gigaspaces.internal.utils.ObjectUtils;
 import com.j_spaces.core.UnknownTypeException;
 import com.j_spaces.core.client.Modifiers;
 import com.j_spaces.core.client.ReadModifiers;
 import com.j_spaces.core.exception.internal.ProxyInternalSpaceException;
-
 import net.jini.core.transaction.Transaction;
 
 
@@ -142,6 +140,11 @@ public class ReadTakeProxyActionInfo extends QueryProxyActionInfo {
             throw new IllegalArgumentException("fifo grouping operation must be under transaction");
         if (!isTake && !(ReadModifiers.isExclusiveReadLock(modifiers)))
             throw new IllegalArgumentException("fifo grouping read operation must be exclusive-read-lock");
+    }
+
+    @Override
+    public boolean requireTransactionForMVCC() {
+        return isTake;
     }
 
 }

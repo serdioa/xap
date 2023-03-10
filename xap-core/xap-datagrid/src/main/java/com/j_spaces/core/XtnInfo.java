@@ -130,7 +130,7 @@ public class XtnInfo extends ReentrantSimpleLock {
     }
 
     //set status to unused, if succeded return true 
-    public boolean setUnUsedIfPossible(int unusedCleanTime, boolean includeGlobalXtns) {
+    public boolean setUnusedIfPossible(int unusedCleanTime, boolean includeGlobalXtns) {
         if (!isCandidateForUnusedXtnRemoval(includeGlobalXtns))
             return false;
         if (_status == XtnStatus.UNUSED)

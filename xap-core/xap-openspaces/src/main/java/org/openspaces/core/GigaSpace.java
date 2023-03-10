@@ -21,22 +21,14 @@ import com.gigaspaces.admin.quiesce.QuiesceToken;
 import com.gigaspaces.async.AsyncFuture;
 import com.gigaspaces.async.AsyncFutureListener;
 import com.gigaspaces.async.AsyncResultsReducer;
-import com.gigaspaces.client.ChangeModifiers;
-import com.gigaspaces.client.ChangeResult;
-import com.gigaspaces.client.ChangeSet;
-import com.gigaspaces.client.ClearModifiers;
-import com.gigaspaces.client.CountModifiers;
-import com.gigaspaces.client.ReadByIdsResult;
-import com.gigaspaces.client.ReadModifiers;
-import com.gigaspaces.client.TakeByIdsResult;
-import com.gigaspaces.client.TakeModifiers;
-import com.gigaspaces.client.WriteModifiers;
+import com.gigaspaces.client.*;
 import com.gigaspaces.client.iterator.SpaceIterator;
 import com.gigaspaces.client.iterator.SpaceIteratorConfiguration;
 import com.gigaspaces.datasource.SpaceDataSourceLoadRequest;
 import com.gigaspaces.datasource.SpaceDataSourceLoadResult;
 import com.gigaspaces.events.DataEventSession;
 import com.gigaspaces.events.EventSessionConfig;
+import com.gigaspaces.internal.server.space.mvcc.MVCCGenerationsState;
 import com.gigaspaces.query.ISpaceQuery;
 import com.gigaspaces.query.IdQuery;
 import com.gigaspaces.query.IdsQuery;
@@ -44,10 +36,7 @@ import com.gigaspaces.query.aggregators.AggregationResult;
 import com.gigaspaces.query.aggregators.AggregationSet;
 import com.j_spaces.core.IJSpace;
 import com.j_spaces.core.LeaseContext;
-
 import net.jini.core.transaction.Transaction;
-
-import net.jini.core.transaction.TransactionException;
 import org.openspaces.core.exception.ExceptionTranslator;
 import org.openspaces.core.executor.DistributedTask;
 import org.openspaces.core.executor.Task;
@@ -55,7 +44,6 @@ import org.openspaces.core.transaction.TransactionProvider;
 import org.springframework.dao.DataAccessException;
 
 import java.io.Serializable;
-import java.rmi.RemoteException;
 import java.util.concurrent.Future;
 
 /**
@@ -2972,6 +2960,11 @@ public interface GigaSpace {
     DataEventSession newDataEventSession(EventSessionConfig config);
 
     void setQuiesceToken(QuiesceToken token);
+
+    /**
+     * @since  16.3.0
+     */
+    void setMVCCGenerationsState(MVCCGenerationsState generationsState);
 
     /**
      * Translates the template object into pre-processed packet which will be sent to the space. The

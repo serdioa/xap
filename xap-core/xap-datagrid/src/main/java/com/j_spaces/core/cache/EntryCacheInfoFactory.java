@@ -20,6 +20,7 @@ import com.gigaspaces.internal.server.space.SpaceEngine;
 import com.gigaspaces.internal.server.storage.IEntryHolder;
 import com.j_spaces.core.cache.blobStore.BlobStoreRefEntryCacheInfo;
 import com.j_spaces.core.cache.blobStore.IBlobStoreEntryHolder;
+import com.j_spaces.core.cache.mvcc.MVCCEntryCacheInfo;
 
 /*******************************************************************************
  * Copyright (c) 2010 GigaSpaces Technologies Ltd. All rights reserved
@@ -48,9 +49,21 @@ public class EntryCacheInfoFactory {
         return eci;
     }
 
+    public static IEntryCacheInfo createMvccEntryCacheInfo(IEntryHolder entryHolder, int backRefsSize) {
+        MVCCEntryCacheInfo mvccEntryCacheInfo = new MVCCEntryCacheInfo(entryHolder, backRefsSize);
+        return mvccEntryCacheInfo;
+    }
+
+    public static IEntryCacheInfo createMvccEntryCacheInfo(IEntryHolder entryHolder) {
+        MVCCEntryCacheInfo mvccEntryCacheInfo = new MVCCEntryCacheInfo(entryHolder);
+        return mvccEntryCacheInfo;
+    }
 
     public static IEntryCacheInfo createEntryCacheInfo(IEntryHolder entryHolder, int backRefsSize, boolean pin, SpaceEngine engine) {
-        return engine.getCacheManager().isEvictableFromSpaceCachePolicy() ? new EvictableEntryCacheInfo(entryHolder, backRefsSize, pin) : new MemoryBasedEntryCacheInfo(entryHolder, backRefsSize);
+        return engine.getCacheManager().isEvictableFromSpaceCachePolicy() ?
+                new EvictableEntryCacheInfo(entryHolder, backRefsSize, pin)
+                : engine.isMvccEnabled() ?
+                    createMvccEntryCacheInfo(entryHolder, backRefsSize) : new MemoryBasedEntryCacheInfo(entryHolder, backRefsSize);
     }
 
 

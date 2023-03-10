@@ -17,7 +17,6 @@
 package com.gigaspaces.attribute_store;
 
 import com.gigaspaces.internal.io.IOUtils;
-import com.gigaspaces.internal.quiesce.InternalQuiesceDetails;
 
 import java.io.*;
 
@@ -57,4 +56,6 @@ public interface AttributeStore extends Closeable {
     String remove(String key) throws IOException;
 
     SharedLockProvider getSharedLockProvider();
+
+    SharedReentrantReadWriteLockProvider getSharedReentrantReadWriteLockProvider();
 }

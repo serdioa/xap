@@ -16,7 +16,6 @@
 
 package com.gigaspaces.lrmi.nio;
 
-import com.gigaspaces.config.ConfigurationException;
 import com.gigaspaces.config.lrmi.ITransportConfig;
 import com.gigaspaces.config.lrmi.nio.NIOConfiguration;
 import com.gigaspaces.internal.lrmi.LRMIMonitoringDetailsImpl;
@@ -211,6 +210,9 @@ public class PAdapter implements ProtocolAdapter<CPeer> {
             m_Pivot.shutdown();
         }
 
+        if (_clientConversationRunner != null) {
+            _clientConversationRunner.requestShutdown();
+        }
         _exporter.unexport(_classProvider);
     }
 

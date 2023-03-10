@@ -20,6 +20,8 @@ import com.gigaspaces.internal.cluster.ClusterTopology;
 import com.gigaspaces.internal.cluster.SpaceClusterInfo;
 import com.gigaspaces.internal.utils.GsEnv;
 
+import java.math.BigDecimal;
+
 /**
  * @author Niv Ingberg
  * @since 9.0.0
@@ -44,6 +46,9 @@ public class PartitionedClusterUtils {
     public static int getPartitionId(Object routingValue, SpaceClusterInfo clusterInfo) {
         if (routingValue == null)
             return NO_PARTITION;
+        if (routingValue instanceof BigDecimal){
+            routingValue = ((BigDecimal) routingValue).stripTrailingZeros();
+        }
         int numberOfPartitions = clusterInfo.getNumberOfPartitions() != 0 ? clusterInfo.getNumberOfPartitions() : 1;
         if (routingValue instanceof Long && PRECISE_LONG_ROUTING) {
             return clusterInfo.isChunksRouting() ? clusterInfo.getPartitionId((safeAbs((Long) routingValue))) : (int) (safeAbs((Long) routingValue) % numberOfPartitions);
@@ -54,6 +59,9 @@ public class PartitionedClusterUtils {
     public static int getPartitionId(Object routingValue, ClusterTopology topology) {
         if (routingValue == null)
             return NO_PARTITION;
+        if (routingValue instanceof BigDecimal){
+            routingValue = ((BigDecimal) routingValue).stripTrailingZeros();
+        }
         if (routingValue instanceof Long && PRECISE_LONG_ROUTING) {
             return  topology.getPartitionId((safeAbs((Long) routingValue)));
         }

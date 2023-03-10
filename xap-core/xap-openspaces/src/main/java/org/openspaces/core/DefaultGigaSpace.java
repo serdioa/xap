@@ -18,24 +18,8 @@
 package org.openspaces.core;
 
 import com.gigaspaces.admin.quiesce.QuiesceToken;
-import com.gigaspaces.async.AsyncFuture;
-import com.gigaspaces.async.AsyncFutureListener;
-import com.gigaspaces.async.AsyncResultFilter;
-import com.gigaspaces.async.AsyncResultsReducer;
-import com.gigaspaces.async.FutureFactory;
-import com.gigaspaces.client.ChangeModifiers;
-import com.gigaspaces.client.ChangeResult;
-import com.gigaspaces.client.ChangeSet;
-import com.gigaspaces.client.ClearModifiers;
-import com.gigaspaces.client.CountModifiers;
-import com.gigaspaces.client.IsolationLevelModifiers;
-import com.gigaspaces.client.ReadByIdsResult;
-import com.gigaspaces.client.ReadByIdsResultImpl;
-import com.gigaspaces.client.ReadModifiers;
-import com.gigaspaces.client.TakeByIdsResult;
-import com.gigaspaces.client.TakeByIdsResultImpl;
-import com.gigaspaces.client.TakeModifiers;
-import com.gigaspaces.client.WriteModifiers;
+import com.gigaspaces.async.*;
+import com.gigaspaces.client.*;
 import com.gigaspaces.client.iterator.SpaceIterator;
 import com.gigaspaces.client.iterator.SpaceIteratorConfiguration;
 import com.gigaspaces.datasource.SpaceDataSourceLoadRequest;
@@ -47,6 +31,7 @@ import com.gigaspaces.internal.client.QueryResultTypeInternal;
 import com.gigaspaces.internal.client.cache.ISpaceCache;
 import com.gigaspaces.internal.client.spaceproxy.ISpaceProxy;
 import com.gigaspaces.internal.client.spaceproxy.executors.SpaceDataSourceLoadTask;
+import com.gigaspaces.internal.server.space.mvcc.MVCCGenerationsState;
 import com.gigaspaces.internal.utils.ObjectUtils;
 import com.gigaspaces.internal.utils.StringUtils;
 import com.gigaspaces.query.ISpaceQuery;
@@ -62,7 +47,6 @@ import io.opentracing.Span;
 import io.opentracing.Tracer;
 import io.opentracing.util.GlobalTracer;
 import net.jini.core.transaction.Transaction;
-import net.jini.core.transaction.TransactionException;
 import org.openspaces.core.exception.DefaultExceptionTranslator;
 import org.openspaces.core.exception.ExceptionTranslator;
 import org.openspaces.core.executor.DistributedTask;
@@ -1686,6 +1670,11 @@ public class DefaultGigaSpace implements GigaSpace, InternalGigaSpace {
     @Override
     public void setQuiesceToken(QuiesceToken token) {
         space.getDirectProxy().setQuiesceToken(token);
+    }
+
+    @Override
+    public void setMVCCGenerationsState(MVCCGenerationsState generationsState) {
+        space.getDirectProxy().setMVCCGenerationsState(generationsState);
     }
 
     @Override

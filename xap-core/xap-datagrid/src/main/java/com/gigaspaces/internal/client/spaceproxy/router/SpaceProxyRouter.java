@@ -26,13 +26,10 @@ import com.gigaspaces.internal.lookup.SpaceUrlUtils;
 import com.gigaspaces.internal.quiesce.QuiesceTokenProviderImpl;
 import com.gigaspaces.internal.remoting.RemoteOperationFutureListener;
 import com.gigaspaces.internal.remoting.RemoteOperationRequest;
-import com.gigaspaces.internal.remoting.routing.clustered.PostponedAsyncOperationsQueue;
-import com.gigaspaces.internal.remoting.routing.clustered.RemoteOperationsExecutorProxy;
-import com.gigaspaces.internal.remoting.routing.clustered.RemoteOperationsExecutorsCluster;
-import com.gigaspaces.internal.remoting.routing.clustered.RemoteOperationsExecutorsClusterConfig;
-import com.gigaspaces.internal.remoting.routing.clustered.RemoteSpaceProxyLocator;
+import com.gigaspaces.internal.remoting.routing.clustered.*;
 import com.gigaspaces.internal.remoting.routing.partitioned.PartitionedClusterUtils;
 import com.gigaspaces.internal.server.space.IRemoteSpace;
+import com.gigaspaces.internal.server.space.mvcc.MVCCGenerationsState;
 import com.gigaspaces.internal.utils.CollectionUtils;
 import com.gigaspaces.internal.utils.concurrent.IAsyncHandlerProvider;
 import com.gigaspaces.internal.utils.concurrent.ScheduledThreadPoolAsyncHandlerProvider;
@@ -41,14 +38,13 @@ import com.j_spaces.core.SpaceContext;
 import com.j_spaces.core.client.SpaceURL;
 import com.j_spaces.core.client.SpaceURLParser;
 import com.j_spaces.core.exception.internal.ProxyInternalSpaceException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.net.MalformedURLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * @author Niv Ingberg
@@ -335,12 +331,28 @@ public class SpaceProxyRouter {
     }
 
     private void updateDefaultSpaceContext(QuiesceToken token) {
+        final  MVCCGenerationsState generationsState = _defaultSpaceContext != null ? _defaultSpaceContext.getMVCCGenerationsState() : null;
+
         this._defaultSpaceContext = isSecured || isGateway || token != null || _clusterInfo.isChunksRouting() || clusteredProxy
                 ? new SpaceContext(isGateway, getChunksMapGeneration(), clusteredProxy) : null;
         if (token != null) {
             _defaultSpaceContext.setQuiesceToken(token);
         }
         quiesceTokenProvider.setToken(token);
+
+        if (_defaultSpaceContext != null) {
+            this._defaultSpaceContext.setMVCCGenerationsState(generationsState);
+        }
+    }
+
+    /**
+     * @since  16.3.0
+     */
+    public void setGenerationsState(MVCCGenerationsState generationsState) {
+        if (this._defaultSpaceContext == null) {
+            this._defaultSpaceContext  = new SpaceContext();
+        }
+        this._defaultSpaceContext.setMVCCGenerationsState(generationsState);
     }
 
     public SpaceProxyRemoteOperationRouter getOperationRouter() {

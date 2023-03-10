@@ -105,6 +105,60 @@ public class SqliteUtils {
             }
         });
 
+        // criteria range
+        map.put(CriteriaRange.class.getName(), (range, queryBuilder, queryParams) -> {
+            List<Range> ranges = ((CriteriaRange) range).getRanges();
+            if (ranges.size() > 1) {
+                queryBuilder.append("(");
+            }
+            for (int i = 0; i < ranges.size(); i++) {
+                Range r = ranges.get(i);
+
+                RangeToStringFunction subfun = map.get(r.getClass().getName());
+                subfun.toString(r, queryBuilder, queryParams);
+
+                if (i < ranges.size() - 1) {
+                    if (((CriteriaRange) range).isUnion()) {
+                        queryBuilder.append(" OR ");
+                    } else {
+                        queryBuilder.append(" AND ");
+                    }
+                }
+            }
+            if (ranges.size() > 1) {
+                queryBuilder.append(")");
+            }
+
+        });
+
+        map.put(RegexRange.class.getName(), (range, queryBuilder, queryParams) -> {
+            RegexRange regexRange = (RegexRange) range;
+            String regex = regexRange.getValue().toString()
+                    .replaceAll("\\.\\*", "%")
+                    .replaceAll("\\.", "_");
+
+            queryBuilder
+                    .append(regexRange.getPath())
+                    .append(" LiKE ")
+                    .append("'")
+                    .append(regex)
+                    .append("'");
+        });
+
+        map.put(NotRegexRange.class.getName(), (range, queryBuilder, queryParams) -> {
+            NotRegexRange regexRange = (NotRegexRange) range;
+            String regex = regexRange.getValue().toString()
+                    .replaceAll("\\.\\*", "%")
+                    .replaceAll("\\.", "_");
+
+            queryBuilder
+                    .append(regexRange.getPath())
+                    .append(" NOT LiKE ")
+                    .append("'")
+                    .append(regex)
+                    .append("'");
+
+        });
         return map;
     }
 
@@ -170,7 +224,7 @@ public class SqliteUtils {
             if (bigDecimal == null) return null;
             return bigDecimal.toBigInteger();
         });
-        map.put(BigDecimal.class.getName(), ResultSet::getBigDecimal);
+        map.put(BigDecimal.class.getName(), (res,i) -> res.getBigDecimal(i) == null ? null : res.getBigDecimal(i).stripTrailingZeros());
         map.put(Float.class.getName(), ResultSet::getFloat);
         map.put(Double.class.getName(), ResultSet::getDouble);
         map.put(Byte[].class.getName(), ResultSet::getBytes);

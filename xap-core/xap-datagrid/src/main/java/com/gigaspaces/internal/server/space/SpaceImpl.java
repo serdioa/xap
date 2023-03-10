@@ -79,6 +79,7 @@ import com.gigaspaces.internal.server.space.broadcast_table.BroadcastTableHandle
 import com.gigaspaces.internal.server.space.demote.DemoteHandler;
 import com.gigaspaces.internal.server.space.executors.SpaceActionExecutor;
 import com.gigaspaces.internal.server.space.iterator.ServerIteratorRequestInfo;
+import com.gigaspaces.internal.server.space.mvcc.MVCCUtils;
 import com.gigaspaces.internal.server.space.operations.SpaceOperationsExecutor;
 import com.gigaspaces.internal.server.space.operations.WriteEntriesResult;
 import com.gigaspaces.internal.server.space.operations.WriteEntryResult;
@@ -92,10 +93,11 @@ import com.gigaspaces.internal.server.space.recovery.direct_persistency.StorageC
 import com.gigaspaces.internal.server.space.recovery.strategy.SpaceRecoverStrategy;
 import com.gigaspaces.internal.server.space.repartitioning.Status;
 import com.gigaspaces.internal.server.space.repartitioning.Step;
-import com.gigaspaces.internal.server.space.repartitioning.ZKScaleOutUtils;
+import com.gigaspaces.internal.server.space.repartitioning.ZookeeperScaleOutHandler;
 import com.gigaspaces.internal.server.space.suspend.SuspendTypeChangedInternalListener;
 import com.gigaspaces.internal.server.space.tiered_storage.TieredStorageUtils;
 import com.gigaspaces.internal.server.storage.EntryTieredMetaData;
+import com.gigaspaces.internal.server.storage.MVCCEntryMetaData;
 import com.gigaspaces.internal.service.ServiceRegistrationException;
 import com.gigaspaces.internal.space.responses.SpaceResponseInfo;
 import com.gigaspaces.internal.space.transport.xnio.XNioSettings;
@@ -2583,6 +2585,14 @@ public class SpaceImpl extends AbstractService implements IRemoteSpace, IInterna
         return TieredStorageUtils.getEntriesTieredMetaDataByIds(getEngine(), typeName, ids);
     }
 
+    public ArrayList<MVCCEntryMetaData> getMVCCEntryMetaData(String typeName, Object id) {
+        return MVCCUtils.getMVCCEntryMetaData(getEngine(), typeName, id);
+    }
+
+    public boolean isMVCCEntryDirtyUnderTransaction(String typeName, Object id, long transactionId) {
+        return MVCCUtils.isMVCCEntryDirtyUnderTransaction(getEngine(), typeName, id, transactionId);
+    }
+
     public GSEventRegistration notify(ITemplatePacket template, Transaction txn, long lease, SpaceContext sc,
                                       NotifyInfo info)
             throws TransactionException, UnusableEntryException, UnknownTypeException, RemoteException {
@@ -4121,7 +4131,7 @@ public class SpaceImpl extends AbstractService implements IRemoteSpace, IInterna
 
     public void waitForZkUpdate(Step step, String key, Status status)  {
         try {
-            while (!ZKScaleOutUtils.setStepIfPossible(attributeStore, _puName, step.getName(), key, status.getStatus())) {
+            while (!ZookeeperScaleOutHandler.setStepIfPossible(attributeStore, _puName, step.getName(), key, status.getStatus())) {
                 Thread.sleep(1000);
             }
         } catch (InterruptedException e) {

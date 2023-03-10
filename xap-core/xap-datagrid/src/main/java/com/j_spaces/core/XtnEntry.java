@@ -17,7 +17,9 @@
 
 package com.j_spaces.core;
 
+import com.gigaspaces.internal.server.space.mvcc.MVCCGenerationsState;
 import com.gigaspaces.internal.server.storage.IEntryHolder;
+import com.gigaspaces.logger.ConsolidatedLogger;
 import com.j_spaces.core.cache.CacheManager;
 import com.j_spaces.core.cache.IEntryCacheInfo;
 import com.j_spaces.core.cache.XtnData;
@@ -25,7 +27,6 @@ import com.j_spaces.core.client.LocalTransactionManager;
 import com.j_spaces.core.fifo.FifoBackgroundRequest;
 import com.j_spaces.kernel.IStoredList;
 import com.j_spaces.kernel.IStoredListIterator;
-
 import net.jini.core.transaction.server.ServerTransaction;
 
 @com.gigaspaces.api.InternalApi
@@ -34,6 +35,9 @@ public class XtnEntry extends XtnInfo {
     public final transient XtnData _xtnData;
     private final transient FifoBackgroundRequest.AllowFifoNotificationsForNonFifoType _allowFifoNotificationsForNonFifoType;
     private final transient boolean _createdOnNonBackup;
+
+    private transient MVCCGenerationsState mvccGenerationsState;
+    private final transient ConsolidatedLogger logger = ConsolidatedLogger.getLogger("com.gigaspaces.TransactionEntry");
 
     /**
      * Constructs a new Xtn Entry.
@@ -117,5 +121,30 @@ public class XtnEntry extends XtnInfo {
     public boolean createdOnNonBackup()
     {
         return _createdOnNonBackup;
+    }
+
+    public MVCCGenerationsState getMVCCGenerationsState() {
+        return mvccGenerationsState;
+    }
+
+    public void setMVCCGenerationsState(MVCCGenerationsState mvccGenerationsState) {
+        this.mvccGenerationsState = mvccGenerationsState;
+    }
+
+    @Override
+    public boolean setUnusedIfPossible(int unusedCleanTime, boolean includeGlobalXtns) {
+        if (getMVCCGenerationsState() != null) {
+            if (!isTransactionWithLease()) {
+                logger.info("Transaction [{}] without lease has MVCCGenerationsState [{}] " +
+                        "and therefore didn't mark as UNUSED. " +
+                        "For removing this transaction use commit / abort.", m_Transaction, mvccGenerationsState);
+            }
+            return false;
+        }
+        return super.setUnusedIfPossible(unusedCleanTime, includeGlobalXtns);
+    }
+
+    private boolean isTransactionWithLease() {
+        return m_Transaction.getLease() != Long.MAX_VALUE && m_Transaction.getLease() != 0;
     }
 }

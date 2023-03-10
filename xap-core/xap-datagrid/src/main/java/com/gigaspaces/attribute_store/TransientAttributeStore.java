@@ -50,6 +50,11 @@ public class TransientAttributeStore implements AttributeStore, Serializable {
     }
 
     @Override
+    public SharedReentrantReadWriteLockProvider getSharedReentrantReadWriteLockProvider() {
+        throw new UnsupportedOperationException("This attribute store does not support shared reentrant read write locks");
+    }
+
+    @Override
     public void close() throws IOException {
     }
 

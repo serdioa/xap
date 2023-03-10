@@ -24,6 +24,10 @@ public class ZNodePathFactory {
     private static final String DEPLOY_PROCESSING_UNIT = "deploy-processing-unit";
     private static final String UNDEPLOY_PROCESSING_UNIT = "undeploy-processing-unit";
 
+    //FOR MVCC
+    private static final String MVCC = "mvcc";
+
+
     public static String path(String ... elements) {
         return XAP_PREFIX + String.join("/", elements);
     }
@@ -150,5 +154,9 @@ public class ZNodePathFactory {
 
     public static String undeployProcessingUnitRequest( String puName ) {
         return path(REQUESTS, UNDEPLOY_PROCESSING_UNIT, puName );
+    }
+
+    public static String mvcc(String spaceName) {
+        return path(SPACES, spaceName, MVCC);
     }
 }

@@ -1496,7 +1496,7 @@ public class LeaseManager {
                         }
                         if (!xtnEntry.m_Active)
                             continue;  //prepare-commit lease not relevant
-                        if (xtnEntry.setUnUsedIfPossible(0 /*unusedCleanTime*/, _engine.isCleanUnusedEmbeddedGlobalXtns())) {//light removal of unused xtn
+                        if (xtnEntry.setUnusedIfPossible(0 /*unusedCleanTime*/, _engine.isCleanUnusedEmbeddedGlobalXtns())) {//light removal of unused xtn
                             _transactionHandler.removeUnusedTransaction(xtnEntry, true /* needLock*/);
                             unused = true;
                         }
@@ -1694,12 +1694,11 @@ public class LeaseManager {
 
 
             //select candidates
-            Map<ServerTransaction, XtnEntry> map = _transactionHandler
-                    .getXtnTable();
+            Map<ServerTransaction, XtnEntry> map = _transactionHandler.getXtnTable();
             for (Map.Entry<ServerTransaction, XtnEntry> entry : map.entrySet()) {
                 XtnEntry xtnEntry = entry.getValue();
                 if (xtnEntry != null
-                        && xtnEntry.setUnUsedIfPossible(unusedCleanTime, _engine.isCleanUnusedEmbeddedGlobalXtns())) {
+                        && xtnEntry.setUnusedIfPossible(unusedCleanTime, _engine.isCleanUnusedEmbeddedGlobalXtns())) {
                     _transactionHandler
                             .removeUnusedTransaction(xtnEntry, true /* needLock */);
                     reapCount++;

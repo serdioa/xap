@@ -41,6 +41,7 @@ import com.gigaspaces.internal.metadata.ITypeDesc;
 import com.gigaspaces.internal.server.space.IClusterInfoChangedListener;
 import com.gigaspaces.internal.server.space.IRemoteSpace;
 import com.gigaspaces.internal.server.space.SpaceImpl;
+import com.gigaspaces.internal.server.space.mvcc.MVCCGenerationsState;
 import com.gigaspaces.internal.transport.ITemplatePacket;
 import com.gigaspaces.internal.version.PlatformLogicalVersion;
 import com.gigaspaces.logger.Constants;
@@ -417,6 +418,9 @@ public class SpaceProxyImpl extends AbstractDirectSpaceProxy implements SameProx
     }
 
     public void beforeSpaceAction(CommonProxyActionInfo action) {
+        if (action.txn == null && getProxySettings().isMvccEnabled() && action.requireTransactionForMVCC()) {
+            throw new UnsupportedOperationException("Operation " + action.getClass().getSimpleName() + " without transaction are not allowed when MVCC is enabled.");
+        }
         action.txn = _transactionManager.beforeSpaceAction(action.txn);
     }
 
@@ -756,6 +760,11 @@ public class SpaceProxyImpl extends AbstractDirectSpaceProxy implements SameProx
     @Override
     public void setQuiesceToken(QuiesceToken token) {
         getProxyRouter().setQuiesceToken(token);
+    }
+
+    @Override
+    public void setMVCCGenerationsState(MVCCGenerationsState generationsState) {
+        getProxyRouter().setGenerationsState(generationsState);
     }
 
     @Override

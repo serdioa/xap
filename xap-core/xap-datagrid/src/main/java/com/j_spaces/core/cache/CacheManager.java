@@ -93,6 +93,10 @@ import com.j_spaces.core.cache.context.IndexMetricsContext;
 import com.j_spaces.core.cache.context.TemplateMatchTier;
 import com.j_spaces.core.cache.context.TieredState;
 import com.j_spaces.core.cache.fifoGroup.FifoGroupCacheImpl;
+import com.j_spaces.core.cache.mvcc.MVCCCacheManagerHandler;
+import com.j_spaces.core.cache.mvcc.MVCCEntryCacheInfo;
+import com.j_spaces.core.cache.mvcc.MVCCEntryHolder;
+import com.j_spaces.core.cache.mvcc.MVCCShellEntryCacheInfo;
 import com.j_spaces.core.client.*;
 import com.j_spaces.core.cluster.ClusterPolicy;
 import com.j_spaces.core.exception.internal.EngineInternalSpaceException;
@@ -210,6 +214,8 @@ public class CacheManager extends AbstractCacheManager
 
     private final FifoBackgroundDispatcher _fifoBackgroundDispatcher;
     private final FifoGroupCacheImpl _fifoGroupCacheImpl;
+
+    private MVCCCacheManagerHandler _mvccCacheManagerHandler;
 
     private final IEvictionReplicationsMarkersRepository _evictionReplicationsMarkersRepository;
 
@@ -377,6 +383,9 @@ public class CacheManager extends AbstractCacheManager
         _templatesManager = new TemplatesManager(this, numNotifyFifoThreads, numNonNotifyFifoThreads);
         _templateExpirationManager = new TemplateExpirationManager(this);
         _fifoGroupCacheImpl = new FifoGroupCacheImpl(this, _logger);
+        if (_engine.getSpaceImpl().isMvccEnabled()){
+            _mvccCacheManagerHandler = new MVCCCacheManagerHandler(this);
+        }
 
         _isVersionedExternalDB = _engine.getSpaceImpl().getJspaceAttr().isSupportsVersionEnabled();
         _readOnlySA = _storageAdapter.isReadOnly();
@@ -464,9 +473,11 @@ public class CacheManager extends AbstractCacheManager
         _evictionStrategy = createEvictionStrategy(configReader, properties);
 
         //create the lock manager
-        _lockManager = isBlobStoreCachePolicy() ? new BlobStoreLockManager() :
-                (isTieredStorageCachePolicy() ? new TieredStorageLockManager<>(configReader) :
-                        (isAllInCachePolicy() ? new AllInCacheLockManager<>() : new BasicEvictableLockManager<>(configReader)));
+        _lockManager = isBlobStoreCachePolicy() ? new BlobStoreLockManager<>() :
+                (isEvictableFromSpaceCachePolicy() ? new BasicEvictableLockManager<>(configReader) :
+                    (_engine.isMvccEnabled() ? new MVCCLockManager<>() :
+                        (isTieredStorageCachePolicy() ? new TieredStorageLockManager<>(configReader) :
+                            new AllInCacheLockManager<>() )));
 
 		/* get min extd' index activation size  */
         _minExtendedIndexActivationSize = configReader.getIntSpaceProperty(
@@ -2323,7 +2334,8 @@ public class CacheManager extends AbstractCacheManager
         xtnEntry.setOperatedUpon();
         TypeData typeData = _typeDataMap.get(entryHolder.getServerTypeDesc());
 
-        IEntryCacheInfo pEntry = getPEntryByUid(entryHolder.getUID());
+        IEntryCacheInfo pEntry = isMVCCEnabled() ?
+                getMVCCEntryCacheInfoByEntryHolder((MVCCEntryHolder) entryHolder) : getPEntryByUid(entryHolder.getUID());
         if (!pEntry.isPinned())
             throw new RuntimeException("associateEntryWithXtn: internal error- entry uid =" + pEntry.getUID() + " not pinned");
 
@@ -2450,6 +2462,27 @@ public class CacheManager extends AbstractCacheManager
         return pEntry != null ? pEntry.getEntryHolder(this) : null;
     }
 
+    public MVCCShellEntryCacheInfo getMVCCShellEntryCacheInfoByUid(String uid) {
+        if (isMVCCEnabled()) {
+            return (MVCCShellEntryCacheInfo) _entries.get(uid);
+        }
+        return null;
+    }
+
+    public IEntryCacheInfo getMVCCEntryCacheInfoByEntryHolder(MVCCEntryHolder entryHolder) {
+        MVCCShellEntryCacheInfo shellEntryCacheInfo = getMVCCShellEntryCacheInfoByUid(entryHolder.getUID());
+        if (shellEntryCacheInfo != null) {
+            Iterator<MVCCEntryCacheInfo> mvccEntryCacheInfoIterator = shellEntryCacheInfo.descIterator();
+            while (mvccEntryCacheInfoIterator.hasNext()) {
+                MVCCEntryCacheInfo next = mvccEntryCacheInfoIterator.next();
+                if (next.getEntryHolder() == entryHolder) { //by reference
+                    return next;
+                }
+            }
+        }
+        return null;
+    }
+
     /**
      * @param uid of entry to check
      * @return <code>true</code> if this entry is in pure cache; <code>false</code> otherwise.
@@ -2500,6 +2533,10 @@ public class CacheManager extends AbstractCacheManager
                     unpinIfNeeded(context, pEh, null /*template*/, pEntry);
             }
         }
+    }
+
+    public void disconnectMVCCEntryFromXtn(Context context, MVCCEntryCacheInfo pEntry, XtnEntry xtnEntry, boolean xtnEnd) throws SAException {
+        _mvccCacheManagerHandler.disconnectPEntryFromXtn(context, pEntry, xtnEntry, xtnEnd);
     }
 
 
@@ -2681,13 +2718,20 @@ public class CacheManager extends AbstractCacheManager
                         pXtn.getNeedNotifyEntries(true).add(pe);
                     } else //notify for operation
                     {
-                        IEntryCacheInfo pe = EntryCacheInfoFactory.createEntryCacheInfo(eh.createCopy());
+                        IEntryCacheInfo pe =
+                                isMVCCEnabled() ?
+                                    EntryCacheInfoFactory.createMvccEntryCacheInfo(eh.createCopy()):
+                                    EntryCacheInfoFactory.createEntryCacheInfo(eh.createCopy());
                         pe.getEntryHolder(this).setWriteLockOperation(eh.getWriteLockOperation(), false /*createSnapshot*/);
                         pXtn.getNeedNotifyEntries(true).add(pe);
                     }
                 }
             }
         }
+    }
+
+    public boolean isMVCCEnabled() {
+        return _mvccCacheManagerHandler != null;
     }
 
     /**
@@ -3646,7 +3690,12 @@ public class CacheManager extends AbstractCacheManager
             while (true) {
                 insertedToEvictionStrategy = false;
                 alreadyIn = false;
-                IEntryCacheInfo oldEntry = _entries.putIfAbsent(pEntry.getUID(), pEntry);
+                IEntryCacheInfo oldEntry;
+                if(isMVCCEnabled()){
+                    oldEntry = _mvccCacheManagerHandler.insertMvccEntryToCache((MVCCEntryCacheInfo) pEntry, _entries);
+                } else {
+                     oldEntry = _entries.putIfAbsent(pEntry.getUID(), pEntry);
+                }
 
                 if (oldEntry == null)
                     break;
@@ -3808,8 +3857,9 @@ public class CacheManager extends AbstractCacheManager
                             pEntry.getBackRefs().add(TypeDataIndex._DummyOI);
                     } else
                         sequenceNumPlaceHolderPos = -1;   //for off-heap without backrefs
-                } else
+                } else {
                     index.insertEntryIndexedField(pEntry, index.getIndexValue(entryData), pType);
+                }
 
                 if (pType.supportsDynamicIndexing() && index.getIndexCreationNumber() > indexBuildNumber)
                     indexBuildNumber = index.getIndexCreationNumber();
@@ -4094,7 +4144,8 @@ public class CacheManager extends AbstractCacheManager
             }
         } else {//regular delete
             if (pEntry == null)
-                pEntry = _entries.remove(entryHolder.getUID());
+                //right now we arrive here when we rollback a mvcc write under transaction so we deal with the dirty entry only, assuming it's not null
+                pEntry = isMVCCEnabled() ? getMVCCShellEntryCacheInfoByUid(entryHolder.getUID()).getDirtyEntry() : _entries.remove(entryHolder.getUID());
             else
                 _entries.remove(entryHolder.getUID(), pEntry);
         }
@@ -4119,17 +4170,21 @@ public class CacheManager extends AbstractCacheManager
             _cacheSize.decrementAndGet();
         // clean Xtn reference, if exists
         XtnData pXtn = null;
-        if (pEntry.getEntryHolder(this).getXidOriginatedTransaction() != null) {
-            pXtn = pEntry.getEntryHolder(this).getXidOriginated().getXtnData();
+        IEntryHolder eh = pEntry.getEntryHolder(this);
+        if (eh.getXidOriginatedTransaction() != null) {
+            pXtn = eh.getXidOriginated().getXtnData();
             if (pXtn != null)
                 pXtn.removeFromNewEntries(pEntry);
         }
-        if (pEntry.getEntryHolder(this).getWriteLockTransaction() != null) {
-            if (pEntry.getEntryHolder(this).getXidOriginatedTransaction() == null || !pEntry.getEntryHolder(this).getXidOriginatedTransaction().equals(pEntry.getEntryHolder(this).getWriteLockTransaction()))
-                pXtn = pEntry.getEntryHolder(this).getWriteLockOwner().getXtnData();
+        if (eh.getWriteLockTransaction() != null) {
+            if (eh.getXidOriginatedTransaction() == null || !eh.getXidOriginatedTransaction().equals(eh.getWriteLockTransaction()))
+                pXtn = eh.getWriteLockOwner().getXtnData();
             if (pXtn != null) {
                 removeLockedEntry(pXtn, pEntry);
                 pXtn.removeTakenEntry(pEntry);
+                if(isMVCCEnabled()) {
+                    getMVCCShellEntryCacheInfoByUid(entryHolder.getUID()).clearDirtyEntry();
+                }
             }
         }
 

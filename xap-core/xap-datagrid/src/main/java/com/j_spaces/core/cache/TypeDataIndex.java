@@ -38,7 +38,6 @@ import com.gigaspaces.metadata.index.ISpaceIndex;
 import com.gigaspaces.metadata.index.SpaceIndexType;
 import com.gigaspaces.metrics.LongCounter;
 import com.gigaspaces.server.ServerEntry;
-import com.j_spaces.core.Constants;
 import com.j_spaces.core.cache.fifoGroup.FifoGroupsMainIndexExtention;
 import com.j_spaces.core.cache.fifoGroup.IFifoGroupsIndexExtention;
 import com.j_spaces.core.client.DuplicateIndexValueException;
@@ -48,13 +47,12 @@ import com.j_spaces.kernel.IStoredList;
 import com.j_spaces.kernel.StoredListFactory;
 import com.j_spaces.kernel.SystemProperties;
 import com.j_spaces.kernel.list.IScanListIterator;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 @com.gigaspaces.api.InternalApi
 public class TypeDataIndex<K> {
@@ -389,10 +387,11 @@ public class TypeDataIndex<K> {
      * insert entry indexed field from cache.
      */
     public void insertEntryIndexedField(IEntryCacheInfo pEntry, K fieldValue, TypeData pType) {
-        if (_fifoGroupsIndexExtention == null)
+        if (_fifoGroupsIndexExtention == null) {
             insertEntryIndexedField_impl(pEntry, fieldValue, pType, pEntry.getBackRefs());
-        else
+        } else {
             _fifoGroupsIndexExtention.insertEntryIndexedField(pEntry, fieldValue, pType);
+        }
 
     }
 
@@ -411,6 +410,7 @@ public class TypeDataIndex<K> {
         // check if field's value is null - if so store it in null entries
         boolean uniqueValue = true;
         boolean alreadyCloned = false;
+        boolean isMvccIdIndex = _cacheManager.isMVCCEnabled() && pType.getIdField() == this;
 
         if (fieldValue == null) {
             oi = _nullEntries.add(pEntry);
@@ -421,9 +421,12 @@ public class TypeDataIndex<K> {
             updateValueType(fieldValue);
 
             if (isUniqueIndex()) {
+                if (isMvccIdIndex){ //use MVCCShellEntryCacheInfo
+                    pEntry = _cacheManager.getPEntryByUid(pEntry.getUID());
+                }
                 while (true) {
                     IEntryCacheInfo other = getUniqueEntriesStore().putIfAbsent(fieldValue, pEntry);
-                    if (other == null) {
+                    if (other == null || isMvccIdIndex) {
                         oi = pEntry;
                         break;
                     }
