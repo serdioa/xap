@@ -392,7 +392,9 @@ public class SystemBoot {
     }
 
     private static void substituteSecurityProperties() {
-        try (InputStream input = Thread.currentThread().getContextClassLoader().getResourceAsStream("config/security/security.properties")) {
+        String securityPropertyFile = System.getProperty("com.gs.security.properties-file", "config/security/security.properties");
+        logger.info("path to security properties " + securityPropertyFile);
+        try (InputStream input = Thread.currentThread().getContextClassLoader().getResourceAsStream(securityPropertyFile)) {
             Properties prop = new Properties();
             prop.load(input);
             prop.forEach((key, value) -> AUTH_PROPERTIES.put((String) key, (String) value));

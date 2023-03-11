@@ -43,24 +43,20 @@ public class AuthServiceFactory extends ServiceFactory {
 
     @Override
     protected Closeable startService(CustomURLClassLoader classLoader) throws Exception {
-
         Method launchMethod = getServiceLauncherMethod(classLoader, "launch");
         launchMethod.setAccessible(true);
         String[] args = new String[] {};
         // todo : change condition!
+        logger.info("startService auth!!!!");
         if (SystemBoot.AUTH_PROPERTIES.get(AUTH_ADD_CONFIG_LOCATION_PROPERTY) != null) {
             String additionalPropertiesConfig = "--".concat(AUTH_ADD_CONFIG_LOCATION_PROPERTY).concat("=").concat(SystemBoot.AUTH_PROPERTIES.get(AUTH_ADD_CONFIG_LOCATION_PROPERTY));
-
-            logger.info("zk connection string is " + SystemInfo.singleton().getManagerClusterInfo().getZookeeperConnectionString() );
-
-            String zkConfig = "--spring.application.json={\"zk_connection\":\"" + SystemInfo.singleton().getManagerClusterInfo().getZookeeperConnectionString() + "\"}";
+            String zkConfig = "--spring.application.json={\"zk_connection\":\"" +  System.getenv("ZK_CON_STR") + "\"}";
             logger.info("zk connection string from cluster " + SystemInfo.singleton().getManagerClusterInfo().getZookeeperConnectionString() );
             logger.info("zk connection string from env " + System.getenv("ZK_CON_STR") );
             args = new String[] { additionalPropertiesConfig, zkConfig };
         }
 
         launchMethod.invoke(newJarLauncher(classLoader), new Object[]{ args });
-
         return () -> logger.info("{} service terminated", AUTH);
     }
 
