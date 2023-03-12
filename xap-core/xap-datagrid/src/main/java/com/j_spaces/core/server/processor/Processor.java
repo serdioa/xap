@@ -1894,7 +1894,7 @@ public class Processor implements IConsumerObject<BusPacket<Processor>> {
                         try {
                             entryLock = getEntryLockObject(entry);
                             synchronized (entryLock) {
-                                if (!_engine.isMvccEnabled()){
+                                if (_engine.isMvccEnabled()){
                                     _cacheManager.disconnectMVCCEntryFromXtn(context, (MVCCEntryCacheInfo) entryCacheHolder, xtnEntry, true);
                                 } else{
                                     IEntryHolder eh = _cacheManager.getEntry(context, entry, true /*tryInsertToCache*/, true /*lockedEntry*/, true /*useOnlyCache*/);
