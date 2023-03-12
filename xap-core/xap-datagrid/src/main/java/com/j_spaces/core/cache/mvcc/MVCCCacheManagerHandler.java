@@ -31,7 +31,7 @@ public class MVCCCacheManagerHandler {
         return null;
     }
 
-    public void disconnectPEntryFromXtn(Context context, MVCCEntryCacheInfo pEntry, XtnEntry xtnEntry, boolean xtnEnd)
+    public void disconnectMvccEntryFromXtn(Context context, MVCCEntryCacheInfo pEntry, XtnEntry xtnEntry, boolean xtnEnd)
             throws SAException {
         if (pEntry == null)
             return; //already disconnected (writelock replaced)
@@ -80,7 +80,7 @@ public class MVCCCacheManagerHandler {
                     dirtyEntryHolder.getWriteLockOwner() == xtnEntry &&
                     dirtyEntryHolder.isLogicallyDeleted() &&
                     dirtyEntryHolder.getCommittedGeneration() == ((MVCCEntryHolder) entry).getOverrideGeneration()){
-                    disconnectPEntryFromXtn(context, dirtyEntryCacheInfo, xtnEntry, true);
+                    disconnectMvccEntryFromXtn(context, dirtyEntryCacheInfo, xtnEntry, true);
                     mvccShellEntryCacheInfo.addEntryGeneration();
             }
         }

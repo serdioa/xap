@@ -7606,6 +7606,10 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
         return _mvccSpaceEngineHandler != null;
     }
 
+    public static EntryDeletedException getEntryDeletedException() {
+        return ENTRY_DELETED_EXCEPTION;
+    }
+
     public Logger getLogger() {
         return _logger;
     }

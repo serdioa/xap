@@ -42,7 +42,7 @@ public class MVCCSpaceEngineHandler {
                 entryLock = _cacheManager.getLockManager().getLockObject(entry);
                 try {
                     synchronized (entryLock) {
-                        if (entry.getWriteLockOperation() == SpaceOperations.TAKE) {
+                        if (entry.getWriteLockOperation() == SpaceOperations.TAKE && entry.getWriteLockOwner() == xtnEntry) {
                             MVCCShellEntryCacheInfo mvccShellEntryCacheInfo = _cacheManager.getMVCCShellEntryCacheInfoByUid(entry.getUID());
                             EntryXtnInfo entryXtnInfo = entry.getTxnEntryData().copyTxnInfo(false, false);
                             MVCCEntryHolder dummyEntry = entry.createLogicallyDeletedDummyEntry(entryXtnInfo);
@@ -52,13 +52,8 @@ public class MVCCSpaceEngineHandler {
                             entry.setOverrideGeneration(nextGeneration);
                             entry.resetEntryXtnInfo();
                             entry.setMaybeUnderXtn(true);
-                            continue;
-                        }
-                        if (entry.getWriteLockOperation() == SpaceOperations.WRITE && entry.getWriteLockOwner() == xtnEntry) {
+                        } else if (entry.getWriteLockOperation() == SpaceOperations.WRITE && entry.getWriteLockOwner() == xtnEntry) {
                             entry.setCommittedGeneration(nextGeneration);
-                        }
-                        if (entry.anyReadLockXtn() && entry.getReadLockOwners().contains(xtnEntry)) {
-                            // todo: right now do nothing.
                         }
                     }
                 } finally {
@@ -115,7 +110,7 @@ public class MVCCSpaceEngineHandler {
                 || isEntryMatchedByGenerationsState(mvccGenerationsState, entryHolder)
                 || entryHolder.getCommittedGeneration() == -1 /*dirty entry*/) {
             if  (entryHolder.isLogicallyDeleted()){
-                throw new EntryDeletedException();
+                throw _spaceEngine.getEntryDeletedException();
             }
             _spaceEngine.performTemplateOnEntrySA(context, template, entryHolder, makeWaitForInfo);
             return entryHolder;

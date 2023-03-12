@@ -1278,7 +1278,10 @@ public class Processor implements IConsumerObject<BusPacket<Processor>> {
                                 IEntryHolder eh = null;
                                 //NOTE: taken entries are handled in handleCommittedTakenEntries
 
-                                if(!_engine.isMvccEnabled()) {
+                                if(_engine.isMvccEnabled()){
+                                    _cacheManager.handleNewMvccGeneration(context, entry, xtnEntry);
+                                    _cacheManager.disconnectMVCCEntryFromXtn(context, (MVCCEntryCacheInfo) entryCacheHolder, xtnEntry, true);
+                                } else{
                                     if (!entry.isBlobStoreEntry())
                                         eh = _cacheManager.getEntry(context, entry.getUID(), null, null, true /*tryInsertToCache*/,
                                                 true /*lockedEntry*/, true /*useOnlyCache*/);
@@ -1292,9 +1295,6 @@ public class Processor implements IConsumerObject<BusPacket<Processor>> {
                                         continue ENTRY_LOOP;
                                     entry = eh;
                                     _cacheManager.disconnectEntryFromXtn(context, entry, xtnEntry, true /*xtnEnd*/);
-                                } else{
-                                    _cacheManager.handleNewMvccGeneration(context, entry, xtnEntry);
-                                    _cacheManager.disconnectMVCCEntryFromXtn(context, (MVCCEntryCacheInfo) entryCacheHolder, xtnEntry, true);
                                 }
                                 boolean updatedEntry = pXtn.isUpdatedEntry(entry);
 
@@ -1781,9 +1781,9 @@ public class Processor implements IConsumerObject<BusPacket<Processor>> {
                                 IServerTypeDesc tte = _engine.getTypeManager().getServerTypeDesc(entry.getClassName());
                                 context.setOperationID(pXtn.getOperationID(entry.getUID()));
                                 _engine.removeEntrySA(context, entry, tte, xtnEntry.isFromReplication() /*fromReplication*/,
-                                            true /*origin*/, SpaceEngine.EntryRemoveReasonCodes.TAKE,
-                                            true/* disable replication */, false /* disable processor call */,
-                                            true /*disableSADelete*/);
+                                        true /*origin*/, SpaceEngine.EntryRemoveReasonCodes.TAKE,
+                                        true/* disable replication */, false /* disable processor call */,
+                                        true /*disableSADelete*/);
                             }
                         } /* synchronized(entryLock) */
                         continue;
@@ -1894,7 +1894,9 @@ public class Processor implements IConsumerObject<BusPacket<Processor>> {
                         try {
                             entryLock = getEntryLockObject(entry);
                             synchronized (entryLock) {
-                                if (!_engine.isMvccEnabled()) {
+                                if (!_engine.isMvccEnabled()){
+                                    _cacheManager.disconnectMVCCEntryFromXtn(context, (MVCCEntryCacheInfo) entryCacheHolder, xtnEntry, true);
+                                } else{
                                     IEntryHolder eh = _cacheManager.getEntry(context, entry, true /*tryInsertToCache*/, true /*lockedEntry*/, true /*useOnlyCache*/);
                                     if (eh == null || eh.isDeleted())
                                         continue ENTRY_LOOP;
@@ -1916,8 +1918,6 @@ public class Processor implements IConsumerObject<BusPacket<Processor>> {
                                             continue ENTRY_LOOP;
                                         }
                                     }
-                                } else{
-                                    _cacheManager.disconnectMVCCEntryFromXtn(context, (MVCCEntryCacheInfo) entryCacheHolder, xtnEntry, true);
                                 }
                                 boolean updatedEntry = pXtn.isUpdatedEntry(entry);
 
