@@ -3246,25 +3246,29 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
 
                 boolean considerNotifyFifoForNonFifoEvents = false;
 
-                if (xtnEntry.m_SingleParticipant)
+                if (xtnEntry.m_SingleParticipant) {
                     considerNotifyFifoForNonFifoEvents = _coreProcessor.handleNotifyFifoInCommit(context, xtnEntry, true /*fifoNotifyForNonFifoEvents*/);
-
-                if (xtnEntry.m_SingleParticipant)
                     _fifoGroupsHandler.prepareForFifoGroupsAfterXtnScans(context, xtnEntry);
+                }
 
+                if(isMvccEnabled() && xtnEntry.m_SingleParticipant){
+                    _mvccSpaceEngineHandler.preCommitMvccEntries(context, xtnEntry);
+                }
 
                 xtnEntry.setStatus(XtnStatus.PREPARED);
                 xtnEntry.m_AlreadyPrepared = true;
 
+
                 //add info of  prepared2PCXtns info in order to handle stuck tm or participant
-                if (!xtnEntry.m_SingleParticipant)
+                if (!xtnEntry.m_SingleParticipant) {
                     getTransactionHandler().addToPrepared2PCXtns(xtnEntry);
+                }
 
                 //fifo group op performed under this xtn
                 if (xtnEntry.m_SingleParticipant && xtnEntry.getXtnData().anyFifoGroupOperations())
                     _cacheManager.handleFifoGroupsCacheOnXtnEnd(context, xtnEntry);
                 //for 1PC- handle taken entries under xtn
-                if (xtnEntry.m_SingleParticipant) {
+                if (xtnEntry.m_SingleParticipant && !isMvccEnabled()) {
                     _coreProcessor.handleCommittedTakenEntries(context, xtnEntry);
                 }
 
@@ -3731,8 +3735,9 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
                     return res;
             }
 
-            //We did not find the entry by id in both memory and disk - we can stop.
-            if (_cacheManager.isTieredStorageCachePolicy()) {
+            //For tiered storage: We did not find the entry by id in both memory and disk - we can stop.
+            //For MVCC: We did not find any entry generation by id (the shell is empty) - we can stop.
+            if (_cacheManager.isTieredStorageCachePolicy() || _cacheManager.isMVCCEnabled()) {
                 return null;
             }
         }
@@ -5903,25 +5908,25 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
                 }
                 boolean considerNotifyFifoForNonFifoEvents = false;
 
-                if (!xtnEntry.m_SingleParticipant)
+                if (!xtnEntry.m_SingleParticipant) {
                     considerNotifyFifoForNonFifoEvents = _coreProcessor.handleNotifyFifoInCommit(context, xtnEntry, true /*fifoNotifyForNonFifoEvents*/);
-
-                if (!xtnEntry.m_SingleParticipant)
                     _fifoGroupsHandler.prepareForFifoGroupsAfterXtnScans(context, xtnEntry);
+                }
 
                 context.setOperationID(operationID);
                 _cacheManager.commit(context, xtnEntry, xtnEntry.m_SingleParticipant, xtnEntry.m_AnyUpdates, supportsTwoPhaseReplication);
 
-                if(isMvccEnabled()){
-                    _mvccSpaceEngineHandler.commitMVCCEntries(context, xtnEntry);
+                if(isMvccEnabled() && !xtnEntry.m_SingleParticipant){
+                    _mvccSpaceEngineHandler.preCommitMvccEntries(context, xtnEntry);
                 }
 
                 xtnEntry.setStatus(XtnStatus.COMMITING);
+
                 //fifo group op performed under this xtn
                 if (!xtnEntry.m_SingleParticipant && xtnEntry.getXtnData().anyFifoGroupOperations())
                     _cacheManager.handleFifoGroupsCacheOnXtnEnd(context, xtnEntry);
                 //for 2PC- handle taken entries under xtn
-                if (!xtnEntry.m_SingleParticipant) {
+                if (!xtnEntry.m_SingleParticipant && !isMvccEnabled()) {
                     _coreProcessor.handleCommittedTakenEntries(context, xtnEntry);
                 }
 
@@ -7599,6 +7604,10 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
 
     public boolean isMvccEnabled() {
         return _mvccSpaceEngineHandler != null;
+    }
+
+    public static EntryDeletedException getEntryDeletedException() {
+        return ENTRY_DELETED_EXCEPTION;
     }
 
     public Logger getLogger() {

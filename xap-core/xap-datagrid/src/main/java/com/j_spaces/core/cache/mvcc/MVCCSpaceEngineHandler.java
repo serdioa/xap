@@ -10,6 +10,8 @@ import com.j_spaces.core.cache.context.Context;
 import com.j_spaces.core.sadapter.ISAdapterIterator;
 import com.j_spaces.core.sadapter.SAException;
 import com.j_spaces.core.sadapter.SelectType;
+import com.j_spaces.core.server.transaction.EntryXtnInfo;
+import com.j_spaces.kernel.locks.ILockObject;
 
 import java.util.Iterator;
 
@@ -23,25 +25,39 @@ public class MVCCSpaceEngineHandler {
         _cacheManager = spaceEngine.getCacheManager();
     }
 
-    public void commitMVCCEntries(Context context, XtnEntry xtnEntry) throws SAException {
+    public void preCommitMvccEntries(Context context, XtnEntry xtnEntry) throws SAException {
         final MVCCGenerationsState mvccGenerationsState = xtnEntry.getMVCCGenerationsState();
         if (mvccGenerationsState == null) return;
         final long nextGeneration = mvccGenerationsState.getNextGeneration();
         ISAdapterIterator<IEntryHolder> entriesIter = null;
         entriesIter = _cacheManager.makeUnderXtnEntriesIter(context,
                 xtnEntry, SelectType.ALL_ENTRIES, false /* returnPEntry*/);
+        ILockObject entryLock = null;
         if (entriesIter != null) {
             while (true) {
                 MVCCEntryHolder entry = (MVCCEntryHolder) entriesIter.next();
-                if (entry == null)
+                if (entry == null) {
                     break;
-                MVCCShellEntryCacheInfo mvccShellEntryCacheInfo = _cacheManager.getMVCCShellEntryCacheInfoByUid(entry.getUID());
-                if (entry.getWriteLockOwner() == xtnEntry) {
-                    entry.setCommittedGeneration(nextGeneration);
-                    mvccShellEntryCacheInfo.addEntryGeneration();
                 }
-                if (entry.anyReadLockXtn() && entry.getReadLockOwners().contains(xtnEntry)) {
-                    // todo: right now do nothing.
+                entryLock = _cacheManager.getLockManager().getLockObject(entry);
+                try {
+                    synchronized (entryLock) {
+                        if (entry.getWriteLockOperation() == SpaceOperations.TAKE && entry.getWriteLockOwner() == xtnEntry) {
+                            MVCCShellEntryCacheInfo mvccShellEntryCacheInfo = _cacheManager.getMVCCShellEntryCacheInfoByUid(entry.getUID());
+                            EntryXtnInfo entryXtnInfo = entry.getTxnEntryData().copyTxnInfo(false, false);
+                            MVCCEntryHolder dummyEntry = entry.createLogicallyDeletedDummyEntry(entryXtnInfo);
+                            dummyEntry.setMaybeUnderXtn(true);
+                            dummyEntry.setCommittedGeneration(nextGeneration);
+                            mvccShellEntryCacheInfo.setDirtyEntry(new MVCCEntryCacheInfo(dummyEntry));
+                            entry.setOverrideGeneration(nextGeneration);
+                            entry.resetEntryXtnInfo();
+                            entry.setMaybeUnderXtn(true);
+                        } else if (entry.getWriteLockOperation() == SpaceOperations.WRITE && entry.getWriteLockOwner() == xtnEntry) {
+                            entry.setCommittedGeneration(nextGeneration);
+                        }
+                    }
+                } finally {
+                    _cacheManager.getLockManager().freeLockObject(entryLock);
                 }
             }
         }
@@ -53,7 +69,7 @@ public class MVCCSpaceEngineHandler {
                                                           MVCCShellEntryCacheInfo shellEntry) throws TemplateDeletedException, TransactionNotActiveException, TransactionConflictException, FifoException, SAException, NoMatchException, EntryDeletedException {
         final MVCCGenerationsState mvccGenerationsState = getMvccGenerationsState(context, template);
         final Iterator<MVCCEntryCacheInfo> generationIterator = shellEntry.descIterator();
-        if (!generationIterator.hasNext() && shellEntry.getDirtyEntry() != null) {
+        if (!generationIterator.hasNext() && shellEntry.getDirtyEntry() != null){
             return getMatchMvccEntryHolder(context, template, makeWaitForInfo,
                     (MVCCEntryHolder) shellEntry.getDirtyEntry().getEntryHolder(), mvccGenerationsState);
         }
@@ -82,30 +98,30 @@ public class MVCCSpaceEngineHandler {
         MVCCGenerationsState mvccGenerationsState = null;
         if (xidOriginated != null) {
             mvccGenerationsState = xidOriginated.getMVCCGenerationsState();
-        } else {
-            // TODO: no transaction - get from context.
-            // mvccGenerationsState = context.getMVCCGenerationsState()
         }
+        // TODO: no transaction - get from context/template
         return mvccGenerationsState;
     }
 
-    private MVCCEntryHolder getMatchMvccEntryHolder(Context context, ITemplateHolder template, boolean makeWaitForInfo, MVCCEntryHolder entryHolder, MVCCGenerationsState mvccGenerationsState) throws TransactionConflictException, EntryDeletedException, TemplateDeletedException, TransactionNotActiveException, SAException, NoMatchException, FifoException {
-        if (template.isActiveRead(_spaceEngine)) {
-            _spaceEngine.performTemplateOnEntrySA(context, template, entryHolder, makeWaitForInfo);
-            return entryHolder;
-        }
-        final long completedGeneration = mvccGenerationsState.getCompletedGeneration();
-        final long overrideGeneration = entryHolder.getOverrideGeneration();
-        final long committedGeneration = entryHolder.getCommittedGeneration();
-        final boolean logicallyDeleted = entryHolder.isLogicallyDeleted();
-        if (isEntryMatchedByGenerationsState(mvccGenerationsState, completedGeneration, overrideGeneration, committedGeneration)) {
+    private MVCCEntryHolder getMatchMvccEntryHolder(Context context, ITemplateHolder template, boolean makeWaitForInfo,
+                                                    MVCCEntryHolder entryHolder, MVCCGenerationsState mvccGenerationsState) throws TransactionConflictException, EntryDeletedException, TemplateDeletedException, TransactionNotActiveException, SAException, NoMatchException, FifoException {
+
+        if (template.isActiveRead(_spaceEngine)
+                || isEntryMatchedByGenerationsState(mvccGenerationsState, entryHolder)
+                || entryHolder.getCommittedGeneration() == -1 /*dirty entry*/) {
+            if  (entryHolder.isLogicallyDeleted()){
+                throw _spaceEngine.getEntryDeletedException();
+            }
             _spaceEngine.performTemplateOnEntrySA(context, template, entryHolder, makeWaitForInfo);
             return entryHolder;
         }
         return null; // continue
     }
 
-    private boolean isEntryMatchedByGenerationsState(MVCCGenerationsState mvccGenerationsState, long completedGeneration, long overrideGeneration, long committedGeneration) {
+    private boolean isEntryMatchedByGenerationsState(MVCCGenerationsState mvccGenerationsState, MVCCEntryHolder entryHolder) {
+        final long completedGeneration = mvccGenerationsState.getCompletedGeneration();
+        final long overrideGeneration = entryHolder.getOverrideGeneration();
+        final long committedGeneration = entryHolder.getCommittedGeneration();
         return ((committedGeneration != -1)
                 && (committedGeneration <= completedGeneration)
                 && (!mvccGenerationsState.isUncompletedGeneration(committedGeneration))
