@@ -2536,7 +2536,7 @@ public class CacheManager extends AbstractCacheManager
     }
 
     public void disconnectMVCCEntryFromXtn(Context context, MVCCEntryCacheInfo pEntry, XtnEntry xtnEntry, boolean xtnEnd) throws SAException {
-        _mvccCacheManagerHandler.disconnectPEntryFromXtn(context, pEntry, xtnEntry, xtnEnd);
+        _mvccCacheManagerHandler.disconnectMvccEntryFromXtn(context, pEntry, xtnEntry, xtnEnd);
     }
 
 
@@ -3652,6 +3652,10 @@ public class CacheManager extends AbstractCacheManager
             result.getStorageStatistics().add(snapshot);
         }
         return result;
+    }
+
+    public void handleNewMvccGeneration(Context context, IEntryHolder entry, XtnEntry xtnEntry) throws SAException {
+        _mvccCacheManagerHandler.handleNewMvccGeneration(context, entry, xtnEntry);
     }
 
     /**

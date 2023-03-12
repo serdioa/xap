@@ -10,7 +10,7 @@ import java.util.concurrent.ConcurrentLinkedDeque;
 public class MVCCShellEntryCacheInfo extends MemoryBasedEntryCacheInfo {
 
     private final ConcurrentLinkedDeque<MVCCEntryCacheInfo> allEntryGenerations = new ConcurrentLinkedDeque<>();
-    private MVCCEntryCacheInfo dirtyEntry;
+    private volatile MVCCEntryCacheInfo dirtyEntry;
 
 
     public MVCCShellEntryCacheInfo(IEntryHolder entryHolder, MVCCEntryCacheInfo pEntry) {
