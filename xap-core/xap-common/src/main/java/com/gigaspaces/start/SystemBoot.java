@@ -89,6 +89,8 @@ public class SystemBoot {
      * Token indicating an Authorization Service should be started
      */
     public static final String AUTH = "AUTH";
+
+    // todo : should be moved to SecurityServiceInfo with convinient method of usage per key
     public static Map<String, String> AUTH_PROPERTIES = new HashMap<>();
     /**
      * Configuration and logger property
@@ -219,7 +221,6 @@ public class SystemBoot {
      */
     public static void loadPlatform()
             throws ConfigurationException, IOException {
-        //ensureSecurityManager();
         SystemConfig sysConfig = SystemConfig.getInstance();
 
         /* Load system properties, to check if a logging configuration file
@@ -384,11 +385,6 @@ public class SystemBoot {
                 reportError(t, false);
             System.exit(1);
         }
-    }
-
-    private static boolean securityManagerIsOpenId() {
-        String classname = AUTH_PROPERTIES.get("com.gs.security.security-manager.class");
-        return "com.gigaspaces.security.openid.OpenIdSecurityManager".equals(classname);
     }
 
     private static void substituteSecurityProperties() {

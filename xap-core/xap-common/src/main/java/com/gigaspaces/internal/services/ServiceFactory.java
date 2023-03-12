@@ -26,7 +26,6 @@ import java.io.Closeable;
  */
 public abstract class ServiceFactory {
     public Closeable createService() {
-//        final String serviceClassName = getServiceClassName();
         final ClasspathBuilder classpathBuilder = new ClasspathBuilder();
         initializeClasspath(classpathBuilder);
 

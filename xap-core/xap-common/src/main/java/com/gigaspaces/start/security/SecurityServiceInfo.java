@@ -1,7 +1,5 @@
 package com.gigaspaces.start.security;
 
-import com.gigaspaces.start.kubernetes.KubernetesClusterInfo;
-
 public class SecurityServiceInfo {
 
     private static volatile SecurityServiceInfo instance;

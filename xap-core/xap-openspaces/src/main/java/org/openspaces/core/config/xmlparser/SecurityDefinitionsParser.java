@@ -30,7 +30,7 @@ public class SecurityDefinitionsParser {
     private static final String PASSWORD = "password";
     private static final String USER_DETAILS = "user-details";
     private static final String CREDENTIALS_PROVIDER = "credentials-provider";
-    public static final String TOKEN = "token";
+    private static final String TOKEN = "token";
 
     public static void parseXml(Element securityElement, BeanDefinitionBuilder builder) {
         final String username = securityElement.getAttribute(USERNAME);

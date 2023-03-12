@@ -81,8 +81,7 @@ public class SystemConfig {
     private final Map<String, ServiceFactory> serviceFactoryMap = initServiceFactories();
 
     private static Map<String, ServiceFactory> initServiceFactories() {
-        // todo : generate native build based on service's instances
-        ServiceFactory[] serviceFactories = new ServiceFactory[] {
+        ServiceFactory[] serviceFactories = new ServiceFactory[]{
                 new RestServiceFactory(),
                 new ZooKeeperServiceFactory(),
                 new WebuiServiceFactory(),
@@ -206,7 +205,7 @@ public class SystemConfig {
      * @param configArgs An array whose first element is the location of the configuration source
      *                   and remaining elements specify override values for entries that will be
      *                   used to create the SystemConfig singleton for the system.
-     *
+     *                   <p>
      *                   If the SystemConfig instance has already been created this parameter is
      *                   optional
      * @return The SystemConfig instance
@@ -315,11 +314,11 @@ public class SystemConfig {
         classpathBuilder.appendOptionalJars("jruby");
         classpathBuilder.appendJars(Paths.get(System.getProperty("com.gs.pu.classloader.scala-lib-path", locations.libOptional("scala").resolve("lib").toString())));// Scala support
         classpathBuilder.appendPlatformJars("zookeeper");
-        if(JavaUtils.greaterOrEquals(11)){
+        if (JavaUtils.greaterOrEquals(11)) {
             classpathBuilder.appendPlatformJars("javax");
         }
         //GS-13825 added hsql jar
-        classpathBuilder.appendOptionalJars("jdbc", FileUtils.Filters.nameStartsWith( "hsqldb" ) );
+        classpathBuilder.appendOptionalJars("jdbc", FileUtils.Filters.nameStartsWith("hsqldb"));
 
         // I don't expect anybody to use this feature, but its here just to be on the safe side
         boolean osInCommonClassLoader = Boolean.parseBoolean(System.getProperty("com.gs.pu.classloader.os-in-common-classloader", "false"));
@@ -332,9 +331,9 @@ public class SystemConfig {
 
         classpathBuilder.appendOptionalJars("tiered-storage/sqlite");
         classpathBuilder.appendOptionalJars("data-integration");
-        classpathBuilder.appendPlatformJars("jdbc" );
+        classpathBuilder.appendPlatformJars("jdbc");
 
-        // new security implementation
+        // todo : add condition of SecurityServiceInfo new security implementation
         classpathBuilder.appendRequiredJar("spring-security-oauth2-jose.jar");
         classpathBuilder.appendRequiredJar("spring-security-oauth2-resource-server.jar");
         classpathBuilder.appendRequiredJar("spring-security-oauth2-core.jar");
@@ -572,7 +571,7 @@ public class SystemConfig {
 
     public ServiceDescriptor getServiceDescriptor(String key)
             throws BindException, ConfigurationException, UnknownHostException {
-        // todo : cteate native build per descriptor
+        //  todo : create descriptor for auth ?
         if (key.equals(SystemBoot.GSC))
             return getGSCServiceDescriptor();
         if (key.equals(SystemBoot.GSA))
@@ -669,12 +668,6 @@ public class SystemConfig {
                             gscClasspath,
                             "com.gigaspaces.grid.gsc.GSCImpl",
                             confArgs);
-            logger.error("Classpath define as " + gscClasspath);
-        } else {
-            logger.error("Used service descriptior from config!");
-            if (svcDesc instanceof RioServiceDescriptor) {
-                logger.error("classpath is " + ((RioServiceDescriptor) svcDesc).getClasspath());
-            }
         }
         return (svcDesc);
     }
@@ -820,7 +813,7 @@ public class SystemConfig {
          */
         public Object create(Configuration config) throws Exception {
             MBeanServer mbs = null;
-            if(  GsEnv.propertyBoolean( CommonSystemProperties.JMX_ENABLED_PROP ).get( CommonSystemProperties.JMX_ENABLED_DEFAULT_BOOLEAN_VALUE ) ) {
+            if (GsEnv.propertyBoolean(CommonSystemProperties.JMX_ENABLED_PROP).get(CommonSystemProperties.JMX_ENABLED_DEFAULT_BOOLEAN_VALUE)) {
                 int registryPort = (Integer) getConfigEntry(config, COMPONENT, "registryPort", int.class, CommonSystemProperties.REGISTRY_PORT, 10098);
                 int registryRetries = (Integer) getConfigEntry(config, COMPONENT, "registryRetries", Integer.class, CommonSystemProperties.REGISTRY_RETRIES, 20);
 
