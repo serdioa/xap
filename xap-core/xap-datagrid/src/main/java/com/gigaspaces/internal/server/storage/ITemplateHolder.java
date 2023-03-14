@@ -23,11 +23,9 @@ import com.gigaspaces.internal.query.EntryHolderAggregatorContext;
 import com.gigaspaces.internal.query.ICustomQuery;
 import com.gigaspaces.internal.query.RegexCache;
 import com.gigaspaces.internal.query.explainplan.SingleExplainPlan;
-import com.gigaspaces.internal.server.space.BatchQueryOperationContext;
-import com.gigaspaces.internal.server.space.FifoSearch;
-import com.gigaspaces.internal.server.space.MatchResult;
-import com.gigaspaces.internal.server.space.MultipleIdsContext;
+import com.gigaspaces.internal.server.space.*;
 import com.gigaspaces.internal.server.space.iterator.ServerIteratorInfo;
+import com.gigaspaces.internal.server.space.mvcc.MVCCGenerationsState;
 import com.gigaspaces.internal.transport.AbstractProjectionTemplate;
 import com.gigaspaces.internal.transport.IEntryPacket;
 import com.gigaspaces.lrmi.nio.IResponseContext;
@@ -287,4 +285,10 @@ public interface ITemplateHolder extends ISpaceItem, IEntryHolder {
     default LockSubjectType getLockSubjectType() {
         return LockSubjectType.TEMPLATE;
     }
+
+    void setGenerationsSate(MVCCGenerationsState mvccGenerationsState);
+
+    MVCCGenerationsState getGenerationsState();
+
+    boolean isActiveRead(SpaceEngine engine);
 }

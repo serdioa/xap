@@ -25,11 +25,9 @@ import com.gigaspaces.internal.query.RegexCache;
 import com.gigaspaces.internal.query.explainplan.ExplainPlanUtil;
 import com.gigaspaces.internal.query.explainplan.SingleExplainPlan;
 import com.gigaspaces.internal.server.metadata.IServerTypeDesc;
-import com.gigaspaces.internal.server.space.BatchQueryOperationContext;
-import com.gigaspaces.internal.server.space.FifoSearch;
-import com.gigaspaces.internal.server.space.MatchResult;
-import com.gigaspaces.internal.server.space.MultipleIdsContext;
+import com.gigaspaces.internal.server.space.*;
 import com.gigaspaces.internal.server.space.iterator.ServerIteratorInfo;
+import com.gigaspaces.internal.server.space.mvcc.MVCCGenerationsState;
 import com.gigaspaces.internal.transport.AbstractProjectionTemplate;
 import com.gigaspaces.internal.transport.IEntryPacket;
 import com.gigaspaces.internal.transport.ITemplatePacket;
@@ -140,6 +138,7 @@ public class TemplateHolder extends AbstractSpaceItem implements ITemplateHolder
     private final boolean _allValuesIndexSqlQuery;
     private SingleExplainPlan _singleExplainPlan = null;
     private ServerIteratorInfo _serverIteratorInfo;
+    private MVCCGenerationsState mvccGenerationsState;
 
 
     public TemplateHolder(IServerTypeDesc typeDesc, ITemplatePacket packet, String uid,
@@ -214,6 +213,10 @@ public class TemplateHolder extends AbstractSpaceItem implements ITemplateHolder
                 plan.setRoot(ExplainPlanUtil.buildQueryTree(templatePacket.getCustomQuery()));
             }
             this._singleExplainPlan = plan;
+        }
+
+        if (_templateXtnOriginated != null) {
+            mvccGenerationsState = _templateXtnOriginated.getMVCCGenerationsState();
         }
     }
 
@@ -1226,5 +1229,27 @@ public class TemplateHolder extends AbstractSpaceItem implements ITemplateHolder
     @Override
     public TemplateEntryData getTemplateEntryData() {
         return _templateData;
+    }
+
+
+    @Override
+    public void setGenerationsSate(MVCCGenerationsState mvccGenerationsState) {
+        this.mvccGenerationsState = mvccGenerationsState;
+    }
+
+    @Override
+    public MVCCGenerationsState getGenerationsState() {
+        return mvccGenerationsState;
+    }
+
+    @Override
+    public boolean isActiveRead(SpaceEngine engine) {
+        if (engine.isMvccEnabled()) {
+            return isReadOperation()
+                    && (mvccGenerationsState == null
+                        || mvccGenerationsState.getCompletedGeneration() == -1
+                        || engine.indicateDirtyRead(this));
+        }
+        return isReadOperation();
     }
 }

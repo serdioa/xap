@@ -13,4 +13,8 @@ public class MVCCEntryCacheInfo extends MemoryBasedEntryCacheInfo {
         super(entryHolder);
     }
 
+    public MVCCEntryHolder getMVCCEntryHolder(){
+        return (MVCCEntryHolder) getEntryHolder();
+    }
+
 }
