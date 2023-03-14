@@ -5,6 +5,7 @@ import com.gigaspaces.start.ClasspathBuilder;
 import com.gigaspaces.start.SystemBoot;
 import com.gigaspaces.start.SystemInfo;
 import com.gigaspaces.start.XapModules;
+import com.gigaspaces.start.security.SecurityServiceInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -19,7 +20,7 @@ import static com.gigaspaces.start.SystemBoot.AUTH;
 public class AuthServiceFactory extends ServiceFactory {
 
     private static Logger logger = LoggerFactory.getLogger(AUTH);
-    private static final String AUTH_ADD_CONFIG_LOCATION_PROPERTY = "spring.config.additional-location";
+
     private Path bootJarPath;
 
     public AuthServiceFactory() {
@@ -46,10 +47,9 @@ public class AuthServiceFactory extends ServiceFactory {
         Method launchMethod = getServiceLauncherMethod(classLoader, "launch");
         launchMethod.setAccessible(true);
         String[] args = new String[] {};
-        // todo : change condition!
         logger.info("startService auth!!!!");
-        if (SystemBoot.AUTH_PROPERTIES.get(AUTH_ADD_CONFIG_LOCATION_PROPERTY) != null) {
-            String additionalPropertiesConfig = "--".concat(AUTH_ADD_CONFIG_LOCATION_PROPERTY).concat("=").concat(SystemBoot.AUTH_PROPERTIES.get(AUTH_ADD_CONFIG_LOCATION_PROPERTY));
+        if (SecurityServiceInfo.getInstance().isOpenIdConfigExists()) {
+            String additionalPropertiesConfig = SecurityServiceInfo.getInstance().additionalPropertiesConfig();
             String zkConfig = "--spring.application.json={\"zk_connection\":\"" +  System.getenv("ZK_CON_STR") + "\"}";
             logger.info("zk connection string from cluster " + SystemInfo.singleton().getManagerClusterInfo().getZookeeperConnectionString() );
             logger.info("zk connection string from env " + System.getenv("ZK_CON_STR") );

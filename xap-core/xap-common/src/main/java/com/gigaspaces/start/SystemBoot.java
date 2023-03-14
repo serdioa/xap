@@ -23,6 +23,7 @@ import com.gigaspaces.internal.jvm.JVMHelper;
 import com.gigaspaces.internal.jvm.JVMStatistics;
 import com.gigaspaces.logger.GSLogConfigLoader;
 import com.gigaspaces.logger.RollingFileHandler;
+import com.gigaspaces.start.security.SecurityServiceInfo;
 import com.sun.jini.start.ServiceDescriptor;
 import net.jini.config.Configuration;
 import net.jini.config.ConfigurationException;
@@ -90,8 +91,6 @@ public class SystemBoot {
      */
     public static final String AUTH = "AUTH";
 
-    // todo : should be moved to SecurityServiceInfo with convinient method of usage per key
-    public static Map<String, String> AUTH_PROPERTIES = new HashMap<>();
     /**
      * Configuration and logger property
      */
@@ -320,9 +319,6 @@ public class SystemBoot {
             loadPlatform();
 
             final List<String> services = toList((String) config.getEntry(COMPONENT, "services", String.class, GSC));
-            // todo : move it after manager init
-            substituteSecurityProperties();
-//            injectAuthService(services);
 
             if (!isSilent)
                 initJmxIfNeeded(services, systemConfig, config);
@@ -384,19 +380,6 @@ public class SystemBoot {
             else
                 reportError(t, false);
             System.exit(1);
-        }
-    }
-
-    private static void substituteSecurityProperties() {
-        String securityPropertyFile = System.getProperty("com.gs.security.properties-file", "config/security/security.properties");
-        logger.info("path to security properties " + securityPropertyFile);
-        try (InputStream input = Thread.currentThread().getContextClassLoader().getResourceAsStream(securityPropertyFile)) {
-            Properties prop = new Properties();
-            prop.load(input);
-            prop.forEach((key, value) -> AUTH_PROPERTIES.put((String) key, (String) value));
-        } catch (IOException ex) {
-            //todo ???
-            logger.error("Error while reading security properties - " + ex.getMessage());
         }
     }
 

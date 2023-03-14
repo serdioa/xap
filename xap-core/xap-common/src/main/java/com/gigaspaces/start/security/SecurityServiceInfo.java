@@ -1,25 +1,52 @@
 package com.gigaspaces.start.security;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Properties;
+
 public class SecurityServiceInfo {
 
-    private static volatile SecurityServiceInfo instance;
-    private final String DEFAULT_SECURITY_HOST = "localhost";
-    private final String DEFAULT_SECURITY_PORT = "9000";
-    private final String securityServiceBaseUrl;
+    private static final Logger logger = LoggerFactory.getLogger("com.gigaspaces.security.spring");
 
-    public static SecurityServiceInfo getInstance(){
+    private static volatile SecurityServiceInfo instance;
+    // TODO : should be Locator value for service-grid
+    private static final String AUTH_ADD_CONFIG_LOCATION_PROPERTY = "spring.config.additional-location";
+    private static final String DEFAULT_SECURITY_HOST = "localhost";
+    private static final String DEFAULT_SECURITY_PORT = "9000";
+
+    private final String securityServiceBaseUrl;
+    private Map<String, String> properties = new HashMap<>();
+
+    public static SecurityServiceInfo getInstance() {
         SecurityServiceInfo snapshot = instance;
-        if (snapshot != null)
+        if (snapshot != null) {
             return snapshot;
+        }
         synchronized (SecurityServiceInfo.class) {
-            if (instance == null)
+            if (instance == null) {
                 instance = new SecurityServiceInfo();
+            }
             return instance;
         }
     }
 
     private SecurityServiceInfo() {
         this.securityServiceBaseUrl = String.format("http://%s:%s", validateUri(System.getenv("GS_SECURITY_SERVICE_HOST")), DEFAULT_SECURITY_PORT);
+        String securityPropertyFile = System.getProperty("com.gs.security.properties-file", "config/security/security.properties");
+        logger.info("path to security properties " + securityPropertyFile);
+        try (InputStream input = Thread.currentThread().getContextClassLoader().getResourceAsStream(securityPropertyFile)) {
+            Properties prop = new Properties();
+            prop.load(input);
+            prop.forEach((key, value) -> properties.put((String) key, (String) value));
+        } catch (IOException ex) {
+            //todo ???
+            logger.error("Error while reading security properties - " + ex.getMessage());
+        }
     }
 
 
@@ -27,7 +54,15 @@ public class SecurityServiceInfo {
         return securityServiceBaseUrl;
     }
 
-    private String validateUri(String s){
+    public boolean isOpenIdConfigExists() {
+        return  properties.containsKey(AUTH_ADD_CONFIG_LOCATION_PROPERTY);
+    }
+
+    public String additionalPropertiesConfig() {
+        return "--".concat(SecurityServiceInfo.AUTH_ADD_CONFIG_LOCATION_PROPERTY).concat("=").concat(properties.get(AUTH_ADD_CONFIG_LOCATION_PROPERTY));
+    }
+
+    private String validateUri(String s) {
         return s == null || s.isEmpty() || s.equals("null") ? DEFAULT_SECURITY_HOST : s;
     }
 }
