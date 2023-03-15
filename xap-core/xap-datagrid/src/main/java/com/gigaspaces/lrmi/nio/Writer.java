@@ -20,7 +20,6 @@ import com.gigaspaces.exception.lrmi.SlowConsumerException;
 import com.gigaspaces.internal.io.GSByteArrayOutputStream;
 import com.gigaspaces.internal.io.MarshalContextClearedException;
 import com.gigaspaces.internal.io.MarshalOutputStream;
-import com.gigaspaces.internal.utils.GsEnv;
 import com.gigaspaces.logger.Constants;
 import com.gigaspaces.lrmi.LRMIInvocationContext;
 import com.gigaspaces.lrmi.LRMIInvocationTrace;
@@ -28,6 +27,8 @@ import com.gigaspaces.lrmi.SmartByteBufferCache;
 import com.gigaspaces.lrmi.nio.filters.IOFilterException;
 import com.gigaspaces.lrmi.nio.filters.IOFilterManager;
 import com.j_spaces.kernel.SystemProperties;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.SocketAddress;
@@ -40,9 +41,6 @@ import java.nio.channels.SocketChannel;
 import java.util.LinkedList;
 import java.util.Queue;
 import java.util.concurrent.atomic.LongAdder;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * A Writer is capable of writing Request Packets and Reply Packets to a Socket Channel. An NIO
@@ -57,8 +55,6 @@ public class Writer implements IChannelWriter {
     //logger
     final private static Logger _logger = LoggerFactory.getLogger(Constants.LOGGER_LRMI);
     final private static Logger _slowerConsumerLogger = LoggerFactory.getLogger(Constants.LOGGER_LRMI_SLOW_COMSUMER);
-    final private static int BUFFER_SIZE_THRESHOLD = GsEnv.propertyInt("com.gs.ps.writer.log.threshold.size.bytes")
-                                                          .get(2 * 1024 * 1024);
 
     /**
      * writer socket channel.
@@ -214,7 +210,7 @@ public class Writer implements IChannelWriter {
             throw new MarshallingException("Failed to marsh: " + packet, e);
         } finally // make sure we clean the buffers even if an exception was thrown
         {
-            buffer = prepareBuffer(mos, bos, byteBuffer, packet);
+            buffer = prepareBuffer(mos, bos, byteBuffer);
 
             if (reuseBuffer) {
                 bos.setBuffer(DUMMY_BUFFER); // set DUMMY_BUFFER to release the strong reference to the byte[]
@@ -597,15 +593,10 @@ public class Writer implements IChannelWriter {
      * @return prepared buffer.
      */
     private ByteBuffer prepareBuffer(MarshalOutputStream mos, GSByteArrayOutputStream bos,
-                                     ByteBuffer byteBuffer, IPacket packet) throws IOException {
+                                     ByteBuffer byteBuffer) throws IOException {
         mos.flush();
 
         int length = bos.size();
-        if (length > BUFFER_SIZE_THRESHOLD) {
-            _logger.warn("#Size of lrmi packet is greater than 2 MB. size: {} packet: {}", length, packet);
-        } else {
-            _logger.trace("#lrmi packet. size: {} packet: {}", length, packet);
-        }
 
         if (byteBuffer.array() != bos.getBuffer()) // the buffer was changed
         {
