@@ -65,7 +65,6 @@ public class SecurityServiceInfo {
     }
 
     private String validateUri(String s) {
-        logger.info("locator=" + SystemInfo.singleton().lookup().locators());
         return s == null || s.isEmpty() || s.equals("null") ? DEFAULT_SECURITY_HOST : s;
     }
 }
