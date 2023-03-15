@@ -1,5 +1,6 @@
 package com.gigaspaces.start.security;
 
+import com.gigaspaces.start.SystemInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -12,6 +13,8 @@ import java.util.Properties;
 public class SecurityServiceInfo {
 
     private static final Logger logger = LoggerFactory.getLogger("com.gigaspaces.security.spring");
+    public static final String SECURITY_MANAGER_CLASS = "com.gs.security.security-manager.class";
+    public static final String ID_SECURITY_MANAGER = "com.gigaspaces.security.openid.OpenIdSecurityManager";
 
     private static volatile SecurityServiceInfo instance;
     // TODO : should be Locator value for service-grid
@@ -22,7 +25,7 @@ public class SecurityServiceInfo {
     private final String securityServiceBaseUrl;
     private Map<String, String> properties = new HashMap<>();
 
-    public static SecurityServiceInfo getInstance() {
+    public static SecurityServiceInfo instance() {
         SecurityServiceInfo snapshot = instance;
         if (snapshot != null) {
             return snapshot;
@@ -43,8 +46,7 @@ public class SecurityServiceInfo {
             Properties prop = new Properties();
             prop.load(input);
             prop.forEach((key, value) -> properties.put((String) key, (String) value));
-        } catch (IOException ex) {
-            //todo ???
+        } catch (Exception ex) {
             logger.error("Error while reading security properties - " + ex.getMessage());
         }
     }
@@ -54,8 +56,8 @@ public class SecurityServiceInfo {
         return securityServiceBaseUrl;
     }
 
-    public boolean isOpenIdConfigExists() {
-        return  properties.containsKey(AUTH_ADD_CONFIG_LOCATION_PROPERTY);
+    public boolean isOpenIdSecurityManager() {
+        return properties.containsKey(SECURITY_MANAGER_CLASS) && properties.get(SECURITY_MANAGER_CLASS).equals(ID_SECURITY_MANAGER);
     }
 
     public String additionalPropertiesConfig() {
@@ -63,6 +65,7 @@ public class SecurityServiceInfo {
     }
 
     private String validateUri(String s) {
+        logger.info("locator=" + SystemInfo.singleton().lookup().locators());
         return s == null || s.isEmpty() || s.equals("null") ? DEFAULT_SECURITY_HOST : s;
     }
 }

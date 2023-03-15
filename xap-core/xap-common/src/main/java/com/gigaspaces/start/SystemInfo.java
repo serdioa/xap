@@ -67,7 +67,7 @@ public class SystemInfo {
         this.timeProvider = new XapTimeProvider();
         this.managerClusterInfo = new XapManagerClusterInfo(network.getHost());
         this.kubernetesClusterInfo = KubernetesClusterInfo.getInstance();
-        this.securityServiceInfo = SecurityServiceInfo.getInstance();
+        this.securityServiceInfo = SecurityServiceInfo.instance();
         this.lookup = new XapLookup(managerClusterInfo);
     }
 

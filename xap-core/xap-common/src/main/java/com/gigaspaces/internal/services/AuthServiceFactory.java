@@ -2,7 +2,6 @@ package com.gigaspaces.internal.services;
 
 import com.gigaspaces.classloader.CustomURLClassLoader;
 import com.gigaspaces.start.ClasspathBuilder;
-import com.gigaspaces.start.SystemBoot;
 import com.gigaspaces.start.SystemInfo;
 import com.gigaspaces.start.XapModules;
 import com.gigaspaces.start.security.SecurityServiceInfo;
@@ -46,24 +45,21 @@ public class AuthServiceFactory extends ServiceFactory {
     protected Closeable startService(CustomURLClassLoader classLoader) throws Exception {
         Method launchMethod = getServiceLauncherMethod(classLoader, "launch");
         launchMethod.setAccessible(true);
-        String[] args = new String[] {};
         logger.info("startService auth!!!!");
-        if (SecurityServiceInfo.getInstance().isOpenIdConfigExists()) {
-            String additionalPropertiesConfig = SecurityServiceInfo.getInstance().additionalPropertiesConfig();
-            String zkConfig = "--spring.application.json={\"zk_connection\":\"" +  System.getenv("ZK_CON_STR") + "\"}";
-            logger.info("zk connection string from cluster " + SystemInfo.singleton().getManagerClusterInfo().getZookeeperConnectionString() );
-            logger.info("zk connection string from env " + System.getenv("ZK_CON_STR") );
-            args = new String[] { additionalPropertiesConfig, zkConfig };
-        }
+        String additionalPropertiesConfig = SecurityServiceInfo.instance().additionalPropertiesConfig();
+        String zkConfig = "--spring.application.json={\"zk_connection\":\"" + System.getenv("ZK_CON_STR") + "\"}";
+        logger.info("zk connection string from cluster " + SystemInfo.singleton().getManagerClusterInfo().getZookeeperConnectionString());
+        logger.info("zk connection string from env " + System.getenv("ZK_CON_STR"));
+        String[] args = new String[]{additionalPropertiesConfig, zkConfig};
 
-        launchMethod.invoke(newJarLauncher(classLoader), new Object[]{ args });
+        launchMethod.invoke(newJarLauncher(classLoader), new Object[]{args});
         return () -> logger.info("{} service terminated", AUTH);
     }
 
     private Object newJarLauncher(CustomURLClassLoader classLoader) throws Exception {
 
         Class jarFileArchiveClass = classLoader.loadClass("org.springframework.boot.loader.archive.JarFileArchive");
-        Class archiveClass = 	classLoader.loadClass("org.springframework.boot.loader.archive.Archive");
+        Class archiveClass = classLoader.loadClass("org.springframework.boot.loader.archive.Archive");
         Class jarLauncherClass = classLoader.loadClass(getServiceClassName());
 
 
