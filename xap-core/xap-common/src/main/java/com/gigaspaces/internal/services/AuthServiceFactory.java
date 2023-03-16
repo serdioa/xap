@@ -45,11 +45,11 @@ public class AuthServiceFactory extends ServiceFactory {
     protected Closeable startService(CustomURLClassLoader classLoader) throws Exception {
         Method launchMethod = getServiceLauncherMethod(classLoader, "launch");
         launchMethod.setAccessible(true);
-        logger.info("startService auth!!!!");
+        logger.info("starting service auth");
         String additionalPropertiesConfig = SecurityServiceInfo.instance().additionalPropertiesConfig();
-        String zkConfig = "--spring.application.json={\"zk_connection\":\"" + System.getenv("ZK_CON_STR") + "\"}";
+        String zkConfig = "--spring.application.json={\"zk_connection\":\"" + System.getenv(SecurityServiceInfo.ZK_CON_STR) + "\"}";
         logger.info("zk connection string from cluster " + SystemInfo.singleton().getManagerClusterInfo().getZookeeperConnectionString());
-        logger.info("zk connection string from env " + System.getenv("ZK_CON_STR"));
+        logger.info("zk connection string from env " + System.getenv(SecurityServiceInfo.ZK_CON_STR));
         String[] args = new String[]{additionalPropertiesConfig, zkConfig};
 
         launchMethod.invoke(newJarLauncher(classLoader), new Object[]{args});

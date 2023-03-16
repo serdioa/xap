@@ -15,6 +15,7 @@ public class SecurityServiceInfo {
     private static final Logger logger = LoggerFactory.getLogger("com.gigaspaces.security.spring");
     public static final String SECURITY_MANAGER_CLASS = "com.gs.security.security-manager.class";
     public static final String ID_SECURITY_MANAGER = "com.gigaspaces.security.openid.OpenIdSecurityManager";
+    public static final String ZK_CON_STR = "ZK_CON_STR";
 
     private static volatile SecurityServiceInfo instance;
     // TODO : should be Locator value for service-grid
