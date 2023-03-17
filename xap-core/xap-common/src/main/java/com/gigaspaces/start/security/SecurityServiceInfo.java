@@ -16,6 +16,7 @@ public class SecurityServiceInfo {
     public static final String SECURITY_MANAGER_CLASS = "com.gs.security.security-manager.class";
     public static final String ID_SECURITY_MANAGER = "com.gigaspaces.security.openid.OpenIdSecurityManager";
     public static final String ZK_CON_STR = "ZK_CON_STR";
+    public static final String EMPTY_STRING = "";
 
     private static volatile SecurityServiceInfo instance;
     // TODO : should be Locator value for service-grid
@@ -62,7 +63,7 @@ public class SecurityServiceInfo {
     }
 
     public String additionalPropertiesConfig() {
-        return "--".concat(SecurityServiceInfo.AUTH_ADD_CONFIG_LOCATION_PROPERTY).concat("=").concat(properties.get(AUTH_ADD_CONFIG_LOCATION_PROPERTY));
+        return "--".concat(SecurityServiceInfo.AUTH_ADD_CONFIG_LOCATION_PROPERTY).concat("=").concat(properties.getOrDefault(AUTH_ADD_CONFIG_LOCATION_PROPERTY, EMPTY_STRING));
     }
 
     private String validateUri(String s) {

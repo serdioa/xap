@@ -47,7 +47,7 @@ public enum XapModules {
     INTEROP_SPRING("optional/interop/xap-interop-spring.jar", ClassLoaderType.SERVICE),
     WAN_SPRING("optional/wan-gateway/xap-wan-gateway-spring.jar", ClassLoaderType.SERVICE),
     ADMIN("platform/service-grid/xap-admin.jar", ClassLoaderType.SERVICE),
-    AUTH_SERVER("../tools/auth-server/xap-authorization-server.jar", ClassLoaderType.SERVICE);
+    SECURITY_SERVER("../tools/security-server/xap-security-server.jar", ClassLoaderType.SERVICE);
 
     private final String artifactName;
     private final String jarFileName;

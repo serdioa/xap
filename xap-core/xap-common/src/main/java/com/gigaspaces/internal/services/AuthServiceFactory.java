@@ -23,7 +23,7 @@ public class AuthServiceFactory extends ServiceFactory {
     private Path bootJarPath;
 
     public AuthServiceFactory() {
-        this.bootJarPath = XapModules.AUTH_SERVER.getJarFilePath();
+        this.bootJarPath = XapModules.SECURITY_SERVER.getJarFilePath();
     }
 
     @Override
