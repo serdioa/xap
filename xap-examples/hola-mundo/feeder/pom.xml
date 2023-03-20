@@ -8,14 +8,14 @@
     <parent>
         <groupId>org.gigaspaces</groupId>
         <artifactId>hola-mundo-example</artifactId>
-        <version>16.3.0-SNAPSHOT</version>
+        <version>16.3.0-PIC-1395-mon-441</version>
     </parent>
 
     <dependencies>
         <dependency>
             <groupId>org.gigaspaces</groupId>
             <artifactId>hola-mundo-example-common</artifactId>
-            <version>16.3.0-SNAPSHOT</version>
+            <version>16.3.0-PIC-1395-mon-441</version>
             <scope>compile</scope>
         </dependency>
     </dependencies>
