@@ -64,12 +64,4 @@ public class GetMVCCEntryMetaDataResponseInfo extends AbstractSpaceResponseInfo{
         this.entriesMetaData = IOUtils.readObject(in);
         this.isDirtySet = IOUtils.readObject(in);
     }
-
-    @Override
-    public String toString() {
-        return "GetMVCCEntryMetaDataResponseInfo{" +
-                "entriesMetaData=" + entriesMetaData +
-                ", isDirtySet=" + isDirtySet +
-                '}';
-    }
 }

@@ -5,6 +5,7 @@ import com.gigaspaces.internal.server.storage.EntryHolder;
 import com.gigaspaces.internal.server.storage.FlatEntryData;
 import com.gigaspaces.internal.server.storage.IEntryHolder;
 import com.gigaspaces.internal.server.storage.ITransactionalEntryData;
+import com.gigaspaces.internal.utils.Textualizer;
 import com.j_spaces.core.Constants;
 import com.j_spaces.core.server.transaction.EntryXtnInfo;
 import com.j_spaces.kernel.locks.IMVCCLockObject;
@@ -83,4 +84,13 @@ public class MVCCEntryHolder extends EntryHolder implements IMVCCLockObject {
     public void setLogicallyDeleted(boolean logicallyDeleted) {
         setFlag(Constants.SpaceItem.IS_LOGICALLY_DELETED, logicallyDeleted);
     }
+
+    @Override
+    public void toText(Textualizer textualizer) {
+        textualizer.append("typeName", getClassName());
+        textualizer.append("uid", getUID());
+        textualizer.append("committedGeneration", getCommittedGeneration());
+        textualizer.append("overrideGeneration", getOverrideGeneration());
+    }
+
 }
