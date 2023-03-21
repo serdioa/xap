@@ -35,6 +35,9 @@ import com.j_spaces.core.UnknownTypeException;
 import com.j_spaces.core.exception.internal.ProxyInternalSpaceException;
 import net.jini.core.transaction.Transaction;
 
+import java.math.BigDecimal;
+import java.util.Arrays;
+
 @com.gigaspaces.api.InternalApi
 public class ReadTakeByIdsProxyActionInfo extends CommonProxyActionInfo {
     public final Object[] ids;
@@ -50,7 +53,7 @@ public class ReadTakeByIdsProxyActionInfo extends CommonProxyActionInfo {
         super(txn, modifiers);
 
         try {
-            this.ids = ids;
+            this.ids = Arrays.stream(ids).map(x -> (x instanceof BigDecimal) ? ((BigDecimal) x).stripTrailingZeros() : x).toArray();
             this.className = className;
             this.isTake = isTake;
             this.routing = routing;
