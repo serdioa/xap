@@ -133,14 +133,6 @@ public class XtnEntry extends XtnInfo {
 
     @Override
     public boolean setUnusedIfPossible(int unusedCleanTime, boolean includeGlobalXtns) {
-        if (getMVCCGenerationsState() != null) {
-            if (!isTransactionWithLease()) {
-                logger.info("Transaction [{}] without lease has MVCCGenerationsState [{}] " +
-                        "and therefore didn't mark as UNUSED. " +
-                        "For removing this transaction use commit / abort.", m_Transaction, mvccGenerationsState);
-            }
-            return false;
-        }
         return super.setUnusedIfPossible(unusedCleanTime, includeGlobalXtns);
     }
 
