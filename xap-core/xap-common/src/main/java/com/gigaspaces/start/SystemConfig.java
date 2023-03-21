@@ -333,11 +333,12 @@ public class SystemConfig {
         classpathBuilder.appendOptionalJars("data-integration");
         classpathBuilder.appendPlatformJars("jdbc");
 
-        // todo : add condition of SecurityServiceInfo new security implementation
-        classpathBuilder.appendRequiredJar("spring-security-oauth2-jose.jar");
-        classpathBuilder.appendRequiredJar("spring-security-oauth2-resource-server.jar");
-        classpathBuilder.appendRequiredJar("spring-security-oauth2-core.jar");
-        classpathBuilder.appendRequiredJar("nimbus-jose-jwt.jar");
+        if (SystemInfo.singleton().security().isOpenIdSecurityManager()) {
+            classpathBuilder.appendRequiredJar("spring-security-oauth2-jose.jar");
+            classpathBuilder.appendRequiredJar("spring-security-oauth2-resource-server.jar");
+            classpathBuilder.appendRequiredJar("spring-security-oauth2-core.jar");
+            classpathBuilder.appendRequiredJar("nimbus-jose-jwt.jar");
+        }
 
         return classpathBuilder.toURLs();
     }
