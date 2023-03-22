@@ -1,12 +1,14 @@
-package com.j_spaces.core.cache.mvcc;
+package com.gigaspaces.internal.server.space.mvcc;
 
 import com.gigaspaces.internal.server.space.SpaceEngine;
-import com.gigaspaces.internal.server.space.mvcc.MVCCGenerationsState;
 import com.gigaspaces.internal.server.storage.IEntryHolder;
 import com.gigaspaces.internal.server.storage.ITemplateHolder;
 import com.j_spaces.core.*;
 import com.j_spaces.core.cache.CacheManager;
 import com.j_spaces.core.cache.context.Context;
+import com.j_spaces.core.cache.mvcc.MVCCEntryCacheInfo;
+import com.j_spaces.core.cache.mvcc.MVCCEntryHolder;
+import com.j_spaces.core.cache.mvcc.MVCCShellEntryCacheInfo;
 import com.j_spaces.core.sadapter.ISAdapterIterator;
 import com.j_spaces.core.sadapter.SAException;
 import com.j_spaces.core.sadapter.SelectType;
@@ -107,7 +109,7 @@ public class MVCCSpaceEngineHandler {
                                                     MVCCEntryHolder entryHolder, MVCCGenerationsState mvccGenerationsState) throws TransactionConflictException, EntryDeletedException, TemplateDeletedException, TransactionNotActiveException, SAException, NoMatchException, FifoException {
 
         if (template.isActiveRead(_spaceEngine)
-                || isEntryMatchedByGenerationsState(mvccGenerationsState, entryHolder)
+                || isEntryMatchedByGenerationsState(mvccGenerationsState, entryHolder, template)
                 || entryHolder.getCommittedGeneration() == -1 /*dirty entry*/) {
             if  (entryHolder.isLogicallyDeleted()){
                 throw _spaceEngine.getEntryDeletedException();
@@ -118,15 +120,46 @@ public class MVCCSpaceEngineHandler {
         return null; // continue
     }
 
-    private boolean isEntryMatchedByGenerationsState(MVCCGenerationsState mvccGenerationsState, MVCCEntryHolder entryHolder) {
+    private boolean isEntryMatchedByGenerationsState(MVCCGenerationsState mvccGenerationsState,
+                                                     MVCCEntryHolder entryHolder, ITemplateHolder template) {
         final long completedGeneration = mvccGenerationsState.getCompletedGeneration();
         final long overrideGeneration = entryHolder.getOverrideGeneration();
         final long committedGeneration = entryHolder.getCommittedGeneration();
-        return ((committedGeneration != -1)
-                && (committedGeneration <= completedGeneration)
-                && (!mvccGenerationsState.isUncompletedGeneration(committedGeneration))
-                && ((overrideGeneration == -1)
+        final boolean maybeUnderXtn = entryHolder.isMaybeUnderXtn();
+        if (template.isReadOperation()) {
+            return ((committedGeneration != -1)
+                    && (committedGeneration <= completedGeneration)
+                    && (!mvccGenerationsState.isUncompletedGeneration(committedGeneration))
+                    && ((overrideGeneration == -1)
                     || (overrideGeneration > completedGeneration)
-                    || (overrideGeneration <= committedGeneration && mvccGenerationsState.isUncompletedGeneration(overrideGeneration))));
+                    || (overrideGeneration <= completedGeneration && mvccGenerationsState.isUncompletedGeneration(overrideGeneration))));
+        } else {
+            return (committedGeneration != -1)
+                    && (committedGeneration <= completedGeneration)
+                    && (!mvccGenerationsState.isUncompletedGeneration(committedGeneration))
+                    && (overrideGeneration == -1)
+                    && (!maybeUnderXtn);
+        }
+    }
+
+    public SpaceEngine.XtnConflictCheckIndicators checkTransactionConflict(Context context, MVCCEntryHolder entry, ITemplateHolder template) {
+        if ((template.getTemplateOperation() == SpaceOperations.TAKE_IE || template.getTemplateOperation() == SpaceOperations.TAKE)) {
+            if (entry.isLogicallyDeleted()) {
+                if (_spaceEngine.getLogger().isDebugEnabled()) {
+                    _spaceEngine.getLogger().debug("Encountered a conflict while attempting to take " + entry
+                            + ", this entry is logically deleted."
+                            + " the current generation state is " + template.getGenerationsState());
+                }
+                return SpaceEngine.XtnConflictCheckIndicators.ENTRY_DELETED;
+            } else if (entry.getOverrideGeneration() > -1) {
+                if (_spaceEngine.getLogger().isDebugEnabled()) {
+                    _spaceEngine.getLogger().debug("Encountered a conflict while attempting to take " + entry
+                            + ", this entry has already overridden by another generation."
+                            + " the current generation state is " + template.getGenerationsState());
+                }
+                return SpaceEngine.XtnConflictCheckIndicators.XTN_CONFLICT;
+            }
+        }
+        return SpaceEngine.XtnConflictCheckIndicators.NO_CONFLICT;
     }
 }

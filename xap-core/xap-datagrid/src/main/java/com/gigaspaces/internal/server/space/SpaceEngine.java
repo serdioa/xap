@@ -84,6 +84,7 @@ import com.gigaspaces.internal.server.space.iterator.ServerIteratorInfo;
 import com.gigaspaces.internal.server.space.iterator.ServerIteratorRequestInfo;
 import com.gigaspaces.internal.server.space.iterator.ServerIteratorsManager;
 import com.gigaspaces.internal.server.space.metadata.SpaceTypeManager;
+import com.gigaspaces.internal.server.space.mvcc.MVCCSpaceEngineHandler;
 import com.gigaspaces.internal.server.space.operations.WriteEntriesResult;
 import com.gigaspaces.internal.server.space.operations.WriteEntryResult;
 import com.gigaspaces.internal.server.space.recovery.direct_persistency.StorageConsistencyModes;
@@ -130,7 +131,6 @@ import com.j_spaces.core.cache.context.TemplateMatchTier;
 import com.j_spaces.core.cache.context.TieredState;
 import com.j_spaces.core.cache.mvcc.MVCCEntryHolder;
 import com.j_spaces.core.cache.mvcc.MVCCShellEntryCacheInfo;
-import com.j_spaces.core.cache.mvcc.MVCCSpaceEngineHandler;
 import com.j_spaces.core.client.*;
 import com.j_spaces.core.cluster.*;
 import com.j_spaces.core.exception.internal.EngineInternalSpaceException;
@@ -4911,10 +4911,14 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
                 && indicateReadCommitted(context.isNonBlockingReadOp() ? context.getLastRawMatchSnapshot() : entry.getTxnEntryData(), template);
 
         // check for TransactionConflictException
-        XtnConfilctCheckIndicators cres = checkTransactionConflict(context, entry, template, isShadow);
+        XtnConflictCheckIndicators cres = checkTransactionConflict(context, entry, template, isShadow);
 
-        if (cres != XtnConfilctCheckIndicators.NO_CONFLICT) {
-            if (cres == XtnConfilctCheckIndicators.ENTRY_DELETED || cres == XtnConfilctCheckIndicators.DELETED_BY_OWN_XTN) {
+        if (cres == XtnConflictCheckIndicators.NO_CONFLICT && isMvccEnabled()) {
+            cres = _mvccSpaceEngineHandler.checkTransactionConflict(context, (MVCCEntryHolder) entry, template);
+        }
+
+        if (cres != XtnConflictCheckIndicators.NO_CONFLICT) {
+            if (cres == XtnConflictCheckIndicators.ENTRY_DELETED || cres == XtnConflictCheckIndicators.DELETED_BY_OWN_XTN) {
                 throw ENTRY_DELETED_EXCEPTION;
             }
 
@@ -6303,7 +6307,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
      *
      * @return an indication in case of a conflict, <code>null</code> otherwise.
      */
-    private XtnConfilctCheckIndicators checkTransactionConflict(Context context, IEntryHolder entry, ITemplateHolder template, boolean isShadow) {
+    private XtnConflictCheckIndicators checkTransactionConflict(Context context, IEntryHolder entry, ITemplateHolder template, boolean isShadow) {
         XtnEntry xtnEntry;
 
         if ((template.getTemplateOperation() == SpaceOperations.READ || template.getTemplateOperation() == SpaceOperations.READ_IE)
@@ -6313,7 +6317,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
 
             xtnEntry = edata.getWriteLockOwner();
             if (xtnEntry == null)
-                return XtnConfilctCheckIndicators.NO_CONFLICT;
+                return XtnConflictCheckIndicators.NO_CONFLICT;
 
             final XtnStatus entryWriteLockStatus = xtnEntry.getStatus();
             final int entryWriteLockOperation = edata.getWriteLockOperation();
@@ -6336,11 +6340,11 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
             // entry.m_WriteLockOwner.equals(template.m_XidOriginated)
             if (entryWriteLockOperation == SpaceOperations.TAKE ||
                     entryWriteLockOperation == SpaceOperations.TAKE_IE)
-                return XtnConfilctCheckIndicators.DELETED_BY_OWN_XTN;
+                return XtnConflictCheckIndicators.DELETED_BY_OWN_XTN;
             if (isReadCommitted && isShadow)
-                return XtnConfilctCheckIndicators.XTN_CONFLICT;//  read-committed under same xtn- only master counts
+                return XtnConflictCheckIndicators.XTN_CONFLICT;//  read-committed under same xtn- only master counts
 
-            return XtnConfilctCheckIndicators.NO_CONFLICT;
+            return XtnConflictCheckIndicators.NO_CONFLICT;
         }//			if ((template.m_TemplateOperation == SpaceOperations.READ ||template.m_TemplateOperation == SpaceOperations.READ)
 
 
@@ -6350,7 +6354,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
 
             if (entry.getWriteLockTransaction() == null &&
                     (readWriteLock == null || readWriteLock.isEmpty()))
-                return XtnConfilctCheckIndicators.NO_CONFLICT;
+                return XtnConflictCheckIndicators.NO_CONFLICT;
 
             // check conflicting read
             if (readWriteLock != null && !readWriteLock.isEmpty()) {
@@ -6367,14 +6371,14 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
                                 || (entryReadLockStatus == XtnStatus.ROLLING && !xtnEntry.m_AlreadyPrepared))
                             continue;
                         if (template.getXidOriginatedTransaction() == null || !readLockOwner.m_Transaction.equals(template.getXidOriginatedTransaction()))
-                            return XtnConfilctCheckIndicators.XTN_CONFLICT; //new TransactionConflictException(readLockOwner.m_Transaction, template.getXidOriginatedTransaction());
+                            return XtnConflictCheckIndicators.XTN_CONFLICT; //new TransactionConflictException(readLockOwner.m_Transaction, template.getXidOriginatedTransaction());
                     }
                 }
             }
 
             xtnEntry = entry.getWriteLockOwner();
             if (xtnEntry == null)
-                return XtnConfilctCheckIndicators.NO_CONFLICT;
+                return XtnConflictCheckIndicators.NO_CONFLICT;
 
             XtnStatus entryWriteLockStatus = xtnEntry.getStatus();
             int entryWriteLockOperation = entry.getWriteLockOperation();
@@ -6387,17 +6391,17 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
             // entry.m_WriteLockOwner.equals(template.m_XidOriginated)
             if (entryWriteLockOperation == SpaceOperations.TAKE ||
                     entryWriteLockOperation == SpaceOperations.TAKE_IE)
-                return XtnConfilctCheckIndicators.DELETED_BY_OWN_XTN;
+                return XtnConflictCheckIndicators.DELETED_BY_OWN_XTN;
 
 
-            return XtnConfilctCheckIndicators.NO_CONFLICT;
+            return XtnConflictCheckIndicators.NO_CONFLICT;
         }//			if ((template.m_TemplateOperation == SpaceOperations.TAKE_IE ||template.m_TemplateOperation == SpaceOperations.TAKE))
 
         if (template.getTemplateOperation() == SpaceOperations.UPDATE || template.isExclusiveReadLockOperation()) {
             List<XtnEntry> rwLock = entry.getReadLockOwners();
 
             if (entry.getWriteLockTransaction() == null && (rwLock == null || rwLock.isEmpty()))
-                return XtnConfilctCheckIndicators.NO_CONFLICT;
+                return XtnConflictCheckIndicators.NO_CONFLICT;
 
             // check conflicting read
             if (rwLock != null && !rwLock.isEmpty()) {
@@ -6414,14 +6418,14 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
                             continue;
 
                         if (template.getXidOriginatedTransaction() == null || !readLockOwner.m_Transaction.equals(template.getXidOriginatedTransaction()))
-                            return XtnConfilctCheckIndicators.XTN_CONFLICT;//new TransactionConflictException(readLockOwner.m_Transaction, template.getXidOriginatedTransaction());
+                            return XtnConflictCheckIndicators.XTN_CONFLICT;//new TransactionConflictException(readLockOwner.m_Transaction, template.getXidOriginatedTransaction());
                     }
                 }
             }
 
             xtnEntry = entry.getWriteLockOwner();
             if (xtnEntry == null)
-                return XtnConfilctCheckIndicators.NO_CONFLICT;
+                return XtnConflictCheckIndicators.NO_CONFLICT;
 
             XtnStatus entryWriteLockStatus = xtnEntry.getStatus();
             int entryWriteLockOperation = entry.getWriteLockOperation();
@@ -6434,26 +6438,26 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
             if (entryWriteLockOperation == SpaceOperations.TAKE ||
                     entryWriteLockOperation == SpaceOperations.TAKE_IE)
                 //for update-or-write for a taken entry under same xtn
-                return UpdateModifiers.isUpdateOrWrite(template.getOperationModifiers()) ? XtnConfilctCheckIndicators.NO_CONFLICT : XtnConfilctCheckIndicators.DELETED_BY_OWN_XTN;
+                return UpdateModifiers.isUpdateOrWrite(template.getOperationModifiers()) ? XtnConflictCheckIndicators.NO_CONFLICT : XtnConflictCheckIndicators.DELETED_BY_OWN_XTN;
 
             //fifo groups- allow traversing the group with same xtn in case of repetitive read-exclusive
             if (template.isFifoGroupPoll() && xtnEntry == template.getXidOriginated() && template.isExclusiveReadLockOperation())
-                return XtnConfilctCheckIndicators.DELETED_BY_OWN_XTN;
+                return XtnConflictCheckIndicators.DELETED_BY_OWN_XTN;
 
 
-            return XtnConfilctCheckIndicators.NO_CONFLICT;
+            return XtnConflictCheckIndicators.NO_CONFLICT;
         } //			if (template.m_TemplateOperation == SpaceOperations.UPDATE)
 
-        return XtnConfilctCheckIndicators.NO_CONFLICT; /* not reached - keep compiler happy. */
+        return XtnConflictCheckIndicators.NO_CONFLICT; /* not reached - keep compiler happy. */
     }
 
-    private XtnConfilctCheckIndicators checkTransactionConflict(XtnEntry xtnEntry,
+    private XtnConflictCheckIndicators checkTransactionConflict(XtnEntry xtnEntry,
                                                                 XtnStatus entryWriteLockStatus, int entryWriteLockOperation) {
         if ((entryWriteLockOperation == SpaceOperations.TAKE ||
                 entryWriteLockOperation == SpaceOperations.TAKE_IE) &&
                 (entryWriteLockStatus == XtnStatus.ROLLED ||
                         (entryWriteLockStatus == XtnStatus.ROLLING && !xtnEntry.m_AlreadyPrepared)))
-            return XtnConfilctCheckIndicators.NO_CONFLICT;
+            return XtnConflictCheckIndicators.NO_CONFLICT;
 
 
         if ((entryWriteLockOperation == SpaceOperations.TAKE ||
@@ -6461,40 +6465,40 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
                 (entryWriteLockStatus == XtnStatus.COMMITED ||
                         entryWriteLockStatus == XtnStatus.COMMITING ||
                         ((entryWriteLockStatus == XtnStatus.PREPARED) && xtnEntry.m_SingleParticipant)))
-            return XtnConfilctCheckIndicators.ENTRY_DELETED;
+            return XtnConflictCheckIndicators.ENTRY_DELETED;
 
         if (entryWriteLockOperation == SpaceOperations.WRITE &&
                 (entryWriteLockStatus == XtnStatus.COMMITED ||
                         entryWriteLockStatus == XtnStatus.COMMITING ||
                         ((entryWriteLockStatus == XtnStatus.PREPARED) && xtnEntry.m_SingleParticipant)))
-            return XtnConfilctCheckIndicators.NO_CONFLICT;
+            return XtnConflictCheckIndicators.NO_CONFLICT;
         if ((entryWriteLockOperation == SpaceOperations.UPDATE ||
                 entryWriteLockOperation == SpaceOperations.READ || entryWriteLockOperation == SpaceOperations.READ_IE) &&
                 (entryWriteLockStatus == XtnStatus.COMMITED ||
                         entryWriteLockStatus == XtnStatus.COMMITING ||
                         ((entryWriteLockStatus == XtnStatus.PREPARED) && xtnEntry.m_SingleParticipant)))
-            return XtnConfilctCheckIndicators.NO_CONFLICT;
+            return XtnConflictCheckIndicators.NO_CONFLICT;
         if ((entryWriteLockOperation == SpaceOperations.UPDATE ||
                 entryWriteLockOperation == SpaceOperations.READ || entryWriteLockOperation == SpaceOperations.READ_IE) &&
                 (entryWriteLockStatus == XtnStatus.ROLLED ||
                         (entryWriteLockStatus == XtnStatus.ROLLING && !xtnEntry.m_AlreadyPrepared)))
-            return XtnConfilctCheckIndicators.NO_CONFLICT;
+            return XtnConflictCheckIndicators.NO_CONFLICT;
 
-        return XtnConfilctCheckIndicators.XTN_CONFLICT;
+        return XtnConflictCheckIndicators.XTN_CONFLICT;
     }
 
     //conflict check for read-committed  when the template xtn != entry writelock xtn
-    private XtnConfilctCheckIndicators checkTransactionConflictReadCommitted(Context context, XtnEntry xtnEntry,
+    private XtnConflictCheckIndicators checkTransactionConflictReadCommitted(Context context, XtnEntry xtnEntry,
                                                                              XtnStatus entryWriteLockStatus, int entryWriteLockOperation, IEntryHolder entry, ITransactionalEntryData edata, boolean isShadow) {
         if (isShadow)
-            return XtnConfilctCheckIndicators.NO_CONFLICT;  //read committed
+            return XtnConflictCheckIndicators.NO_CONFLICT;  //read committed
 
         if (!context.isNonBlockingReadOp()) {
             if (entry.hasShadow(true /*safeEntry*/))
-                return XtnConfilctCheckIndicators.XTN_CONFLICT;//  read-committed only for shadow
+                return XtnConflictCheckIndicators.XTN_CONFLICT;//  read-committed only for shadow
         } else {//nonblocking read and we have shadow
             if (edata.getOtherUpdateUnderXtnEntry() != null)
-                return XtnConfilctCheckIndicators.XTN_CONFLICT;//  read-committed only for shadow
+                return XtnConflictCheckIndicators.XTN_CONFLICT;//  read-committed only for shadow
         }
         if ((entryWriteLockOperation == SpaceOperations.TAKE ||
                 entryWriteLockOperation == SpaceOperations.TAKE_IE) &&
@@ -6504,46 +6508,46 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
             if (context.isNonBlockingReadOp()) {//if NBR verify that its not a take + write under same xtn
                 ITransactionalEntryData curedata = entry.getTxnEntryData();
                 if (curedata.getWriteLockOwner() == null && !entry.isDeleted())
-                    return XtnConfilctCheckIndicators.NO_CONFLICT;  //read committed
+                    return XtnConflictCheckIndicators.NO_CONFLICT;  //read committed
                 if (curedata.getWriteLockOwner() != null && ((curedata.getWriteLockOwner() != edata.getWriteLockOwner()) ||
                         (curedata.getWriteLockOperation() != entryWriteLockOperation)))
-                    return XtnConfilctCheckIndicators.NO_CONFLICT;  //read committed
+                    return XtnConflictCheckIndicators.NO_CONFLICT;  //read committed
 
             }
-            return XtnConfilctCheckIndicators.ENTRY_DELETED;
+            return XtnConflictCheckIndicators.ENTRY_DELETED;
         }
         if (entryWriteLockOperation == SpaceOperations.WRITE &&
                 (xtnEntry.m_Active ||
                         xtnEntry.getStatus() == XtnStatus.PREPARING ||
                         (xtnEntry.getStatus() == XtnStatus.PREPARED && !xtnEntry.m_SingleParticipant)))
-            return XtnConfilctCheckIndicators.XTN_CONFLICT;
+            return XtnConflictCheckIndicators.XTN_CONFLICT;
         if (entryWriteLockOperation == SpaceOperations.WRITE &&
                 (entryWriteLockStatus == XtnStatus.ROLLED ||
                         (entryWriteLockStatus == XtnStatus.ROLLING && !xtnEntry.m_AlreadyPrepared)))
-            return XtnConfilctCheckIndicators.ENTRY_DELETED;
+            return XtnConflictCheckIndicators.ENTRY_DELETED;
 
 
-        return XtnConfilctCheckIndicators.NO_CONFLICT;  //read committed
+        return XtnConflictCheckIndicators.NO_CONFLICT;  //read committed
     }
 
 
     //conflict check for dirty-read when the template xtn != entry writelock xtn
-    private XtnConfilctCheckIndicators checkTransactionConflictDirtyRead(Context context, XtnEntry xtnEntry,
+    private XtnConflictCheckIndicators checkTransactionConflictDirtyRead(Context context, XtnEntry xtnEntry,
                                                                          XtnStatus entryWriteLockStatus, int entryWriteLockOperation, IEntryHolder entry, ITransactionalEntryData edata, boolean isShadow) {
         if (isShadow)
-            return XtnConfilctCheckIndicators.XTN_CONFLICT;// dirty read unrelevant here
+            return XtnConflictCheckIndicators.XTN_CONFLICT;// dirty read unrelevant here
 
         if ((entryWriteLockOperation == SpaceOperations.TAKE ||
                 entryWriteLockOperation == SpaceOperations.TAKE_IE) &&
                 (entryWriteLockStatus == XtnStatus.ROLLED ||
                         (entryWriteLockStatus == XtnStatus.ROLLING && !xtnEntry.m_AlreadyPrepared)))
-            return XtnConfilctCheckIndicators.NO_CONFLICT;
+            return XtnConflictCheckIndicators.NO_CONFLICT;
 
         if (entryWriteLockOperation == SpaceOperations.TAKE ||
                 entryWriteLockOperation == SpaceOperations.TAKE_IE)
-            return XtnConfilctCheckIndicators.XTN_CONFLICT;// take ? dirty read is blocked
+            return XtnConflictCheckIndicators.XTN_CONFLICT;// take ? dirty read is blocked
 
-        return XtnConfilctCheckIndicators.NO_CONFLICT;  // dirty read, allow xtn conflicts
+        return XtnConflictCheckIndicators.NO_CONFLICT;  // dirty read, allow xtn conflicts
     }
 
     public AnswerHolder aggregate(ITemplatePacket queryPacket, List<SpaceEntriesAggregator> aggregators, int readModifiers,
@@ -6596,7 +6600,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
     /**
      * XTN CONFLICT CHECK INDICATOR.
      */
-    private static enum XtnConfilctCheckIndicators {
+    public enum XtnConflictCheckIndicators {
         NO_CONFLICT, XTN_CONFLICT, ENTRY_DELETED, DELETED_BY_OWN_XTN
     }
 
@@ -7608,6 +7612,9 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
 
     public static EntryDeletedException getEntryDeletedException() {
         return ENTRY_DELETED_EXCEPTION;
+    }
+    public static TransactionConflictException getTxConflictException() {
+        return TX_CONFLICT_EXCEPTION;
     }
 
     public Logger getLogger() {
