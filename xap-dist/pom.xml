@@ -76,10 +76,6 @@
             <artifactId>xap-mongodb</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.gigaspaces</groupId>
-            <artifactId>xap-kafka</artifactId>
-        </dependency>
-        <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-core</artifactId>
         </dependency>
