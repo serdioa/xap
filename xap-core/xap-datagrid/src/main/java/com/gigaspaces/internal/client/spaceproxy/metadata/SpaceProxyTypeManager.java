@@ -42,6 +42,7 @@ import com.j_spaces.jdbc.builder.SQLQueryTemplatePacket;
 import com.j_spaces.kernel.SystemProperties;
 import net.jini.core.entry.UnusableEntryException;
 
+import java.math.BigDecimal;
 import java.util.Map;
 
 /**
@@ -426,6 +427,9 @@ public class SpaceProxyTypeManager implements ISpaceProxyTypeManager {
 
         Object routing = idQuery.getRouting();
         Object id = idQuery.getId();
+        if (id instanceof BigDecimal){
+            id = ((BigDecimal) id).stripTrailingZeros();
+        }
         int version = idQuery.getVersion();
 
         if (typeDesc.isRoutingSameAsId()) {

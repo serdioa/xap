@@ -21,6 +21,7 @@ import com.gigaspaces.security.directory.CredentialsProvider;
 import com.gigaspaces.security.directory.CredentialsProviderHelper;
 import com.gigaspaces.security.directory.DefaultCredentialsProvider;
 
+import com.gigaspaces.security.directory.TokenCredentialsProvider;
 import org.springframework.util.StringUtils;
 
 import java.util.Properties;
@@ -35,9 +36,14 @@ public class SecurityConfig {
 
     private String username;
     private String password;
+    private String token;
     private CredentialsProvider credentialsProvider;
 
     public SecurityConfig() {
+    }
+
+    public SecurityConfig(String token) {
+        this.token = token;
     }
 
     public SecurityConfig(String username, String password) {
@@ -77,10 +83,24 @@ public class SecurityConfig {
         this.password = password;
     }
 
+    public String getToken() {
+        return token;
+    }
+
+    public void setToken(String token) {
+        this.token = token;
+    }
+
     public CredentialsProvider getCredentialsProvider() {
         if (credentialsProvider != null)
             return credentialsProvider;
-        return isFilled() ? new DefaultCredentialsProvider(username, password) : null;
+        if (isFilled()) {
+            return new DefaultCredentialsProvider(username, password);
+        }
+        if (StringUtils.hasText(token)) {
+            return new TokenCredentialsProvider(token);
+        }
+        return null;
     }
 
     public boolean isFilled() {
@@ -95,4 +115,5 @@ public class SecurityConfig {
         CredentialsProvider credentials = CredentialsProviderHelper.extractMarshalledCredentials(properties, false);
         return credentials == null ? null : new SecurityConfig(credentials);
     }
+
 }

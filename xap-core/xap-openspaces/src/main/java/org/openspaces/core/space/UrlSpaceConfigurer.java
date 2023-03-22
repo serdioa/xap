@@ -317,6 +317,13 @@ public class UrlSpaceConfigurer implements SpaceConfigurer {
     }
 
     /**
+     * Creates a secured space with the provided user name and password.
+     */
+    public UrlSpaceConfigurer credentials(String token) {
+        return securityConfig(new SecurityConfig(token));
+    }
+
+    /**
      * Creates a secured space with the provided credentials provider.
      */
     public UrlSpaceConfigurer credentialsProvider(CredentialsProvider credentialsProvider) {
