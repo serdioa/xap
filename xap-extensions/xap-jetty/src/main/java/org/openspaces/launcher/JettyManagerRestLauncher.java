@@ -186,7 +186,12 @@ public class JettyManagerRestLauncher implements Closeable {
             String contextPath = getContextPath(file);
             webApp.setContextPath(contextPath);
             if (contextPath.equals("/") && Boolean.getBoolean("com.gs.security.enabled")) {
-                webApp.setInitParameter("spring.profiles.active", "gs-ops-manager-secured");
+                // TODO : additional profile for openid-secure!
+                if (SystemInfo.singleton().security().isOpenIdSecurityManager()) {
+                    webApp.setInitParameter("spring.profiles.active", "gs-ops-manager-secured-openid");
+                } else {
+                    webApp.setInitParameter("spring.profiles.active", "gs-ops-manager-secured");
+                }
             }
             webApp.getSessionHandler().setSessionCookie(toSessionId(file));
 

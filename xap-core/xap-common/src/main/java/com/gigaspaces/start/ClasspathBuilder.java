@@ -61,6 +61,10 @@ public class ClasspathBuilder {
         return this;
     }
 
+    public ClasspathBuilder appendRequiredJar(String jar) {
+        return appendJars(locations.libRequired().resolve(jar));
+    }
+
     public ClasspathBuilder appendPlatformJars(String subpath) {
         return appendJars(locations.libPlatform(subpath));
     }

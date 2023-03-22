@@ -20,10 +20,7 @@ import com.gigaspaces.CommonSystemProperties;
 import com.gigaspaces.internal.io.FileUtils;
 import com.gigaspaces.internal.jmx.JMXUtilities;
 import com.gigaspaces.internal.jvm.JavaUtils;
-import com.gigaspaces.internal.services.RestServiceFactory;
-import com.gigaspaces.internal.services.ServiceFactory;
-import com.gigaspaces.internal.services.WebuiServiceFactory;
-import com.gigaspaces.internal.services.ZooKeeperServiceFactory;
+import com.gigaspaces.internal.services.*;
 import com.gigaspaces.internal.utils.GsEnv;
 import com.gigaspaces.start.manager.XapManagerConfig;
 import com.sun.jini.start.ServiceDescriptor;
@@ -84,10 +81,11 @@ public class SystemConfig {
     private final Map<String, ServiceFactory> serviceFactoryMap = initServiceFactories();
 
     private static Map<String, ServiceFactory> initServiceFactories() {
-        ServiceFactory[] serviceFactories = new ServiceFactory[] {
+        ServiceFactory[] serviceFactories = new ServiceFactory[]{
                 new RestServiceFactory(),
                 new ZooKeeperServiceFactory(),
-                new WebuiServiceFactory()
+                new WebuiServiceFactory(),
+                new AuthServiceFactory()
         };
         Map<String, ServiceFactory> result = new HashMap<>();
         for (ServiceFactory serviceFactory : serviceFactories)
@@ -207,7 +205,7 @@ public class SystemConfig {
      * @param configArgs An array whose first element is the location of the configuration source
      *                   and remaining elements specify override values for entries that will be
      *                   used to create the SystemConfig singleton for the system.
-     *
+     *                   <p>
      *                   If the SystemConfig instance has already been created this parameter is
      *                   optional
      * @return The SystemConfig instance
@@ -316,11 +314,11 @@ public class SystemConfig {
         classpathBuilder.appendOptionalJars("jruby");
         classpathBuilder.appendJars(Paths.get(System.getProperty("com.gs.pu.classloader.scala-lib-path", locations.libOptional("scala").resolve("lib").toString())));// Scala support
         classpathBuilder.appendPlatformJars("zookeeper");
-        if(JavaUtils.greaterOrEquals(11)){
+        if (JavaUtils.greaterOrEquals(11)) {
             classpathBuilder.appendPlatformJars("javax");
         }
         //GS-13825 added hsql jar
-        classpathBuilder.appendOptionalJars("jdbc", FileUtils.Filters.nameStartsWith( "hsqldb" ) );
+        classpathBuilder.appendOptionalJars("jdbc", FileUtils.Filters.nameStartsWith("hsqldb"));
 
         // I don't expect anybody to use this feature, but its here just to be on the safe side
         boolean osInCommonClassLoader = Boolean.parseBoolean(System.getProperty("com.gs.pu.classloader.os-in-common-classloader", "false"));
@@ -333,7 +331,14 @@ public class SystemConfig {
 
         classpathBuilder.appendOptionalJars("tiered-storage/sqlite");
         classpathBuilder.appendOptionalJars("data-integration");
-        classpathBuilder.appendPlatformJars("jdbc" );
+        classpathBuilder.appendPlatformJars("jdbc");
+
+        if (SystemInfo.singleton().security().isOpenIdSecurityManager()) {
+            classpathBuilder.appendRequiredJar("spring-security-oauth2-jose.jar");
+            classpathBuilder.appendRequiredJar("spring-security-oauth2-resource-server.jar");
+            classpathBuilder.appendRequiredJar("spring-security-oauth2-core.jar");
+            classpathBuilder.appendRequiredJar("nimbus-jose-jwt.jar");
+        }
 
         return classpathBuilder.toURLs();
     }
@@ -567,6 +572,7 @@ public class SystemConfig {
 
     public ServiceDescriptor getServiceDescriptor(String key)
             throws BindException, ConfigurationException, UnknownHostException {
+        //  todo : create descriptor for auth ?
         if (key.equals(SystemBoot.GSC))
             return getGSCServiceDescriptor();
         if (key.equals(SystemBoot.GSA))
@@ -638,6 +644,7 @@ public class SystemConfig {
                         null);
         if (svcDesc == null) {
             ClasspathBuilder classpath = new ClasspathBuilder();
+            classpath.appendLibRequiredJars(ClassLoaderType.SERVICE);
             classpath.appendLibRequiredJars(ClassLoaderType.SERVICE);
             classpath.appendOptionalJars("spring");
             classpath.appendJars(locations.libOptionalSecurity());
@@ -807,7 +814,7 @@ public class SystemConfig {
          */
         public Object create(Configuration config) throws Exception {
             MBeanServer mbs = null;
-            if(  GsEnv.propertyBoolean( CommonSystemProperties.JMX_ENABLED_PROP ).get( CommonSystemProperties.JMX_ENABLED_DEFAULT_BOOLEAN_VALUE ) ) {
+            if (GsEnv.propertyBoolean(CommonSystemProperties.JMX_ENABLED_PROP).get(CommonSystemProperties.JMX_ENABLED_DEFAULT_BOOLEAN_VALUE)) {
                 int registryPort = (Integer) getConfigEntry(config, COMPONENT, "registryPort", int.class, CommonSystemProperties.REGISTRY_PORT, 10098);
                 int registryRetries = (Integer) getConfigEntry(config, COMPONENT, "registryRetries", Integer.class, CommonSystemProperties.REGISTRY_RETRIES, 20);
 

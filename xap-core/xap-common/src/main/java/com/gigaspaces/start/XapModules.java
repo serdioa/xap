@@ -46,7 +46,8 @@ public enum XapModules {
     NEAR_CACHE_SPRING("optional/near-cache/xap-near-cache-spring.jar", ClassLoaderType.SERVICE),
     INTEROP_SPRING("optional/interop/xap-interop-spring.jar", ClassLoaderType.SERVICE),
     WAN_SPRING("optional/wan-gateway/xap-wan-gateway-spring.jar", ClassLoaderType.SERVICE),
-    ADMIN("platform/service-grid/xap-admin.jar", ClassLoaderType.SERVICE);
+    ADMIN("platform/service-grid/xap-admin.jar", ClassLoaderType.SERVICE),
+    SECURITY_SERVER("../tools/security-server/xap-security-server.jar", ClassLoaderType.SERVICE);
 
     private final String artifactName;
     private final String jarFileName;

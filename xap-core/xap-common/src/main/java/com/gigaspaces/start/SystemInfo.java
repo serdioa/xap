@@ -23,6 +23,7 @@ import com.gigaspaces.internal.version.PlatformVersion;
 import com.gigaspaces.start.kubernetes.KubernetesClusterInfo;
 import com.gigaspaces.start.manager.XapManagerClusterInfo;
 import com.gigaspaces.start.manager.XapManagerConfig;
+import com.gigaspaces.start.security.SecurityServiceInfo;
 import com.gigaspaces.time.AbsoluteTime;
 import com.gigaspaces.time.ITimeProvider;
 
@@ -54,6 +55,7 @@ public class SystemInfo {
     private final XapTimeProvider timeProvider;
     private final XapManagerClusterInfo managerClusterInfo;
     private final KubernetesClusterInfo kubernetesClusterInfo;
+    private final SecurityServiceInfo securityServiceInfo;
 
     public static SystemInfo singleton() {
         return instance;
@@ -65,6 +67,7 @@ public class SystemInfo {
         this.timeProvider = new XapTimeProvider();
         this.managerClusterInfo = new XapManagerClusterInfo(network.getHost());
         this.kubernetesClusterInfo = KubernetesClusterInfo.getInstance();
+        this.securityServiceInfo = SecurityServiceInfo.instance();
         this.lookup = new XapLookup(managerClusterInfo);
     }
 
@@ -78,6 +81,10 @@ public class SystemInfo {
 
     public KubernetesClusterInfo kubernetes(){
         return kubernetesClusterInfo;
+    }
+
+    public SecurityServiceInfo security() {
+        return securityServiceInfo;
     }
 
     public XapOperatingSystem os() {
