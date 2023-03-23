@@ -905,7 +905,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
 
         //check the case of write under txn for an entry which is
         //taken under that xtn, in this case replace it by update
-        if (entryInSpaceEx != null && txnEntry != null && packetUid != null && !fromReplication) {
+        if (entryInSpaceEx != null && txnEntry != null && packetUid != null && !fromReplication && !isMvccEnabled()) {
             //we got EntryAlreadyInSpaceException, check if the entry is
             //taken under the same xtn and if so, apply update
             //instead of take

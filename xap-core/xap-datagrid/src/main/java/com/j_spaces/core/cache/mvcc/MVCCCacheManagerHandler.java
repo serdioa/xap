@@ -7,6 +7,7 @@ import com.j_spaces.core.cache.CacheManager;
 import com.j_spaces.core.cache.IEntryCacheInfo;
 import com.j_spaces.core.cache.XtnData;
 import com.j_spaces.core.cache.context.Context;
+import com.j_spaces.core.client.EntryAlreadyInSpaceException;
 import com.j_spaces.core.sadapter.SAException;
 
 import java.util.concurrent.ConcurrentMap;
@@ -23,9 +24,14 @@ public class MVCCCacheManagerHandler {
     public IEntryCacheInfo insertMvccEntryToCache(MVCCEntryCacheInfo pEntry, ConcurrentMap<String, IEntryCacheInfo> entries) {
         String uid = pEntry.getUID();
         MVCCShellEntryCacheInfo oldEntry = (MVCCShellEntryCacheInfo) entries.get(uid);
+        IEntryHolder entryHolder = pEntry.getEntryHolder();
         if (oldEntry == null){
-            oldEntry = new MVCCShellEntryCacheInfo(pEntry.getEntryHolder(), pEntry);
+            oldEntry = new MVCCShellEntryCacheInfo(entryHolder, pEntry);
             entries.put(uid,oldEntry);
+        } else if (isMvccEntryValidForWrite(uid)) {
+            oldEntry.setDirtyEntry(pEntry);
+        } else{
+            throw new EntryAlreadyInSpaceException(uid, entryHolder.getClassName());
         }
         //TODO: handle MVCCShellEntryCacheInfo's dirtyEntry when oldEntry != null
         return null;
@@ -84,5 +90,10 @@ public class MVCCCacheManagerHandler {
                     mvccShellEntryCacheInfo.addEntryGeneration();
             }
         }
+    }
+
+    public boolean isMvccEntryValidForWrite(String uid) {
+        MVCCShellEntryCacheInfo mvccShellEntryCacheInfo = cacheManager.getMVCCShellEntryCacheInfoByUid(uid);
+        return !(mvccShellEntryCacheInfo.getDirtyEntry() != null || !mvccShellEntryCacheInfo.isLatestGenerationLogicallyDeleted());
     }
 }

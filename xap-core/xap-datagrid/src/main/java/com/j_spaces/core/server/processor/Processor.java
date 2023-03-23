@@ -220,9 +220,10 @@ public class Processor implements IConsumerObject<BusPacket<Processor>> {
         }
     }
 
-    private boolean needReadBeforeWriteToSpace(Context context) {
+    private boolean needReadBeforeWriteToSpace(Context context, int modifiers) {
         return (_cacheManager.isTieredStorageCachePolicy() && context.getEntryTieredState() != TieredState.TIERED_COLD)
-                || (_cacheManager.isEvictableFromSpaceCachePolicy() && !_cacheManager.isMemorySpace());
+                || (_cacheManager.isEvictableFromSpaceCachePolicy() && !_cacheManager.isMemorySpace())
+                || (_cacheManager.isMVCCEnabled() && Modifiers.contains(modifiers, Modifiers.WRITE));
     }
 
     private void insertToSpaceLoop(Context context, IEntryHolder entry, IServerTypeDesc typeDesc, boolean fromReplication, boolean origin,
@@ -263,7 +264,7 @@ public class Processor implements IConsumerObject<BusPacket<Processor>> {
 
         synchronized (entryLock) {
             try {
-                if (supplied_uid && needReadBeforeWriteToSpace(context))
+                if (supplied_uid && needReadBeforeWriteToSpace(context, modifiers))
                 //uid externally supplied we make a DB search -verify that entry is not alrady in
                 {
                     final boolean useOnlyCache = (fromReplication
@@ -276,7 +277,12 @@ public class Processor implements IConsumerObject<BusPacket<Processor>> {
                         if (_engine.isSyncReplicationEnabled() && _engine.getLeaseManager().replicateLeaseExpirationEventsForEntries())
                             context.setSyncReplFromMultipleOperation(true); //piggyback the lease expiration replication
 
-                        if (_engine.isExpiredEntryStayInSpace(entry) || !leaseExpiredInInsertWithSameUid(context, entry, typeDesc, curEh, true /*alreadyLocked*/)) {
+                        if(_engine.isMvccEnabled()) {
+                            if (!_cacheManager.isMvccEntryValidForWrite(curEh.getUID())){
+                                alreadyIn = true;
+                                throw new EntryAlreadyInSpaceException(entry.getUID(), entry.getClassName());
+                            }
+                        } else if (_engine.isExpiredEntryStayInSpace(entry) || !leaseExpiredInInsertWithSameUid(context, entry, typeDesc, curEh, true /*alreadyLocked*/)) {
                             alreadyIn = true;
                             throw new EntryAlreadyInSpaceException(entry.getUID(), entry.getClassName());
                         }

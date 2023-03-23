@@ -3658,6 +3658,10 @@ public class CacheManager extends AbstractCacheManager
         _mvccCacheManagerHandler.handleNewMvccGeneration(context, entry, xtnEntry);
     }
 
+    public boolean isMvccEntryValidForWrite(String uid) {
+        return _mvccCacheManagerHandler.isMvccEntryValidForWrite(uid);
+    }
+
     /**
      * INITIALLOAD INFO.
      */
