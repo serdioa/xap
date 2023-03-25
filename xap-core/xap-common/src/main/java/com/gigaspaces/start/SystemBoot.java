@@ -261,12 +261,12 @@ public class SystemBoot {
     /**
      * Convert comma-separated String to array of Strings
      */
-    private static List<String> toList(String s) {
+    private static Set<String> toSet(String s) {
         if (s.endsWith("]")) {
             s = s.substring(s.indexOf("[")+1, s.length()-1);
         }
 
-        final List<String> result = new ArrayList<>();
+        final Set<String> result = new LinkedHashSet<>();
         for (StringTokenizer tok = new StringTokenizer(s, " ,") ; tok.hasMoreTokens() ; ) {
             result.add(tok.nextToken());
         }
@@ -318,8 +318,7 @@ public class SystemBoot {
             Configuration config = systemConfig.getConfiguration();
             loadPlatform();
 
-            final List<String> services = toList((String) config.getEntry(COMPONENT, "services", String.class, GSC));
-
+            final Set<String> services = toSet((String) config.getEntry(COMPONENT, "services", String.class, GSC));
             if (!isSilent)
                 initJmxIfNeeded(services, systemConfig, config);
             enableDynamicLocatorsIfNeeded();
@@ -520,7 +519,7 @@ public class SystemBoot {
         }
     }
 
-    private static void initJmxIfNeeded(List<String> services, SystemConfig systemConfig, Configuration config) {
+    private static void initJmxIfNeeded(Set<String> services, SystemConfig systemConfig, Configuration config) {
         /* If NO_JMX is not defined, start JMX and required infrastructure services */
         if (!services.contains(NO_JMX)) {
             try {
