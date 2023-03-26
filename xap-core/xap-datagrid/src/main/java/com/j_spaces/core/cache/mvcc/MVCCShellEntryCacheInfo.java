@@ -2,6 +2,7 @@ package com.j_spaces.core.cache.mvcc;
 
 import com.gigaspaces.internal.server.storage.EntryHolderFactory;
 import com.gigaspaces.internal.server.storage.IEntryHolder;
+import com.j_spaces.core.cache.CacheManager;
 import com.j_spaces.core.cache.MemoryBasedEntryCacheInfo;
 
 import java.util.Iterator;
@@ -55,7 +56,7 @@ public class MVCCShellEntryCacheInfo extends MemoryBasedEntryCacheInfo {
         return allEntryGenerations.getLast();
     }
 
-    public boolean isLatestGenerationLogicallyDeleted() {
+    public boolean isLogicallyDeletedOrEmpty() {
         MVCCEntryCacheInfo latestGeneration = getLatestGeneration();
         if (latestGeneration != null){
             return latestGeneration.getMVCCEntryHolder().isLogicallyDeleted();

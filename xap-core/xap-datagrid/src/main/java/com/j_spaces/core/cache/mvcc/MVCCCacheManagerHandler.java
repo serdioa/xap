@@ -28,7 +28,7 @@ public class MVCCCacheManagerHandler {
         if (oldEntry == null){
             oldEntry = new MVCCShellEntryCacheInfo(entryHolder, pEntry);
             entries.put(uid,oldEntry);
-        } else if (isMvccEntryValidForWrite(uid)) {
+        } else if (isMvccEntryValidForWrite(oldEntry)) {
             oldEntry.setDirtyEntry(pEntry);
         } else{
             throw new EntryAlreadyInSpaceException(uid, entryHolder.getClassName());
@@ -93,7 +93,10 @@ public class MVCCCacheManagerHandler {
     }
 
     public boolean isMvccEntryValidForWrite(String uid) {
-        MVCCShellEntryCacheInfo mvccShellEntryCacheInfo = cacheManager.getMVCCShellEntryCacheInfoByUid(uid);
-        return !(mvccShellEntryCacheInfo.getDirtyEntry() != null || !mvccShellEntryCacheInfo.isLatestGenerationLogicallyDeleted());
+        return isMvccEntryValidForWrite(cacheManager.getMVCCShellEntryCacheInfoByUid(uid));
+    }
+
+    public boolean isMvccEntryValidForWrite(MVCCShellEntryCacheInfo shellEntryCacheInfo) {
+        return shellEntryCacheInfo.getDirtyEntry() == null && shellEntryCacheInfo.isLogicallyDeletedOrEmpty();
     }
 }

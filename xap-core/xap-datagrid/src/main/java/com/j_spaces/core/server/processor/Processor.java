@@ -220,10 +220,10 @@ public class Processor implements IConsumerObject<BusPacket<Processor>> {
         }
     }
 
-    private boolean needReadBeforeWriteToSpace(Context context, int modifiers) {
+    private boolean needReadBeforeWriteToSpace(Context context) {
         return (_cacheManager.isTieredStorageCachePolicy() && context.getEntryTieredState() != TieredState.TIERED_COLD)
                 || (_cacheManager.isEvictableFromSpaceCachePolicy() && !_cacheManager.isMemorySpace())
-                || (_cacheManager.isMVCCEnabled() && Modifiers.contains(modifiers, Modifiers.WRITE));
+                || _cacheManager.isMVCCEnabled();
     }
 
     private void insertToSpaceLoop(Context context, IEntryHolder entry, IServerTypeDesc typeDesc, boolean fromReplication, boolean origin,
@@ -264,7 +264,7 @@ public class Processor implements IConsumerObject<BusPacket<Processor>> {
 
         synchronized (entryLock) {
             try {
-                if (supplied_uid && needReadBeforeWriteToSpace(context, modifiers))
+                if (supplied_uid && needReadBeforeWriteToSpace(context))
                 //uid externally supplied we make a DB search -verify that entry is not alrady in
                 {
                     final boolean useOnlyCache = (fromReplication
