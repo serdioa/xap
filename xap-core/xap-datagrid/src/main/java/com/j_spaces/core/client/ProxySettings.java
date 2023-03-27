@@ -151,7 +151,6 @@ public class ProxySettings implements SmartExternalizable {
         _finderURL = finderURL;
         if (finderURL != null && finderURL.getCustomProperties() != null) {
             _customProperties.putAll(finderURL.getCustomProperties());
-            _isMvccEnabled |= Boolean.parseBoolean(_customProperties.getProperty(Constants.Mvcc.FULL_MVCC_ENABLED_PROP));
         }
         return this;
     }
