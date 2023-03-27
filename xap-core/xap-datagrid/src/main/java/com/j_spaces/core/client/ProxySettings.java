@@ -71,7 +71,7 @@ public class ProxySettings implements SmartExternalizable {
     private final Properties _customProperties;
     private final SpaceClusterInfo _clusterInfo;
     private final SpaceClusterInfo _nonClusterInfo;
-    private boolean _isMvccEnabled;
+    private final boolean _isMvccEnabled;
 
     private SpaceURL _finderURL;
     private transient int _updateModifiers;
