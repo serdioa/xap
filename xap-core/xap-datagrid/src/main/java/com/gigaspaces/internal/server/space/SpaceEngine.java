@@ -3903,7 +3903,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
             return null;
         if (scnFilter != 0 && entry.getSCN() < scnFilter)
             return null;
-        if (!(isMvccEnabled() && entry.isHollowEntry())){
+        if (!(isMvccEnabled() && (entry.isHollowEntry() || ((MVCCEntryHolder) entry).isLogicallyDeleted()))) {
             if (entry.isExpired(leaseFilter) && disqualifyExpiredEntry(entry) && template.isReadOperation()) {
                 context.setPendingExpiredEntriesExist(true);
                 return null;
@@ -4477,7 +4477,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
                     need_xtn_lock = template.isMaybeUnderXtn() && !context.isMemoryOnlyEntry();
                 }
                 if (isMvccEnabled() && !need_xtn_lock && template.isActiveRead(this)) {
-                    need_xtn_lock = _cacheManager.getMVCCShellEntryCacheInfoByUid(entry.getUID()).getDirtyEntry() != null;
+                    need_xtn_lock = _cacheManager.getMVCCShellEntryCacheInfoByUid(entry.getUID()).getDirtyEntryCacheInfo() != null;
                 }
 
                 try {
@@ -5102,8 +5102,12 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
             // occurs when the entry was written under the same Xtn as
             // the Take/TakeIE)
             if (entry.getXidOriginatedTransaction() == null ||
-                    !template.getXidOriginatedTransaction().equals(entry.getXidOriginatedTransaction()))
+                    !template.getXidOriginatedTransaction().equals(entry.getXidOriginatedTransaction())) {
                 _cacheManager.associateEntryWithXtn(context, entry, template, template.getXidOriginated(), null);
+                if(isMvccEnabled()){
+                    _mvccSpaceEngineHandler.createLogicallyDeletedEntry((MVCCEntryHolder) entry);
+                }
+            }
         }
 
         if (template.isIfExist() && template.isInCache()) {

@@ -44,7 +44,7 @@ public class MVCCUtils {
         MVCCShellEntryCacheInfo mvccShellEntryCacheInfo = engine.getCacheManager().getMVCCShellEntryCacheInfoByUid(uid);
         long dirtyId = -1;
         if (mvccShellEntryCacheInfo != null) {
-            MVCCEntryCacheInfo dirtyEntry = mvccShellEntryCacheInfo.getDirtyEntry();
+            MVCCEntryCacheInfo dirtyEntry = mvccShellEntryCacheInfo.getDirtyEntryCacheInfo();
             XtnEntry xidOriginated = dirtyEntry != null ? dirtyEntry.getEntryHolder().getXidOriginated() : null;
             dirtyId = xidOriginated != null ? xidOriginated.m_Transaction.id : -1;
         }

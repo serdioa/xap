@@ -25,29 +25,31 @@ public class MVCCShellEntryCacheInfo extends MemoryBasedEntryCacheInfo {
         uid = entryHolder.getUID();
     }
 
-    public Iterator<MVCCEntryCacheInfo> ascIterator(){
+    public Iterator<MVCCEntryCacheInfo> ascIterator() {
         return allEntryGenerations.iterator();
     }
 
-    public Iterator<MVCCEntryCacheInfo> descIterator(){
+    public Iterator<MVCCEntryCacheInfo> descIterator() {
         return allEntryGenerations.descendingIterator();
     }
 
-    public void addEntryGeneration() {
+    public void addDirtyEntryToGenerationQueue() {
         allEntryGenerations.add(dirtyEntry);
         dirtyEntry = null;
     }
 
-    public void removeEntryGeneration(MVCCEntryCacheInfo entryCacheInfo) {
-        allEntryGenerations.remove(entryCacheInfo); //remove by reference
-        assert dirtyEntry == null;
-    }
-
-    public MVCCEntryCacheInfo getDirtyEntry() {
+    public MVCCEntryCacheInfo getDirtyEntryCacheInfo() {
         return dirtyEntry;
     }
 
-    public void setDirtyEntry(MVCCEntryCacheInfo dirtyEntry) {
+    public MVCCEntryHolder getDirtyEntryHolder() {
+        if (getDirtyEntryCacheInfo() != null) {
+            return getDirtyEntryCacheInfo().getEntryHolder();
+        }
+        return null;
+    }
+
+    public void setDirtyEntryCacheInfo(MVCCEntryCacheInfo dirtyEntry) {
         this.dirtyEntry = dirtyEntry;
     }
 
@@ -55,37 +57,38 @@ public class MVCCShellEntryCacheInfo extends MemoryBasedEntryCacheInfo {
         this.dirtyEntry = null;
     }
 
-    public MVCCEntryCacheInfo getLatestGeneration(){
+    public MVCCEntryCacheInfo getLatestGenerationCacheInfo() {
         return allEntryGenerations.peekLast();
     }
 
     public boolean isLogicallyDeletedOrEmpty() {
-        MVCCEntryCacheInfo latestGeneration = getLatestGeneration();
-        if (latestGeneration != null){
-            return latestGeneration.getMVCCEntryHolder().isLogicallyDeleted();
+        MVCCEntryCacheInfo latestGeneration = getLatestGenerationCacheInfo();
+        if (latestGeneration != null) {
+            return latestGeneration.getEntryHolder().isLogicallyDeleted();
         }
         return true; //if no generations exist it's same as logically deleted
     }
 
     @Override
-    public IEntryHolder getEntryHolder(CacheManager cacheManager) {
+    public MVCCEntryHolder getEntryHolder(CacheManager cacheManager) {
         return getEntryHolder();
     }
 
     @Override
-    public IEntryHolder getEntryHolder() {
-        MVCCEntryCacheInfo latestGeneration = getLatestGeneration();
-        if (latestGeneration != null){
+    public MVCCEntryHolder getEntryHolder() {
+        MVCCEntryCacheInfo latestGeneration = getLatestGenerationCacheInfo();
+        if (latestGeneration != null) {
             return latestGeneration.getEntryHolder();
         }
-        if(dirtyEntry != null){
+        if (dirtyEntry != null) {
             return dirtyEntry.getEntryHolder();
         }
         return EntryHolderFactory.createMvccShellHollowEntry(serverTypeDesc, uid);
     }
 
     @Override
-    public IEntryHolder getEntryHolder(CacheManager cacheManager, Context context) {
+    public MVCCEntryHolder getEntryHolder(CacheManager cacheManager, Context context) {
         return getEntryHolder();
     }
+
 }

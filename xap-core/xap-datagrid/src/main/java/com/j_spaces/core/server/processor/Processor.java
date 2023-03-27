@@ -47,6 +47,7 @@ import com.j_spaces.core.cache.blobStore.IBlobStoreRefCacheInfo;
 import com.j_spaces.core.cache.context.Context;
 import com.j_spaces.core.cache.context.TieredState;
 import com.j_spaces.core.cache.mvcc.MVCCEntryCacheInfo;
+import com.j_spaces.core.cache.mvcc.MVCCEntryHolder;
 import com.j_spaces.core.client.*;
 import com.j_spaces.core.cluster.ReplicationOperationType;
 import com.j_spaces.core.fifo.FifoBackgroundDispatcher;
@@ -1285,7 +1286,7 @@ public class Processor implements IConsumerObject<BusPacket<Processor>> {
                                 //NOTE: taken entries are handled in handleCommittedTakenEntries
 
                                 if(_engine.isMvccEnabled()){
-                                    _cacheManager.handleNewMvccGeneration(context, entry, xtnEntry);
+                                    _cacheManager.handleNewMvccGeneration(context, (MVCCEntryHolder) entry, xtnEntry);
                                     _cacheManager.disconnectMVCCEntryFromXtn(context, (MVCCEntryCacheInfo) entryCacheHolder, xtnEntry, true);
                                 } else{
                                     if (!entry.isBlobStoreEntry())

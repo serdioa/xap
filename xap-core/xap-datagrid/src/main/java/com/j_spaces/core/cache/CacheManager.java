@@ -3654,7 +3654,7 @@ public class CacheManager extends AbstractCacheManager
         return result;
     }
 
-    public void handleNewMvccGeneration(Context context, IEntryHolder entry, XtnEntry xtnEntry) throws SAException {
+    public void handleNewMvccGeneration(Context context, MVCCEntryHolder entry, XtnEntry xtnEntry) throws SAException {
         _mvccCacheManagerHandler.handleNewMvccGeneration(context, entry, xtnEntry);
     }
 
@@ -4153,7 +4153,7 @@ public class CacheManager extends AbstractCacheManager
         } else {//regular delete
             if (pEntry == null)
                 //right now we arrive here when we rollback a mvcc write under transaction so we deal with the dirty entry only, assuming it's not null
-                pEntry = isMVCCEnabled() ? getMVCCShellEntryCacheInfoByUid(entryHolder.getUID()).getDirtyEntry() : _entries.remove(entryHolder.getUID());
+                pEntry = isMVCCEnabled() ? getMVCCShellEntryCacheInfoByUid(entryHolder.getUID()).getDirtyEntryCacheInfo() : _entries.remove(entryHolder.getUID());
             else
                 _entries.remove(entryHolder.getUID(), pEntry);
         }
