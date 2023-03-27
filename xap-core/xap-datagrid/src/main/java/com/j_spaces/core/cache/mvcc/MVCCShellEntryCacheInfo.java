@@ -1,9 +1,11 @@
 package com.j_spaces.core.cache.mvcc;
 
+import com.gigaspaces.internal.server.metadata.IServerTypeDesc;
 import com.gigaspaces.internal.server.storage.EntryHolderFactory;
 import com.gigaspaces.internal.server.storage.IEntryHolder;
 import com.j_spaces.core.cache.CacheManager;
 import com.j_spaces.core.cache.MemoryBasedEntryCacheInfo;
+import com.j_spaces.core.cache.context.Context;
 
 import java.util.Iterator;
 import java.util.concurrent.ConcurrentLinkedDeque;
@@ -12,11 +14,15 @@ public class MVCCShellEntryCacheInfo extends MemoryBasedEntryCacheInfo {
 
     private final ConcurrentLinkedDeque<MVCCEntryCacheInfo> allEntryGenerations = new ConcurrentLinkedDeque<>();
     private volatile MVCCEntryCacheInfo dirtyEntry;
+    private final IServerTypeDesc serverTypeDesc;
+    private final String uid;
 
 
     public MVCCShellEntryCacheInfo(IEntryHolder entryHolder, MVCCEntryCacheInfo pEntry) {
-        super(EntryHolderFactory.createMvccShellHollowEntry(entryHolder.getServerTypeDesc(), entryHolder.getUID()), pEntry.getBackRefs().size());
+        super(null, pEntry.getBackRefs().size());
         dirtyEntry = pEntry;
+        serverTypeDesc = entryHolder.getServerTypeDesc();
+        uid = entryHolder.getUID();
     }
 
     public Iterator<MVCCEntryCacheInfo> ascIterator(){
@@ -50,10 +56,7 @@ public class MVCCShellEntryCacheInfo extends MemoryBasedEntryCacheInfo {
     }
 
     public MVCCEntryCacheInfo getLatestGeneration(){
-        if (allEntryGenerations.isEmpty()){
-            return null;
-        }
-        return allEntryGenerations.getLast();
+        return allEntryGenerations.peekLast();
     }
 
     public boolean isLogicallyDeletedOrEmpty() {
@@ -62,5 +65,27 @@ public class MVCCShellEntryCacheInfo extends MemoryBasedEntryCacheInfo {
             return latestGeneration.getMVCCEntryHolder().isLogicallyDeleted();
         }
         return true; //if no generations exist it's same as logically deleted
+    }
+
+    @Override
+    public IEntryHolder getEntryHolder(CacheManager cacheManager) {
+        return getEntryHolder();
+    }
+
+    @Override
+    public IEntryHolder getEntryHolder() {
+        MVCCEntryCacheInfo latestGeneration = getLatestGeneration();
+        if (latestGeneration != null){
+            return latestGeneration.getEntryHolder();
+        }
+        if(dirtyEntry != null){
+            return dirtyEntry.getEntryHolder();
+        }
+        return EntryHolderFactory.createMvccShellHollowEntry(serverTypeDesc, uid);
+    }
+
+    @Override
+    public IEntryHolder getEntryHolder(CacheManager cacheManager, Context context) {
+        return getEntryHolder();
     }
 }
