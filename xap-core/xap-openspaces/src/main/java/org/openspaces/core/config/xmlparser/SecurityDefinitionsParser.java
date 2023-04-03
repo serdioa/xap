@@ -48,9 +48,7 @@ public class SecurityDefinitionsParser {
             securityConfig.setToken(token);
         }
 
-        if (securityConfig != null) {
-            builder.addPropertyValue("securityConfig", securityConfig);
-        }
+        builder.addPropertyValue("securityConfig", securityConfig);
 
         final String userDetailsRef = securityElement.getAttribute(USER_DETAILS);
         if (StringUtils.hasText(userDetailsRef)) {

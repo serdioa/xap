@@ -1,10 +1,8 @@
 package com.gigaspaces.start.security;
 
-import com.gigaspaces.start.SystemInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
@@ -25,7 +23,7 @@ public class SecurityServiceInfo {
     private static final String DEFAULT_SECURITY_PORT = "9000";
 
     private final String securityServiceBaseUrl;
-    private Map<String, String> properties = new HashMap<>();
+    private final Map<String, String> properties = new HashMap<>();
 
     public static SecurityServiceInfo instance() {
         SecurityServiceInfo snapshot = instance;
@@ -43,13 +41,17 @@ public class SecurityServiceInfo {
     private SecurityServiceInfo() {
         this.securityServiceBaseUrl = String.format("http://%s:%s", validateUri(System.getenv("GS_SECURITY_SERVICE_HOST")), DEFAULT_SECURITY_PORT);
         String securityPropertyFile = System.getProperty("com.gs.security.properties-file", "config/security/security.properties");
-        logger.info("path to security properties " + securityPropertyFile);
+        if (logger.isDebugEnabled()) {
+            logger.debug("path to security properties " + securityPropertyFile);
+        }
         try (InputStream input = Thread.currentThread().getContextClassLoader().getResourceAsStream(securityPropertyFile)) {
             Properties prop = new Properties();
             prop.load(input);
             prop.forEach((key, value) -> properties.put((String) key, (String) value));
         } catch (Exception ex) {
-            logger.error("Error while reading security properties - " + ex.getMessage());
+            if (logger.isErrorEnabled()) {
+                logger.error("Error while reading security properties - " + ex.getMessage());
+            }
         }
     }
 
