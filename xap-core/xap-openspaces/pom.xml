@@ -200,7 +200,7 @@
         <dependency>
             <groupId>io.netty</groupId>
             <artifactId>netty-all</artifactId>
-            <version>4.1.68.Final</version>
+            <version>4.1.86.Final</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
@@ -214,6 +214,7 @@
             <groupId>org.hsqldb</groupId>
             <artifactId>hsqldb</artifactId>
             <version>${hsqldb.version}</version>
+            <classifier>jdk8</classifier>
         </dependency>
         <dependency> <!-- Not original version -->
             <groupId>javax.activation</groupId>
