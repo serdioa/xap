@@ -39,10 +39,8 @@ import com.gigaspaces.security.session.SessionId;
 import com.j_spaces.core.IJSpace;
 import com.j_spaces.core.SpaceContext;
 import com.j_spaces.core.SpaceContextHelper;
-import com.j_spaces.kernel.SystemProperties;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.rmi.RemoteException;
 import java.util.Properties;
 import java.util.UUID;
@@ -68,6 +66,7 @@ public class SecurityInterceptor {
     private final ConcurrentHashMap<MarshObject, AuthenticationToken> marshedCache = new ConcurrentHashMap<MarshObject, AuthenticationToken>();
     private final ConcurrentHashMap<AuthenticationToken, SessionDetails> cache = new ConcurrentHashMap<AuthenticationToken, SessionDetails>();
     private final SecurityTrustInterceptor trustInterceptor = new SecurityTrustInterceptor();
+    private boolean cacheDisabled;
 
     /*
      * Trusted user gains a trusted token.
@@ -133,6 +132,7 @@ public class SecurityInterceptor {
             securityAudit = SecurityAuditFactory.createSecurityAudit(securityProperties);
             securityManager = SecurityFactory.createSecurityManager(securityProperties);
         }
+        cacheDisabled = securityManager.getClass().getName().equals("com.gigaspaces.security.openid.OpenIdSecurityManager");
     }
 
     /**
@@ -167,7 +167,9 @@ public class SecurityInterceptor {
             }
 
             SessionDetails sessionDetails = new SessionDetails(authentication, securityContext);
-            cache.put(authenticationToken, sessionDetails);
+            if (!cacheDisabled) {
+                cache.put(authenticationToken, sessionDetails);
+            }
 
             SecurityContext context = new SecurityContext(authentication.getUserDetails(), authenticationToken);
             if (securityAudit != null) {
@@ -226,18 +228,28 @@ public class SecurityInterceptor {
         if (trustInterceptor.verifyTrust(securityContext)) {
             return;
         }
-        SessionDetails sessionDetails = cache.get(token);
-        if (sessionDetails == null) {
-            if (token.equals(trustedToken)) {
-                return;
+
+        Authentication authentication;
+        SessionDetails sessionDetails;
+
+        if (cacheDisabled) {
+            authentication = securityContext.getAuthentication();
+            sessionDetails = new SessionDetails(authentication, securityContext);
+        } else {
+            sessionDetails = cache.get(token);
+            if (sessionDetails == null) {
+                if (token.equals(trustedToken)) {
+                    return;
+                }
+                if (securityAudit != null) {
+                    securityAudit.authenticationInvalid(token);
+                }
+                throw new AuthenticationException("Authentication session is invalid");
             }
-            if (securityAudit != null) {
-                securityAudit.authenticationInvalid(token);
-            }
-            throw new AuthenticationException("Authentication session is invalid");
+
+            authentication = sessionDetails.getAuthentication();
         }
 
-        Authentication authentication = sessionDetails.getAuthentication();
         GrantedAuthorities grantedAuthorities = authentication.getGrantedAuthorities();
         boolean granted = grantedAuthorities.isGranted(privilege, className);
         if (!granted) {

@@ -49,6 +49,7 @@ import com.gigaspaces.lrmi.LRMIInvocationContext;
 import com.gigaspaces.lrmi.LRMIRuntime;
 import com.gigaspaces.metadata.SpaceMetadataException;
 import com.gigaspaces.query.ISpaceQuery;
+import com.gigaspaces.security.AccessDeniedException;
 import com.gigaspaces.security.directory.CredentialsProvider;
 import com.j_spaces.core.*;
 import com.j_spaces.core.admin.ContainerConfig;
@@ -539,6 +540,8 @@ public class SpaceProxyImpl extends AbstractDirectSpaceProxy implements SameProx
                     .setGatewayProxy(isGatewayProxy());
             getProxyRouter().execute(request);
             request.processExecutionException();
+        } catch (AccessDeniedException e) {
+            throw e;
         } catch (Throwable e) {
             throw new SpaceMetadataException("Error in registerTypeDescInServers() remote task execution. TypeName=" + typeDesc.getTypeName(), e);
         }
@@ -704,6 +707,7 @@ public class SpaceProxyImpl extends AbstractDirectSpaceProxy implements SameProx
                 if (spaceContext != null)
                     spaceContext.setQuiesceToken(token);
             }
+            //todo should set securityContext valid - userDetails should be set in here to the spaceContext
             spaceRequest.setSpaceContext(spaceContext);
 
             // for broadcast table operation we need to set SpaceContext inside SpaceRequestInfo before task is
