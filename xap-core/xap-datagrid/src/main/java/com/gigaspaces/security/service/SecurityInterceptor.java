@@ -66,7 +66,7 @@ public class SecurityInterceptor {
     private final ConcurrentHashMap<MarshObject, AuthenticationToken> marshedCache = new ConcurrentHashMap<MarshObject, AuthenticationToken>();
     private final ConcurrentHashMap<AuthenticationToken, SessionDetails> cache = new ConcurrentHashMap<AuthenticationToken, SessionDetails>();
     private final SecurityTrustInterceptor trustInterceptor = new SecurityTrustInterceptor();
-    private boolean cacheDisabled;
+    private boolean isOpenid;
 
     /*
      * Trusted user gains a trusted token.
@@ -132,7 +132,7 @@ public class SecurityInterceptor {
             securityAudit = SecurityAuditFactory.createSecurityAudit(securityProperties);
             securityManager = SecurityFactory.createSecurityManager(securityProperties);
         }
-        cacheDisabled = securityManager.getClass().getName().equals("com.gigaspaces.security.openid.OpenIdSecurityManager");
+        isOpenid = securityManager.getClass().getName().equals("com.gigaspaces.security.openid.OpenIdSecurityManager");
     }
 
     /**
@@ -167,7 +167,7 @@ public class SecurityInterceptor {
             }
 
             SessionDetails sessionDetails = new SessionDetails(authentication, securityContext);
-            if (!cacheDisabled) {
+            if (!isOpenid) {
                 cache.put(authenticationToken, sessionDetails);
             }
 
@@ -232,7 +232,7 @@ public class SecurityInterceptor {
         Authentication authentication;
         SessionDetails sessionDetails;
 
-        if (cacheDisabled) {
+        if (isOpenid) {
             authentication = securityContext.getAuthentication();
             sessionDetails = new SessionDetails(authentication, securityContext);
         } else {
@@ -302,5 +302,9 @@ public class SecurityInterceptor {
      */
     public boolean shouldBypassFilter(SecurityContext securityContext) {
         return (isTrusted(securityContext.getUserDetails()) || trustInterceptor.verifyTrust(securityContext));
+    }
+
+    public boolean isOpenid() {
+        return isOpenid;
     }
 }

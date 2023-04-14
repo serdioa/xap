@@ -23,7 +23,6 @@ import com.gigaspaces.internal.exceptions.BatchQueryException;
 import com.gigaspaces.internal.query.explainplan.ExplainPlanImpl;
 import com.gigaspaces.jdbc.request.RequestPacketV3;
 import com.gigaspaces.logger.Constants;
-import com.gigaspaces.security.AccessDeniedException;
 import com.gigaspaces.security.service.SecurityInterceptor;
 import com.j_spaces.core.IJSpace;
 import com.j_spaces.core.client.Modifiers;
@@ -149,16 +148,11 @@ public class QueryHandler {
 
     private ResponsePacket handleRequest(RequestPacketV3 request, QuerySession session)
             throws LeaseDeniedException, RemoteException, SQLException,
-            TransactionException, AccessDeniedException {
+            TransactionException {
         ResponsePacket response;
 
         //see RequestPacket documentation for types
         ISpaceProxy space = getSpace(session.isUseRegularSpace());
-        if (space.isSecured()
-                && session.getConnectionContext() != null
-                && session.getConnectionContext().getSpaceContext() != null) {
-            space.getDirectProxy().getSecurityManager().setThreadSpaceContext(session.getConnectionContext().getSpaceContext());
-        }
         Object[] preparedValues;
         switch (request.getType()) {
             case STATEMENT:
@@ -182,8 +176,6 @@ public class QueryHandler {
             Class<?> clazz = Class.forName("com.gigaspaces.jdbc.QueryHandler");
             Object newQueryHandler = clazz.newInstance();
             response = (ResponsePacket) clazz.getDeclaredMethod("handle", String.class, IJSpace.class, Object[].class).invoke(newQueryHandler, request.getStatement(), space, preparedValues);
-        } catch (AccessDeniedException e) {
-            throw e;
         } catch (InvocationTargetException e) {
             if (_logger.isDebugEnabled()) {
                 //if debug is enabled, show exception with full trace

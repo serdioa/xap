@@ -19,7 +19,6 @@ package com.j_spaces.jdbc;
 import com.gigaspaces.internal.client.spaceproxy.IDirectSpaceProxy;
 import com.gigaspaces.internal.server.space.IRemoteSpace;
 import com.gigaspaces.logger.Constants;
-import com.gigaspaces.security.AccessDeniedException;
 import com.gigaspaces.security.service.SecurityInterceptor;
 import com.j_spaces.core.IJSpace;
 import com.j_spaces.core.client.SpaceFinder;
@@ -142,11 +141,7 @@ public class QueryProcessor implements IQueryProcessor {
                 response = request.accept(_queryHandler, session);
             }
             return response;
-        } catch (LeaseDeniedException e) {
-            throw new SQLException("Failed to execute query; Cause: " + e, e);
-        } catch (TransactionException e) {
-            throw new SQLException("Failed to execute query; Cause: " + e, e);
-        } catch (AccessDeniedException e) {
+        } catch (LeaseDeniedException | TransactionException e) {
             throw new SQLException("Failed to execute query; Cause: " + e, e);
         }
     }
