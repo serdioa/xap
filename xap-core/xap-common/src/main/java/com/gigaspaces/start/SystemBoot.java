@@ -23,6 +23,7 @@ import com.gigaspaces.internal.jvm.JVMHelper;
 import com.gigaspaces.internal.jvm.JVMStatistics;
 import com.gigaspaces.logger.GSLogConfigLoader;
 import com.gigaspaces.logger.RollingFileHandler;
+import com.gigaspaces.start.security.SecurityServiceInfo;
 import com.sun.jini.start.ServiceDescriptor;
 import net.jini.config.Configuration;
 import net.jini.config.ConfigurationException;
@@ -36,6 +37,8 @@ import java.io.*;
 import java.lang.annotation.Annotation;
 import java.lang.ref.ReferenceQueue;
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
@@ -82,6 +85,12 @@ public class SystemBoot {
      * Token indicating a GigaSpace instance should be started
      */
     public static final String SPACE = "GS";
+
+    /**
+     * Token indicating an Authorization Service should be started
+     */
+    public static final String AUTH = "AUTH";
+
     /**
      * Configuration and logger property
      */
@@ -211,7 +220,6 @@ public class SystemBoot {
      */
     public static void loadPlatform()
             throws ConfigurationException, IOException {
-        //ensureSecurityManager();        
         SystemConfig sysConfig = SystemConfig.getInstance();
 
         /* Load system properties, to check if a logging configuration file
@@ -258,7 +266,7 @@ public class SystemBoot {
             s = s.substring(s.indexOf("[")+1, s.length()-1);
         }
 
-        final Set<String> result = new LinkedHashSet<String>();
+        final Set<String> result = new LinkedHashSet<>();
         for (StringTokenizer tok = new StringTokenizer(s, " ,") ; tok.hasMoreTokens() ; ) {
             result.add(tok.nextToken());
         }

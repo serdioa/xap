@@ -26,7 +26,6 @@ import java.io.Closeable;
  */
 public abstract class ServiceFactory {
     public Closeable createService() {
-        final String serviceClassName = getServiceClassName();
         final ClasspathBuilder classpathBuilder = new ClasspathBuilder();
         initializeClasspath(classpathBuilder);
 
@@ -35,14 +34,17 @@ public abstract class ServiceFactory {
         try {
             CustomURLClassLoader classLoader = new CustomURLClassLoader(getServiceName(), classpathBuilder.toURLsArray(), origClassLoader);
             Thread.currentThread().setContextClassLoader(classLoader);
-            final Class<?> serviceClass = classLoader.loadClass(serviceClassName);
-            final Object service = serviceClass.newInstance();
-            return (Closeable) service;
+            return startService(classLoader);
         } catch (Exception e) {
-            throw new RuntimeException("Failed to create an instance of " + serviceClassName, e);
+            throw new RuntimeException("Failed to create an instance of " + getServiceClassName(), e);
         } finally {
             Thread.currentThread().setContextClassLoader(origClassLoader);
         }
+    }
+
+    protected Closeable startService(CustomURLClassLoader classLoader) throws Exception {
+        final Class<?> serviceClass = classLoader.loadClass(getServiceClassName());
+        return (Closeable)serviceClass.newInstance();
     }
 
     public abstract String getServiceName();
@@ -50,4 +52,5 @@ public abstract class ServiceFactory {
     protected abstract String getServiceClassName();
 
     protected abstract void initializeClasspath(ClasspathBuilder classpath);
+
 }

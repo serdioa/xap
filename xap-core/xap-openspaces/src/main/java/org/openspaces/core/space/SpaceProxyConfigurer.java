@@ -18,6 +18,7 @@ package org.openspaces.core.space;
 
 import com.gigaspaces.security.directory.CredentialsProvider;
 import com.gigaspaces.security.directory.DefaultCredentialsProvider;
+import com.gigaspaces.security.directory.TokenCredentialsProvider;
 import com.j_spaces.core.IJSpace;
 
 import org.springframework.util.StringUtils;
@@ -105,6 +106,10 @@ public class SpaceProxyConfigurer extends AbstractSpaceConfigurer {
 
     public SpaceProxyConfigurer credentials(String userName, String password) {
         return credentialsProvider(new DefaultCredentialsProvider(userName, password));
+    }
+
+    public SpaceProxyConfigurer token(String token) {
+        return credentialsProvider(new TokenCredentialsProvider(token));
     }
 
     public SpaceProxyConfigurer credentialsProvider(CredentialsProvider credentialsProvider) {

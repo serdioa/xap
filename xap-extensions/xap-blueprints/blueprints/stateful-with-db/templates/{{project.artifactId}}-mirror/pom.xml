@@ -25,7 +25,8 @@
         <dependency>
             <groupId>${db.driver.groupId}</groupId>
             <artifactId>${db.driver.artifactId}</artifactId>
-            <version>${db.driver.version}</version>
+            <version>${hsqldb.version}</version>
+            <classifier>jdk8</classifier>
         </dependency>
     </dependencies>
 
