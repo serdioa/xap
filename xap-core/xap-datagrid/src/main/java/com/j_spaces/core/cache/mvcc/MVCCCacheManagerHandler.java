@@ -8,7 +8,6 @@ import com.j_spaces.core.cache.CacheManager;
 import com.j_spaces.core.cache.IEntryCacheInfo;
 import com.j_spaces.core.cache.XtnData;
 import com.j_spaces.core.cache.context.Context;
-import com.j_spaces.core.client.EntryAlreadyInSpaceException;
 import com.j_spaces.core.sadapter.SAException;
 
 import java.util.concurrent.ConcurrentMap;
@@ -32,9 +31,8 @@ public class MVCCCacheManagerHandler {
         } else if (isMvccEntryValidForWrite(oldEntry)) {
             oldEntry.setDirtyEntryCacheInfo(pEntry);
         } else{
-            throw new EntryAlreadyInSpaceException(uid, entryHolder.getClassName());
+            return oldEntry;
         }
-        //TODO: handle MVCCShellEntryCacheInfo's dirtyEntry when oldEntry != null
         return null;
     }
 
@@ -84,7 +82,6 @@ public class MVCCCacheManagerHandler {
             //is take operation (for mvcc we set writeLockOwner to be EXCLUSIVE_READ_LOCK see MVCCSpaceEngineHandler.preCommit)
             MVCCEntryHolder latestGenerationEntryHolder = latestGenerationCacheInfo.getEntryHolder();
             if (latestGenerationEntryHolder.getWriteLockOperation() == SpaceOperations.READ &&
-                    latestGenerationEntryHolder == entry &&
                     latestGenerationEntryHolder.getCommittedGeneration() == entry.getOverrideGeneration() &&
                     latestGenerationEntryHolder.isLogicallyDeleted()){
                     disconnectMvccEntryFromXtn(context, latestGenerationCacheInfo, xtnEntry, true);
