@@ -11,7 +11,7 @@
         <slf4j.version>1.7.26</slf4j.version>
         <jna.version>5.6.0</jna.version>
         <spring.version>5.3.22</spring.version>
-        <spring.security.version>5.7.3</spring.security.version>
+        <spring.security.version>5.7.5</spring.security.version>
         <junit.version>4.12</junit.version>
         <jetty.version>9.4.44.v20210927</jetty.version>
         <jetty.mortbay.jasper.version>9.0.52</jetty.mortbay.jasper.version>
@@ -29,7 +29,7 @@
         <javax.activation.version>1.2.0</javax.activation.version>
         <javax.transaction.version>1.2</javax.transaction.version>
         <xap.dep.scope>compile</xap.dep.scope>
-        <hsqldb.version>2.3.2</hsqldb.version>
+        <hsqldb.version>2.7.1</hsqldb.version>
         <h2.version>1.4.200</h2.version>
         <guava.version>31.0.1-jre</guava.version>
     </properties>
