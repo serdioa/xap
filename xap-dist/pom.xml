@@ -7,7 +7,7 @@
     <parent>
         <artifactId>xap</artifactId>
         <groupId>org.gigaspaces</groupId>
-        <version>16.3.0-SNAPSHOT</version>
+        <version>16.3.0-PIC-2265-spacedeck-verify-if-tiered-thu-546</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
     <artifactId>xap-dist</artifactId>
