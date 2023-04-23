@@ -249,8 +249,8 @@ public class DBSwapRedoLogFile<T extends IReplicationOrderedPacket> implements I
         //move packets from memory to external storage
         if (!moveToDisk.isEmpty()) {
             _externalRedoLogStorage.appendBatch(moveToDisk);
-
-            try {
+        }
+        try {
                 Path directory = SystemLocations.singleton().work("redo-log").resolve(_config.getSpaceName());
                 Path codeMapFile = directory.resolve(_config.getContainerName() + "_code_map");
                 try (FileOutputStream file = new FileOutputStream(codeMapFile.toFile())) {
@@ -258,10 +258,10 @@ public class DBSwapRedoLogFile<T extends IReplicationOrderedPacket> implements I
                         IOUtils.writeCodeMaps(oos);
                     }
                 }
-            } catch (Exception e) {
+        } catch (Exception e) {
                 throw new RuntimeException("failed to write code maps to disk", e);
-            }
         }
+
         return moveToDisk.size();
     }
 
