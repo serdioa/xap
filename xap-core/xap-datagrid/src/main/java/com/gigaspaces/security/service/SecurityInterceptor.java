@@ -49,6 +49,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static com.gigaspaces.start.security.SecurityServiceInfo.ID_SECURITY_MANAGER;
+
 /**
  * Server-side security interceptor, responsible for authentication against the underlying {@link
  * SecurityManager}, handing of authentication tokens to authenticated users, and intercepting any
@@ -132,7 +134,7 @@ public class SecurityInterceptor {
             securityAudit = SecurityAuditFactory.createSecurityAudit(securityProperties);
             securityManager = SecurityFactory.createSecurityManager(securityProperties);
         }
-        isOpenid = securityManager.getClass().getName().equals("com.gigaspaces.security.openid.OpenIdSecurityManager");
+        isOpenid = securityManager.getClass().getName().equals(ID_SECURITY_MANAGER);
     }
 
     /**
@@ -304,7 +306,4 @@ public class SecurityInterceptor {
         return (isTrusted(securityContext.getUserDetails()) || trustInterceptor.verifyTrust(securityContext));
     }
 
-    public boolean isOpenid() {
-        return isOpenid;
-    }
 }
