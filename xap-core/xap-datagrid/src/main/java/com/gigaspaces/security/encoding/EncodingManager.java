@@ -3,7 +3,7 @@ package com.gigaspaces.security.encoding;
 import com.gigaspaces.security.encoding.aes.AesContentEncoder;
 import com.gigaspaces.security.encoding.md5.Md5PasswordEncoder;
 
-public final class UserDetailsEncodingManager {
+public final class EncodingManager {
 
     private final PasswordEncoder passwordEncoder;
     private final ContentEncoder contentEncoder;
@@ -11,7 +11,7 @@ public final class UserDetailsEncodingManager {
     /**
      * Constructs the encoders
      */
-    public UserDetailsEncodingManager() {
+    public EncodingManager() {
         passwordEncoder = createPasswordEncoder();
         contentEncoder = createContentEncoder();
     }

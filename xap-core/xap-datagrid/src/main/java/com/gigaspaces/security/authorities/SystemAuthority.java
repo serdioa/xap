@@ -54,7 +54,11 @@ public class SystemAuthority implements InternalAuthority {
         /**
          * managing of identity provider settings
          */
-        MANAGE_IDENTITY_PROVIDERS;
+        MANAGE_IDENTITY_PROVIDERS,
+        /**
+         * Get encoded root user details
+         */
+        ROOT_USER_DETAILS;
 
         @Override
         public String toString() {
@@ -65,6 +69,8 @@ public class SystemAuthority implements InternalAuthority {
                     return "Manage Users";
                 case MANAGE_IDENTITY_PROVIDERS:
                     return "Manage Identity Provider Settings";
+                case ROOT_USER_DETAILS:
+                    return "Get encoded root user details";
                 default:
                     return super.toString();
             }
