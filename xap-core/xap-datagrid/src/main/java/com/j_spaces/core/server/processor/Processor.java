@@ -47,6 +47,7 @@ import com.j_spaces.core.cache.blobStore.IBlobStoreRefCacheInfo;
 import com.j_spaces.core.cache.context.Context;
 import com.j_spaces.core.cache.context.TieredState;
 import com.j_spaces.core.cache.mvcc.MVCCEntryCacheInfo;
+import com.j_spaces.core.cache.mvcc.MVCCEntryHolder;
 import com.j_spaces.core.client.*;
 import com.j_spaces.core.cluster.ReplicationOperationType;
 import com.j_spaces.core.fifo.FifoBackgroundDispatcher;
@@ -222,7 +223,8 @@ public class Processor implements IConsumerObject<BusPacket<Processor>> {
 
     private boolean needReadBeforeWriteToSpace(Context context) {
         return (_cacheManager.isTieredStorageCachePolicy() && context.getEntryTieredState() != TieredState.TIERED_COLD)
-                || (_cacheManager.isEvictableFromSpaceCachePolicy() && !_cacheManager.isMemorySpace());
+                || (_cacheManager.isEvictableFromSpaceCachePolicy() && !_cacheManager.isMemorySpace())
+                || _cacheManager.isMVCCEnabled();
     }
 
     private void insertToSpaceLoop(Context context, IEntryHolder entry, IServerTypeDesc typeDesc, boolean fromReplication, boolean origin,
@@ -276,7 +278,12 @@ public class Processor implements IConsumerObject<BusPacket<Processor>> {
                         if (_engine.isSyncReplicationEnabled() && _engine.getLeaseManager().replicateLeaseExpirationEventsForEntries())
                             context.setSyncReplFromMultipleOperation(true); //piggyback the lease expiration replication
 
-                        if (_engine.isExpiredEntryStayInSpace(entry) || !leaseExpiredInInsertWithSameUid(context, entry, typeDesc, curEh, true /*alreadyLocked*/)) {
+                        if(_engine.isMvccEnabled()) {
+                            if (!_cacheManager.isMvccEntryValidForWrite(curEh.getUID())){
+                                alreadyIn = true;
+                                throw new EntryAlreadyInSpaceException(entry.getUID(), entry.getClassName());
+                            }
+                        } else if (_engine.isExpiredEntryStayInSpace(entry) || !leaseExpiredInInsertWithSameUid(context, entry, typeDesc, curEh, true /*alreadyLocked*/)) {
                             alreadyIn = true;
                             throw new EntryAlreadyInSpaceException(entry.getUID(), entry.getClassName());
                         }
@@ -1279,7 +1286,7 @@ public class Processor implements IConsumerObject<BusPacket<Processor>> {
                                 //NOTE: taken entries are handled in handleCommittedTakenEntries
 
                                 if(_engine.isMvccEnabled()){
-                                    _cacheManager.handleNewMvccGeneration(context, entry, xtnEntry);
+                                    _cacheManager.handleNewMvccGeneration(context, (MVCCEntryHolder) entry, xtnEntry);
                                     _cacheManager.disconnectMVCCEntryFromXtn(context, (MVCCEntryCacheInfo) entryCacheHolder, xtnEntry, true);
                                 } else{
                                     if (!entry.isBlobStoreEntry())

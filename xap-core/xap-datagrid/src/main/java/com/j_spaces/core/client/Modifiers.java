@@ -260,6 +260,14 @@ public class Modifiers {
      */
     public static final int DRY_RUN = 1 << 30;
 
+    /**
+     * If set, provides repeatable_read isolation per the SPECIFIC read operation repeatable_read can
+     * also set , in the traditional way, per created transactions using the proxy level
+     * setTransactionIsolationLevel() API effected operations: Operations: Read, readIfExists,
+     * readMultiple
+     **/
+    public static final int REPEATABLE_READ = 1 << 31;
+
     public static boolean contains(int modifiers, int setting) {
         return (modifiers & setting) != 0;
     }

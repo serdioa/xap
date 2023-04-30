@@ -172,7 +172,7 @@ public class EntryHolderFactory {
         return new EntryHolder(typeDesc, uid, SystemTime.timeMillis(), isTransient, null);
     }
 
-    public static IEntryHolder createMvccShellHollowEntry(IServerTypeDesc typeDesc, String uid){
+    public static MVCCEntryHolder createMvccShellHollowEntry(IServerTypeDesc typeDesc, String uid){
         return new MVCCEntryHolder(typeDesc, uid, SystemTime.timeMillis(), true, null);
     }
 
