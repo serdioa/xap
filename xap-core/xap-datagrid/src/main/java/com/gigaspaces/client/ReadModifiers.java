@@ -18,7 +18,6 @@
 package com.gigaspaces.client;
 
 import com.gigaspaces.annotation.pojo.SpaceFifoGroupingProperty;
-import com.gigaspaces.api.ExperimentalApi;
 import com.gigaspaces.internal.utils.collections.CopyOnUpdateOnceMap;
 import com.j_spaces.core.client.Modifiers;
 
@@ -46,7 +45,7 @@ public class ReadModifiers extends IsolationLevelModifiers {
      * operation is invoked in a transactional context, the resulting entries will be locked,
      * blocking update/remove from other transactions.
      */
-    public static final ReadModifiers REPEATABLE_READ = new ReadModifiers(Modifiers.NONE);
+    public static final ReadModifiers REPEATABLE_READ = new ReadModifiers(Modifiers.REPEATABLE_READ);
 
     /**
      * When a search for matching entries encounters an entry locked under a different uncommitted

@@ -16,10 +16,7 @@
 
 package com.gigaspaces.internal.server.space;
 
-import com.gigaspaces.client.ClearByIdsException;
-import com.gigaspaces.client.ReadTakeByIdsException;
-import com.gigaspaces.client.WriteModifiers;
-import com.gigaspaces.client.WriteMultipleException;
+import com.gigaspaces.client.*;
 import com.gigaspaces.client.mutators.SpaceEntryMutator;
 import com.gigaspaces.client.protective.ProtectiveMode;
 import com.gigaspaces.client.protective.ProtectiveModeException;
@@ -131,6 +128,8 @@ import com.j_spaces.core.cache.context.TemplateMatchTier;
 import com.j_spaces.core.cache.context.TieredState;
 import com.j_spaces.core.cache.mvcc.MVCCEntryHolder;
 import com.j_spaces.core.cache.mvcc.MVCCShellEntryCacheInfo;
+import com.j_spaces.core.client.ReadModifiers;
+import com.j_spaces.core.client.TakeModifiers;
 import com.j_spaces.core.client.*;
 import com.j_spaces.core.cluster.*;
 import com.j_spaces.core.exception.internal.EngineInternalSpaceException;
@@ -1187,7 +1186,8 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
                              boolean returnOnlyUid, boolean fromReplication, boolean origin,
                              int operationModifiers)
             throws TransactionException, UnusableEntryException, UnknownTypeException, RemoteException, InterruptedException {
-        if (isMvccEnabled() && ReadModifiers.isRepeatableRead(operationModifiers)) { //set default isolation level for MVCC
+        //set default isolation level for MVCC
+        if (isMvccEnabled() && ReadModifiers.isDefaultReadModifier(operationModifiers) && sc.getMVCCGenerationsState() != null) {
             operationModifiers = Modifiers.add(operationModifiers, ReadModifiers.READ_COMMITTED);
         }
         if (Modifiers.contains(operationModifiers, Modifiers.EXPLAIN_PLAN)) {
@@ -1976,7 +1976,8 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
                                      List<SpaceEntriesAggregator> aggregators, ServerIteratorRequestInfo serverIteratorRequestInfo)
             throws TransactionException, UnusableEntryException, UnknownTypeException, RemoteException, InterruptedException {
         monitorMemoryUsage(false);
-        if (isMvccEnabled() && ReadModifiers.isRepeatableRead(operationModifiers)) { //set default isolation level for MVCC
+        //set default isolation level for MVCC
+        if (isMvccEnabled() && ReadModifiers.isDefaultReadModifier(operationModifiers) && sc.getMVCCGenerationsState() != null) {
             operationModifiers = Modifiers.add(operationModifiers, ReadModifiers.READ_COMMITTED);
         }
         if (Modifiers.contains(operationModifiers, Modifiers.EXPLAIN_PLAN)) {
@@ -2146,8 +2147,9 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
     public Pair<Integer, SingleExplainPlan> count(ITemplatePacket template, Transaction txn, SpaceContext sc, int operationModifiers)
             throws UnusableEntryException, UnknownTypeException, TransactionException, RemoteException {
         monitorMemoryUsage(false);
-        if (isMvccEnabled() && ReadModifiers.isRepeatableRead(operationModifiers)) { //set default isolation level for MVCC
-            operationModifiers = Modifiers.add(operationModifiers, ReadModifiers.READ_COMMITTED);
+        //set default isolation level for MVCC
+        if (isMvccEnabled() && ReadModifiers.isDefaultReadModifier(operationModifiers) && sc.getMVCCGenerationsState() != null) {
+            operationModifiers = Modifiers.add(operationModifiers, CountModifiers.READ_COMMITTED.getCode());
         }
         if (Modifiers.contains(operationModifiers, Modifiers.EXPLAIN_PLAN)) {
             SingleExplainPlan.validate(0, _cacheManager.isBlobStoreCachePolicy(), operationModifiers, template.getCustomQuery(), getClassTypeInfo(template.getTypeName()).getIndexes());
