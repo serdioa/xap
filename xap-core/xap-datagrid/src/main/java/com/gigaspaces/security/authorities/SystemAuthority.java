@@ -47,6 +47,11 @@ public class SystemAuthority implements InternalAuthority {
          * managing of roles
          */
         MANAGE_ROLES,
+
+        /**
+         * managing of pu/space settings
+         */
+        MANAGE_SPACE_SETTINGS,
         /**
          * managing of users
          */
@@ -61,6 +66,8 @@ public class SystemAuthority implements InternalAuthority {
             switch (this) {
                 case MANAGE_ROLES:
                     return "Manage Roles";
+                case MANAGE_SPACE_SETTINGS:
+                    return "Manage Space Settings";
                 case MANAGE_USERS:
                     return "Manage Users";
                 case MANAGE_IDENTITY_PROVIDERS:
