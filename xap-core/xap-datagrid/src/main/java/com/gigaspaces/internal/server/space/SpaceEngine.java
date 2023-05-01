@@ -16,10 +16,7 @@
 
 package com.gigaspaces.internal.server.space;
 
-import com.gigaspaces.client.ClearByIdsException;
-import com.gigaspaces.client.ReadTakeByIdsException;
-import com.gigaspaces.client.WriteModifiers;
-import com.gigaspaces.client.WriteMultipleException;
+import com.gigaspaces.client.*;
 import com.gigaspaces.client.mutators.SpaceEntryMutator;
 import com.gigaspaces.client.protective.ProtectiveMode;
 import com.gigaspaces.client.protective.ProtectiveModeException;
@@ -131,6 +128,8 @@ import com.j_spaces.core.cache.context.TemplateMatchTier;
 import com.j_spaces.core.cache.context.TieredState;
 import com.j_spaces.core.cache.mvcc.MVCCEntryHolder;
 import com.j_spaces.core.cache.mvcc.MVCCShellEntryCacheInfo;
+import com.j_spaces.core.client.ReadModifiers;
+import com.j_spaces.core.client.TakeModifiers;
 import com.j_spaces.core.client.*;
 import com.j_spaces.core.cluster.*;
 import com.j_spaces.core.exception.internal.EngineInternalSpaceException;
@@ -905,7 +904,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
 
         //check the case of write under txn for an entry which is
         //taken under that xtn, in this case replace it by update
-        if (entryInSpaceEx != null && txnEntry != null && packetUid != null && !fromReplication) {
+        if (entryInSpaceEx != null && txnEntry != null && packetUid != null && !fromReplication && !isMvccEnabled()) {
             //we got EntryAlreadyInSpaceException, check if the entry is
             //taken under the same xtn and if so, apply update
             //instead of take
@@ -1187,7 +1186,8 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
                              boolean returnOnlyUid, boolean fromReplication, boolean origin,
                              int operationModifiers)
             throws TransactionException, UnusableEntryException, UnknownTypeException, RemoteException, InterruptedException {
-        if (isMvccEnabled() && ReadModifiers.isRepeatableRead(operationModifiers)) { //set default isolation level for MVCC
+        //set default isolation level for MVCC
+        if (isMvccEnabled() && ReadModifiers.isDefaultReadModifier(operationModifiers) && sc.getMVCCGenerationsState() != null) {
             operationModifiers = Modifiers.add(operationModifiers, ReadModifiers.READ_COMMITTED);
         }
         if (Modifiers.contains(operationModifiers, Modifiers.EXPLAIN_PLAN)) {
@@ -1976,7 +1976,8 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
                                      List<SpaceEntriesAggregator> aggregators, ServerIteratorRequestInfo serverIteratorRequestInfo)
             throws TransactionException, UnusableEntryException, UnknownTypeException, RemoteException, InterruptedException {
         monitorMemoryUsage(false);
-        if (isMvccEnabled() && ReadModifiers.isRepeatableRead(operationModifiers)) { //set default isolation level for MVCC
+        //set default isolation level for MVCC
+        if (isMvccEnabled() && ReadModifiers.isDefaultReadModifier(operationModifiers) && sc.getMVCCGenerationsState() != null) {
             operationModifiers = Modifiers.add(operationModifiers, ReadModifiers.READ_COMMITTED);
         }
         if (Modifiers.contains(operationModifiers, Modifiers.EXPLAIN_PLAN)) {
@@ -2146,8 +2147,9 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
     public Pair<Integer, SingleExplainPlan> count(ITemplatePacket template, Transaction txn, SpaceContext sc, int operationModifiers)
             throws UnusableEntryException, UnknownTypeException, TransactionException, RemoteException {
         monitorMemoryUsage(false);
-        if (isMvccEnabled() && ReadModifiers.isRepeatableRead(operationModifiers)) { //set default isolation level for MVCC
-            operationModifiers = Modifiers.add(operationModifiers, ReadModifiers.READ_COMMITTED);
+        //set default isolation level for MVCC
+        if (isMvccEnabled() && ReadModifiers.isDefaultReadModifier(operationModifiers) && sc.getMVCCGenerationsState() != null) {
+            operationModifiers = Modifiers.add(operationModifiers, CountModifiers.READ_COMMITTED.getCode());
         }
         if (Modifiers.contains(operationModifiers, Modifiers.EXPLAIN_PLAN)) {
             SingleExplainPlan.validate(0, _cacheManager.isBlobStoreCachePolicy(), operationModifiers, template.getCustomQuery(), getClassTypeInfo(template.getTypeName()).getIndexes());
@@ -3903,7 +3905,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
             return null;
         if (scnFilter != 0 && entry.getSCN() < scnFilter)
             return null;
-        if (!(isMvccEnabled() && entry.isHollowEntry())){
+        if (!(isMvccEnabled() && (entry.isHollowEntry() || ((MVCCEntryHolder) entry).isLogicallyDeleted()))) {
             if (entry.isExpired(leaseFilter) && disqualifyExpiredEntry(entry) && template.isReadOperation()) {
                 context.setPendingExpiredEntriesExist(true);
                 return null;
@@ -4477,7 +4479,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
                     need_xtn_lock = template.isMaybeUnderXtn() && !context.isMemoryOnlyEntry();
                 }
                 if (isMvccEnabled() && !need_xtn_lock && template.isActiveRead(this)) {
-                    need_xtn_lock = _cacheManager.getMVCCShellEntryCacheInfoByUid(entry.getUID()).getDirtyEntry() != null;
+                    need_xtn_lock = _cacheManager.getMVCCShellEntryCacheInfoByUid(entry.getUID()).getDirtyEntryCacheInfo() != null;
                 }
 
                 try {
@@ -5102,8 +5104,12 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
             // occurs when the entry was written under the same Xtn as
             // the Take/TakeIE)
             if (entry.getXidOriginatedTransaction() == null ||
-                    !template.getXidOriginatedTransaction().equals(entry.getXidOriginatedTransaction()))
+                    !template.getXidOriginatedTransaction().equals(entry.getXidOriginatedTransaction())) {
                 _cacheManager.associateEntryWithXtn(context, entry, template, template.getXidOriginated(), null);
+                if(isMvccEnabled()){
+                    _mvccSpaceEngineHandler.createLogicallyDeletedEntry((MVCCEntryHolder) entry);
+                }
+            }
         }
 
         if (template.isIfExist() && template.isInCache()) {
