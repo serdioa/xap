@@ -37,7 +37,6 @@ public final class EncodingManager {
             Class<? extends ContentEncoder> contentEncoderClass = Class.forName(AesContentEncoder.class.getName())
                     .asSubclass(ContentEncoder.class);
             return contentEncoderClass.newInstance();
-
         } catch (Exception e) {
             throw new EncodingException("Failed to create ContentEncoder", e);
         }
