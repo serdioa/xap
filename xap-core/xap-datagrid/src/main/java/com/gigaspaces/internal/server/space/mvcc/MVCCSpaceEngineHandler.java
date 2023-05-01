@@ -44,18 +44,16 @@ public class MVCCSpaceEngineHandler {
                 entryLock = _cacheManager.getLockManager().getLockObject(entry);
                 try {
                     synchronized (entryLock) {
+                        MVCCShellEntryCacheInfo mvccShellEntryCacheInfo = _cacheManager.getMVCCShellEntryCacheInfoByUid(entry.getUID());
                         if (entry.getWriteLockOperation() == SpaceOperations.TAKE && entry.getWriteLockOwner() == xtnEntry) {
-                            MVCCShellEntryCacheInfo mvccShellEntryCacheInfo = _cacheManager.getMVCCShellEntryCacheInfoByUid(entry.getUID());
-                            EntryXtnInfo entryXtnInfo = entry.getTxnEntryData().copyTxnInfo(false, false);
-                            MVCCEntryHolder dummyEntry = entry.createLogicallyDeletedDummyEntry(entryXtnInfo);
-                            dummyEntry.setMaybeUnderXtn(true);
-                            dummyEntry.setCommittedGeneration(nextGeneration);
-                            mvccShellEntryCacheInfo.setDirtyEntry(new MVCCEntryCacheInfo(dummyEntry));
                             entry.setOverrideGeneration(nextGeneration);
                             entry.resetEntryXtnInfo();
                             entry.setMaybeUnderXtn(true);
+                            mvccShellEntryCacheInfo.getDirtyEntryHolder().setCommittedGeneration(nextGeneration);
+                            mvccShellEntryCacheInfo.addDirtyEntryToGenerationQueue();
                         } else if (entry.getWriteLockOperation() == SpaceOperations.WRITE && entry.getWriteLockOwner() == xtnEntry) {
                             entry.setCommittedGeneration(nextGeneration);
+                            mvccShellEntryCacheInfo.addDirtyEntryToGenerationQueue();
                         }
                     }
                 } finally {
@@ -71,13 +69,13 @@ public class MVCCSpaceEngineHandler {
                                                           MVCCShellEntryCacheInfo shellEntry) throws TemplateDeletedException, TransactionNotActiveException, TransactionConflictException, FifoException, SAException, NoMatchException, EntryDeletedException {
         final MVCCGenerationsState mvccGenerationsState = getMvccGenerationsState(context, template);
         final Iterator<MVCCEntryCacheInfo> generationIterator = shellEntry.descIterator();
-        if (!generationIterator.hasNext() && shellEntry.getDirtyEntry() != null){
+        if (!generationIterator.hasNext() && shellEntry.getDirtyEntryCacheInfo() != null){
             return getMatchMvccEntryHolder(context, template, makeWaitForInfo,
-                    (MVCCEntryHolder) shellEntry.getDirtyEntry().getEntryHolder(), mvccGenerationsState);
+                    shellEntry.getDirtyEntryHolder(), mvccGenerationsState);
         }
         while (generationIterator.hasNext()) {
             final MVCCEntryCacheInfo entryCacheInfo = generationIterator.next();
-            final MVCCEntryHolder entryHolder = (MVCCEntryHolder) entryCacheInfo.getEntryHolder();
+            final MVCCEntryHolder entryHolder = entryCacheInfo.getEntryHolder();
             final MVCCEntryHolder matchMvccEntryHolder = getMatchMvccEntryHolder(context, template, makeWaitForInfo,
                     entryHolder, mvccGenerationsState);
             if (matchMvccEntryHolder != null) return matchMvccEntryHolder;
@@ -161,5 +159,14 @@ public class MVCCSpaceEngineHandler {
             }
         }
         return SpaceEngine.XtnConflictCheckIndicators.NO_CONFLICT;
+    }
+
+    public void createLogicallyDeletedEntry(MVCCEntryHolder entryHolder) {
+        MVCCShellEntryCacheInfo mvccShellEntryCacheInfo = _cacheManager.getMVCCShellEntryCacheInfoByUid(entryHolder.getUID());
+        EntryXtnInfo entryXtnInfo = entryHolder.getTxnEntryData().copyTxnInfo(true, false);
+        entryXtnInfo.setWriteLockOperation(SpaceOperations.READ);
+        MVCCEntryHolder dummyEntry = entryHolder.createLogicallyDeletedDummyEntry(entryXtnInfo);
+        dummyEntry.setMaybeUnderXtn(true);
+        mvccShellEntryCacheInfo.setDirtyEntryCacheInfo(new MVCCEntryCacheInfo(dummyEntry));
     }
 }

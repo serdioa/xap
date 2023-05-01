@@ -1,5 +1,6 @@
 package com.j_spaces.core.cache.mvcc;
 
+import com.gigaspaces.internal.server.space.mvcc.MVCCIllegalStateException;
 import com.gigaspaces.internal.server.storage.IEntryHolder;
 import com.j_spaces.core.SpaceOperations;
 import com.j_spaces.core.XtnEntry;
@@ -23,11 +24,15 @@ public class MVCCCacheManagerHandler {
     public IEntryCacheInfo insertMvccEntryToCache(MVCCEntryCacheInfo pEntry, ConcurrentMap<String, IEntryCacheInfo> entries) {
         String uid = pEntry.getUID();
         MVCCShellEntryCacheInfo oldEntry = (MVCCShellEntryCacheInfo) entries.get(uid);
+        IEntryHolder entryHolder = pEntry.getEntryHolder();
         if (oldEntry == null){
-            oldEntry = new MVCCShellEntryCacheInfo(pEntry.getEntryHolder(), pEntry);
+            oldEntry = new MVCCShellEntryCacheInfo(entryHolder, pEntry);
             entries.put(uid,oldEntry);
+        } else if (isMvccEntryValidForWrite(oldEntry)) {
+            oldEntry.setDirtyEntryCacheInfo(pEntry);
+        } else{
+            return oldEntry;
         }
-        //TODO: handle MVCCShellEntryCacheInfo's dirtyEntry when oldEntry != null
         return null;
     }
 
@@ -67,22 +72,28 @@ public class MVCCCacheManagerHandler {
         }
     }
 
-    public void handleNewMvccGeneration(Context context, IEntryHolder entry, XtnEntry xtnEntry) throws SAException {
+    public void handleNewMvccGeneration(Context context, MVCCEntryHolder entry, XtnEntry xtnEntry) throws SAException {
         MVCCShellEntryCacheInfo mvccShellEntryCacheInfo = cacheManager.getMVCCShellEntryCacheInfoByUid(entry.getUID());
-        MVCCEntryCacheInfo dirtyEntryCacheInfo = mvccShellEntryCacheInfo.getDirtyEntry();
-        if (dirtyEntryCacheInfo != null) {
-            MVCCEntryHolder dirtyEntryHolder = dirtyEntryCacheInfo.getMVCCEntryHolder();
-            if (entry.getWriteLockOperation() == SpaceOperations.WRITE &&
-                    entry.getWriteLockOwner() == xtnEntry && dirtyEntryHolder == entry) {
-                mvccShellEntryCacheInfo.addEntryGeneration();
-            }
-            if (dirtyEntryHolder.getWriteLockOperation() == SpaceOperations.TAKE &&
-                    dirtyEntryHolder.getWriteLockOwner() == xtnEntry &&
-                    dirtyEntryHolder.isLogicallyDeleted() &&
-                    dirtyEntryHolder.getCommittedGeneration() == ((MVCCEntryHolder) entry).getOverrideGeneration()){
-                    disconnectMvccEntryFromXtn(context, dirtyEntryCacheInfo, xtnEntry, true);
-                    mvccShellEntryCacheInfo.addEntryGeneration();
+        MVCCEntryCacheInfo latestGenerationCacheInfo = mvccShellEntryCacheInfo.getLatestGenerationCacheInfo();
+        if (latestGenerationCacheInfo == null) {
+            throw new MVCCIllegalStateException("latest generation doesn't exist during commit for transaction: " +
+                    xtnEntry.getXtnData().getXtn() + " with generation state: " + xtnEntry.getMVCCGenerationsState());
+        } else{
+            //is take operation (for mvcc we set writeLockOwner to be EXCLUSIVE_READ_LOCK see MVCCSpaceEngineHandler.preCommit)
+            MVCCEntryHolder latestGenerationEntryHolder = latestGenerationCacheInfo.getEntryHolder();
+            if (latestGenerationEntryHolder.getWriteLockOperation() == SpaceOperations.READ &&
+                    latestGenerationEntryHolder.getCommittedGeneration() == entry.getOverrideGeneration() &&
+                    latestGenerationEntryHolder.isLogicallyDeleted()){
+                    disconnectMvccEntryFromXtn(context, latestGenerationCacheInfo, xtnEntry, true);
             }
         }
+    }
+
+    public boolean isMvccEntryValidForWrite(String uid) {
+        return isMvccEntryValidForWrite(cacheManager.getMVCCShellEntryCacheInfoByUid(uid));
+    }
+
+    public boolean isMvccEntryValidForWrite(MVCCShellEntryCacheInfo shellEntryCacheInfo) {
+        return shellEntryCacheInfo.getDirtyEntryCacheInfo() == null && shellEntryCacheInfo.isLogicallyDeletedOrEmpty();
     }
 }

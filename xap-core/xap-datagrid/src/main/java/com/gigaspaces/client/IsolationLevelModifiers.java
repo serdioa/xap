@@ -29,12 +29,8 @@ import com.j_spaces.core.client.Modifiers;
 abstract public class IsolationLevelModifiers extends SpaceProxyOperationModifiers {
     private static final long serialVersionUID = 1L;
 
-    private static final int REPEATABLE_READ = Modifiers.NONE;
-
     private static final int ALL_ISOLATION_LEVELS =
-            Modifiers.DIRTY_READ |
-                    Modifiers.READ_COMMITTED |
-                    REPEATABLE_READ;
+            Modifiers.DIRTY_READ | Modifiers.READ_COMMITTED | Modifiers.REPEATABLE_READ;
 
     public IsolationLevelModifiers() {
     }
@@ -62,7 +58,7 @@ abstract public class IsolationLevelModifiers extends SpaceProxyOperationModifie
         int isolationLevelCode = isolationLevel.getCode();
         if (!(isolationLevelCode == Modifiers.DIRTY_READ ||
                 isolationLevelCode == Modifiers.READ_COMMITTED ||
-                isolationLevelCode == REPEATABLE_READ)) {
+                isolationLevelCode == Modifiers.REPEATABLE_READ)) {
             throw new IllegalArgumentException("isolationLevel must be one of: REPEATABLE_READ, DIRTY_READ, READ_COMMITTED. Got ["
                     + isolationLevelCode + " instead");
         }
@@ -76,7 +72,7 @@ abstract public class IsolationLevelModifiers extends SpaceProxyOperationModifie
      * @return true if this instance contains the {@link #REPEATABLE_READ} setting, false otherwise.
      */
     public boolean isRepeatableRead() {
-        return !isReadCommitted() && !isDirtyRead();
+        return Modifiers.contains(getCode(), Modifiers.REPEATABLE_READ);
     }
 
     /**
