@@ -51,7 +51,7 @@ public class ReadModifiers {
      * #EXCLUSIVE_READ_LOCK exclusively-locked} by active transactions.<br> This is the default read
      * isolation-level.
      */
-    public static final int REPEATABLE_READ = Modifiers.NONE;
+    public static final int REPEATABLE_READ = Modifiers.REPEATABLE_READ;
 
     /**
      * Allows non-transactional read operations to have full visibility of the entities in the
@@ -186,7 +186,11 @@ public class ReadModifiers {
      * set.
      */
     public static boolean isRepeatableRead(int mod) {
-        return !isReadCommitted(mod) && !isDirtyRead(mod);
+        return Modifiers.contains(mod, REPEATABLE_READ);
+    }
+
+    public static boolean isDefaultReadModifier(int mod) {
+        return !isRepeatableRead(mod) && !isReadCommitted(mod) && !isDirtyRead(mod) && !isExclusiveReadLock(mod);
     }
 
     /**
