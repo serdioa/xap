@@ -96,4 +96,10 @@ public class CommonSystemProperties {
     public final static Boolean JNDI_ENABLED_DEFAULT_BOOLEAN_VALUE = Boolean.TRUE;
 
     public final static String BURNINGWAVE_ENABLED = "com.gs.burningwave.enabled";
+
+    /**
+     * Indication if sql reserved words will be excluded from properties fields names. Default value - false
+     */
+    public final static String SPACE_TYPE_DESCRIPTOR_PROPERTIES_NAMES_VALIDATION_EXCLUDE_SQL_ENABLED = "com.gs.space-type-descriptor.properties-validation.exclude-sql.enabled";
+
 }

@@ -17,6 +17,7 @@
 
 package com.gigaspaces.metadata;
 
+import com.gigaspaces.CommonSystemProperties;
 import com.gigaspaces.annotation.pojo.FifoSupport;
 import com.gigaspaces.api.ExperimentalApi;
 import com.gigaspaces.client.storage_adapters.PropertyStorageAdapter;
@@ -24,6 +25,7 @@ import com.gigaspaces.client.storage_adapters.class_storage_adapters.ClassBinary
 import com.gigaspaces.document.SpaceDocument;
 import com.gigaspaces.internal.metadata.*;
 import com.gigaspaces.internal.server.space.tiered_storage.TieredStorageTableConfig;
+import com.gigaspaces.internal.utils.GsEnv;
 import com.gigaspaces.internal.utils.ObjectUtils;
 import com.gigaspaces.metadata.index.*;
 import com.gigaspaces.query.extension.SpaceQueryExtension;
@@ -795,7 +797,9 @@ public class SpaceTypeDescriptorBuilder {
             validatePropertyExists(_routingPropertyName, fixedProperties);
         }
 
-        validatePropertiesNames();
+        if (isPropertiesNamesValidationEnabled()) {
+            validatePropertiesNames();
+        }
 
         if(_broadcast)
             validateBroadcast();
@@ -836,6 +840,11 @@ public class SpaceTypeDescriptorBuilder {
                 _broadcast,
                 _tieredStorageTableConfig,
                 _hasRoutingAnnotation);
+    }
+
+    private boolean isPropertiesNamesValidationEnabled() {
+        return GsEnv.propertyBoolean(CommonSystemProperties.SPACE_TYPE_DESCRIPTOR_PROPERTIES_NAMES_VALIDATION_EXCLUDE_SQL_ENABLED)
+                .get(false);
     }
 
     private void validatePropertiesNames() {
