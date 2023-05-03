@@ -24,7 +24,7 @@ import com.j_spaces.core.LeaseContext;
 import com.j_spaces.core.client.Modifiers;
 import com.j_spaces.core.client.UpdateModifiers;
 import com.j_spaces.kernel.SystemProperties;
-
+import net.jini.core.lease.Lease;
 import net.jini.core.transaction.Transaction;
 
 @com.gigaspaces.api.InternalApi
@@ -43,6 +43,10 @@ public class WriteProxyActionInfo extends CommonProxyActionInfo {
             throw new IllegalArgumentException("write() operation cannot accept null entry.");
         if (lease < 0)
             throw new IllegalArgumentException("lease cannot be less than zero");
+
+        if (spaceProxy.getDirectProxy().getProxySettings().isMvccEnabled() && lease != Lease.FOREVER) {
+            throw new UnsupportedOperationException("Write operation with lease are not allowed when MVCC is enabled.");
+        }
 
         this.entry = entry;
         this.lease = lease;

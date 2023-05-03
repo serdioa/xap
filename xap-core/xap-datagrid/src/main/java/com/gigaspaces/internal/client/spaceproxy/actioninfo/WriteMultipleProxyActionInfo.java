@@ -25,7 +25,6 @@ import com.j_spaces.core.LeaseContext;
 import com.j_spaces.core.client.Modifiers;
 import com.j_spaces.core.client.UpdateModifiers;
 import com.j_spaces.kernel.SystemProperties;
-
 import net.jini.core.lease.Lease;
 import net.jini.core.transaction.Transaction;
 
@@ -53,6 +52,12 @@ public class WriteMultipleProxyActionInfo extends CommonProxyActionInfo {
             throw new IllegalArgumentException("Leases array size must match entries array size.");
         if ((lease < 0L) && (lease != Lease.ANY) && (lease != Long.MIN_VALUE)) {
             throw new IllegalArgumentException("Lease cannot be less than zero: " + lease);
+        }
+
+        if (spaceProxy.getDirectProxy().getProxySettings().isMvccEnabled()
+                && (lease != Lease.FOREVER
+                    || (leases != null && Arrays.stream(leases).anyMatch((value) -> value != Lease.FOREVER)))) {
+            throw new UnsupportedOperationException("Write Multiple operation with lease are not allowed when MVCC is enabled.");
         }
 
 

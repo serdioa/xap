@@ -34,6 +34,8 @@ import com.j_spaces.core.client.ExternalEntry;
 import java.lang.annotation.Annotation;
 import java.util.*;
 import java.util.Map.Entry;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 /**
  * A builder class for creating {@link SpaceTypeDescriptor} instances.
@@ -793,6 +795,8 @@ public class SpaceTypeDescriptorBuilder {
             validatePropertyExists(_routingPropertyName, fixedProperties);
         }
 
+        validatePropertiesNames();
+
         if(_broadcast)
             validateBroadcast();
 
@@ -832,6 +836,17 @@ public class SpaceTypeDescriptorBuilder {
                 _broadcast,
                 _tieredStorageTableConfig,
                 _hasRoutingAnnotation);
+    }
+
+    private void validatePropertiesNames() {
+        Set<String> properties = _fixedProperties.keySet();
+        List<String> invalidPropertiesNames = properties.stream()
+                .filter(SqlReservedWordValidator::isReservedWord)
+                .collect(Collectors.toList());
+        if (!invalidPropertiesNames.isEmpty()) {
+            throw new IllegalArgumentException("Invalid properties names: " +
+                    "Invalid properties names list: " + String.join(", ", invalidPropertiesNames));
+        }
     }
 
     private void applyDefaults() {
@@ -1077,5 +1092,23 @@ public class SpaceTypeDescriptorBuilder {
     // TODO: Reduce usages of this method until it can be removed.
     private static ITypeDesc getInternalTypeDesc(SpaceTypeDescriptor typeDesc) {
         return (ITypeDesc) typeDesc;
+    }
+
+    private static class SqlReservedWordValidator {
+
+        private static final Pattern reservedWordPattern = Pattern.compile(
+                "\\b(ADD|ALL|ALTER|AND|ANY|AS|ASC|BETWEEN|BY|CASE|CAST|CHECK|COLLATE|COLUMN|" +
+                        "CONSTRAINT|CREATE|CROSS|CURRENT_DATE|CURRENT_TIME|CURRENT_TIMESTAMP|DATABASE|" +
+                        "DEFAULT|DELETE|DESC|DISTINCT|DROP|ELSE|END|ESCAPE|EXCEPT|EXISTS|FOR|" +
+                        "FOREIGN|FROM|FULL|GROUP|HAVING|IN|INNER|INSERT|INTERSECT|INTO|IS|JOIN|" +
+                        "LEFT|LIKE|LIMIT|NOT|NULL|ON|OR|ORDER|OUTER|PRIMARY|REFERENCES|RIGHT|ROW|" +
+                        "SELECT|SET|SOME|TABLE|THEN|TRUNCATE|UNION|UNIQUE|UPDATE|VALUES|WHEN|WHERE|" +
+                        "WITH|YEAR|MONTH|DAY|HOUR|MINUTE|SECOND|DATE|TIME|TIMESTAMP|INTERVAL|LOCALTIME|LOCALDATE|LOCALDATETIME)\\b",
+                Pattern.CASE_INSENSITIVE
+        );
+
+        public static boolean isReservedWord(String word) {
+            return reservedWordPattern.matcher(word).matches();
+        }
     }
 }
