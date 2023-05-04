@@ -2115,6 +2115,7 @@ public class SpaceImpl extends AbstractService implements IRemoteSpace, IInterna
     @Override
     public <T extends RemoteOperationResult> T executeOperation(RemoteOperationRequest<T> request)
             throws RemoteException {
+        JSpaceUtilities.DEBUG_LOGGER.info("#VERSION#" + LRMIInvocationContext.getCurrentContext().getSourceLogicalVersion() + " - " + LRMIInvocationContext.getCurrentContext().getTargetLogicalVersion());
         return _operationsExecutor.executeOperation(request, this, false);
     }
 
