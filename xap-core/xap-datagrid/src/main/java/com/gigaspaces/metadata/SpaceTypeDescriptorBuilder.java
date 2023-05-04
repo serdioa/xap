@@ -80,6 +80,7 @@ public class SpaceTypeDescriptorBuilder {
     private Boolean _broadcast;
     private TieredStorageTableConfig _tieredStorageTableConfig;
     private boolean _hasRoutingAnnotation;
+    private boolean _propertiesNamesValidation = false;
 
     /**
      * Initialize a type descriptor builder using the specified type name.
@@ -694,6 +695,15 @@ public class SpaceTypeDescriptorBuilder {
         return this;
     }
 
+    /**
+     * Enables properties names validation.
+     * Is recommended to set it true for all new types. Prevents SQL queries related issues.
+     */
+    public SpaceTypeDescriptorBuilder validatePropertiesNames(boolean propertiesNamesValidation) {
+        this._propertiesNamesValidation = propertiesNamesValidation;
+        return this;
+    }
+
     private void addIndexIfNotExists(String propertyName, SpaceIndexType indexType) {
         if (indexType != SpaceIndexType.NONE) {
             // Check if an index is already defined for this property:
@@ -797,7 +807,7 @@ public class SpaceTypeDescriptorBuilder {
             validatePropertyExists(_routingPropertyName, fixedProperties);
         }
 
-        if (isPropertiesNamesValidationEnabled()) {
+        if (_propertiesNamesValidation) {
             validatePropertiesNames();
         }
 
@@ -840,11 +850,6 @@ public class SpaceTypeDescriptorBuilder {
                 _broadcast,
                 _tieredStorageTableConfig,
                 _hasRoutingAnnotation);
-    }
-
-    private boolean isPropertiesNamesValidationEnabled() {
-        return GsEnv.propertyBoolean(CommonSystemProperties.SPACE_TYPE_DESCRIPTOR_PROPERTIES_NAMES_VALIDATION_EXCLUDE_SQL_ENABLED)
-                .get(false);
     }
 
     private void validatePropertiesNames() {
