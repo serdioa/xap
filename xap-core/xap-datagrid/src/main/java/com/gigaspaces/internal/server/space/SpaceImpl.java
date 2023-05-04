@@ -288,6 +288,7 @@ public class SpaceImpl extends AbstractService implements IRemoteSpace, IInterna
     private final Map<Class<? extends SystemTask>, SpaceActionExecutor> executorMap = XapExtensions.getInstance().getActionExecutors();
     private BroadcastTableHandler _broadcastTableHandler;
     private final boolean hasInstanceLevelSla;
+    private final boolean isMvccEnabled;
 
     public SpaceImpl(String spaceName, String containerName, JSpaceContainerImpl container, SpaceURL url,
                      JSpaceAttributes spaceConfig, Properties customProperties,
@@ -372,6 +373,7 @@ public class SpaceImpl extends AbstractService implements IRemoteSpace, IInterna
 
         _broadcastTableHandler = new BroadcastTableHandler(this);
         xnioServer = XNioSettings.ENABLED ? XNioServer.create(this) : null;
+        this.isMvccEnabled = _configReader.getBooleanSpaceProperty(Mvcc.MVCC_ENABLED_PROP, Mvcc.MVCC_ENABLED_DEFAULT);
     }
 
     private ZKCollocatedClientConfig createZKCollocatedClientConfig() {
@@ -1030,7 +1032,7 @@ public class SpaceImpl extends AbstractService implements IRemoteSpace, IInterna
     }
 
     public boolean isMvccEnabled() {
-        return _configReader.getBooleanSpaceProperty(Mvcc.MVCC_ENABLED_PROP, Mvcc.MVCC_ENABLED_DEFAULT);
+        return isMvccEnabled;
     }
 
     public void removeClusterInfoChangedListener(IClusterInfoChangedListener listener) {
@@ -2115,7 +2117,6 @@ public class SpaceImpl extends AbstractService implements IRemoteSpace, IInterna
     @Override
     public <T extends RemoteOperationResult> T executeOperation(RemoteOperationRequest<T> request)
             throws RemoteException {
-        JSpaceUtilities.DEBUG_LOGGER.info("#VERSION#" + LRMIInvocationContext.getCurrentContext().getSourceLogicalVersion() + " - " + LRMIInvocationContext.getCurrentContext().getTargetLogicalVersion());
         return _operationsExecutor.executeOperation(request, this, false);
     }
 

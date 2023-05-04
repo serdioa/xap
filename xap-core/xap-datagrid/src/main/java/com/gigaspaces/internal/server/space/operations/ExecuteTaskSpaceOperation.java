@@ -29,6 +29,7 @@ public class ExecuteTaskSpaceOperation extends AbstractSpaceOperation<ExecuteTas
     @Override
     public void execute(ExecuteTaskSpaceOperationRequest request, ExecuteTaskSpaceOperationResult result, SpaceImpl space, boolean oneway)
             throws Exception {
+        validateClientMvccCompatible(space);
         Object taskResult = space.executeTask(request.getTask(), request.getTransaction(), request.getSpaceContext(), true);
         result.setResult(taskResult);
     }
