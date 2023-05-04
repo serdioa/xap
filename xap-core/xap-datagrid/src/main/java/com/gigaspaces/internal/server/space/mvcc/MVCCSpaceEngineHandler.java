@@ -106,8 +106,8 @@ public class MVCCSpaceEngineHandler {
     private MVCCEntryHolder getMatchMvccEntryHolder(Context context, ITemplateHolder template, boolean makeWaitForInfo,
                                                     MVCCEntryHolder entryHolder, MVCCGenerationsState mvccGenerationsState) throws TransactionConflictException, EntryDeletedException, TemplateDeletedException, TransactionNotActiveException, SAException, NoMatchException, FifoException {
 
-        if (template.isActiveRead(_spaceEngine)
-                || isEntryMatchedByGenerationsState(mvccGenerationsState, entryHolder, template)
+        if ((template.isActiveRead(_spaceEngine) && entryHolder.getOverrideGeneration() == -1)
+                || (mvccGenerationsState != null && isEntryMatchedByGenerationsState(mvccGenerationsState, entryHolder, template))
                 || entryHolder.getCommittedGeneration() == -1 /*dirty entry*/) {
             if  (entryHolder.isLogicallyDeleted()){
                 throw _spaceEngine.getEntryDeletedException();
