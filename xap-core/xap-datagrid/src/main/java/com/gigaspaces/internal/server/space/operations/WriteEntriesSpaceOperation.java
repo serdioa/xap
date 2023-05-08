@@ -32,6 +32,7 @@ public class WriteEntriesSpaceOperation extends AbstractSpaceOperation<WriteEntr
     @Override
     public void execute(WriteEntriesSpaceOperationRequest request, WriteEntriesSpaceOperationResult result, SpaceImpl space, boolean oneway)
             throws Exception {
+        validateClientMvccCompatible(space);
         IResponseContext respContext = ResponseContext.getResponseContext();
         if (respContext != null)
             respContext.setInvokedFromNewRouter(true);
