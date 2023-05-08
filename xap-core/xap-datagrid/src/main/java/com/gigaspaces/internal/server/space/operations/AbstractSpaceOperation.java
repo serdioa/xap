@@ -37,11 +37,11 @@ public abstract class AbstractSpaceOperation<TResult extends RemoteOperationResu
     }
 
     protected void validateClientMvccCompatible(SpaceImpl space) {
-        if(space.isMvccEnabled()) {
+//        if(space.isMvccEnabled()) {
             PlatformLogicalVersion sourceLogicalVersion = LRMIInvocationContext.getCurrentContext().getSourceLogicalVersion();
             if (sourceLogicalVersion != null && sourceLogicalVersion.lessThan(PlatformLogicalVersion.v16_4_0)) {
                 throw new MVCCNotCompatibleWithClientException(sourceLogicalVersion);
             }
-        }
+//        }
     }
 }

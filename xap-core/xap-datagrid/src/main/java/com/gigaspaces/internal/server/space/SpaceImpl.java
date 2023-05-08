@@ -365,6 +365,8 @@ public class SpaceImpl extends AbstractService implements IRemoteSpace, IInterna
         //init quiesce handler before startInternal to ensure no operations will arrive before handler is initialized
         this._quiesceHandler = new QuiesceHandler(this, getQuiesceStateChangedEvent(customProperties));
 
+        this.isMvccEnabled = _configReader.getBooleanSpaceProperty(Mvcc.MVCC_ENABLED_PROP, Mvcc.MVCC_ENABLED_DEFAULT);
+
         startInternal();
 
         // TODO RMI connections are not blocked
@@ -373,7 +375,6 @@ public class SpaceImpl extends AbstractService implements IRemoteSpace, IInterna
 
         _broadcastTableHandler = new BroadcastTableHandler(this);
         xnioServer = XNioSettings.ENABLED ? XNioServer.create(this) : null;
-        this.isMvccEnabled = _configReader.getBooleanSpaceProperty(Mvcc.MVCC_ENABLED_PROP, Mvcc.MVCC_ENABLED_DEFAULT);
     }
 
     private ZKCollocatedClientConfig createZKCollocatedClientConfig() {

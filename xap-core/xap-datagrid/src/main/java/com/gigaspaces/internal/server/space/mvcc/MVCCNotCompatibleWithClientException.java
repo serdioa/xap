@@ -8,7 +8,7 @@ public class MVCCNotCompatibleWithClientException extends RuntimeException{
 
 
     public MVCCNotCompatibleWithClientException(PlatformLogicalVersion logicalVersion) {
-        super("MVCC is only supported from client version 16.4.0 and above, client version in use: " + logicalVersion.toString());
+        super("MVCC is only supported from client version 16.4.0 and above, client version in use: " + logicalVersion);
     }
 
 }
