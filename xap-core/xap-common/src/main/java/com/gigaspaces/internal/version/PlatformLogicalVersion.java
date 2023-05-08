@@ -177,7 +177,7 @@ public class PlatformLogicalVersion implements SmartExternalizable, Comparable<P
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder("" + _majorVersion + "." + _minorVersion + "." + _servicePackVersion);
-        if (_buildNumber == LAST_BUILD_NUMBER){
+        if (_buildNumber != LAST_BUILD_NUMBER){
             sb.append("." + _buildNumber + "-" + _subBuildNumber);
         }
         return sb.toString();
