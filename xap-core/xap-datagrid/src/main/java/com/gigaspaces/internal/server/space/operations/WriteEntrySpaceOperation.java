@@ -19,10 +19,8 @@ package com.gigaspaces.internal.server.space.operations;
 import com.gigaspaces.internal.client.spaceproxy.operations.WriteEntrySpaceOperationRequest;
 import com.gigaspaces.internal.client.spaceproxy.operations.WriteEntrySpaceOperationResult;
 import com.gigaspaces.internal.server.space.SpaceImpl;
-import com.gigaspaces.lrmi.LRMIInvocationContext;
 import com.j_spaces.core.AnswerPacket;
 import com.j_spaces.core.client.Modifiers;
-import com.j_spaces.kernel.JSpaceUtilities;
 
 /**
  * @author idan
@@ -40,7 +38,6 @@ public class WriteEntrySpaceOperation extends AbstractSpaceOperation<WriteEntryS
         modifiers = Modifiers.remove(modifiers, Modifiers.NO_RETURN_VALUE);
         modifiers = Modifiers.remove(modifiers, Modifiers.NO_WRITE_LEASE);
 
-        JSpaceUtilities.DEBUG_LOGGER.info("#VERSION#" + LRMIInvocationContext.getCurrentContext().getSourceLogicalVersion() + " - " + LRMIInvocationContext.getCurrentContext().getTargetLogicalVersion());
         if (request.isUpdate()) {
             AnswerPacket answerPacket = space.update(request.getEntryPacket(),
                     request.getTransaction(),
