@@ -19,6 +19,9 @@ package com.gigaspaces.internal.server.space.operations;
 import com.gigaspaces.internal.remoting.RemoteOperationRequest;
 import com.gigaspaces.internal.remoting.RemoteOperationResult;
 import com.gigaspaces.internal.server.space.SpaceImpl;
+import com.gigaspaces.internal.server.space.mvcc.MVCCNotCompatibleWithClientException;
+import com.gigaspaces.internal.version.PlatformLogicalVersion;
+import com.gigaspaces.lrmi.LRMIInvocationContext;
 
 /**
  * @author Niv Ingberg
@@ -33,4 +36,12 @@ public abstract class AbstractSpaceOperation<TResult extends RemoteOperationResu
         return true;
     }
 
+    protected void validateClientMvccCompatible(SpaceImpl space) {
+        if(space.isMvccEnabled()) {
+            PlatformLogicalVersion sourceLogicalVersion = LRMIInvocationContext.getCurrentContext().getSourceLogicalVersion();
+            if (sourceLogicalVersion != null && sourceLogicalVersion.lessThan(PlatformLogicalVersion.v16_4_0)) {
+                throw new MVCCNotCompatibleWithClientException(sourceLogicalVersion);
+            }
+        }
+    }
 }
