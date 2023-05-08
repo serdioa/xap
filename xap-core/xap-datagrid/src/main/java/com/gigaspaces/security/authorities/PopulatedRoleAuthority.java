@@ -60,7 +60,7 @@ public class PopulatedRoleAuthority extends RoleAuthority {
      *
      * @return the authorities (never <code>null</code>)
      */
-    Authority[] getAuthorities() {
+    public Authority[] getAuthorities() {
         return authorities;
     }
 
