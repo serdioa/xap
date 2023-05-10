@@ -53,6 +53,7 @@ public class ChangeEntriesSpaceOperation
                         ChangeEntriesSpaceOperationResult result, SpaceImpl space,
                         boolean oneway) throws Exception {
         try{
+            validateClientMvccCompatible(space);
             IResponseContext respContext = ResponseContext.getResponseContext();
             if (respContext != null)
                 respContext.setInvokedFromNewRouter(true);

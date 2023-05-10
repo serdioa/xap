@@ -288,6 +288,7 @@ public class SpaceImpl extends AbstractService implements IRemoteSpace, IInterna
     private final Map<Class<? extends SystemTask>, SpaceActionExecutor> executorMap = XapExtensions.getInstance().getActionExecutors();
     private BroadcastTableHandler _broadcastTableHandler;
     private final boolean hasInstanceLevelSla;
+    private final boolean isMvccEnabled;
 
     public SpaceImpl(String spaceName, String containerName, JSpaceContainerImpl container, SpaceURL url,
                      JSpaceAttributes spaceConfig, Properties customProperties,
@@ -363,6 +364,8 @@ public class SpaceImpl extends AbstractService implements IRemoteSpace, IInterna
 
         //init quiesce handler before startInternal to ensure no operations will arrive before handler is initialized
         this._quiesceHandler = new QuiesceHandler(this, getQuiesceStateChangedEvent(customProperties));
+
+        this.isMvccEnabled = _configReader.getBooleanSpaceProperty(Mvcc.MVCC_ENABLED_PROP, Mvcc.MVCC_ENABLED_DEFAULT);
 
         startInternal();
 
@@ -1030,7 +1033,7 @@ public class SpaceImpl extends AbstractService implements IRemoteSpace, IInterna
     }
 
     public boolean isMvccEnabled() {
-        return _configReader.getBooleanSpaceProperty(Mvcc.MVCC_ENABLED_PROP, Mvcc.MVCC_ENABLED_DEFAULT);
+        return isMvccEnabled;
     }
 
     public void removeClusterInfoChangedListener(IClusterInfoChangedListener listener) {
