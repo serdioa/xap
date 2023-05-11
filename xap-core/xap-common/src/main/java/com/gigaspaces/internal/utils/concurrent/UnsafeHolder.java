@@ -16,9 +16,9 @@
 
 package com.gigaspaces.internal.utils.concurrent;
 
-import jdk.internal.misc.Unsafe;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import sun.misc.Unsafe;
 
 import java.lang.reflect.Field;
 
@@ -51,34 +51,6 @@ public class UnsafeHolder {
 
     public static long objectFieldOffset(Field field) {
         return _unsafe.objectFieldOffset(field);
-    }
-
-    public static Object getObjectVolatile(Object instance, long offset) {
-        return _unsafe.getObjectVolatile(instance, offset);
-    }
-
-    public static void putObjectVolatile(Object instance, long offset, Object newValue) {
-        _unsafe.putObjectVolatile(instance, offset, newValue);
-    }
-
-    public static boolean compareAndSwapObject(Object instance, long offset, Object expected, Object newValue) {
-        return _unsafe.compareAndSetObject(instance, offset, expected, newValue);
-    }
-
-    public static int getIntVolatile(Object instance, long offset) {
-        return _unsafe.getIntVolatile(instance, offset);
-    }
-
-    public static void putIntVolatile(Object instance, long offset, int newValue) {
-        _unsafe.putIntVolatile(instance, offset, newValue);
-    }
-
-    public static boolean compareAndSwapInt(Object instance, long offset, int expected, int newValue) {
-        return _unsafe.compareAndSetInt(instance, offset, expected, newValue);
-    }
-
-    public static boolean compareAndSwapLong(Object instance, long offset, long expected, long newValue) {
-        return _unsafe.compareAndSetLong(instance, offset, expected, newValue);
     }
 
     public static long allocateMemory(long size) {
