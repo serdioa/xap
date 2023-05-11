@@ -7,7 +7,7 @@
     <parent>
         <artifactId>xap</artifactId>
         <groupId>org.gigaspaces</groupId>
-        <version>16.4.0-SNAPSHOT</version>
+        <version>16.4.0-sync-charts-thu-644</version>
         <relativePath>../../</relativePath>
     </parent>
     <artifactId>xap-asm</artifactId>
