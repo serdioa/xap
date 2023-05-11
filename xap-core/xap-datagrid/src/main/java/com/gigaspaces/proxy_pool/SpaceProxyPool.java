@@ -319,6 +319,13 @@ public class SpaceProxyPool {
         }
     }
 
+    /**
+     * Clear all connections from pool in case of openid IdP settings or roles in security service changed
+     */
+    public void clearConnectionPool() {
+        hashMap.keySet().forEach(this::deleteLoggedOutSession);
+    }
+
     public long getExpirationTime() {
 
         return expirationTime;
