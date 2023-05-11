@@ -49,7 +49,9 @@ public class MVCCSpaceEngineHandler {
                             entry.setOverrideGeneration(nextGeneration);
                             entry.resetEntryXtnInfo();
                             entry.setMaybeUnderXtn(true);
-                            mvccShellEntryCacheInfo.getDirtyEntryHolder().setCommittedGeneration(nextGeneration);
+                            MVCCEntryHolder dirtyEntryHolder = mvccShellEntryCacheInfo.getDirtyEntryHolder();
+                            dirtyEntryHolder.setCommittedGeneration(nextGeneration);
+                            dirtyEntryHolder.setOverridingAnother(true);
                             mvccShellEntryCacheInfo.addDirtyEntryToGenerationQueue();
                         } else if (entry.getWriteLockOperation() == SpaceOperations.WRITE && entry.getWriteLockOwner() == xtnEntry) {
                             entry.setCommittedGeneration(nextGeneration);
