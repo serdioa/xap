@@ -6,7 +6,7 @@
         <artifactId>xap</artifactId>
         <groupId>org.gigaspaces</groupId>
         <version>16.4.0-SNAPSHOT</version>
-        <relativePath>../../</relativePath>
+        <relativePath>../../pom.xml</relativePath>
     </parent>
 
     <artifactId>xap-cli</artifactId>
@@ -40,10 +40,6 @@
             <groupId>org.fusesource.jansi</groupId>
             <artifactId>jansi</artifactId>
             <version>1.18</version>
-        </dependency>
-        <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
         </dependency>
     </dependencies>
 
