@@ -44,7 +44,7 @@ public class CountModifiers extends IsolationLevelModifiers {
      * operation is invoked in a transactional context, the resulting entries will be locked,
      * blocking update/remove from other transactions.
      */
-    public static final CountModifiers REPEATABLE_READ = new CountModifiers(Modifiers.NONE);
+    public static final CountModifiers REPEATABLE_READ = new CountModifiers(Modifiers.REPEATABLE_READ);
 
     /**
      * When a search for matching entries encounters an entry locked under a different uncommitted

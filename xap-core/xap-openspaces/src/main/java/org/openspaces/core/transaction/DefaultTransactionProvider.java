@@ -22,10 +22,8 @@ import com.gigaspaces.client.transaction.DistributedTransactionManagerProvider;
 import com.gigaspaces.internal.client.spaceproxy.ISpaceProxy;
 import com.j_spaces.core.IJSpace;
 import com.j_spaces.core.client.XAResourceImpl;
-
 import net.jini.core.transaction.Transaction;
 import net.jini.core.transaction.TransactionException;
-
 import org.openspaces.core.IsolationLevelHelpers;
 import org.openspaces.core.TransactionDataAccessException;
 import org.openspaces.core.transaction.manager.ExistingJiniTransactionManager;
@@ -37,12 +35,11 @@ import org.springframework.transaction.jta.JtaTransactionManager;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
+import javax.transaction.xa.XAException;
+import javax.transaction.xa.XAResource;
 import java.io.IOException;
 import java.rmi.RemoteException;
 import java.util.List;
-
-import javax.transaction.xa.XAException;
-import javax.transaction.xa.XAResource;
 
 /**
  * Default transaction provider works in conjunction with {@link org.openspaces.core.transaction.manager.JiniPlatformTransactionManager
@@ -102,16 +99,11 @@ public class DefaultTransactionProvider implements TransactionProvider {
             return txObject.getTxCreated();
         }
 
-        // try and perform early exit when we should not support declarative transactions for better performance
-        if (actualTransactionalContext == null && !isJta) {
-            return null;
-        }
-
-        if (!TransactionSynchronizationManager.isSynchronizationActive()) {
-            return null;
-        }
-
         if (isJta) {
+            if (!TransactionSynchronizationManager.isSynchronizationActive()) {
+                return null;
+            }
+
             List<TransactionSynchronization> txSynchronizations = TransactionSynchronizationManager.getSynchronizations();
             for (TransactionSynchronization txSynchronization : txSynchronizations) {
                 if (txSynchronization instanceof SpaceAndTransactionSync) {

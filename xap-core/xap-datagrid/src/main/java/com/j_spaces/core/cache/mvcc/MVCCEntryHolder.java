@@ -2,16 +2,19 @@ package com.j_spaces.core.cache.mvcc;
 
 import com.gigaspaces.internal.server.metadata.IServerTypeDesc;
 import com.gigaspaces.internal.server.storage.EntryHolder;
+import com.gigaspaces.internal.server.storage.FlatEntryData;
 import com.gigaspaces.internal.server.storage.IEntryHolder;
 import com.gigaspaces.internal.server.storage.ITransactionalEntryData;
+import com.gigaspaces.internal.utils.Textualizer;
 import com.j_spaces.core.Constants;
+import com.j_spaces.core.server.transaction.EntryXtnInfo;
 import com.j_spaces.kernel.locks.IMVCCLockObject;
 
 
 @com.gigaspaces.api.InternalApi
 public class MVCCEntryHolder extends EntryHolder implements IMVCCLockObject {
 
-    private volatile long createdGeneration = -1;
+    private volatile long committedGeneration = -1;
     private volatile long overrideGeneration = -1;
 
     public MVCCEntryHolder(IServerTypeDesc typeDesc, String uid, long scn, boolean isTransient, ITransactionalEntryData entryData) {
@@ -21,7 +24,7 @@ public class MVCCEntryHolder extends EntryHolder implements IMVCCLockObject {
 
     protected MVCCEntryHolder(MVCCEntryHolder other) {
         super(other);
-        this.createdGeneration = other.getCreatedGeneration();
+        this.committedGeneration = other.getCommittedGeneration();
         this.overrideGeneration = other.getOverrideGeneration();
     }
 
@@ -30,17 +33,31 @@ public class MVCCEntryHolder extends EntryHolder implements IMVCCLockObject {
         return new MVCCEntryHolder(this);
     }
 
+    public MVCCEntryHolder createLogicallyDeletedDummyEntry(EntryXtnInfo entryXtnInfo) {
+        ITransactionalEntryData ed = new FlatEntryData(
+                new Object[0],
+                null,
+                getEntryData().getEntryTypeDesc(),
+                1 /*versionID*/,
+                Long.MAX_VALUE, /* expirationTime */
+                entryXtnInfo);
+        MVCCEntryHolder dummy = new MVCCEntryHolder(this.getServerTypeDesc(), this.getUID(), this.getSCN(),
+                this.isTransient(), ed);
+        dummy.setLogicallyDeleted(true);
+        return dummy;
+    }
+
     @Override
     public int getLockedObjectHashCode() {
         return Math.abs(getUID().hashCode());
     }
 
-    public long getCreatedGeneration() {
-        return createdGeneration;
+    public long getCommittedGeneration() {
+        return committedGeneration;
     }
 
-    public void setCreatedGeneration(long createdGeneration) {
-        this.createdGeneration = createdGeneration;
+    public void setCommittedGeneration(long committedGeneration) {
+        this.committedGeneration = committedGeneration;
     }
 
     public long getOverrideGeneration() {
@@ -66,4 +83,13 @@ public class MVCCEntryHolder extends EntryHolder implements IMVCCLockObject {
     public void setLogicallyDeleted(boolean logicallyDeleted) {
         setFlag(Constants.SpaceItem.IS_LOGICALLY_DELETED, logicallyDeleted);
     }
+
+    @Override
+    public void toText(Textualizer textualizer) {
+        textualizer.append("typeName", getClassName());
+        textualizer.append("uid", getUID());
+        textualizer.append("committedGeneration", getCommittedGeneration());
+        textualizer.append("overrideGeneration", getOverrideGeneration());
+    }
+
 }

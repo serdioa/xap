@@ -4,7 +4,7 @@ import com.gigaspaces.internal.server.metadata.IServerTypeDesc;
 import com.gigaspaces.internal.server.space.SpaceEngine;
 import com.gigaspaces.internal.server.space.SpaceUidFactory;
 import com.gigaspaces.internal.server.storage.MVCCEntryMetaData;
-import com.j_spaces.core.cache.IEntryCacheInfo;
+import com.j_spaces.core.XtnEntry;
 import com.j_spaces.core.cache.context.Context;
 import com.j_spaces.core.cache.mvcc.MVCCEntryCacheInfo;
 import com.j_spaces.core.cache.mvcc.MVCCEntryHolder;
@@ -21,12 +21,12 @@ public class MVCCUtils {
         IServerTypeDesc typeDesc = engine.getTypeManager().getServerTypeDesc(typeName);
         String uid = SpaceUidFactory.createUidFromTypeAndId(typeDesc.getTypeDesc(), id);
 
-        MVCCShellEntryCacheInfo mvccShellEntryCacheInfo = MVCCUtils.getMVCCShellEntryCacheInfo(engine.getCacheManager().getPEntryByUid(uid));
+        MVCCShellEntryCacheInfo mvccShellEntryCacheInfo = engine.getCacheManager().getMVCCShellEntryCacheInfoByUid(uid);
         Iterator<MVCCEntryCacheInfo> mvccEntryCacheInfoIterator = mvccShellEntryCacheInfo.descIterator();
         while(mvccEntryCacheInfoIterator.hasNext()){
             MVCCEntryHolder next = (MVCCEntryHolder) mvccEntryCacheInfoIterator.next().getEntryHolder();
             MVCCEntryMetaData metaData = new MVCCEntryMetaData();
-            metaData.setCreatedGeneration(next.getCreatedGeneration());
+            metaData.setCommittedGeneration(next.getCommittedGeneration());
             metaData.setOverrideGeneration(next.getOverrideGeneration());
             metaData.setLogicallyDeleted(next.isLogicallyDeleted());
             metaData.setOverridingAnother(next.isOverridingAnother());
@@ -36,8 +36,19 @@ public class MVCCUtils {
         return metaDataList;
     }
 
-    public static MVCCShellEntryCacheInfo getMVCCShellEntryCacheInfo(IEntryCacheInfo mvccShellEntryCacheInfo) {
-        return (MVCCShellEntryCacheInfo)mvccShellEntryCacheInfo;
+    public static boolean isMVCCEntryDirtyUnderTransaction(SpaceEngine engine, String typeName, Object id,
+                                                           long transactionId) {
+        if (transactionId == -1) return false;
+        IServerTypeDesc typeDesc = engine.getTypeManager().getServerTypeDesc(typeName);
+        String uid = SpaceUidFactory.createUidFromTypeAndId(typeDesc.getTypeDesc(), id);
+        MVCCShellEntryCacheInfo mvccShellEntryCacheInfo = engine.getCacheManager().getMVCCShellEntryCacheInfoByUid(uid);
+        long dirtyId = -1;
+        if (mvccShellEntryCacheInfo != null) {
+            MVCCEntryCacheInfo dirtyEntry = mvccShellEntryCacheInfo.getDirtyEntryCacheInfo();
+            XtnEntry xidOriginated = dirtyEntry != null ? dirtyEntry.getEntryHolder().getXidOriginated() : null;
+            dirtyId = xidOriginated != null ? xidOriginated.m_Transaction.id : -1;
+        }
+        return dirtyId != -1 && dirtyId == transactionId;
     }
 
 }

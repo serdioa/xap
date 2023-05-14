@@ -2,7 +2,6 @@ package com.gigaspaces.internal.client.spaceproxy.executors;
 
 import com.gigaspaces.async.AsyncResult;
 import com.gigaspaces.internal.io.IOUtils;
-import com.gigaspaces.internal.server.storage.MVCCEntryMetaData;
 import com.gigaspaces.internal.space.requests.GetMVCCEntryMetaDataRequestInfo;
 import com.gigaspaces.internal.space.requests.SpaceRequestInfo;
 import com.gigaspaces.internal.space.responses.GetMVCCEntryMetaDataResponseInfo;
@@ -11,7 +10,6 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.List;
-import java.util.Map;
 
 @com.gigaspaces.api.InternalApi
 public class GetMVCCEntryMetaDataTask extends SystemDistributedTask<GetMVCCEntryMetaDataResponseInfo>{
@@ -34,10 +32,7 @@ public class GetMVCCEntryMetaDataTask extends SystemDistributedTask<GetMVCCEntry
             if (asyncResult.getException() != null) {
                 throw asyncResult.getException();
             }
-            GetMVCCEntryMetaDataResponseInfo responseInfo = asyncResult.getResult();
-            for(Map.Entry<Object, List<MVCCEntryMetaData>> entry: responseInfo.getEntriesMetaData().entrySet()) {
-                result.addEntryMetaData(entry.getKey(), entry.getValue());
-            }
+            result.merge(asyncResult.getResult());
         }
         return result;
     }

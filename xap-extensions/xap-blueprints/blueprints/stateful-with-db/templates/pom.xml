@@ -15,7 +15,6 @@
         <hibernate.version>{{hibernate.version}}</hibernate.version>
         <db.driver.groupId>{{db.driver.groupId}}</db.driver.groupId>
         <db.driver.artifactId>{{db.driver.artifactId}}</db.driver.artifactId>
-        <db.driver.version>{{db.driver.version}}</db.driver.version>
     </properties>
 
     <repositories>

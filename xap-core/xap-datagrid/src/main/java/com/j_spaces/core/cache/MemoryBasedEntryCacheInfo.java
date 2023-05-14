@@ -146,13 +146,13 @@ public class MemoryBasedEntryCacheInfo implements IEntryCacheInfo {
 
     @Override
     public Object getObjectStoredInLeaseManager() {
-        return m_EntryHolder;
+        return getEntryHolder();
     }
 
     @Override
     public IServerTypeDesc getServerTypeDesc()
     {
-        return m_EntryHolder.getServerTypeDesc();
+        return getEntryHolder().getServerTypeDesc();
     }
 
 

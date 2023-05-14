@@ -30,6 +30,9 @@ public class ReadTakeEntriesByIdsSpaceOperation extends AbstractSpaceOperation<R
     @Override
     public void execute(ReadTakeEntriesByIdsSpaceOperationRequest request, ReadTakeEntriesByIdsSpaceOperationResult result, SpaceImpl space, boolean oneway)
             throws Exception {
+        if (request.isTake()) {
+            validateClientMvccCompatible(space);
+        }
         final IEntryPacket[] entries = space.readByIds(request.getTemplate(),
                 request.getTransaction(),
                 request.isTake(),

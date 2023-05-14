@@ -71,7 +71,7 @@ public class ProxySettings implements SmartExternalizable {
     private final Properties _customProperties;
     private final SpaceClusterInfo _clusterInfo;
     private final SpaceClusterInfo _nonClusterInfo;
-
+    private final boolean _isMvccEnabled;
     private SpaceURL _finderURL;
     private transient int _updateModifiers;
     private transient int _readModifiers;
@@ -98,6 +98,8 @@ public class ProxySettings implements SmartExternalizable {
         Properties serverProperties = getSpaceURL().getCustomProperties();
         if (serverProperties != null)
             _customProperties.putAll(serverProperties);
+        this._isMvccEnabled = _spaceSettings.getSpaceConfig().isMvccEnabled()
+                || Boolean.parseBoolean(_customProperties.getProperty(Constants.Mvcc.FULL_MVCC_ENABLED_PROP));
     }
 
     public Uuid getUuid() {
@@ -146,8 +148,9 @@ public class ProxySettings implements SmartExternalizable {
 
     public ProxySettings setFinderURL(SpaceURL finderURL) {
         _finderURL = finderURL;
-        if (finderURL != null && finderURL.getCustomProperties() != null)
+        if (finderURL != null && finderURL.getCustomProperties() != null) {
             _customProperties.putAll(finderURL.getCustomProperties());
+        }
         return this;
     }
 
@@ -241,8 +244,7 @@ public class ProxySettings implements SmartExternalizable {
     }
 
     public boolean isMvccEnabled() {
-        final String propertyValue = _customProperties.getProperty(Constants.Mvcc.FULL_MVCC_ENABLED_PROP);
-        return propertyValue != null ? "true".equals(propertyValue) : getSpaceAttributes().isMvccEnabled();
+        return _isMvccEnabled;
     }
 
     @Override

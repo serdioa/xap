@@ -5,7 +5,7 @@ import java.io.Serializable;
 public class MVCCEntryMetaData implements Serializable {
 
     private static final long serialVersionUID = 8863674948026337024L;
-    private long createdGeneration;
+    private long committedGeneration;
     private long overrideGeneration;
     private boolean isOverridingAnother;
     private boolean isLogicallyDeleted;
@@ -13,12 +13,12 @@ public class MVCCEntryMetaData implements Serializable {
     public MVCCEntryMetaData() {
     }
 
-    public long getCreatedGeneration() {
-        return createdGeneration;
+    public long getCommittedGeneration() {
+        return committedGeneration;
     }
 
-    public void setCreatedGeneration(long createdGeneration) {
-        this.createdGeneration = createdGeneration;
+    public void setCommittedGeneration(long committedGeneration) {
+        this.committedGeneration = committedGeneration;
     }
 
     public long getOverrideGeneration() {
@@ -48,7 +48,7 @@ public class MVCCEntryMetaData implements Serializable {
     @Override
     public String toString() {
         return "MVCCEntryMetaData{" +
-                "createdGeneration=" + createdGeneration +
+                "committedGeneration=" + committedGeneration +
                 ", overrideGeneration=" + overrideGeneration +
                 ", isOverridingAnother=" + isOverridingAnother +
                 ", isLogicallyDeleted=" + isLogicallyDeleted +

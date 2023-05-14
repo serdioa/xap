@@ -34,6 +34,9 @@ public class ReadTakeEntriesSpaceOperation extends AbstractSpaceOperation<ReadTa
     @Override
     public void execute(ReadTakeEntriesSpaceOperationRequest request, ReadTakeEntriesSpaceOperationResult result, SpaceImpl space, boolean oneway)
             throws Exception {
+        if (request.isTake()) {
+            validateClientMvccCompatible(space);
+        }
         IResponseContext respContext = ResponseContext.getResponseContext();
         if (respContext != null)
             respContext.setInvokedFromNewRouter(true);

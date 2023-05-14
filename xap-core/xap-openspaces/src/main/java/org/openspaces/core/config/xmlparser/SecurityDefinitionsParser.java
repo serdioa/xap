@@ -30,19 +30,25 @@ public class SecurityDefinitionsParser {
     private static final String PASSWORD = "password";
     private static final String USER_DETAILS = "user-details";
     private static final String CREDENTIALS_PROVIDER = "credentials-provider";
+    private static final String TOKEN = "token";
 
     public static void parseXml(Element securityElement, BeanDefinitionBuilder builder) {
         final String username = securityElement.getAttribute(USERNAME);
         final String password = securityElement.getAttribute(PASSWORD);
+        SecurityConfig securityConfig = new SecurityConfig();
         if (StringUtils.hasText(username)) {
-            SecurityConfig securityConfig = new SecurityConfig();
             securityConfig.setUsername(username);
             if (StringUtils.hasText(password)) {
                 securityConfig.setPassword(password);
             }
-            if (securityConfig != null)
-                builder.addPropertyValue("securityConfig", securityConfig);
         }
+
+        final String token = securityElement.getAttribute(TOKEN);
+        if (StringUtils.hasText(token)) {
+            securityConfig.setToken(token);
+        }
+
+        builder.addPropertyValue("securityConfig", securityConfig);
 
         final String userDetailsRef = securityElement.getAttribute(USER_DETAILS);
         if (StringUtils.hasText(userDetailsRef)) {

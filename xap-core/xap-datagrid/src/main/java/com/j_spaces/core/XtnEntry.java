@@ -19,6 +19,7 @@ package com.j_spaces.core;
 
 import com.gigaspaces.internal.server.space.mvcc.MVCCGenerationsState;
 import com.gigaspaces.internal.server.storage.IEntryHolder;
+import com.gigaspaces.logger.ConsolidatedLogger;
 import com.j_spaces.core.cache.CacheManager;
 import com.j_spaces.core.cache.IEntryCacheInfo;
 import com.j_spaces.core.cache.XtnData;
@@ -36,6 +37,7 @@ public class XtnEntry extends XtnInfo {
     private final transient boolean _createdOnNonBackup;
 
     private transient MVCCGenerationsState mvccGenerationsState;
+    private final transient ConsolidatedLogger logger = ConsolidatedLogger.getLogger("com.gigaspaces.TransactionEntry");
 
     /**
      * Constructs a new Xtn Entry.
@@ -127,5 +129,14 @@ public class XtnEntry extends XtnInfo {
 
     public void setMVCCGenerationsState(MVCCGenerationsState mvccGenerationsState) {
         this.mvccGenerationsState = mvccGenerationsState;
+    }
+
+    @Override
+    public boolean setUnusedIfPossible(int unusedCleanTime, boolean includeGlobalXtns) {
+        return super.setUnusedIfPossible(unusedCleanTime, includeGlobalXtns);
+    }
+
+    private boolean isTransactionWithLease() {
+        return m_Transaction.getLease() != Long.MAX_VALUE && m_Transaction.getLease() != 0;
     }
 }
