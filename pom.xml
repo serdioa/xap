@@ -33,6 +33,8 @@
         <h2.version>1.4.200</h2.version>
         <guava.version>31.0.1-jre</guava.version>
         <java.version>11</java.version>
+        <maven.compiler.source>${java.version}</maven.compiler.source>
+        <maven.compiler.target>${java.version}</maven.compiler.target>
     </properties>
 
     <scm>
