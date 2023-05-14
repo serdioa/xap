@@ -75,6 +75,7 @@ import java.net.URL;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
+import java.security.Provider;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
@@ -312,9 +313,11 @@ public class JSpaceContainerImpl implements IJSpaceContainer, IJSpaceContainerAd
         // This will eliminate the need to modify the IBM JDK java.security when using IBM JDK.
         if(JavaUtils.getVendor().equals("IBM")) {
             try {
-                java.security.Security.addProvider(new sun.security.provider.Sun());
-            } catch (SecurityException e) {
-                /**
+                Class<?> aClass = Class.forName("sun.security.provider.Sun");
+                Provider provider = (Provider)aClass.getDeclaredConstructor().newInstance();
+                java.security.Security.addProvider(provider);
+            } catch (Exception e) {
+                /*
                  * SecurityException might be caught, if a security manager exists and
                  * its <code>{@link
                  * java.lang.SecurityManager#checkSecurityAccess}</code>
@@ -323,8 +326,9 @@ public class JSpaceContainerImpl implements IJSpaceContainer, IJSpaceContainerAd
                  * embedded space inside Application server without granting implicit
                  * policy permissions.
                  */
-                if (_logger.isErrorEnabled())
-                    _logger.error("Failed to add the sun.security.provider.Sun SecurityManager: " + e.toString(), e);
+                if (_logger.isErrorEnabled()) {
+                    _logger.error("Failed to add 'sun.security.provider.Sun' security provider support for IBM JDK", e);
+                }
             }
         }
     }
