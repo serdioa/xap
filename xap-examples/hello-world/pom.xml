@@ -8,6 +8,13 @@
     <artifactId>hello-world-example</artifactId>
     <version>16.4.0-SNAPSHOT</version>
 
+    <parent>
+        <artifactId>xap</artifactId>
+        <groupId>org.gigaspaces</groupId>
+        <version>16.4.0-SNAPSHOT</version>
+        <relativePath>../../</relativePath>
+    </parent>
+
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
