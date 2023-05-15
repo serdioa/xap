@@ -24,9 +24,7 @@ import com.j_spaces.core.SpaceContext;
 import com.j_spaces.core.filters.FilterOperationCodes;
 import com.j_spaces.core.filters.ISpaceFilter;
 import com.j_spaces.core.filters.entry.ISpaceFilterEntry;
-
 import net.jini.core.entry.UnusableEntryException;
-
 import org.openspaces.core.GigaSpace;
 import org.openspaces.core.GigaSpaceConfigurer;
 import org.openspaces.core.cluster.ClusterInfo;
@@ -38,7 +36,6 @@ import org.openspaces.core.executor.TaskGigaSpaceAware;
 import org.openspaces.core.executor.internal.InternalSpaceTaskWrapper;
 import org.openspaces.core.executor.support.DelegatingTask;
 import org.openspaces.core.executor.support.ProcessObjectsProvider;
-import org.openspaces.core.space.filter.SpaceFilterProviderFactory;
 import org.openspaces.remoting.ExecutorRemotingTask;
 import org.openspaces.remoting.SpaceRemotingServiceExporter;
 import org.springframework.beans.factory.config.AutowireCapableBeanFactory;
@@ -69,38 +66,7 @@ public class ExecutorSpaceFilter implements ISpaceFilter {
 
     public void init(IJSpace space, String filterId, String url, int priority) throws RuntimeException {
         this.space = space;
-        if (clusterInfo.isDedicatedSecurity()) {
-            // TODO complete setting ip security filter
-            this.gigaSpace = createSecuredConfigurer();
-        } else {
-            this.gigaSpace = new GigaSpaceConfigurer(space).gigaSpace();
-        }
-    }
-
-    private GigaSpace createSecuredConfigurer() {
-        SpaceFilterProviderFactory factory = new SpaceFilterProviderFactory();
-        factory.setOperationCodes(new int[]
-                {
-                        FilterOperationCodes.BEFORE_WRITE,
-                        FilterOperationCodes.BEFORE_READ,
-                        FilterOperationCodes.BEFORE_READ_MULTIPLE,
-                        FilterOperationCodes.BEFORE_TAKE,
-                        FilterOperationCodes.BEFORE_TAKE_MULTIPLE,
-                        FilterOperationCodes.BEFORE_EXECUTE
-                });
-//        factory.setFilter(new SecurityFilter());
-        factory.setPriority(1);
-        factory.setActiveWhenBackup(true);
-        factory.setBeanName("securityFilter");
-        factory.setEnabled(true);
-        factory.setSecurityFilter(true);
-        factory.setShutdownSpaceOnInitFailure(true);
-
-        // TODO complete setting ip security filter
-        return new GigaSpaceConfigurer(new UrlSpaceConfigurer("/./" + space.getName())
-                .secured(true)).create();
-//                .securityConfig(new SecurityConfig(token))
-//                .addFilterProvider(factory))
+        this.gigaSpace = new GigaSpaceConfigurer(space).gigaSpace();
     }
 
     public void process(SpaceContext context, ISpaceFilterEntry entry, int operationCode) throws RuntimeException {

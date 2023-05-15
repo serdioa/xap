@@ -22,6 +22,7 @@ import com.gigaspaces.client.SpaceProxyFactory;
 import com.gigaspaces.internal.lookup.SpaceUrlUtils;
 import com.gigaspaces.internal.sync.mirror.MirrorDistributedTxnConfig;
 import com.gigaspaces.query.sql.functions.SqlFunction;
+import com.gigaspaces.security.spring.SecurityFilter;
 import com.gigaspaces.server.SpaceCustomComponent;
 import com.j_spaces.core.IJSpace;
 import com.j_spaces.core.client.FinderException;
@@ -174,6 +175,18 @@ public class InternalSpaceFactory {
         if (!isRemote && enableExecutorInjection) {
             FilterProvider filterProvider = new FilterProvider("InjectionExecutorFilter", new ExecutorSpaceFilter(spaceFactoryBean, clusterInfo));
             filterProvider.setOpCodes(FilterOperationCodes.BEFORE_EXECUTE);
+            factory.addFilterProvider(filterProvider);
+        }
+
+        if (clusterInfo.isDedicatedSecurity()) {
+            SecurityFilter securityFilter = new SecurityFilter();
+            FilterProvider filterProvider = new FilterProvider("SpaceSecurityFilter", securityFilter);
+            filterProvider.setOpCodes(securityFilter.getOpCodes());
+            filterProvider.setPriority(1);
+            filterProvider.setActiveWhenBackup(true);
+            filterProvider.setEnabled(true);
+            filterProvider.setSecurityFilter(true);
+            filterProvider.setShutdownSpaceOnInitFailure(true);
             factory.addFilterProvider(filterProvider);
         }
     }
