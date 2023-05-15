@@ -25,6 +25,7 @@ import com.gigaspaces.internal.utils.PropertiesUtils;
 import com.gigaspaces.query.ISpaceQuery;
 import com.gigaspaces.time.SystemTime;
 import com.j_spaces.core.Constants;
+import com.j_spaces.core.SpaceContext;
 import com.j_spaces.core.client.EntrySnapshot;
 import com.j_spaces.jdbc.builder.SQLQueryTemplatePacket;
 
@@ -62,7 +63,8 @@ public class SpaceProxyImplSnapshotAction extends SnapshotProxyAction<SpaceProxy
                 spaceProxy.beforeSpaceAction();
 
                 try {
-                    rj.snapshot(queryPacket);
+                    SpaceContext sc = spaceProxy.getSecurityManager().acquireContext(spaceProxy.getRemoteJSpace());
+                    rj.snapshot(queryPacket, sc);
                     queryPacket.setSerializeTypeDesc(false);
                     return new EntrySnapshot(queryPacket);
                 } catch (UnusableEntryException ex) {

@@ -158,9 +158,9 @@ public class LRMISpaceImpl extends RemoteStub<IRemoteSpace>
     }
 
     @Override
-    public void snapshot(ITemplatePacket e) throws UnusableEntryException,
+    public void snapshot(ITemplatePacket e, SpaceContext sc) throws UnusableEntryException,
             RemoteException {
-        getProxy().snapshot(e);
+        getProxy().snapshot(e, sc);
     }
 
     @Override

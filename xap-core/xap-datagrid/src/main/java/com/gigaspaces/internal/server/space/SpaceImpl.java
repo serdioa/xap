@@ -128,6 +128,7 @@ import com.gigaspaces.security.authorities.Privilege;
 import com.gigaspaces.security.authorities.SpaceAuthority.SpacePrivilege;
 import com.gigaspaces.security.directory.CredentialsProvider;
 import com.gigaspaces.security.directory.CredentialsProviderHelper;
+import com.gigaspaces.security.service.SecurityContext;
 import com.gigaspaces.security.service.SecurityInterceptor;
 import com.gigaspaces.server.space.suspend.SuspendType;
 import com.gigaspaces.start.SystemInfo;
@@ -2629,9 +2630,9 @@ public class SpaceImpl extends AbstractService implements IRemoteSpace, IInterna
         }
     }
 
-    public void snapshot(ITemplatePacket template)
+    public void snapshot(ITemplatePacket template, SpaceContext sc)
             throws UnusableEntryException, RemoteException {
-        beforeOperation(false, true /*checkQuiesceMode*/, null);
+        beforeTypeOperation(false, sc, SpacePrivilege.ALTER, template.getTypeName());
 
         try {
             _engine.snapshot(template);
