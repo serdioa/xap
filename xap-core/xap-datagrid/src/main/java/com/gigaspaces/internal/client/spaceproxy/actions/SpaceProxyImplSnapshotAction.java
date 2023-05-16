@@ -50,11 +50,14 @@ public class SpaceProxyImplSnapshotAction extends SnapshotProxyAction<SpaceProxy
         while (true) {
             try {
                 ITemplatePacket queryPacket = actionInfo.queryPacket;
+                SpaceContext sc = null;
                 if (actionInfo.isSqlQuery) {
                     queryPacket = spaceProxy.getQueryManager().getSQLTemplate((SQLQueryTemplatePacket) actionInfo.queryPacket, null);
                     // fill the SQLQuery generated template with the metadata
                     queryPacket = spaceProxy.getTypeManager().getTemplatePacketFromObject(queryPacket, ObjectType.TEMPLATE_PACKET);
                     queryPacket.setSerializeTypeDesc(true);
+                } else {
+                    sc = spaceProxy.getSecurityManager().acquireContext(spaceProxy.getRemoteJSpace());
                 }
 
                 if (queryPacket == null)
@@ -63,7 +66,6 @@ public class SpaceProxyImplSnapshotAction extends SnapshotProxyAction<SpaceProxy
                 spaceProxy.beforeSpaceAction();
 
                 try {
-                    SpaceContext sc = spaceProxy.getSecurityManager().acquireContext(spaceProxy.getRemoteJSpace());
                     rj.snapshot(queryPacket, sc);
                     queryPacket.setSerializeTypeDesc(false);
                     return new EntrySnapshot(queryPacket);

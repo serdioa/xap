@@ -2632,7 +2632,12 @@ public class SpaceImpl extends AbstractService implements IRemoteSpace, IInterna
 
     public void snapshot(ITemplatePacket template, SpaceContext sc)
             throws UnusableEntryException, RemoteException {
-        beforeTypeOperation(false, sc, SpacePrivilege.ALTER, template.getTypeName());
+        //todo it is incorrect to check ALTER priv, because different SQL can be run via snapshot
+        if (sc != null) {
+            beforeTypeOperation(false, sc, SpacePrivilege.ALTER, template.getTypeName());
+        } else {
+            beforeOperation(false, true /*checkQuiesceMode*/, null);
+        }
 
         try {
             _engine.snapshot(template);
