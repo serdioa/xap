@@ -22,14 +22,16 @@ import com.gigaspaces.client.SpaceProxyFactory;
 import com.gigaspaces.internal.lookup.SpaceUrlUtils;
 import com.gigaspaces.internal.sync.mirror.MirrorDistributedTxnConfig;
 import com.gigaspaces.query.sql.functions.SqlFunction;
-import com.gigaspaces.security.spring.SecurityFilter;
 import com.gigaspaces.server.SpaceCustomComponent;
+import com.gigaspaces.start.ClasspathBuilder;
+import com.gigaspaces.start.XapModules;
+import com.gigaspaces.utils.Pair;
 import com.j_spaces.core.IJSpace;
 import com.j_spaces.core.client.FinderException;
 import com.j_spaces.core.client.SpaceURL;
 import com.j_spaces.core.filters.FilterOperationCodes;
 import com.j_spaces.core.filters.FilterProvider;
-
+import com.j_spaces.core.filters.ISpaceFilter;
 import org.openspaces.core.cluster.ClusterInfo;
 import org.openspaces.core.config.SpaceSqlFunctionBean;
 import org.openspaces.core.space.filter.FilterProviderFactory;
@@ -39,6 +41,7 @@ import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
 import java.net.MalformedURLException;
+import java.net.URLClassLoader;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -179,15 +182,30 @@ public class InternalSpaceFactory {
         }
 
         if (clusterInfo.isDedicatedSecurity()) {
-            SecurityFilter securityFilter = new SecurityFilter();
-            FilterProvider filterProvider = new FilterProvider("SpaceSecurityFilter", securityFilter);
-            filterProvider.setOpCodes(securityFilter.getOpCodes());
+            Pair<ISpaceFilter, int[]> securityFilterPair = loadSecurityFilter(spaceFactoryBean.getName());
+
+            FilterProvider filterProvider = new FilterProvider("SpaceSecurityFilter", securityFilterPair.getFirst());
+            filterProvider.setOpCodes(securityFilterPair.getSecond());
             filterProvider.setPriority(1);
             filterProvider.setActiveWhenBackup(true);
             filterProvider.setEnabled(true);
             filterProvider.setSecurityFilter(true);
             filterProvider.setShutdownSpaceOnInitFailure(true);
             factory.addFilterProvider(filterProvider);
+        }
+    }
+
+    private Pair<ISpaceFilter, int[]> loadSecurityFilter(String spaceName) {
+        // SecurityFilter is in the xap-premium
+        try (URLClassLoader tempClassLoader = new URLClassLoader(
+                new ClasspathBuilder().appendJar(XapModules.SECURITY).toURLsArray(), Thread.currentThread().getContextClassLoader())) {
+
+            Class c = tempClassLoader.loadClass("com.gigaspaces.security.spring.SecurityFilter");
+            ISpaceFilter securityFilter = (ISpaceFilter) c.newInstance();
+
+            return new Pair(securityFilter, c.getMethod("getOpCodes").invoke(securityFilter));
+        } catch (Exception e) {
+            throw new CannotCreateSpaceException("Failed to create space " + spaceName + "", e);
         }
     }
 

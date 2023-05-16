@@ -263,11 +263,6 @@
             <version>3.8.0</version>
             <scope>test</scope>
         </dependency>
-        <dependency>
-            <groupId>com.gigaspaces</groupId>
-            <artifactId>xap-security</artifactId>
-            <version>${project.version}</version>
-        </dependency>
     </dependencies>
     <build>
         <extensions>
