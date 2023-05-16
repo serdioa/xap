@@ -78,12 +78,12 @@ public class MVCCCacheManagerHandler {
         if (latestGenerationCacheInfo == null) {
             throw new MVCCIllegalStateException("latest generation doesn't exist during commit for transaction: " +
                     xtnEntry.getXtnData().getXtn() + " with generation state: " + xtnEntry.getMVCCGenerationsState());
-        } else{
+        } else {
             //is take operation (for mvcc we set writeLockOwner to be EXCLUSIVE_READ_LOCK see MVCCSpaceEngineHandler.preCommit)
             MVCCEntryHolder latestGenerationEntryHolder = latestGenerationCacheInfo.getEntryHolder();
-            if (latestGenerationEntryHolder.getWriteLockOperation() == SpaceOperations.READ &&
+            if (latestGenerationEntryHolder.getWriteLockOperation() == SpaceOperations.TAKE &&
                     latestGenerationEntryHolder.getCommittedGeneration() == entry.getOverrideGeneration() &&
-                    latestGenerationEntryHolder.isLogicallyDeleted()){
+                    latestGenerationEntryHolder.isLogicallyDeleted()) {
                     disconnectMvccEntryFromXtn(context, latestGenerationCacheInfo, xtnEntry, true);
             }
         }

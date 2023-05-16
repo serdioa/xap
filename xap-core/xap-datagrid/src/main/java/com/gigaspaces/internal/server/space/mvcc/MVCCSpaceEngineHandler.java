@@ -164,7 +164,7 @@ public class MVCCSpaceEngineHandler {
     public void createLogicallyDeletedEntry(MVCCEntryHolder entryHolder) {
         MVCCShellEntryCacheInfo mvccShellEntryCacheInfo = _cacheManager.getMVCCShellEntryCacheInfoByUid(entryHolder.getUID());
         EntryXtnInfo entryXtnInfo = entryHolder.getTxnEntryData().copyTxnInfo(true, false);
-        entryXtnInfo.setWriteLockOperation(SpaceOperations.READ);
+        entryXtnInfo.setWriteLockOperation(SpaceOperations.TAKE);
         MVCCEntryHolder dummyEntry = entryHolder.createLogicallyDeletedDummyEntry(entryXtnInfo);
         dummyEntry.setMaybeUnderXtn(true);
         mvccShellEntryCacheInfo.setDirtyEntryCacheInfo(new MVCCEntryCacheInfo(dummyEntry));
