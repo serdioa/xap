@@ -266,8 +266,7 @@
         <dependency>
             <groupId>com.gigaspaces</groupId>
             <artifactId>xap-security</artifactId>
-            <version>16.4.0-SNAPSHOT</version>
-            <scope>compile</scope>
+            <version>${project.version}</version>
         </dependency>
     </dependencies>
     <build>
