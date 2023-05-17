@@ -2635,10 +2635,21 @@ public class SpaceImpl extends AbstractService implements IRemoteSpace, IInterna
         //todo it is incorrect to check ALTER priv, because different SQL can be run via snapshot
         if (sc != null) {
             beforeTypeOperation(false, sc, SpacePrivilege.ALTER, template.getTypeName());
+            snapshotInner(template);
         } else {
-            beforeOperation(false, true /*checkQuiesceMode*/, null);
+            snapshot(template);
         }
+    }
 
+    public void snapshot(ITemplatePacket template)
+            throws UnusableEntryException, RemoteException {
+        beforeOperation(false, true /*checkQuiesceMode*/, null);
+
+        snapshotInner(template);
+    }
+
+    private void snapshotInner(ITemplatePacket template)
+            throws UnusableEntryException, RemoteException {
         try {
             _engine.snapshot(template);
         } catch (RuntimeException e) {

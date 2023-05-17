@@ -98,6 +98,10 @@ public interface IRemoteSpace
     // CRUD entry Operations
     ////////////////////////////////////////
 
+    void snapshot(ITemplatePacket e)
+            throws UnusableEntryException, RemoteException;
+
+
     void snapshot(ITemplatePacket e, SpaceContext sc)
             throws UnusableEntryException, RemoteException;
 
