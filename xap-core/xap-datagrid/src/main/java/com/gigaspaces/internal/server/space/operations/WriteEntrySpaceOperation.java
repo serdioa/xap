@@ -31,6 +31,7 @@ public class WriteEntrySpaceOperation extends AbstractSpaceOperation<WriteEntryS
     @Override
     public void execute(WriteEntrySpaceOperationRequest request, WriteEntrySpaceOperationResult result, SpaceImpl space, boolean oneway)
             throws Exception {
+        validateClientMvccCompatible(space);
         WriteEntryResult writeEntryResult = null;
 
         int modifiers = request.getModifiers();

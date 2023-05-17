@@ -67,11 +67,14 @@ public class PlatformVersion {
         productHelpUrl = "https://docs.gigaspaces.com/" + majorVersion + "." + minorVersion;
     }
 
+    /**
+     * @param id in the format of "major.minor.patch", optionally "major.minor.patch-milestoneN"
+     * @return docker image tag is the same as the id
+     * @since 16.4.0
+     */
     private static String toDockerTag(String id) {
-        // if id is "major.minor.0" return "major.minor"
-        if (id.endsWith(".0") && !id.contains("-") && count(id, '.') == 2) {
-            return id.substring(0, id.length() - 2);
-        }
+        //since 16.4.0, docker tag is equivalent to id
+        //prior if ended with zero e.g. "major.minor.0" then only "major.minor" was returned
         return id;
     }
 

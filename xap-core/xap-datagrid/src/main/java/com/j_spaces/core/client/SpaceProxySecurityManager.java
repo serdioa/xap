@@ -160,8 +160,7 @@ public class SpaceProxySecurityManager implements IProxySecurityManager {
      * @return a SpaceContext
      */
     private SpaceContext createSpaceContext(SecurityContext securityContext) {
-        final SecurityContext lightSecurityContext = new SecurityContext(securityContext);
-        return proxy.getProxyRouter().getDefaultSpaceContext().createCopy(lightSecurityContext);
+        return proxy.getProxyRouter().getDefaultSpaceContext().createCopy(securityContext);
     }
 
 

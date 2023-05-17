@@ -1783,11 +1783,11 @@ public class SpaceTypeDescriptorTestCase extends TestCase {
                         .addFifoGroupingIndex("reporter")
                         .addFifoGroupingIndex("processed")
                         .addFifoGroupingIndex("info")
-                        .addFifoGroupingIndex("timeValue.nanos")
+                        .addFifoGroupingIndex("time.nanos")
                         .addPathIndex("processed", SpaceIndexType.EQUAL_AND_ORDERED)
-                        .addPathIndex("info.timeStampValue", SpaceIndexType.EQUAL_AND_ORDERED)
+                        .addPathIndex("info.timeStamp", SpaceIndexType.EQUAL_AND_ORDERED)
                         .addPathIndex("formerReporters", SpaceIndexType.EQUAL)
-                        .addPathIndex("timeValue.nanos", SpaceIndexType.EQUAL);
+                        .addPathIndex("time.nanos", SpaceIndexType.EQUAL);
         ITypeDesc typeDesc = (ITypeDesc) docBuilder.create();
 
         assertFifoGroupingProperty(typeDesc, "symbol");
@@ -1920,7 +1920,7 @@ public class SpaceTypeDescriptorTestCase extends TestCase {
                 .addFixedProperty("reporter", String.class)
                 .addFixedProperty("processed", Boolean.class)
                 .addFixedProperty("info", FifoGroupingBasicPojo.Info.class)
-                .addFixedProperty("timeStampValue", Timestamp.class)
+                .addFixedProperty("timeStamp", Timestamp.class)
                 .addFixedProperty("reportersList", List.class)
                 .idProperty("id");
     }

@@ -35,7 +35,7 @@ public class FifoGroupingBasicPojo {
     private boolean processed;
     private Info info;
     private List<String> formerReporters;
-    private Timestamp timeValue;
+    private Timestamp time;
 
     public FifoGroupingBasicPojo() {
     }
@@ -89,7 +89,7 @@ public class FifoGroupingBasicPojo {
         this.processed = processed;
     }
 
-    @SpaceIndex(path = "timeStampValue", type = SpaceIndexType.EQUAL_AND_ORDERED)
+    @SpaceIndex(path = "timeStamp", type = SpaceIndexType.EQUAL_AND_ORDERED)
     @SpaceFifoGroupingIndex
     public Info getInfo() {
         return info;
@@ -110,25 +110,25 @@ public class FifoGroupingBasicPojo {
 
     @SpaceIndex(path = "nanos")
     @SpaceFifoGroupingIndex(path = "nanos")
-    public Timestamp getTimeValue() {
-        return timeValue;
+    public Timestamp getTime() {
+        return time;
     }
 
-    public void setTimeValue(Timestamp timeValue) {
-        this.timeValue = timeValue;
+    public void setTime(Timestamp time) {
+        this.time = time;
     }
 
     public static class Info {
         private String[] lastReports;
-        private Timestamp timeStampValue;
+        private Timestamp timeStamp;
         private Object scans;
 
         String[] getLastReports() {
             return lastReports;
         }
 
-        Timestamp getTimeStampValue() {
-            return timeStampValue;
+        Timestamp getTimeStamp() {
+            return timeStamp;
         }
 
         Object getScans() {
@@ -148,14 +148,14 @@ public class FifoGroupingBasicPojo {
         indexes.put("reporter", SpaceIndexType.EQUAL);
         indexes.put("processed", SpaceIndexType.EQUAL_AND_ORDERED);
         indexes.put("info", SpaceIndexType.EQUAL);
-        indexes.put("info.timeStampValue", SpaceIndexType.EQUAL_AND_ORDERED);
+        indexes.put("info.timeStamp", SpaceIndexType.EQUAL_AND_ORDERED);
         indexes.put("formerReporters", SpaceIndexType.EQUAL);
-        indexes.put("timeValue.nanos", SpaceIndexType.EQUAL);
+        indexes.put("time.nanos", SpaceIndexType.EQUAL);
         return indexes;
     }
 
     public static String[] getFifoGroupingIndexes() {
-        String[] res = {"reporter", "processed", "info", "timeValue.nanos"};
+        String[] res = {"reporter", "processed", "info", "time.nanos"};
         return res;
     }
 

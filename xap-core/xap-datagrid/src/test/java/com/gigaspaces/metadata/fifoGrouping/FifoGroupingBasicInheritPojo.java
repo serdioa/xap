@@ -73,16 +73,16 @@ public class FifoGroupingBasicInheritPojo extends FifoGroupingBasicPojo {
         indexes.put("reporter", SpaceIndexType.EQUAL_AND_ORDERED);
         indexes.put("processed", SpaceIndexType.EQUAL);
         indexes.put("info", SpaceIndexType.EQUAL);
-        indexes.put("info.timeStampValue", SpaceIndexType.EQUAL_AND_ORDERED);
+        indexes.put("info.timeStamp", SpaceIndexType.EQUAL_AND_ORDERED);
         indexes.put("info.scans", SpaceIndexType.EQUAL);
         indexes.put("formerReporters", SpaceIndexType.EQUAL);
-        indexes.put("timeValue.nanos", SpaceIndexType.EQUAL);
+        indexes.put("time.nanos", SpaceIndexType.EQUAL);
 
         return indexes;
     }
 
     public static String[] getFifoGroupingIndexes() {
-        String[] res = {"reporter", "processed", "info", "info.scans", "timeValue.nanos"};
+        String[] res = {"reporter", "processed", "info", "info.scans", "time.nanos"};
         return res;
     }
 }

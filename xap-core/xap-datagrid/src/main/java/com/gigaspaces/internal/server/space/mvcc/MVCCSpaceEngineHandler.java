@@ -49,7 +49,9 @@ public class MVCCSpaceEngineHandler {
                             entry.setOverrideGeneration(nextGeneration);
                             entry.resetEntryXtnInfo();
                             entry.setMaybeUnderXtn(true);
-                            mvccShellEntryCacheInfo.getDirtyEntryHolder().setCommittedGeneration(nextGeneration);
+                            MVCCEntryHolder dirtyEntryHolder = mvccShellEntryCacheInfo.getDirtyEntryHolder();
+                            dirtyEntryHolder.setCommittedGeneration(nextGeneration);
+                            dirtyEntryHolder.setOverridingAnother(true);
                             mvccShellEntryCacheInfo.addDirtyEntryToGenerationQueue();
                         } else if (entry.getWriteLockOperation() == SpaceOperations.WRITE && entry.getWriteLockOwner() == xtnEntry) {
                             entry.setCommittedGeneration(nextGeneration);
@@ -106,8 +108,8 @@ public class MVCCSpaceEngineHandler {
     private MVCCEntryHolder getMatchMvccEntryHolder(Context context, ITemplateHolder template, boolean makeWaitForInfo,
                                                     MVCCEntryHolder entryHolder, MVCCGenerationsState mvccGenerationsState) throws TransactionConflictException, EntryDeletedException, TemplateDeletedException, TransactionNotActiveException, SAException, NoMatchException, FifoException {
 
-        if (template.isActiveRead(_spaceEngine)
-                || isEntryMatchedByGenerationsState(mvccGenerationsState, entryHolder, template)
+        if ((template.isActiveRead(_spaceEngine) && entryHolder.getOverrideGeneration() == -1)
+                || (mvccGenerationsState != null && isEntryMatchedByGenerationsState(mvccGenerationsState, entryHolder, template))
                 || entryHolder.getCommittedGeneration() == -1 /*dirty entry*/) {
             if  (entryHolder.isLogicallyDeleted()){
                 throw _spaceEngine.getEntryDeletedException();
@@ -123,7 +125,6 @@ public class MVCCSpaceEngineHandler {
         final long completedGeneration = mvccGenerationsState.getCompletedGeneration();
         final long overrideGeneration = entryHolder.getOverrideGeneration();
         final long committedGeneration = entryHolder.getCommittedGeneration();
-        final boolean maybeUnderXtn = entryHolder.isMaybeUnderXtn();
         if (template.isReadOperation()) {
             return ((committedGeneration != -1)
                     && (committedGeneration <= completedGeneration)
@@ -135,8 +136,7 @@ public class MVCCSpaceEngineHandler {
             return (committedGeneration != -1)
                     && (committedGeneration <= completedGeneration)
                     && (!mvccGenerationsState.isUncompletedGeneration(committedGeneration))
-                    && (overrideGeneration == -1)
-                    && (!maybeUnderXtn);
+                    && (overrideGeneration == -1);
         }
     }
 
