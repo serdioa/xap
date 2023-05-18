@@ -2643,6 +2643,9 @@ public class SpaceImpl extends AbstractService implements IRemoteSpace, IInterna
 
     public void snapshot(ITemplatePacket template)
             throws UnusableEntryException, RemoteException {
+        if (isSecuredSpace()) {
+            throw logException(new SecurityException("Method for secured space should contain SpaceContext"));
+        }
         beforeOperation(false, true /*checkQuiesceMode*/, null);
 
         snapshotInner(template);

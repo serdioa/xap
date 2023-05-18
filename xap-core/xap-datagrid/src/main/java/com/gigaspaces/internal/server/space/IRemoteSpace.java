@@ -98,6 +98,10 @@ public interface IRemoteSpace
     // CRUD entry Operations
     ////////////////////////////////////////
 
+    /**
+     * @deprecated Since 16.4.0 - use {@link #snapshot(ITemplatePacket, SpaceContext)}  instead.
+     */
+    @Deprecated
     void snapshot(ITemplatePacket e)
             throws UnusableEntryException, RemoteException;
 
