@@ -38,23 +38,19 @@ public class MVCCUtils {
     }
 
     public static boolean isMVCCEntryDirtyUnderTransaction(SpaceEngine engine, String typeName, Object id,
-                                                           long transactionId) {
+                                                           long transactionId) { // the reason why take-abort second run fails
         if (transactionId == -1) return false;
         IServerTypeDesc typeDesc = engine.getTypeManager().getServerTypeDesc(typeName);
         String uid = SpaceUidFactory.createUidFromTypeAndId(typeDesc.getTypeDesc(), id);
         MVCCShellEntryCacheInfo mvccShellEntryCacheInfo = engine.getCacheManager().getMVCCShellEntryCacheInfoByUid(uid);
         long dirtyId = -1;
-        boolean isRolled = false;
         if (mvccShellEntryCacheInfo != null) {
             MVCCEntryCacheInfo dirtyEntry = mvccShellEntryCacheInfo.getDirtyEntryCacheInfo();
             XtnEntry writeLockOwner = dirtyEntry != null ? dirtyEntry.getEntryHolder().getWriteLockOwner() : null;
             dirtyId = writeLockOwner != null ? writeLockOwner.m_Transaction.id : -1;
 
-            if (writeLockOwner != null) {
-                isRolled = writeLockOwner.getStatus().equals(XtnStatus.ROLLED);
-            }
         }
-        return dirtyId != -1 && dirtyId == transactionId && !isRolled;
+        return dirtyId != -1 && dirtyId == transactionId;
     }
 
     public static MVCCEntryMetaData getDirtyEntryMetaData(SpaceEngine engine, String typeName, Object id) {

@@ -9,6 +9,8 @@ import com.j_spaces.core.cache.IEntryCacheInfo;
 import com.j_spaces.core.cache.XtnData;
 import com.j_spaces.core.cache.context.Context;
 import com.j_spaces.core.sadapter.SAException;
+import com.j_spaces.core.server.transaction.EntryXtnInfo;
+import com.j_spaces.kernel.IStoredList;
 
 import java.util.concurrent.ConcurrentMap;
 
@@ -95,5 +97,21 @@ public class MVCCCacheManagerHandler {
 
     public boolean isMvccEntryValidForWrite(MVCCShellEntryCacheInfo shellEntryCacheInfo) {
         return shellEntryCacheInfo.getDirtyEntryCacheInfo() == null && shellEntryCacheInfo.isLogicallyDeletedOrEmpty();
+    }
+
+    public void insertMvccEntryRefs(MVCCEntryCacheInfo pEntry, XtnData pXtn) {
+        IStoredList<IEntryCacheInfo> newEntries = pXtn.getNewEntries(true);
+        if (!newEntries.contains(pEntry)) {
+            newEntries.add(pEntry);
+        }
+    }
+
+    public void createLogicallyDeletedEntry(MVCCEntryHolder entryHolder) {
+        MVCCShellEntryCacheInfo mvccShellEntryCacheInfo = cacheManager.getMVCCShellEntryCacheInfoByUid(entryHolder.getUID());
+        EntryXtnInfo entryXtnInfo = entryHolder.getTxnEntryData().copyTxnInfo(true, false);
+        entryXtnInfo.setWriteLockOperation(SpaceOperations.TAKE);
+        MVCCEntryHolder dummyEntry = entryHolder.createLogicallyDeletedDummyEntry(entryXtnInfo);
+        dummyEntry.setMaybeUnderXtn(true);
+        mvccShellEntryCacheInfo.setDirtyEntryCacheInfo(new MVCCEntryCacheInfo(dummyEntry, 2));
     }
 }
