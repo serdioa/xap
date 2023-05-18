@@ -16,6 +16,7 @@
 
 package com.j_spaces.jdbc;
 
+import com.gigaspaces.client.WriteMultipleException;
 import com.gigaspaces.client.transaction.ITransactionManagerProvider;
 import com.gigaspaces.client.transaction.TransactionManagerProviderFactory;
 import com.gigaspaces.internal.client.spaceproxy.ISpaceProxy;
@@ -23,9 +24,12 @@ import com.gigaspaces.internal.exceptions.BatchQueryException;
 import com.gigaspaces.internal.query.explainplan.ExplainPlanImpl;
 import com.gigaspaces.jdbc.request.RequestPacketV3;
 import com.gigaspaces.logger.Constants;
+import com.gigaspaces.metadata.SpaceMetadataException;
+import com.gigaspaces.security.AccessDeniedException;
 import com.gigaspaces.security.service.SecurityInterceptor;
 import com.j_spaces.core.IJSpace;
 import com.j_spaces.core.client.Modifiers;
+import com.j_spaces.core.multiple.write.IWriteResult;
 import com.j_spaces.jdbc.driver.GConnection;
 import com.j_spaces.jdbc.driver.GPreparedStatement;
 import com.j_spaces.jdbc.parser.grammar.SqlParser;
@@ -46,6 +50,8 @@ import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Optional;
+
+import static com.j_spaces.core.multiple.write.IWriteResult.ResultType.ERROR;
 
 /**
  * QueryHandler executes the JDBC  statements set by the {@link GConnection}. For each statement the
@@ -183,7 +189,11 @@ public class QueryHandler {
             }
             final Throwable cause = e.getCause();
             if (cause instanceof SQLException) {
-                throw ((SQLException) e.getCause());
+                checkAccessDeniedException(cause);
+                throw ((SQLException) cause);
+            }
+            if (cause instanceof SpaceMetadataException) {
+                checkAccessDeniedException(cause);
             }
             throw new SQLException("Unable to execute query: " + e, cause == null ? e : cause);
         } catch (InstantiationException | IllegalAccessException | NoSuchMethodException | ClassNotFoundException e) {
@@ -276,6 +286,25 @@ public class QueryHandler {
             RemoteException, TransactionException {
         ITransactionManagerProvider transactionManagerProvider = getTransactionManagerProvider();
         return (TransactionFactory.create(transactionManagerProvider.getTransactionManager(), _config.getTransactionTimeout())).transaction;
+    }
+
+    private void checkAccessDeniedException(final Throwable cause) {
+        final Throwable sqlCause = cause.getCause();
+        if (sqlCause instanceof AccessDeniedException) {
+            throw (AccessDeniedException) sqlCause;
+        } else if (sqlCause instanceof WriteMultipleException) {
+            for (IWriteResult result : ((WriteMultipleException) sqlCause).getResults()) {
+                if (result.getResultType().equals(ERROR) && result.getError() instanceof AccessDeniedException) {
+                    throw (AccessDeniedException) result.getError();
+                }
+            }
+        } else if (sqlCause instanceof BatchQueryException) {
+            for (Throwable result : ((BatchQueryException) sqlCause).getCauses()) {
+                if (result instanceof AccessDeniedException) {
+                    throw (AccessDeniedException) result;
+                }
+            }
+        }
     }
 
     public ITransactionManagerProvider getTransactionManagerProvider() throws TransactionException, RemoteException {
