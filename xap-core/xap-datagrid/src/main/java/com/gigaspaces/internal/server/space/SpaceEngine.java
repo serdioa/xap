@@ -6074,7 +6074,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
                 // Set from-gateway state on context
                 context.setFromGateway(xtnEntry.isFromGateway());
 
-                _cacheManager.rollback(context, xtnEntry, xtnEntry.m_AlreadyPrepared, xtnEntry.m_AnyUpdates, supportsTwoPhaseReplication);// here
+                _cacheManager.rollback(context, xtnEntry, xtnEntry.m_AlreadyPrepared, xtnEntry.m_AnyUpdates, supportsTwoPhaseReplication);
                 xtnEntry.m_Active = false;
                 //call cache-manager pre-rollback method in order to restore
                 // updated entries to original values
@@ -6098,7 +6098,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
 
                 boolean new_entries_deleted = false;
                 //handle new entries under xtn-remove from cache
-                if (isMvccEnabled() && !xtnEntry.m_AlreadyPrepared) {//
+                if (isMvccEnabled() && !xtnEntry.m_AlreadyPrepared) {
                     _coreProcessor.handleNewRolledbackEntries(context, xtnEntry);
                     new_entries_deleted = true;
                 }

@@ -5,7 +5,6 @@ import com.gigaspaces.internal.server.space.SpaceEngine;
 import com.gigaspaces.internal.server.space.SpaceUidFactory;
 import com.gigaspaces.internal.server.storage.MVCCEntryMetaData;
 import com.j_spaces.core.XtnEntry;
-import com.j_spaces.core.XtnStatus;
 import com.j_spaces.core.cache.context.Context;
 import com.j_spaces.core.cache.mvcc.MVCCEntryCacheInfo;
 import com.j_spaces.core.cache.mvcc.MVCCEntryHolder;
@@ -38,7 +37,7 @@ public class MVCCUtils {
     }
 
     public static boolean isMVCCEntryDirtyUnderTransaction(SpaceEngine engine, String typeName, Object id,
-                                                           long transactionId) { // the reason why take-abort second run fails
+                                                           long transactionId) {
         if (transactionId == -1) return false;
         IServerTypeDesc typeDesc = engine.getTypeManager().getServerTypeDesc(typeName);
         String uid = SpaceUidFactory.createUidFromTypeAndId(typeDesc.getTypeDesc(), id);
