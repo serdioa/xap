@@ -77,11 +77,11 @@ public class MVCCShellEntryCacheInfo extends MemoryBasedEntryCacheInfo {
     @Override
     public MVCCEntryHolder getEntryHolder() {
         MVCCEntryCacheInfo latestGeneration = getLatestGenerationCacheInfo();
-        if (latestGeneration != null) {
-            return latestGeneration.getEntryHolder();
-        }
         if (dirtyEntry != null) {
             return dirtyEntry.getEntryHolder();
+        }
+        if (latestGeneration != null) {
+            return latestGeneration.getEntryHolder();
         }
         return EntryHolderFactory.createMvccShellHollowEntry(serverTypeDesc, uid);
     }

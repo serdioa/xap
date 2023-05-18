@@ -24,7 +24,7 @@ public class MVCCUtils {
         MVCCShellEntryCacheInfo mvccShellEntryCacheInfo = engine.getCacheManager().getMVCCShellEntryCacheInfoByUid(uid);
         Iterator<MVCCEntryCacheInfo> mvccEntryCacheInfoIterator = mvccShellEntryCacheInfo.descIterator();
         while(mvccEntryCacheInfoIterator.hasNext()){
-            MVCCEntryHolder next = (MVCCEntryHolder) mvccEntryCacheInfoIterator.next().getEntryHolder();
+            MVCCEntryHolder next = mvccEntryCacheInfoIterator.next().getEntryHolder();
             MVCCEntryMetaData metaData = new MVCCEntryMetaData();
             metaData.setCommittedGeneration(next.getCommittedGeneration());
             metaData.setOverrideGeneration(next.getOverrideGeneration());

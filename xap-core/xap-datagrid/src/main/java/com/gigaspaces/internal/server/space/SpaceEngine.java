@@ -6100,6 +6100,13 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
                     _coreProcessor.handleLockedFifoEntriesBeforeXtnEnd(context, xtnEntry, true /*fromRollback*/);
                 }
 
+                //mvcc - handle new entries under xtn-remove from cache
+                boolean new_entries_deleted = false;
+                if (isMvccEnabled() && !xtnEntry.m_AlreadyPrepared) {
+                    _coreProcessor.handleNewRolledbackEntries(context, xtnEntry);
+                    new_entries_deleted = true;
+                }
+
                 xtnEntry.setStatus(XtnStatus.ROLLING);
 
                 //fifo group op performed under this xtn
@@ -6108,8 +6115,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
                 _fifoGroupsHandler.prepareForFifoGroupsAfterXtnScans(context, xtnEntry);
 
                 //handle new entries under xtn-remove from cache
-                boolean new_entries_deleted = false;
-                if (!xtnEntry.m_AlreadyPrepared) {
+                if (!xtnEntry.m_AlreadyPrepared && !new_entries_deleted) {
                     _coreProcessor.handleNewRolledbackEntries(context, xtnEntry);
                     new_entries_deleted = true;
                 }

@@ -45,16 +45,24 @@ public class MVCCSpaceEngineHandler {
                 try {
                     synchronized (entryLock) {
                         MVCCShellEntryCacheInfo mvccShellEntryCacheInfo = _cacheManager.getMVCCShellEntryCacheInfoByUid(entry.getUID());
+                        MVCCEntryHolder dirtyEntryHolder = mvccShellEntryCacheInfo.getDirtyEntryHolder();
                         if (entry.getWriteLockOperation() == SpaceOperations.TAKE && entry.getWriteLockOwner() == xtnEntry) {
                             entry.setOverrideGeneration(nextGeneration);
                             entry.resetEntryXtnInfo();
                             entry.setMaybeUnderXtn(true);
-                            MVCCEntryHolder dirtyEntryHolder = mvccShellEntryCacheInfo.getDirtyEntryHolder();
                             dirtyEntryHolder.setCommittedGeneration(nextGeneration);
                             dirtyEntryHolder.setOverridingAnother(true);
                             mvccShellEntryCacheInfo.addDirtyEntryToGenerationQueue();
                         } else if (entry.getWriteLockOperation() == SpaceOperations.WRITE && entry.getWriteLockOwner() == xtnEntry) {
                             entry.setCommittedGeneration(nextGeneration);
+                            mvccShellEntryCacheInfo.addDirtyEntryToGenerationQueue();
+                        } else if (entry.getWriteLockOperation() == SpaceOperations.UPDATE && dirtyEntryHolder != null
+                                && dirtyEntryHolder.getWriteLockOwner() == xtnEntry){
+                            entry.setOverrideGeneration(nextGeneration);
+                            entry.resetEntryXtnInfo();
+                            entry.setMaybeUnderXtn(true);
+                            dirtyEntryHolder.setCommittedGeneration(nextGeneration);
+                            dirtyEntryHolder.setOverridingAnother(true);
                             mvccShellEntryCacheInfo.addDirtyEntryToGenerationQueue();
                         }
                     }
