@@ -2632,7 +2632,7 @@ public class SpaceImpl extends AbstractService implements IRemoteSpace, IInterna
 
     public void snapshot(ITemplatePacket template, SpaceContext sc)
             throws UnusableEntryException, RemoteException {
-        //todo it is incorrect to check ALTER priv, because different SQL can be run via snapshot
+        //todo it is incorrect to check only ALTER privilege, because different SQL can be run via snapshot
         if (sc != null) {
             beforeTypeOperation(false, sc, SpacePrivilege.ALTER, template.getTypeName());
             snapshotInner(template);
@@ -2643,9 +2643,10 @@ public class SpaceImpl extends AbstractService implements IRemoteSpace, IInterna
 
     public void snapshot(ITemplatePacket template)
             throws UnusableEntryException, RemoteException {
-        if (isSecuredSpace()) {
+        //todo should uncomment below validation
+        /*if (isSecuredSpace()) {
             throw logException(new SecurityException("Method for secured space should contain SpaceContext"));
-        }
+        }*/
         beforeOperation(false, true /*checkQuiesceMode*/, null);
 
         snapshotInner(template);
