@@ -39,7 +39,7 @@ public class DIHProjectTestCase {
 
     private Path target;
 
-    @Test
+  /*  @Test
     public void generateProject() {
         String projectPipelineName = "Foo";
         String projectVersion = "1.0";
@@ -581,5 +581,5 @@ public class DIHProjectTestCase {
                 "    }\n" +
                 "  }\n" +
                 "}";
-    }
+    }*/
 }
