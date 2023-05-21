@@ -5470,7 +5470,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
      * called when xtn & entry are locked (but called from count w/o locks in order not to harm
      * performance
      */
-    private boolean indicateReadCommitted(ITransactionalEntryData entry, ITemplateHolder template) {
+    public boolean indicateReadCommitted(ITransactionalEntryData entry, ITemplateHolder template) {
         if (indicateDirtyRead(template) || !template.isReadCommittedRequested())
             return false;
 
@@ -6503,6 +6503,13 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
         if (isShadow)
             return XtnConflictCheckIndicators.NO_CONFLICT;  //read committed
 
+        if (isMvccEnabled()){
+            MVCCEntryHolder dirtyEntryHolder = _cacheManager.getMVCCShellEntryCacheInfoByUid(entry.getUID()).getDirtyEntryHolder();
+            if (dirtyEntryHolder != null && entry == dirtyEntryHolder){
+                return SpaceEngine.XtnConflictCheckIndicators.XTN_CONFLICT;
+            }
+        }
+
         if (!context.isNonBlockingReadOp()) {
             if (entry.hasShadow(true /*safeEntry*/))
                 return XtnConflictCheckIndicators.XTN_CONFLICT;//  read-committed only for shadow
@@ -6546,6 +6553,13 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
                                                                          XtnStatus entryWriteLockStatus, int entryWriteLockOperation, IEntryHolder entry, ITransactionalEntryData edata, boolean isShadow) {
         if (isShadow)
             return XtnConflictCheckIndicators.XTN_CONFLICT;// dirty read unrelevant here
+
+        if (isMvccEnabled()){
+            MVCCEntryHolder dirtyEntryHolder = _cacheManager.getMVCCShellEntryCacheInfoByUid(entry.getUID()).getDirtyEntryHolder();
+            if (dirtyEntryHolder != null && entry != dirtyEntryHolder){
+                return SpaceEngine.XtnConflictCheckIndicators.XTN_CONFLICT;
+            }
+        }
 
         if ((entryWriteLockOperation == SpaceOperations.TAKE ||
                 entryWriteLockOperation == SpaceOperations.TAKE_IE) &&

@@ -77,9 +77,12 @@ public class MVCCSpaceEngineHandler {
                                                           MVCCShellEntryCacheInfo shellEntry) throws TemplateDeletedException, TransactionNotActiveException, TransactionConflictException, FifoException, SAException, NoMatchException, EntryDeletedException {
         final MVCCGenerationsState mvccGenerationsState = getMvccGenerationsState(context, template);
         final Iterator<MVCCEntryCacheInfo> generationIterator = shellEntry.descIterator();
-        if (!generationIterator.hasNext() && shellEntry.getDirtyEntryCacheInfo() != null){
-            return getMatchMvccEntryHolder(context, template, makeWaitForInfo,
+        if (shellEntry.getDirtyEntryCacheInfo() != null){
+            MVCCEntryHolder entryHolder = getMatchMvccEntryHolder(context, template, makeWaitForInfo,
                     shellEntry.getDirtyEntryHolder(), mvccGenerationsState);
+            if (entryHolder != null){
+                return entryHolder;
+            }
         }
         while (generationIterator.hasNext()) {
             final MVCCEntryCacheInfo entryCacheInfo = generationIterator.next();
@@ -114,9 +117,8 @@ public class MVCCSpaceEngineHandler {
     private MVCCEntryHolder getMatchMvccEntryHolder(Context context, ITemplateHolder template, boolean makeWaitForInfo,
                                                     MVCCEntryHolder entryHolder, MVCCGenerationsState mvccGenerationsState) throws TransactionConflictException, EntryDeletedException, TemplateDeletedException, TransactionNotActiveException, SAException, NoMatchException, FifoException {
 
-        if ((template.isActiveRead(_spaceEngine) && entryHolder.getOverrideGeneration() == -1)
-                || (mvccGenerationsState != null && isEntryMatchedByGenerationsState(mvccGenerationsState, entryHolder, template))
-                || entryHolder.getCommittedGeneration() == -1 /*dirty entry*/) {
+        if ((template.isActiveRead(_spaceEngine) && (entryHolder.getOverrideGeneration() == -1 /*active entry*/|| entryHolder.getCommittedGeneration() == -1 /*dirty entry*/))
+                || (mvccGenerationsState != null && isEntryMatchedByGenerationsState(mvccGenerationsState, entryHolder, template))) {
             if  (entryHolder.isLogicallyDeleted()){
                 throw _spaceEngine.getEntryDeletedException();
             }
@@ -147,17 +149,19 @@ public class MVCCSpaceEngineHandler {
     }
 
     public SpaceEngine.XtnConflictCheckIndicators checkTransactionConflict(Context context, MVCCEntryHolder entry, ITemplateHolder template) {
-        if ((template.getTemplateOperation() == SpaceOperations.TAKE_IE || template.getTemplateOperation() == SpaceOperations.TAKE)) {
+        if (template.getTemplateOperation() == SpaceOperations.TAKE_IE
+                || template.getTemplateOperation() == SpaceOperations.TAKE
+                || template.getTemplateOperation() == SpaceOperations.UPDATE) {
             if (entry.isLogicallyDeleted()) {
                 if (_spaceEngine.getLogger().isDebugEnabled()) {
-                    _spaceEngine.getLogger().debug("Encountered a conflict while attempting to take " + entry
+                    _spaceEngine.getLogger().debug("Encountered a conflict while attempting to modify " + entry
                             + ", this entry is logically deleted."
                             + " the current generation state is " + template.getGenerationsState());
                 }
                 return SpaceEngine.XtnConflictCheckIndicators.ENTRY_DELETED;
             } else if (entry.getOverrideGeneration() > -1) {
                 if (_spaceEngine.getLogger().isDebugEnabled()) {
-                    _spaceEngine.getLogger().debug("Encountered a conflict while attempting to take " + entry
+                    _spaceEngine.getLogger().debug("Encountered a conflict while attempting to modify " + entry
                             + ", this entry has already overridden by another generation."
                             + " the current generation state is " + template.getGenerationsState());
                 }
