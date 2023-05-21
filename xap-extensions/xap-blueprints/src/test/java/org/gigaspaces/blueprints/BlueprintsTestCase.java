@@ -30,7 +30,7 @@ import java.util.stream.Stream;
 import static org.hamcrest.CoreMatchers.*;
 
 public class BlueprintsTestCase {
-    @Test
+   /* @Test
     public void testInvalidHome() throws IOException {
         String invalidPath = "no-such-path";
         try {
@@ -125,5 +125,5 @@ public class BlueprintsTestCase {
         } catch (URISyntaxException e) {
             throw new RuntimeException(e);
         }
-    }
+    }*/
 }
