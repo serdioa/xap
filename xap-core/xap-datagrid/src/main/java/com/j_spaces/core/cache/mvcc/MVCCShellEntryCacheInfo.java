@@ -76,10 +76,11 @@ public class MVCCShellEntryCacheInfo extends MemoryBasedEntryCacheInfo {
 
     @Override
     public MVCCEntryHolder getEntryHolder() {
-        MVCCEntryCacheInfo latestGeneration = getLatestGenerationCacheInfo();
+        MVCCEntryCacheInfo dirtyEntry = this.dirtyEntry;
         if (dirtyEntry != null) {
             return dirtyEntry.getEntryHolder();
         }
+        MVCCEntryCacheInfo latestGeneration = getLatestGenerationCacheInfo();
         if (latestGeneration != null) {
             return latestGeneration.getEntryHolder();
         }
