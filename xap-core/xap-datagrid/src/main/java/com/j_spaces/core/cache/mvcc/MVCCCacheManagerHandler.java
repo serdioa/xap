@@ -12,7 +12,6 @@ import com.j_spaces.core.cache.XtnData;
 import com.j_spaces.core.cache.context.Context;
 import com.j_spaces.core.sadapter.SAException;
 import com.j_spaces.core.server.transaction.EntryXtnInfo;
-import com.j_spaces.kernel.IStoredList;
 
 import java.util.concurrent.ConcurrentMap;
 
@@ -76,7 +75,7 @@ public class MVCCCacheManagerHandler {
         }
     }
 
-    public void handleNewMvccGeneration(Context context, MVCCEntryHolder entry, XtnEntry xtnEntry) throws SAException {
+    public void handleDisconnectNewMvccEntryGenerationFromTransaction(Context context, MVCCEntryHolder entry, XtnEntry xtnEntry) throws SAException {
         MVCCEntryCacheInfo newMvccGenerationCacheInfo = xtnEntry.getXtnData().getMvccNewGenerationsEntries().get(entry.getUID());
         if (entry.getWriteLockOperation() == SpaceOperations.WRITE){
             return;
@@ -123,19 +122,15 @@ public class MVCCCacheManagerHandler {
         }
     }
 
-    public void insertMvccEntryRefs(MVCCEntryCacheInfo pEntry, XtnData pXtn) {
-        IStoredList<IEntryCacheInfo> newEntries = pXtn.getNewEntries(true);
-        if (!newEntries.contains(pEntry)) {
-            newEntries.add(pEntry);
-        }
-    }
-
-    public void createLogicallyDeletedEntry(MVCCEntryHolder entryHolder) {
+    public MVCCEntryCacheInfo createLogicallyDeletedMvccEntryPendingGeneration(MVCCEntryHolder entryHolder) {
         MVCCShellEntryCacheInfo mvccShellEntryCacheInfo = cacheManager.getMVCCShellEntryCacheInfoByUid(entryHolder.getUID());
         EntryXtnInfo entryXtnInfo = entryHolder.getTxnEntryData().copyTxnInfo(true, false);
         entryXtnInfo.setWriteLockOperation(SpaceOperations.TAKE);
         MVCCEntryHolder dummyEntry = entryHolder.createLogicallyDeletedDummyEntry(entryXtnInfo);
         dummyEntry.setMaybeUnderXtn(true);
-        mvccShellEntryCacheInfo.setDirtyEntryCacheInfo(new MVCCEntryCacheInfo(dummyEntry, 2));
+        MVCCEntryCacheInfo dirtyEntryCacheInfo = new MVCCEntryCacheInfo(dummyEntry, 2);
+        mvccShellEntryCacheInfo.setDirtyEntryCacheInfo(dirtyEntryCacheInfo);
+        return dirtyEntryCacheInfo;
     }
+
 }

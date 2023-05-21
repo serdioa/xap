@@ -2027,12 +2027,6 @@ public class Processor implements IConsumerObject<BusPacket<Processor>> {
                         synchronized (entryLock) {
                             boolean fromLeaseExpiration = !_engine.getLeaseManager().isNoReapUnderXtnLeases() && entry.isExpired(_engine.getLeaseManager().getEffectiveEntryLeaseTime(xtnEntry.m_CommitRollbackTimeStamp)) && !_engine.isExpiredEntryStayInSpace(entry);
                             context.setOperationID(pXtn.getOperationID(entry.getUID()));
-                            if (_cacheManager.isMVCCEnabled()) {
-                                if (((MVCCEntryHolder) entry).isLogicallyDeleted() && entry.getWriteLockOperation() == SpaceOperations.TAKE) {
-                                    _cacheManager.getMVCCShellEntryCacheInfoByUid(entry.getUID()).clearDirtyEntry();
-                                    continue;
-                                }
-                            }
                             _engine.removeEntrySA(context, entry, false /*fromReplication*/,
                                     true /*origin*/, false /*ofReplClass*/, fromLeaseExpiration ? SpaceEngine.EntryRemoveReasonCodes.LEASE_EXPIRED : SpaceEngine.EntryRemoveReasonCodes.TAKE /*fromLeaseExpiration*/,
                                     true /* disableReplication*/, false /* disableProcessorCall*/, true /* disableSADelete*/);
@@ -2073,7 +2067,7 @@ public class Processor implements IConsumerObject<BusPacket<Processor>> {
                             boolean fromLeaseExpiration = !_engine.getLeaseManager().isNoReapUnderXtnLeases() && entry.isExpired(_engine.getLeaseManager().getEffectiveEntryLeaseTime(xtnEntry.m_CommitRollbackTimeStamp)) && !_engine.isExpiredEntryStayInSpace(entry);
                             context.setOperationID(pXtn.getOperationID(entry.getUID()));
                             if (entry.getWriteLockOperation() == SpaceOperations.TAKE){
-                                //take code from olha
+                                _cacheManager.getMVCCShellEntryCacheInfoByUid(entry.getUID()).clearDirtyEntry();
                             } else {
                                 _engine.removeEntrySA(context, entry, false /*fromReplication*/,
                                         true /*origin*/, false /*ofReplClass*/, fromLeaseExpiration ? SpaceEngine.EntryRemoveReasonCodes.LEASE_EXPIRED : SpaceEngine.EntryRemoveReasonCodes.TAKE /*fromLeaseExpiration*/,

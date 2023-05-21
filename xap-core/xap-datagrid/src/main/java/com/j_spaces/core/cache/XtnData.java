@@ -460,4 +460,8 @@ public class XtnData {
     public Map<String, MVCCEntryCacheInfo> getMvccNewGenerationsEntries() {
         return _mvccNewGenerationsEntries;
     }
+
+    public void addMvccNewGenerationsEntries(MVCCEntryCacheInfo mvccEntryCacheInfo) {
+        _mvccNewGenerationsEntries.put(mvccEntryCacheInfo.getUID(), mvccEntryCacheInfo);
+    }
 }

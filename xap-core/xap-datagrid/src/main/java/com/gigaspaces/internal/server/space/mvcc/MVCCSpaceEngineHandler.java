@@ -12,7 +12,6 @@ import com.j_spaces.core.cache.mvcc.MVCCShellEntryCacheInfo;
 import com.j_spaces.core.sadapter.ISAdapterIterator;
 import com.j_spaces.core.sadapter.SAException;
 import com.j_spaces.core.sadapter.SelectType;
-import com.j_spaces.core.server.transaction.EntryXtnInfo;
 import com.j_spaces.kernel.locks.ILockObject;
 
 import java.util.Iterator;
@@ -46,23 +45,23 @@ public class MVCCSpaceEngineHandler {
                     synchronized (entryLock) {
                         MVCCShellEntryCacheInfo mvccShellEntryCacheInfo = _cacheManager.getMVCCShellEntryCacheInfoByUid(entry.getUID());
                         MVCCEntryHolder dirtyEntryHolder = mvccShellEntryCacheInfo.getDirtyEntryHolder();
-                        if (entry.getWriteLockOperation() == SpaceOperations.TAKE && entry.getWriteLockOwner() == xtnEntry) {
-                            entry.setOverrideGeneration(nextGeneration);
-                            entry.resetEntryXtnInfo();
-                            entry.setMaybeUnderXtn(true);
-                            dirtyEntryHolder.setCommittedGeneration(nextGeneration);
-                            dirtyEntryHolder.setOverridingAnother(true);
-                            mvccShellEntryCacheInfo.addDirtyEntryToGenerationQueue();
-                        } else if (entry.getWriteLockOperation() == SpaceOperations.WRITE && entry.getWriteLockOwner() == xtnEntry) {
-                            entry.setCommittedGeneration(nextGeneration);
-                            mvccShellEntryCacheInfo.addDirtyEntryToGenerationQueue();
-                        } else if (entry.getWriteLockOperation() == SpaceOperations.UPDATE && entry.getWriteLockOwner() == xtnEntry){
-                            entry.setOverrideGeneration(nextGeneration);
-                            entry.resetEntryXtnInfo();
-                            entry.setMaybeUnderXtn(true);
-                            dirtyEntryHolder.setCommittedGeneration(nextGeneration);
-                            dirtyEntryHolder.setOverridingAnother(true);
-                            mvccShellEntryCacheInfo.addDirtyEntryToGenerationQueue();
+                        int writeLockOperation = entry.getWriteLockOperation();
+                        if(entry.getWriteLockOwner() == xtnEntry) {
+                            switch (writeLockOperation) {
+                                case SpaceOperations.TAKE:
+                                case SpaceOperations.UPDATE:
+                                    entry.setOverrideGeneration(nextGeneration);
+                                    entry.resetEntryXtnInfo();
+                                    entry.setMaybeUnderXtn(true);
+                                    dirtyEntryHolder.setOverridingAnother(true);
+                                    dirtyEntryHolder.setCommittedGeneration(nextGeneration);
+                                    mvccShellEntryCacheInfo.addDirtyEntryToGenerationQueue();
+                                    break;
+                                case SpaceOperations.WRITE:
+                                    entry.setCommittedGeneration(nextGeneration);
+                                    mvccShellEntryCacheInfo.addDirtyEntryToGenerationQueue();
+                                    break;
+                            }
                         }
                     }
                 } finally {

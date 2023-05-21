@@ -2386,8 +2386,8 @@ public class CacheManager extends AbstractCacheManager
                 pXtn.addToTakenEntriesIfNotInside(pEntry);
 
                 if (isMVCCEnabled()) {
-                    _mvccCacheManagerHandler.createLogicallyDeletedEntry(((MVCCEntryHolder) pEntry.getEntryHolder(this)));
-                    _mvccCacheManagerHandler.insertMvccEntryRefs(getMVCCShellEntryCacheInfoByUid(pEntry.getUID()).getDirtyEntryCacheInfo(), pXtn);
+                    MVCCEntryCacheInfo logicallyDeletedEntry = _mvccCacheManagerHandler.createLogicallyDeletedMvccEntryPendingGeneration(((MVCCEntryHolder) pEntry.getEntryHolder(this)));
+                    pXtn.addMvccNewGenerationsEntries(logicallyDeletedEntry);
                  }
 
                 break;
@@ -3671,7 +3671,7 @@ public class CacheManager extends AbstractCacheManager
     }
 
     public void handleNewMvccGeneration(Context context, MVCCEntryHolder entry, XtnEntry xtnEntry) throws SAException {
-        _mvccCacheManagerHandler.handleNewMvccGeneration(context, entry, xtnEntry);
+        _mvccCacheManagerHandler.handleDisconnectNewMvccEntryGenerationFromTransaction(context, entry, xtnEntry);
     }
 
     public boolean isMvccEntryValidForWrite(String uid) {
@@ -3788,7 +3788,7 @@ public class CacheManager extends AbstractCacheManager
             if (newEntry && pEntry.getEntryHolder(this).getXidOriginated() != null) {
                 XtnData pXtn = pEntry.getEntryHolder(this).getXidOriginated().getXtnData();
                 if(isMVCCEnabled() && pEntry.getEntryHolder(this).getWriteLockOperation() != SpaceOperations.WRITE){
-                    pXtn.getMvccNewGenerationsEntries().put(pEntry.getUID(), (MVCCEntryCacheInfo) pEntry);
+                    pXtn.addMvccNewGenerationsEntries((MVCCEntryCacheInfo) pEntry);
                 } else {
                     pXtn.getNewEntries(true/*createIfNull*/).add(pEntry);
                     lockEntry(pXtn, pEntry, context.getOperationID());
