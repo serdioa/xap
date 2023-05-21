@@ -2384,6 +2384,12 @@ public class CacheManager extends AbstractCacheManager
                     pXtn.removeRewrittenEntryIndication(pEntry.getUID());
                 }
                 pXtn.addToTakenEntriesIfNotInside(pEntry);
+
+                if (isMVCCEnabled()) {
+                    _mvccCacheManagerHandler.createLogicallyDeletedEntry(((MVCCEntryHolder) pEntry.getEntryHolder(this)));
+                    _mvccCacheManagerHandler.insertMvccEntryRefs(getMVCCShellEntryCacheInfoByUid(pEntry.getUID()).getDirtyEntryCacheInfo(), pXtn);
+                 }
+
                 break;
 
             case SpaceOperations.UPDATE:

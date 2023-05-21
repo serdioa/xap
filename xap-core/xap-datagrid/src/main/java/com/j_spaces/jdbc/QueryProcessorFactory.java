@@ -47,22 +47,13 @@ public class QueryProcessorFactory {
     public static IQueryProcessor newInstance(IJSpace proxy, IRemoteSpace remoteSpace, Properties config)
             throws Exception {
         if (proxy.isSecured()) {
-            return newLocalInstance(proxy, proxy, config, null);
+            return createQueryProcessor(proxy, config);
         }
 
         if (isRemoteQueryProcessor(config))
             return remoteSpace.getQueryProcessor();
 
-        ISpaceProxy clusteredProxy = (ISpaceProxy) proxy;
-        ISpaceProxy singleProxy = clusteredProxy;
-        if (clusteredProxy.isClustered()) {
-            singleProxy = (ISpaceProxy) clusteredProxy.getDirectProxy().getNonClusteredProxy();
-            CredentialsProvider credentialsProvider = clusteredProxy.getDirectProxy().getSecurityManager()
-                    .getCredentialsProvider();
-            if (credentialsProvider != null)
-                singleProxy.getDirectProxy().getSecurityManager().login(credentialsProvider);
-        }
-        return newLocalInstance(clusteredProxy, singleProxy, config, null);
+        return createQueryProcessor(proxy, config);
     }
 
     /**
@@ -88,6 +79,19 @@ public class QueryProcessorFactory {
             merged.putAll(overrideProperties);
 
         return merged;
+    }
+
+    private static IQueryProcessor createQueryProcessor(IJSpace proxy, Properties config) throws Exception {
+        ISpaceProxy clusteredProxy = (ISpaceProxy) proxy;
+        ISpaceProxy singleProxy = clusteredProxy;
+        if (clusteredProxy.isClustered()) {
+            singleProxy = (ISpaceProxy) clusteredProxy.getDirectProxy().getNonClusteredProxy();
+            CredentialsProvider credentialsProvider = clusteredProxy.getDirectProxy().getSecurityManager()
+                    .getCredentialsProvider();
+            if (credentialsProvider != null)
+                singleProxy.getDirectProxy().getSecurityManager().login(credentialsProvider);
+        }
+        return newLocalInstance(clusteredProxy, singleProxy, config, null);
     }
 
     private static Properties loadEmbeddedPropertiesFile() throws IOException {
