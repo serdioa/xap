@@ -122,8 +122,14 @@ public class ReadTakeByIdsProxyActionInfo extends CommonProxyActionInfo {
         }
 
         if (typeDesc.isRoutingSameAsId()) {
-            if (routing != null || (routings != null && routings != ids))
-                throw new IllegalArgumentException("When the id property is used for routing, the routing argument must be null.");
+            if (this.ids.length > 1){
+                if (routing != null || (routings != null && routings != ids))
+                    throw new IllegalArgumentException("When the id property is used for routing, the routing argument must be null.");
+            }
+            else {
+                if (routing != null && routing != ids[0])
+                    throw new IllegalArgumentException("When the id property is used for routing, the routing argument must be null or same as id.");
+            }
 
             if (typeDesc.isAutoGenerateRouting()) {
                 routings = new Object[ids.length];
