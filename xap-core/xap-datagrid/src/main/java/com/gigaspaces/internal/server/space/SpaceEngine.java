@@ -6104,6 +6104,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
                 boolean new_entries_deleted = false;
                 if (isMvccEnabled() && !xtnEntry.m_AlreadyPrepared) {
                     _coreProcessor.handleNewRolledbackEntries(context, xtnEntry);
+                    _coreProcessor.handleNewMvccGenerationsRolledbackEntries(context, xtnEntry);
                     new_entries_deleted = true;
                 }
 

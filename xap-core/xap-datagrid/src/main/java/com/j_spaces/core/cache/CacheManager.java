@@ -2341,7 +2341,9 @@ public class CacheManager extends AbstractCacheManager
 
 
         if (!pXtn.isLockedEntry(pEntry)) {
-            lockEntry(pXtn, pEntry, context.getOperationID());
+            if (!isMVCCEnabled() || !pXtn.getMvccNewGenerationsEntries().containsKey(pEntry.getUID())) {
+                lockEntry(pXtn, pEntry, context.getOperationID());
+            }
         } else {
             updateLock(pXtn, pEntry, context.getOperationID(), template.getTemplateOperation());
         }
@@ -3779,8 +3781,12 @@ public class CacheManager extends AbstractCacheManager
             // add entry to Xtn if written under Xtn
             if (newEntry && pEntry.getEntryHolder(this).getXidOriginated() != null) {
                 XtnData pXtn = pEntry.getEntryHolder(this).getXidOriginated().getXtnData();
-                pXtn.getNewEntries(true/*createIfNull*/).add(pEntry);
-                lockEntry(pXtn, pEntry, context.getOperationID());
+                if(isMVCCEnabled() && pEntry.getEntryHolder(this).getWriteLockOperation() != SpaceOperations.WRITE){
+                    pXtn.getMvccNewGenerationsEntries().put(pEntry.getUID(), (MVCCEntryCacheInfo) pEntry);
+                } else {
+                    pXtn.getNewEntries(true/*createIfNull*/).add(pEntry);
+                    lockEntry(pXtn, pEntry, context.getOperationID());
+                }
                 pEntry.getEntryHolder(this).getXidOriginated().setOperatedUpon();
             }
 

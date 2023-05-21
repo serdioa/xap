@@ -2045,6 +2045,49 @@ public class Processor implements IConsumerObject<BusPacket<Processor>> {
     }
 
     /**
+     * handle new mvcc generation entries  under rollback . clean those entries. it is called directly in order to
+     * clean user-defined UIDS
+     */
+    public void handleNewMvccGenerationsRolledbackEntries(Context context, final XtnEntry xtnEntry)
+            throws SAException {
+        ISAdapterIterator iter = null;
+        try {
+            iter = _cacheManager.makeUnderXtnEntriesIter(context, xtnEntry, SelectType.MVCC_NEW_GENERATION);
+            if (iter != null) {
+                final XtnData pXtn = xtnEntry.getXtnData();
+                while (true) {
+                    IEntryHolder entry = (IEntryHolder) iter.next();
+                    if (entry == null)
+                        break;
+
+                    ILockObject entryLock = null;
+                    try {
+                        entryLock = getEntryLockObject(entry);
+                        synchronized (entryLock) {
+                            boolean fromLeaseExpiration = !_engine.getLeaseManager().isNoReapUnderXtnLeases() && entry.isExpired(_engine.getLeaseManager().getEffectiveEntryLeaseTime(xtnEntry.m_CommitRollbackTimeStamp)) && !_engine.isExpiredEntryStayInSpace(entry);
+                            context.setOperationID(pXtn.getOperationID(entry.getUID()));
+                            if (entry.getWriteLockOperation() == SpaceOperations.TAKE){
+                                //take code from olha
+                            } else {
+                                _engine.removeEntrySA(context, entry, false /*fromReplication*/,
+                                        true /*origin*/, false /*ofReplClass*/, fromLeaseExpiration ? SpaceEngine.EntryRemoveReasonCodes.LEASE_EXPIRED : SpaceEngine.EntryRemoveReasonCodes.TAKE /*fromLeaseExpiration*/,
+                                        true /* disableReplication*/, false /* disableProcessorCall*/, true /* disableSADelete*/);
+                            }
+                        } /* synchronized(entryLock) */
+                    } finally {
+                        if (entryLock != null)
+                            freeEntryLockObject(entryLock);
+                        entryLock = null;
+                    }
+                } /* while */
+            } /* if iter != null */
+        } /* try */ finally {
+            if (iter != null)
+                iter.close();
+        }
+    }
+
+    /**
      * Handles the remove of waiting for info of a entry .
      */
     public void handleRemoveWaitingForInfoSA(RemoveWaitingForInfoSABusPacket packet)

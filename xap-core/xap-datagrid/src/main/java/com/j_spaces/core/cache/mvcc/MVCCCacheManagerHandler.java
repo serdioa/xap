@@ -75,22 +75,24 @@ public class MVCCCacheManagerHandler {
     }
 
     public void handleNewMvccGeneration(Context context, MVCCEntryHolder entry, XtnEntry xtnEntry) throws SAException {
-        MVCCShellEntryCacheInfo mvccShellEntryCacheInfo = cacheManager.getMVCCShellEntryCacheInfoByUid(entry.getUID());
-        MVCCEntryCacheInfo latestGenerationCacheInfo = mvccShellEntryCacheInfo.getLatestGenerationCacheInfo();
-        if (latestGenerationCacheInfo == null) {
-            throw new MVCCIllegalStateException("latest generation doesn't exist during commit for transaction: " +
+        MVCCEntryCacheInfo newMvccGenerationCacheInfo = xtnEntry.getXtnData().getMvccNewGenerationsEntries().get(entry.getUID());
+        if (entry.getWriteLockOperation() == SpaceOperations.WRITE){
+            return;
+        }
+        if (newMvccGenerationCacheInfo == null) {
+            throw new MVCCIllegalStateException("new generation doesn't exist during commit for transaction: " +
                     xtnEntry.getXtnData().getXtn() + " with generation state: " + xtnEntry.getMVCCGenerationsState());
         } else{
             //is take operation (for mvcc we set writeLockOwner to be EXCLUSIVE_READ_LOCK see MVCCSpaceEngineHandler.preCommit)
-            MVCCEntryHolder latestGenerationEntryHolder = latestGenerationCacheInfo.getEntryHolder();
-            if (latestGenerationEntryHolder.getWriteLockOperation() == SpaceOperations.READ &&
-                    latestGenerationEntryHolder.getCommittedGeneration() == entry.getOverrideGeneration() &&
-                    latestGenerationEntryHolder.isLogicallyDeleted()){
-                    disconnectMvccEntryFromXtn(context, latestGenerationCacheInfo, xtnEntry, true);
+            MVCCEntryHolder newMvccGenerationEntryHolder = newMvccGenerationCacheInfo.getEntryHolder();
+            if (newMvccGenerationEntryHolder.getWriteLockOperation() == SpaceOperations.READ &&
+                    newMvccGenerationEntryHolder.getCommittedGeneration() == entry.getOverrideGeneration() &&
+                    newMvccGenerationEntryHolder.isLogicallyDeleted()){
+                    disconnectMvccEntryFromXtn(context, newMvccGenerationCacheInfo, xtnEntry, true);
             }
-            if (latestGenerationEntryHolder.getWriteLockOperation() == SpaceOperations.UPDATE &&
-                    latestGenerationEntryHolder.getCommittedGeneration() == entry.getOverrideGeneration()){
-                disconnectMvccEntryFromXtn(context, latestGenerationCacheInfo, xtnEntry, true);
+            if (newMvccGenerationEntryHolder.getWriteLockOperation() == SpaceOperations.UPDATE &&
+                    newMvccGenerationEntryHolder.getCommittedGeneration() == entry.getOverrideGeneration()){
+                disconnectMvccEntryFromXtn(context, newMvccGenerationCacheInfo, xtnEntry, true);
             }
         }
     }
