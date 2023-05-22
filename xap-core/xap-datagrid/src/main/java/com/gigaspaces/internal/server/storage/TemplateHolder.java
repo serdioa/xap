@@ -768,34 +768,7 @@ public class TemplateHolder extends AbstractSpaceItem implements ITemplateHolder
                 _singleExplainPlan.incrementMatched(entry.getClassName());
             }
         }
-        if (cacheManager.getEngine().isMvccEnabled() && entry instanceof MVCCEntryHolder) {
-            MVCCEntryHolder entryHolder = (MVCCEntryHolder)entry;
-            if (!((isActiveRead(cacheManager.getEngine()) && entryHolder.getOverrideGeneration() == -1)
-                    || (mvccGenerationsState != null && isEntryMatchedByGenerationsState(entryHolder))
-                    || entryHolder.getCommittedGeneration() == -1 /*dirty entry*/)) {
-                res = MatchResult.NONE;
-            }
-        }
         return res;
-    }
-
-    private boolean isEntryMatchedByGenerationsState(MVCCEntryHolder entryHolder) {
-        final long completedGeneration = mvccGenerationsState.getCompletedGeneration();
-        final long overrideGeneration = entryHolder.getOverrideGeneration();
-        final long committedGeneration = entryHolder.getCommittedGeneration();
-        if (isReadOperation()) {
-            return ((committedGeneration != -1)
-                    && (committedGeneration <= completedGeneration)
-                    && (!mvccGenerationsState.isUncompletedGeneration(committedGeneration))
-                    && ((overrideGeneration == -1)
-                    || (overrideGeneration > completedGeneration)
-                    || (overrideGeneration <= completedGeneration && mvccGenerationsState.isUncompletedGeneration(overrideGeneration))));
-        } else {
-            return (committedGeneration != -1)
-                    && (committedGeneration <= completedGeneration)
-                    && (!mvccGenerationsState.isUncompletedGeneration(committedGeneration))
-                    && (overrideGeneration == -1);
-        }
     }
 
     @Override

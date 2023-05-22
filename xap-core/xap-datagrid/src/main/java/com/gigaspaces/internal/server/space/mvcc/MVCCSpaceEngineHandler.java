@@ -3,8 +3,10 @@ package com.gigaspaces.internal.server.space.mvcc;
 import com.gigaspaces.internal.server.space.SpaceEngine;
 import com.gigaspaces.internal.server.storage.IEntryHolder;
 import com.gigaspaces.internal.server.storage.ITemplateHolder;
-import com.j_spaces.core.*;
+import com.j_spaces.core.SpaceOperations;
+import com.j_spaces.core.XtnEntry;
 import com.j_spaces.core.cache.CacheManager;
+import com.j_spaces.core.cache.IEntryCacheInfo;
 import com.j_spaces.core.cache.context.Context;
 import com.j_spaces.core.cache.mvcc.MVCCEntryCacheInfo;
 import com.j_spaces.core.cache.mvcc.MVCCEntryHolder;
@@ -63,40 +65,56 @@ public class MVCCSpaceEngineHandler {
         }
     }
 
-    public IEntryHolder getMatchedEntryAndOperateSA_Entry(Context context,
-                                                          ITemplateHolder template,
-                                                          boolean makeWaitForInfo,
-                                                          MVCCShellEntryCacheInfo shellEntry) throws TemplateDeletedException, TransactionNotActiveException, TransactionConflictException, FifoException, SAException, NoMatchException, EntryDeletedException {
-        final Iterator<MVCCEntryCacheInfo> generationIterator = shellEntry.descIterator();
-        if (!generationIterator.hasNext() && shellEntry.getDirtyEntryCacheInfo() != null){
-            return getMvccEntryHolder(context, template, makeWaitForInfo,
-                    shellEntry.getDirtyEntryHolder());
+    public IEntryHolder getMatchedMVCCEntry(ITemplateHolder template,
+                                                        IEntryCacheInfo entryCacheInfo) {
+        if (entryCacheInfo instanceof MVCCShellEntryCacheInfo) {
+            MVCCShellEntryCacheInfo shellEntry = (MVCCShellEntryCacheInfo)entryCacheInfo;
+            final Iterator<MVCCEntryCacheInfo> generationIterator = shellEntry.descIterator();
+            if (!generationIterator.hasNext() && shellEntry.getDirtyEntryCacheInfo() != null) {
+                return getEntryIfMatched(template, shellEntry.getDirtyEntryHolder());
+            }
+            while (generationIterator.hasNext()) {
+                final MVCCEntryHolder entryHolder = generationIterator.next().getEntryHolder();
+                final MVCCEntryHolder matchMvccEntryHolder = getEntryIfMatched(template, entryHolder);
+                if (matchMvccEntryHolder != null) return matchMvccEntryHolder;
+            }
+            return null; // continue
         }
-        while (generationIterator.hasNext()) {
-            final MVCCEntryCacheInfo entryCacheInfo = generationIterator.next();
-            final MVCCEntryHolder entryHolder = entryCacheInfo.getEntryHolder();
-            final MVCCEntryHolder matchMvccEntryHolder = getMvccEntryHolder(context, template, makeWaitForInfo, entryHolder);
-            if (matchMvccEntryHolder != null) return matchMvccEntryHolder;
-        }
-        return null; // continue
+        return getEntryIfMatched(template, (MVCCEntryHolder)entryCacheInfo.getEntryHolder(_cacheManager));
+
     }
 
-
-    public IEntryHolder getMatchedEntryAndOperateSA_Entry(Context context,
-                                                          ITemplateHolder template,
-                                                          boolean makeWaitForInfo,
-                                                          MVCCEntryHolder entryHolder) throws TemplateDeletedException,
-            TransactionNotActiveException, TransactionConflictException, FifoException, SAException, NoMatchException, EntryDeletedException {
-        return getMvccEntryHolder(context, template, makeWaitForInfo, entryHolder);
-    }
-
-    private MVCCEntryHolder getMvccEntryHolder(Context context, ITemplateHolder template, boolean makeWaitForInfo,
-                                                    MVCCEntryHolder entryHolder) throws TransactionConflictException, EntryDeletedException, TemplateDeletedException, TransactionNotActiveException, SAException, NoMatchException, FifoException {
-        if  (entryHolder.isLogicallyDeleted()){
-            throw _spaceEngine.getEntryDeletedException();
+    private MVCCEntryHolder getEntryIfMatched(ITemplateHolder template, MVCCEntryHolder entryHolder) {
+        if (entryHolder.isLogicallyDeleted() || !match(template, entryHolder)) {
+            return null;
         }
-        _spaceEngine.performTemplateOnEntrySA(context, template, entryHolder, makeWaitForInfo);
         return entryHolder;
+    }
+
+    private boolean match(ITemplateHolder template, MVCCEntryHolder entryHolder) {
+        return (template.isActiveRead(_spaceEngine) && entryHolder.getOverrideGeneration() == -1)
+                || (template.getGenerationsState() != null && isEntryMatchedByGenerationsState(template, entryHolder))
+                || entryHolder.getCommittedGeneration() == -1; /*dirty entry*/
+    }
+
+    private boolean isEntryMatchedByGenerationsState(ITemplateHolder template, MVCCEntryHolder entryHolder) {
+        final MVCCGenerationsState mvccGenerationsState = template.getGenerationsState();
+        final long completedGeneration = mvccGenerationsState.getCompletedGeneration();
+        final long overrideGeneration = entryHolder.getOverrideGeneration();
+        final long committedGeneration = entryHolder.getCommittedGeneration();
+        if (template.isReadOperation()) {
+            return ((committedGeneration != -1)
+                    && (committedGeneration <= completedGeneration)
+                    && (!mvccGenerationsState.isUncompletedGeneration(committedGeneration))
+                    && ((overrideGeneration == -1)
+                    || (overrideGeneration > completedGeneration)
+                    || (overrideGeneration <= completedGeneration && mvccGenerationsState.isUncompletedGeneration(overrideGeneration))));
+        } else {
+            return (committedGeneration != -1)
+                    && (committedGeneration <= completedGeneration)
+                    && (!mvccGenerationsState.isUncompletedGeneration(committedGeneration))
+                    && (overrideGeneration == -1);
+        }
     }
 
     public SpaceEngine.XtnConflictCheckIndicators checkTransactionConflict(Context context, MVCCEntryHolder entry, ITemplateHolder template) {

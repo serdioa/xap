@@ -3898,6 +3898,11 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
             boolean onlyIndexesPart = BlobStoreOperationOptimizations.isConsiderOptimizedForBlobstore(this, context, template, pEntry);
             entry = ((BlobStoreRefEntryCacheInfo) pEntry).getLatestEntryVersion(_cacheManager, false/*attach*/,
                     null /*lastKnownEntry*/, context, onlyIndexesPart/* onlyIndexesPart*/);
+        } else if (isMvccEnabled()) {
+            entry = _mvccSpaceEngineHandler.getMatchedMVCCEntry(template, pEntry);
+            if (entry == null) {
+                return null;
+            }
         } else {
             entry = pEntry.getEntryHolder(_cacheManager, context);
         }
@@ -3905,7 +3910,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
             return null;
         if (scnFilter != 0 && entry.getSCN() < scnFilter)
             return null;
-        if (!(isMvccEnabled() && (entry.isHollowEntry() || ((MVCCEntryHolder) entry).isLogicallyDeleted()))) {
+        if (!(isMvccEnabled() && entry.isHollowEntry())) {
             if (entry.isExpired(leaseFilter) && disqualifyExpiredEntry(entry) && template.isReadOperation()) {
                 context.setPendingExpiredEntriesExist(true);
                 return null;
@@ -3917,19 +3922,6 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
             return null;
 
         try {
-            if (isMvccEnabled()) {
-                if (pEntry instanceof MVCCShellEntryCacheInfo) { // in case of using id index.
-                    return _mvccSpaceEngineHandler.getMatchedEntryAndOperateSA_Entry(context,
-                            template,
-                            makeWaitForInfo,
-                            (MVCCShellEntryCacheInfo) pEntry);
-                } else {
-                    return _mvccSpaceEngineHandler.getMatchedEntryAndOperateSA_Entry(context,
-                            template,
-                            makeWaitForInfo,
-                            (MVCCEntryHolder) entry);
-                }
-            }
             performTemplateOnEntrySA(context, template, entry,
                     makeWaitForInfo);
             return entry;
