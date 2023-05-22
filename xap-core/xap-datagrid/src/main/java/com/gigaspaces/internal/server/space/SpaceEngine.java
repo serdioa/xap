@@ -5098,9 +5098,6 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
             if (entry.getXidOriginatedTransaction() == null ||
                     !template.getXidOriginatedTransaction().equals(entry.getXidOriginatedTransaction())) {
                 _cacheManager.associateEntryWithXtn(context, entry, template, template.getXidOriginated(), null);
-                if(isMvccEnabled()){
-                    _mvccSpaceEngineHandler.createLogicallyDeletedEntry((MVCCEntryHolder) entry);
-                }
             }
         }
 
@@ -6070,7 +6067,6 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
                 context.setFromGateway(xtnEntry.isFromGateway());
 
                 _cacheManager.rollback(context, xtnEntry, xtnEntry.m_AlreadyPrepared, xtnEntry.m_AnyUpdates, supportsTwoPhaseReplication);
-
                 xtnEntry.m_Active = false;
                 //call cache-manager pre-rollback method in order to restore
                 // updated entries to original values
@@ -6092,16 +6088,23 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
                     _coreProcessor.handleLockedFifoEntriesBeforeXtnEnd(context, xtnEntry, true /*fromRollback*/);
                 }
 
+                boolean new_entries_deleted = false;
+                //handle new entries under xtn-remove from cache
+                if (isMvccEnabled() && !xtnEntry.m_AlreadyPrepared) {
+                    _coreProcessor.handleNewRolledbackEntries(context, xtnEntry);
+                    new_entries_deleted = true;
+                }
+
                 xtnEntry.setStatus(XtnStatus.ROLLING);
 
                 //fifo group op performed under this xtn
-                if (xtnEntry.getXtnData().anyFifoGroupOperations())
+                if (xtnEntry.getXtnData().anyFifoGroupOperations()) {
                     _cacheManager.handleFifoGroupsCacheOnXtnEnd(context, xtnEntry);
-                _fifoGroupsHandler.prepareForFifoGroupsAfterXtnScans(context, xtnEntry);
+                    _fifoGroupsHandler.prepareForFifoGroupsAfterXtnScans(context, xtnEntry);
+                }
 
                 //handle new entries under xtn-remove from cache
-                boolean new_entries_deleted = false;
-                if (!xtnEntry.m_AlreadyPrepared) {
+                if (!xtnEntry.m_AlreadyPrepared && !new_entries_deleted) {
                     _coreProcessor.handleNewRolledbackEntries(context, xtnEntry);
                     new_entries_deleted = true;
                 }

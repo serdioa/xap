@@ -146,8 +146,6 @@ public class QueryProcessor implements IQueryProcessor {
             throw new SQLException("Failed to execute query; Cause: " + e, e);
         } catch (TransactionException e) {
             throw new SQLException("Failed to execute query; Cause: " + e, e);
-        } catch (AccessDeniedException e) {
-            throw new SQLException("Failed to execute query; Cause: " + e, e);
         }
     }
 
