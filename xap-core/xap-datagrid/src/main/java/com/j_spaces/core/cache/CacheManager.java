@@ -2419,6 +2419,7 @@ public class CacheManager extends AbstractCacheManager
                         pXtn.signalRewrittenEntry(pEntry.getUID());
                         pXtn.removeTakenEntry(pEntry); //no longer its a take
                     }
+                    //cater for partial update
                     if (newShadow) {
                         if (getTypeData(pEntry.getEntryHolder(this).getServerTypeDesc()).hasFifoGroupingIndex())
                             pXtn.addToEntriesForFifoGroupScan(pEntry.getEntryHolder(this)); //kepp the shadow value for f-g scans
@@ -2431,7 +2432,6 @@ public class CacheManager extends AbstractCacheManager
                     IEntryData new_content_data = new_content.getEntryData();
                     pEntry = updateEntryInCache(context, pEntry, pEntry.getEntryHolder(this), new_content_data, new_content_data.getExpirationTime(), template.getOperationModifiers());
                 }
-                //cater for partial update
 
                 if (template.isChange()) {
                     pXtn.setInPlaceUpdatedEntry(pEntry.getEntryHolder(this), template.getMutators());
