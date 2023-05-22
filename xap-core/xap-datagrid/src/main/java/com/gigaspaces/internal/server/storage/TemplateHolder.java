@@ -37,7 +37,6 @@ import com.j_spaces.core.cache.CacheManager;
 import com.j_spaces.core.cache.TerminatingFifoXtnsInfo;
 import com.j_spaces.core.cache.TypeData;
 import com.j_spaces.core.cache.context.Context;
-import com.j_spaces.core.cache.mvcc.MVCCEntryHolder;
 import com.j_spaces.core.client.*;
 import com.j_spaces.core.filters.FilterManager;
 import com.j_spaces.jdbc.builder.QueryTemplatePacket;
