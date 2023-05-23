@@ -176,7 +176,11 @@ public class PlatformLogicalVersion implements SmartExternalizable, Comparable<P
 
     @Override
     public String toString() {
-        return "" + _majorVersion + "." + _minorVersion + "." + _servicePackVersion + "." + _buildNumber + "-" + _subBuildNumber;
+        StringBuilder sb = new StringBuilder("" + _majorVersion + "." + _minorVersion + "." + _servicePackVersion);
+        if (_buildNumber != LAST_BUILD_NUMBER){
+            sb.append("." + _buildNumber + "-" + _subBuildNumber);
+        }
+        return sb.toString();
     }
 
     @Override
@@ -283,6 +287,8 @@ public class PlatformLogicalVersion implements SmartExternalizable, Comparable<P
     public static final PlatformLogicalVersion v16_2_0 = fromVersion(16, 2, 0);
     public static final PlatformLogicalVersion v16_2_1 = fromVersion(16, 2, 1);
     public static final PlatformLogicalVersion v16_3_0 = fromVersion(16, 3, 0);
+    public static final PlatformLogicalVersion v16_4_0 = fromVersion(16, 4, 0);
+
     //DOCUMENT BACKWARD BREAKING CHANGES, EACH CHANGE IN A LINE
     //GS-XXXX: Short backward breaking description and classes
     //GS-14728 SpaceId with multiple properties (#160)

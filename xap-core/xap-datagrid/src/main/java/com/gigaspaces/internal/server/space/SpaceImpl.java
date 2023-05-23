@@ -128,6 +128,7 @@ import com.gigaspaces.security.authorities.Privilege;
 import com.gigaspaces.security.authorities.SpaceAuthority.SpacePrivilege;
 import com.gigaspaces.security.directory.CredentialsProvider;
 import com.gigaspaces.security.directory.CredentialsProviderHelper;
+import com.gigaspaces.security.service.SecurityContext;
 import com.gigaspaces.security.service.SecurityInterceptor;
 import com.gigaspaces.server.space.suspend.SuspendType;
 import com.gigaspaces.start.SystemInfo;
@@ -288,6 +289,7 @@ public class SpaceImpl extends AbstractService implements IRemoteSpace, IInterna
     private final Map<Class<? extends SystemTask>, SpaceActionExecutor> executorMap = XapExtensions.getInstance().getActionExecutors();
     private BroadcastTableHandler _broadcastTableHandler;
     private final boolean hasInstanceLevelSla;
+    private final boolean isMvccEnabled;
 
     public SpaceImpl(String spaceName, String containerName, JSpaceContainerImpl container, SpaceURL url,
                      JSpaceAttributes spaceConfig, Properties customProperties,
@@ -363,6 +365,8 @@ public class SpaceImpl extends AbstractService implements IRemoteSpace, IInterna
 
         //init quiesce handler before startInternal to ensure no operations will arrive before handler is initialized
         this._quiesceHandler = new QuiesceHandler(this, getQuiesceStateChangedEvent(customProperties));
+
+        this.isMvccEnabled = _configReader.getBooleanSpaceProperty(Mvcc.MVCC_ENABLED_PROP, Mvcc.MVCC_ENABLED_DEFAULT);
 
         startInternal();
 
@@ -1030,7 +1034,7 @@ public class SpaceImpl extends AbstractService implements IRemoteSpace, IInterna
     }
 
     public boolean isMvccEnabled() {
-        return _configReader.getBooleanSpaceProperty(Mvcc.MVCC_ENABLED_PROP, Mvcc.MVCC_ENABLED_DEFAULT);
+        return isMvccEnabled;
     }
 
     public void removeClusterInfoChangedListener(IClusterInfoChangedListener listener) {
@@ -2593,6 +2597,10 @@ public class SpaceImpl extends AbstractService implements IRemoteSpace, IInterna
         return MVCCUtils.isMVCCEntryDirtyUnderTransaction(getEngine(), typeName, id, transactionId);
     }
 
+    public MVCCEntryMetaData getDirtyEntryMetaData(String typeName, Object id) {
+        return MVCCUtils.getDirtyEntryMetaData(getEngine(), typeName, id);
+    }
+
     public GSEventRegistration notify(ITemplatePacket template, Transaction txn, long lease, SpaceContext sc,
                                       NotifyInfo info)
             throws TransactionException, UnusableEntryException, UnknownTypeException, RemoteException {
@@ -2626,10 +2634,30 @@ public class SpaceImpl extends AbstractService implements IRemoteSpace, IInterna
         }
     }
 
+    public void snapshot(ITemplatePacket template, SpaceContext sc)
+            throws UnusableEntryException, RemoteException {
+        //todo it is incorrect to check only ALTER privilege, because different SQL can be run via snapshot
+        if (sc != null) {
+            beforeTypeOperation(false, sc, SpacePrivilege.ALTER, template.getTypeName());
+            snapshotInner(template);
+        } else {
+            snapshot(template);
+        }
+    }
+
     public void snapshot(ITemplatePacket template)
             throws UnusableEntryException, RemoteException {
+        //todo should uncomment below validation
+        /*if (isSecuredSpace()) {
+            throw logException(new SecurityException("Method for secured space should contain SpaceContext"));
+        }*/
         beforeOperation(false, true /*checkQuiesceMode*/, null);
 
+        snapshotInner(template);
+    }
+
+    private void snapshotInner(ITemplatePacket template)
+            throws UnusableEntryException, RemoteException {
         try {
             _engine.snapshot(template);
         } catch (RuntimeException e) {

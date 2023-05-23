@@ -9,6 +9,8 @@ import com.j_spaces.core.cache.IEntryCacheInfo;
 import com.j_spaces.core.cache.XtnData;
 import com.j_spaces.core.cache.context.Context;
 import com.j_spaces.core.sadapter.SAException;
+import com.j_spaces.core.server.transaction.EntryXtnInfo;
+import com.j_spaces.kernel.IStoredList;
 
 import java.util.concurrent.ConcurrentMap;
 
@@ -78,12 +80,12 @@ public class MVCCCacheManagerHandler {
         if (latestGenerationCacheInfo == null) {
             throw new MVCCIllegalStateException("latest generation doesn't exist during commit for transaction: " +
                     xtnEntry.getXtnData().getXtn() + " with generation state: " + xtnEntry.getMVCCGenerationsState());
-        } else{
+        } else {
             //is take operation (for mvcc we set writeLockOwner to be EXCLUSIVE_READ_LOCK see MVCCSpaceEngineHandler.preCommit)
             MVCCEntryHolder latestGenerationEntryHolder = latestGenerationCacheInfo.getEntryHolder();
-            if (latestGenerationEntryHolder.getWriteLockOperation() == SpaceOperations.READ &&
+            if (latestGenerationEntryHolder.getWriteLockOperation() == SpaceOperations.TAKE &&
                     latestGenerationEntryHolder.getCommittedGeneration() == entry.getOverrideGeneration() &&
-                    latestGenerationEntryHolder.isLogicallyDeleted()){
+                    latestGenerationEntryHolder.isLogicallyDeleted()) {
                     disconnectMvccEntryFromXtn(context, latestGenerationCacheInfo, xtnEntry, true);
             }
         }
@@ -95,5 +97,21 @@ public class MVCCCacheManagerHandler {
 
     public boolean isMvccEntryValidForWrite(MVCCShellEntryCacheInfo shellEntryCacheInfo) {
         return shellEntryCacheInfo.getDirtyEntryCacheInfo() == null && shellEntryCacheInfo.isLogicallyDeletedOrEmpty();
+    }
+
+    public void insertMvccEntryRefs(MVCCEntryCacheInfo pEntry, XtnData pXtn) {
+        IStoredList<IEntryCacheInfo> newEntries = pXtn.getNewEntries(true);
+        if (!newEntries.contains(pEntry)) {
+            newEntries.add(pEntry);
+        }
+    }
+
+    public void createLogicallyDeletedEntry(MVCCEntryHolder entryHolder) {
+        MVCCShellEntryCacheInfo mvccShellEntryCacheInfo = cacheManager.getMVCCShellEntryCacheInfoByUid(entryHolder.getUID());
+        EntryXtnInfo entryXtnInfo = entryHolder.getTxnEntryData().copyTxnInfo(true, false);
+        entryXtnInfo.setWriteLockOperation(SpaceOperations.TAKE);
+        MVCCEntryHolder dummyEntry = entryHolder.createLogicallyDeletedDummyEntry(entryXtnInfo);
+        dummyEntry.setMaybeUnderXtn(true);
+        mvccShellEntryCacheInfo.setDirtyEntryCacheInfo(new MVCCEntryCacheInfo(dummyEntry, 2));
     }
 }

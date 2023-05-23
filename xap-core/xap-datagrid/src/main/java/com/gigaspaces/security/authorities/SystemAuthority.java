@@ -47,6 +47,11 @@ public class SystemAuthority implements InternalAuthority {
          * managing of roles
          */
         MANAGE_ROLES,
+
+        /**
+         * managing of pu/space settings
+         */
+        MANAGE_SPACE_SETTINGS,
         /**
          * managing of users
          */
@@ -54,17 +59,25 @@ public class SystemAuthority implements InternalAuthority {
         /**
          * managing of identity provider settings
          */
-        MANAGE_IDENTITY_PROVIDERS;
+        MANAGE_IDENTITY_PROVIDERS,
+        /**
+         * Manage root user details
+         */
+        MANAGE_ROOT_USER_DETAILS;
 
         @Override
         public String toString() {
             switch (this) {
                 case MANAGE_ROLES:
                     return "Manage Roles";
+                case MANAGE_SPACE_SETTINGS:
+                    return "Manage Space Settings";
                 case MANAGE_USERS:
                     return "Manage Users";
                 case MANAGE_IDENTITY_PROVIDERS:
                     return "Manage Identity Provider Settings";
+                case MANAGE_ROOT_USER_DETAILS:
+                    return "Manage root user details";
                 default:
                     return super.toString();
             }

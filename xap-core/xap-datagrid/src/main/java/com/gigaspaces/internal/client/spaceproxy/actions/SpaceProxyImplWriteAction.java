@@ -25,7 +25,6 @@ import com.gigaspaces.internal.client.spaceproxy.operations.WriteEntrySpaceOpera
 import com.gigaspaces.internal.server.space.operations.WriteEntryResult;
 import com.j_spaces.core.LeaseContext;
 import com.j_spaces.core.client.Modifiers;
-
 import net.jini.core.transaction.TransactionException;
 
 import java.rmi.RemoteException;

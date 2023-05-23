@@ -15,7 +15,7 @@ public class GetMVCCEntryMetaDataResponseInfo extends AbstractSpaceResponseInfo{
     private static final long serialVersionUID = 4672636820486293961L;
     private Map<Object, List<MVCCEntryMetaData>> entriesMetaData = new HashMap<>();
 
-    private Set<Object> isDirtySet = new HashSet<>();
+    private Map<Object, MVCCEntryMetaData> dirtyMetaData = new HashMap<>();
 
     public GetMVCCEntryMetaDataResponseInfo() {
     }
@@ -29,12 +29,16 @@ public class GetMVCCEntryMetaDataResponseInfo extends AbstractSpaceResponseInfo{
         mvccEntryMetaData.addAll(entryMetaData);
     }
 
-    public void setIsDirty(Object id) {
-        isDirtySet.add(id);
+    public MVCCEntryMetaData getDirtyMetaDataById(Object id) {
+        return dirtyMetaData.get(id);
+    }
+
+    public void addDirtyMetaData(Object id, MVCCEntryMetaData dirtyMetaData) {
+        this.dirtyMetaData.put(id, dirtyMetaData);
     }
 
     public Boolean isDirty(Object id) {
-        return isDirtySet.contains(id);
+        return dirtyMetaData.containsKey(id);
     }
 
     public void merge(GetMVCCEntryMetaDataResponseInfo other) {
@@ -48,20 +52,27 @@ public class GetMVCCEntryMetaDataResponseInfo extends AbstractSpaceResponseInfo{
                             return mergeValue;
                         }));
 
-        this.isDirtySet.addAll(other.isDirtySet);
+        this.dirtyMetaData = Stream.of(this.dirtyMetaData, other.dirtyMetaData)
+                .flatMap(map -> map.entrySet().stream())
+                .filter(e -> e.getValue() != null)
+                .collect(Collectors.toMap(
+                        Map.Entry::getKey,
+                        Map.Entry::getValue
+                ));
     }
 
     @Override
     public void writeExternal(ObjectOutput out) throws IOException {
         super.writeExternal(out);
         IOUtils.writeObject(out, this.entriesMetaData);
-        IOUtils.writeObject(out, this.isDirtySet);
+        IOUtils.writeObject(out, this.dirtyMetaData);
+
     }
 
     @Override
     public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         super.readExternal(in);
         this.entriesMetaData = IOUtils.readObject(in);
-        this.isDirtySet = IOUtils.readObject(in);
+        this.dirtyMetaData = IOUtils.readObject(in);
     }
 }

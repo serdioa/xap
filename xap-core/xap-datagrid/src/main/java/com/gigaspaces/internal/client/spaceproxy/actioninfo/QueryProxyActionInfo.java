@@ -133,9 +133,4 @@ public abstract class QueryProxyActionInfo extends CommonProxyActionInfo {
 
         return true;
     }
-
-    @Override
-    public boolean requireTransactionForMVCC() {
-        return true;
-    }
 }
