@@ -76,13 +76,15 @@ public class MVCCCacheManagerHandler {
     }
 
     public void handleDisconnectNewMvccEntryGenerationFromTransaction(Context context, MVCCEntryHolder entry, XtnEntry xtnEntry) throws SAException {
-        MVCCEntryCacheInfo newMvccGenerationCacheInfo = xtnEntry.getXtnData().getMvccNewGenerationsEntries().get(entry.getUID());
-        if (entry.getWriteLockOperation() == SpaceOperations.WRITE){
+        int writeLockOperation = entry.getWriteLockOperation();
+        if (writeLockOperation != SpaceOperations.UPDATE && writeLockOperation != SpaceOperations.TAKE){
             return;
         }
+        MVCCEntryCacheInfo newMvccGenerationCacheInfo = xtnEntry.getXtnData().getMvccNewGenerationsEntries().get(entry.getUID());
         if (newMvccGenerationCacheInfo == null) {
             throw new MVCCIllegalStateException("new generation doesn't exist during commit for transaction: " +
-                    xtnEntry.getXtnData().getXtn() + " with generation state: " + xtnEntry.getMVCCGenerationsState());
+                    xtnEntry.getXtnData().getXtn() + " with generation state: " + xtnEntry.getMVCCGenerationsState() +
+                    ", entry = " + entry);
         } else {
             MVCCEntryHolder newMvccGenerationEntryHolder = newMvccGenerationCacheInfo.getEntryHolder();
             if (newMvccGenerationEntryHolder.getWriteLockOperation() == SpaceOperations.TAKE &&

@@ -118,10 +118,9 @@ public class MVCCSpaceEngineHandler {
     private MVCCEntryHolder getMatchMvccEntryHolder(Context context, ITemplateHolder template, boolean makeWaitForInfo,
                                                     MVCCEntryHolder entryHolder, MVCCGenerationsState mvccGenerationsState) throws TransactionConflictException, EntryDeletedException, TemplateDeletedException, TransactionNotActiveException, SAException, NoMatchException, FifoException {
 
-        if ((template.isActiveRead(_spaceEngine) && (entryHolder.getOverrideGeneration() == -1 /*active entry*/|| entryHolder.getCommittedGeneration() == -1 /*dirty entry*/))
-                || (mvccGenerationsState != null && isEntryMatchedByGenerationsState(mvccGenerationsState, entryHolder, template))) {
+        if (isEntryMatchedByGenerationsState(mvccGenerationsState, entryHolder, template)) {
             if  (entryHolder.isLogicallyDeleted()){
-                throw _spaceEngine.getEntryDeletedException();
+                return null;
             }
             _spaceEngine.performTemplateOnEntrySA(context, template, entryHolder, makeWaitForInfo);
             return entryHolder;
@@ -131,16 +130,20 @@ public class MVCCSpaceEngineHandler {
 
     private boolean isEntryMatchedByGenerationsState(MVCCGenerationsState mvccGenerationsState,
                                                      MVCCEntryHolder entryHolder, ITemplateHolder template) {
-        final long completedGeneration = mvccGenerationsState.getCompletedGeneration();
+        final long completedGeneration = mvccGenerationsState == null ? -1 : mvccGenerationsState.getCompletedGeneration();
         final long overrideGeneration = entryHolder.getOverrideGeneration();
         final long committedGeneration = entryHolder.getCommittedGeneration();
         if (template.isReadOperation()) {
-            return ((committedGeneration != -1)
-                    && (committedGeneration <= completedGeneration)
-                    && (!mvccGenerationsState.isUncompletedGeneration(committedGeneration))
-                    && ((overrideGeneration == -1)
-                    || (overrideGeneration > completedGeneration)
-                    || (overrideGeneration <= completedGeneration && mvccGenerationsState.isUncompletedGeneration(overrideGeneration))));
+            if (template.isActiveRead(_spaceEngine)){
+                return committedGeneration == -1 || overrideGeneration == -1;
+            } else{
+                return ((committedGeneration != -1)
+                        && (committedGeneration <= completedGeneration)
+                        && (!mvccGenerationsState.isUncompletedGeneration(committedGeneration))
+                        && ((overrideGeneration == -1)
+                        || (overrideGeneration > completedGeneration)
+                        || (overrideGeneration <= completedGeneration && mvccGenerationsState.isUncompletedGeneration(overrideGeneration))));
+            }
         } else {
             return (committedGeneration != -1)
                     && (committedGeneration <= completedGeneration)
