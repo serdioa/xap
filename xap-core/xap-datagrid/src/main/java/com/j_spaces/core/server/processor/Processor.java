@@ -2027,15 +2027,52 @@ public class Processor implements IConsumerObject<BusPacket<Processor>> {
                         synchronized (entryLock) {
                             boolean fromLeaseExpiration = !_engine.getLeaseManager().isNoReapUnderXtnLeases() && entry.isExpired(_engine.getLeaseManager().getEffectiveEntryLeaseTime(xtnEntry.m_CommitRollbackTimeStamp)) && !_engine.isExpiredEntryStayInSpace(entry);
                             context.setOperationID(pXtn.getOperationID(entry.getUID()));
-                            if (_cacheManager.isMVCCEnabled()) {
-                                if (((MVCCEntryHolder) entry).isLogicallyDeleted() && entry.getWriteLockOperation() == SpaceOperations.TAKE) {
-                                    _cacheManager.getMVCCShellEntryCacheInfoByUid(entry.getUID()).clearDirtyEntry();
-                                    continue;
-                                }
-                            }
                             _engine.removeEntrySA(context, entry, false /*fromReplication*/,
                                     true /*origin*/, false /*ofReplClass*/, fromLeaseExpiration ? SpaceEngine.EntryRemoveReasonCodes.LEASE_EXPIRED : SpaceEngine.EntryRemoveReasonCodes.TAKE /*fromLeaseExpiration*/,
                                     true /* disableReplication*/, false /* disableProcessorCall*/, true /* disableSADelete*/);
+                        } /* synchronized(entryLock) */
+                    } finally {
+                        if (entryLock != null)
+                            freeEntryLockObject(entryLock);
+                        entryLock = null;
+                    }
+                } /* while */
+            } /* if iter != null */
+        } /* try */ finally {
+            if (iter != null)
+                iter.close();
+        }
+    }
+
+    /**
+     * handle new mvcc generation entries  under rollback . clean those entries. it is called directly in order to
+     * clean user-defined UIDS
+     */
+    public void handleNewMvccGenerationsRolledbackEntries(Context context, final XtnEntry xtnEntry)
+            throws SAException {
+        ISAdapterIterator iter = null;
+        try {
+            iter = _cacheManager.makeUnderXtnEntriesIter(context, xtnEntry, SelectType.MVCC_NEW_GENERATION);
+            if (iter != null) {
+                final XtnData pXtn = xtnEntry.getXtnData();
+                while (true) {
+                    IEntryHolder entry = (IEntryHolder) iter.next();
+                    if (entry == null)
+                        break;
+
+                    ILockObject entryLock = null;
+                    try {
+                        entryLock = getEntryLockObject(entry);
+                        synchronized (entryLock) {
+                            boolean fromLeaseExpiration = !_engine.getLeaseManager().isNoReapUnderXtnLeases() && entry.isExpired(_engine.getLeaseManager().getEffectiveEntryLeaseTime(xtnEntry.m_CommitRollbackTimeStamp)) && !_engine.isExpiredEntryStayInSpace(entry);
+                            context.setOperationID(pXtn.getOperationID(entry.getUID()));
+                            if (entry.getWriteLockOperation() == SpaceOperations.TAKE){
+                                _cacheManager.getMVCCShellEntryCacheInfoByUid(entry.getUID()).clearDirtyEntry();
+                            } else {
+                                _engine.removeEntrySA(context, entry, false /*fromReplication*/,
+                                        true /*origin*/, false /*ofReplClass*/, fromLeaseExpiration ? SpaceEngine.EntryRemoveReasonCodes.LEASE_EXPIRED : SpaceEngine.EntryRemoveReasonCodes.TAKE /*fromLeaseExpiration*/,
+                                        true /* disableReplication*/, false /* disableProcessorCall*/, true /* disableSADelete*/);
+                            }
                         } /* synchronized(entryLock) */
                     } finally {
                         if (entryLock != null)

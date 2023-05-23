@@ -37,5 +37,6 @@ public class SelectType {
     public final static int NEED_NOTIFY_ENTRIES = 3;
     public final static int TAKEN_ENTRIES = 4;
     public final static int ALL_FIFO_ENTRIES = 5;
+    public final static int MVCC_NEW_GENERATION = 6;
 
 }
