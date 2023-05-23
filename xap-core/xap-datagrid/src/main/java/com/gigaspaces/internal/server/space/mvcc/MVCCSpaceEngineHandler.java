@@ -145,10 +145,12 @@ public class MVCCSpaceEngineHandler {
                         || (overrideGeneration <= completedGeneration && mvccGenerationsState.isUncompletedGeneration(overrideGeneration))));
             }
         } else {
-            return (committedGeneration != -1)
+            boolean isDirtyEntry = committedGeneration == -1 && overrideGeneration == -1;
+            return isDirtyEntry
+                    || ((committedGeneration != -1)
                     && (committedGeneration <= completedGeneration)
                     && (!mvccGenerationsState.isUncompletedGeneration(committedGeneration))
-                    && (overrideGeneration == -1);
+                    && (overrideGeneration == -1));
         }
     }
 
