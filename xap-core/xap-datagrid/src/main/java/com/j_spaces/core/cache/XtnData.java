@@ -20,6 +20,7 @@ import com.gigaspaces.client.mutators.SpaceEntryMutator;
 import com.gigaspaces.internal.server.storage.IEntryHolder;
 import com.j_spaces.core.OperationID;
 import com.j_spaces.core.XtnEntry;
+import com.j_spaces.core.cache.mvcc.MVCCEntryCacheInfo;
 import com.j_spaces.core.sadapter.SelectType;
 import com.j_spaces.kernel.IStoredList;
 import com.j_spaces.kernel.StoredListFactory;
@@ -57,6 +58,9 @@ public class XtnData {
 
     //in commit stage after prepare- the list of entries to replicate under xtn
     private List<IEntryHolder> _entriesForReplicationIn2PCommit;
+
+    //hashmap for new mvcc generation entries - uid to CacheInfo.
+    private volatile HashMap<String, MVCCEntryCacheInfo> _mvccNewGenerationsEntries = new HashMap<>();
 
     private static final boolean[] EMPTY_INDICATORS = new boolean[0];
 
@@ -123,6 +127,11 @@ public class XtnData {
                 break;
             case SelectType.ALL_FIFO_ENTRIES:
                 entries = _lockedFifoEntries;
+                break;
+            case SelectType.MVCC_NEW_GENERATION:
+                IStoredList<IEntryCacheInfo> finalEntries = StoredListFactory.createHashList();;
+                _mvccNewGenerationsEntries.values().forEach(finalEntries::add);
+                entries = finalEntries;
                 break;
 
             default:
@@ -448,4 +457,11 @@ public class XtnData {
     }
 
 
+    public Map<String, MVCCEntryCacheInfo> getMvccNewGenerationsEntries() {
+        return _mvccNewGenerationsEntries;
+    }
+
+    public void addMvccNewGenerationsEntries(MVCCEntryCacheInfo mvccEntryCacheInfo) {
+        _mvccNewGenerationsEntries.put(mvccEntryCacheInfo.getUID(), mvccEntryCacheInfo);
+    }
 }
