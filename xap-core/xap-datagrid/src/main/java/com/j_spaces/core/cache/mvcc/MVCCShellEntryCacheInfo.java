@@ -43,8 +43,9 @@ public class MVCCShellEntryCacheInfo extends MemoryBasedEntryCacheInfo {
     }
 
     public MVCCEntryHolder getDirtyEntryHolder() {
-        if (getDirtyEntryCacheInfo() != null) {
-            return getDirtyEntryCacheInfo().getEntryHolder();
+        MVCCEntryCacheInfo dirtyEntryCacheInfo = getDirtyEntryCacheInfo();
+        if (dirtyEntryCacheInfo != null) {
+            return dirtyEntryCacheInfo.getEntryHolder();
         }
         return null;
     }

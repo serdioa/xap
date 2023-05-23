@@ -77,9 +77,10 @@ public class MVCCSpaceEngineHandler {
                                                           MVCCShellEntryCacheInfo shellEntry) throws TemplateDeletedException, TransactionNotActiveException, TransactionConflictException, FifoException, SAException, NoMatchException, EntryDeletedException {
         final MVCCGenerationsState mvccGenerationsState = getMvccGenerationsState(context, template);
         final Iterator<MVCCEntryCacheInfo> generationIterator = shellEntry.descIterator();
-        if (shellEntry.getDirtyEntryCacheInfo() != null){
+        MVCCEntryHolder dirtyEntryHolder = shellEntry.getDirtyEntryHolder();
+        if (dirtyEntryHolder != null){
             MVCCEntryHolder entryHolder = getMatchMvccEntryHolder(context, template, makeWaitForInfo,
-                    shellEntry.getDirtyEntryHolder(), mvccGenerationsState);
+                    dirtyEntryHolder, mvccGenerationsState);
             if (entryHolder != null){
                 return entryHolder;
             }

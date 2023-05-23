@@ -1245,8 +1245,8 @@ public class TemplateHolder extends AbstractSpaceItem implements ITemplateHolder
     @Override
     public boolean isActiveRead(SpaceEngine engine) {
         if (engine.isMvccEnabled()) {
-            return isReadOperation()
-                    && (mvccGenerationsState == null
+            return !isReadOperation()
+                    || (mvccGenerationsState == null
                         || mvccGenerationsState.getCompletedGeneration() == -1
                         || engine.indicateDirtyRead(this));
         }
