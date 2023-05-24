@@ -73,29 +73,29 @@ public class MVCCSpaceEngineHandler {
         }
     }
 
-    public IEntryHolder getMatchedMVCCEntry(ITemplateHolder template,
+    public IEntryHolder getMVCCEntryIfMatched(ITemplateHolder template,
                                                         IEntryCacheInfo entryCacheInfo) {
         if (entryCacheInfo instanceof MVCCShellEntryCacheInfo) {
             MVCCShellEntryCacheInfo shellEntry = (MVCCShellEntryCacheInfo)entryCacheInfo;
             final Iterator<MVCCEntryCacheInfo> generationIterator = shellEntry.descIterator();
             if (shellEntry.getDirtyEntryCacheInfo() != null) {
-                MVCCEntryHolder entryHolder = getEntryIfMatched(template, shellEntry.getDirtyEntryHolder());
+                MVCCEntryHolder entryHolder = getMVCCEntryIfMatched(template, shellEntry.getDirtyEntryHolder());
                 if (entryHolder != null){
                     return entryHolder;
                 }
             }
             while (generationIterator.hasNext()) {
                 final MVCCEntryHolder entryHolder = generationIterator.next().getEntryHolder();
-                final MVCCEntryHolder matchMvccEntryHolder = getEntryIfMatched(template, entryHolder);
+                final MVCCEntryHolder matchMvccEntryHolder = getMVCCEntryIfMatched(template, entryHolder);
                 if (matchMvccEntryHolder != null) return matchMvccEntryHolder;
             }
             return null; // continue
         }
-        return getEntryIfMatched(template, (MVCCEntryHolder)entryCacheInfo.getEntryHolder(_cacheManager));
+        return getMVCCEntryIfMatched(template, (MVCCEntryHolder)entryCacheInfo.getEntryHolder(_cacheManager));
 
     }
 
-    private MVCCEntryHolder getEntryIfMatched(ITemplateHolder template, MVCCEntryHolder entryHolder) {
+    public MVCCEntryHolder getMVCCEntryIfMatched(ITemplateHolder template, MVCCEntryHolder entryHolder) {
         if (entryHolder.isLogicallyDeleted() || !isEntryMatchedByGenerationsState(entryHolder, template)) {
             return null;
         }
@@ -128,27 +128,28 @@ public class MVCCSpaceEngineHandler {
         }
     }
 
-    public SpaceEngine.XtnConflictCheckIndicators checkTransactionConflict(Context context, MVCCEntryHolder entry, ITemplateHolder template) {
+    public void checkTransactionConflict(MVCCEntryHolder entry, ITemplateHolder template) {
         if (template.getTemplateOperation() == SpaceOperations.TAKE_IE
                 || template.getTemplateOperation() == SpaceOperations.TAKE
                 || template.getTemplateOperation() == SpaceOperations.UPDATE) {
             if (entry.isLogicallyDeleted()) {
+                String msg = "Encountered a conflict while attempting to modify " + entry
+                        + ", this entry has already overridden by another generation."
+                        + " the current generation state is " + template.getGenerationsState();
                 if (_spaceEngine.getLogger().isDebugEnabled()) {
-                    _spaceEngine.getLogger().debug("Encountered a conflict while attempting to modify " + entry
-                            + ", this entry is logically deleted."
-                            + " the current generation state is " + template.getGenerationsState());
+                    _spaceEngine.getLogger().debug(msg);
                 }
-                return SpaceEngine.XtnConflictCheckIndicators.ENTRY_DELETED;
+                throw new MVCCEntryModifyConflictException(msg);
             } else if (entry.getOverrideGeneration() > -1) {
+                String msg = "Encountered a conflict while attempting to modify " + entry
+                        + ", this entry has already overridden by another generation."
+                        + " the current generation state is " + template.getGenerationsState();
                 if (_spaceEngine.getLogger().isDebugEnabled()) {
-                    _spaceEngine.getLogger().debug("Encountered a conflict while attempting to modify " + entry
-                            + ", this entry has already overridden by another generation."
-                            + " the current generation state is " + template.getGenerationsState());
+                    _spaceEngine.getLogger().debug(msg);
                 }
-                return SpaceEngine.XtnConflictCheckIndicators.XTN_CONFLICT;
+                throw new MVCCEntryModifyConflictException(msg);
             }
         }
-        return SpaceEngine.XtnConflictCheckIndicators.NO_CONFLICT;
     }
 
 
