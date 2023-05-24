@@ -3899,7 +3899,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
             entry = ((BlobStoreRefEntryCacheInfo) pEntry).getLatestEntryVersion(_cacheManager, false/*attach*/,
                     null /*lastKnownEntry*/, context, onlyIndexesPart/* onlyIndexesPart*/);
         } else if (isMvccEnabled()) {
-            entry = _mvccSpaceEngineHandler.getMatchedMVCCEntry(template, pEntry);
+            entry = _mvccSpaceEngineHandler.getMVCCEntryIfMatched(template, pEntry);
             if (entry == null) {
                 return null;
             }

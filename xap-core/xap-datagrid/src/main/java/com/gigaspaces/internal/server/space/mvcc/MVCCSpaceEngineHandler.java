@@ -73,29 +73,30 @@ public class MVCCSpaceEngineHandler {
         }
     }
 
-    public IEntryHolder getMatchedMVCCEntry(ITemplateHolder template,
+    public IEntryHolder getMVCCEntryIfMatched(ITemplateHolder template,
                                                         IEntryCacheInfo entryCacheInfo) {
         if (entryCacheInfo instanceof MVCCShellEntryCacheInfo) {
             MVCCShellEntryCacheInfo shellEntry = (MVCCShellEntryCacheInfo)entryCacheInfo;
-            final Iterator<MVCCEntryCacheInfo> generationIterator = shellEntry.descIterator();
-            if (shellEntry.getDirtyEntryCacheInfo() != null) {
-                MVCCEntryHolder entryHolder = getEntryIfMatched(template, shellEntry.getDirtyEntryHolder());
+            MVCCEntryHolder dirtyEntryHolder = shellEntry.getDirtyEntryHolder();
+            if (dirtyEntryHolder != null) {
+                MVCCEntryHolder entryHolder = getMVCCEntryIfMatched(template, dirtyEntryHolder);
                 if (entryHolder != null){
                     return entryHolder;
                 }
             }
+            final Iterator<MVCCEntryCacheInfo> generationIterator = shellEntry.descIterator();
             while (generationIterator.hasNext()) {
                 final MVCCEntryHolder entryHolder = generationIterator.next().getEntryHolder();
-                final MVCCEntryHolder matchMvccEntryHolder = getEntryIfMatched(template, entryHolder);
+                final MVCCEntryHolder matchMvccEntryHolder = getMVCCEntryIfMatched(template, entryHolder);
                 if (matchMvccEntryHolder != null) return matchMvccEntryHolder;
             }
             return null; // continue
         }
-        return getEntryIfMatched(template, (MVCCEntryHolder)entryCacheInfo.getEntryHolder(_cacheManager));
+        return getMVCCEntryIfMatched(template, (MVCCEntryHolder)entryCacheInfo.getEntryHolder(_cacheManager));
 
     }
 
-    private MVCCEntryHolder getEntryIfMatched(ITemplateHolder template, MVCCEntryHolder entryHolder) {
+    private MVCCEntryHolder getMVCCEntryIfMatched(ITemplateHolder template, MVCCEntryHolder entryHolder) {
         if (entryHolder.isLogicallyDeleted() || !isEntryMatchedByGenerationsState(entryHolder, template)) {
             return null;
         }
