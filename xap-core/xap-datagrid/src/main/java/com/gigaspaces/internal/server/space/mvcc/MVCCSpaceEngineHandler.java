@@ -3,8 +3,10 @@ package com.gigaspaces.internal.server.space.mvcc;
 import com.gigaspaces.internal.server.space.SpaceEngine;
 import com.gigaspaces.internal.server.storage.IEntryHolder;
 import com.gigaspaces.internal.server.storage.ITemplateHolder;
-import com.j_spaces.core.*;
+import com.j_spaces.core.SpaceOperations;
+import com.j_spaces.core.XtnEntry;
 import com.j_spaces.core.cache.CacheManager;
+import com.j_spaces.core.cache.IEntryCacheInfo;
 import com.j_spaces.core.cache.context.Context;
 import com.j_spaces.core.cache.mvcc.MVCCEntryCacheInfo;
 import com.j_spaces.core.cache.mvcc.MVCCEntryHolder;
@@ -71,65 +73,38 @@ public class MVCCSpaceEngineHandler {
         }
     }
 
-    public IEntryHolder getMatchedEntryAndOperateSA_Entry(Context context,
-                                                          ITemplateHolder template,
-                                                          boolean makeWaitForInfo,
-                                                          MVCCShellEntryCacheInfo shellEntry) throws TemplateDeletedException, TransactionNotActiveException, TransactionConflictException, FifoException, SAException, NoMatchException, EntryDeletedException {
-        final MVCCGenerationsState mvccGenerationsState = getMvccGenerationsState(context, template);
-        final Iterator<MVCCEntryCacheInfo> generationIterator = shellEntry.descIterator();
-        MVCCEntryHolder dirtyEntryHolder = shellEntry.getDirtyEntryHolder();
-        if (dirtyEntryHolder != null){
-            MVCCEntryHolder entryHolder = getMatchMvccEntryHolder(context, template, makeWaitForInfo,
-                    dirtyEntryHolder, mvccGenerationsState);
-            if (entryHolder != null){
-                return entryHolder;
+    public IEntryHolder getMVCCEntryIfMatched(ITemplateHolder template,
+                                                        IEntryCacheInfo entryCacheInfo) {
+        if (entryCacheInfo instanceof MVCCShellEntryCacheInfo) {
+            MVCCShellEntryCacheInfo shellEntry = (MVCCShellEntryCacheInfo)entryCacheInfo;
+            MVCCEntryHolder dirtyEntryHolder = shellEntry.getDirtyEntryHolder();
+            if (dirtyEntryHolder != null) {
+                MVCCEntryHolder entryHolder = getMVCCEntryIfMatched(template, dirtyEntryHolder);
+                if (entryHolder != null){
+                    return entryHolder;
+                }
             }
-        }
-        while (generationIterator.hasNext()) {
-            final MVCCEntryCacheInfo entryCacheInfo = generationIterator.next();
-            final MVCCEntryHolder entryHolder = entryCacheInfo.getEntryHolder();
-            final MVCCEntryHolder matchMvccEntryHolder = getMatchMvccEntryHolder(context, template, makeWaitForInfo,
-                    entryHolder, mvccGenerationsState);
-            if (matchMvccEntryHolder != null) return matchMvccEntryHolder;
-        }
-        return null; // continue
-    }
-
-
-    public IEntryHolder getMatchedEntryAndOperateSA_Entry(Context context,
-                                                          ITemplateHolder template,
-                                                          boolean makeWaitForInfo,
-                                                          MVCCEntryHolder entryHolder) throws TemplateDeletedException,
-            TransactionNotActiveException, TransactionConflictException, FifoException, SAException, NoMatchException, EntryDeletedException {
-        final MVCCGenerationsState mvccGenerationsState = getMvccGenerationsState(context, template);
-        return getMatchMvccEntryHolder(context, template, makeWaitForInfo, entryHolder, mvccGenerationsState);
-    }
-
-    private static MVCCGenerationsState getMvccGenerationsState(Context context, ITemplateHolder template) {
-        final XtnEntry xidOriginated = template.getXidOriginated();
-        MVCCGenerationsState mvccGenerationsState = null;
-        if (xidOriginated != null) {
-            mvccGenerationsState = xidOriginated.getMVCCGenerationsState();
-        }
-        // TODO: no transaction - get from context/template
-        return mvccGenerationsState;
-    }
-
-    private MVCCEntryHolder getMatchMvccEntryHolder(Context context, ITemplateHolder template, boolean makeWaitForInfo,
-                                                    MVCCEntryHolder entryHolder, MVCCGenerationsState mvccGenerationsState) throws TransactionConflictException, EntryDeletedException, TemplateDeletedException, TransactionNotActiveException, SAException, NoMatchException, FifoException {
-
-        if (isEntryMatchedByGenerationsState(mvccGenerationsState, entryHolder, template)) {
-            if  (entryHolder.isLogicallyDeleted()){
-                return null;
+            final Iterator<MVCCEntryCacheInfo> generationIterator = shellEntry.descIterator();
+            while (generationIterator.hasNext()) {
+                final MVCCEntryHolder entryHolder = generationIterator.next().getEntryHolder();
+                final MVCCEntryHolder matchMvccEntryHolder = getMVCCEntryIfMatched(template, entryHolder);
+                if (matchMvccEntryHolder != null) return matchMvccEntryHolder;
             }
-            _spaceEngine.performTemplateOnEntrySA(context, template, entryHolder, makeWaitForInfo);
-            return entryHolder;
+            return null; // continue
         }
-        return null; // continue
+        return getMVCCEntryIfMatched(template, (MVCCEntryHolder)entryCacheInfo.getEntryHolder(_cacheManager));
+
     }
 
-    private boolean isEntryMatchedByGenerationsState(MVCCGenerationsState mvccGenerationsState,
-                                                     MVCCEntryHolder entryHolder, ITemplateHolder template) {
+    private MVCCEntryHolder getMVCCEntryIfMatched(ITemplateHolder template, MVCCEntryHolder entryHolder) {
+        if (entryHolder.isLogicallyDeleted() || !isEntryMatchedByGenerationsState(entryHolder, template)) {
+            return null;
+        }
+        return entryHolder;
+    }
+
+    private boolean isEntryMatchedByGenerationsState(MVCCEntryHolder entryHolder, ITemplateHolder template) {
+        final MVCCGenerationsState mvccGenerationsState = template.getGenerationsState();
         final long completedGeneration = mvccGenerationsState == null ? -1 : mvccGenerationsState.getCompletedGeneration();
         final long overrideGeneration = entryHolder.getOverrideGeneration();
         final long committedGeneration = entryHolder.getCommittedGeneration();
