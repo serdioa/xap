@@ -46,9 +46,9 @@ public class QueryProcessorFactory {
      */
     public static IQueryProcessor newInstance(IJSpace proxy, IRemoteSpace remoteSpace, Properties config)
             throws Exception {
-        if (proxy.isSecured()) {
+/*        if (proxy.isSecured()) {
             return createQueryProcessor(proxy, config);
-        }
+        }*/
 
         if (isRemoteQueryProcessor(config))
             return remoteSpace.getQueryProcessor();
