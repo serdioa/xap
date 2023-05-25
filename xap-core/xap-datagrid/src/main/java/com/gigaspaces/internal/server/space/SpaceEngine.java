@@ -3898,6 +3898,11 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
             boolean onlyIndexesPart = BlobStoreOperationOptimizations.isConsiderOptimizedForBlobstore(this, context, template, pEntry);
             entry = ((BlobStoreRefEntryCacheInfo) pEntry).getLatestEntryVersion(_cacheManager, false/*attach*/,
                     null /*lastKnownEntry*/, context, onlyIndexesPart/* onlyIndexesPart*/);
+        } else if (isMvccEnabled()) {
+            entry = _mvccSpaceEngineHandler.getMVCCEntryIfMatched(template, pEntry);
+            if (entry == null) {
+                return null;
+            }
         } else {
             entry = pEntry.getEntryHolder(_cacheManager, context);
         }
@@ -3905,7 +3910,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
             return null;
         if (scnFilter != 0 && entry.getSCN() < scnFilter)
             return null;
-        if (!(isMvccEnabled() && (entry.isHollowEntry() || ((MVCCEntryHolder) entry).isLogicallyDeleted()))) {
+        if (!(isMvccEnabled() && entry.isHollowEntry())) {
             if (entry.isExpired(leaseFilter) && disqualifyExpiredEntry(entry) && template.isReadOperation()) {
                 context.setPendingExpiredEntriesExist(true);
                 return null;
@@ -3917,19 +3922,6 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
             return null;
 
         try {
-            if (isMvccEnabled()) {
-                if (pEntry instanceof MVCCShellEntryCacheInfo) { // in case of using id index.
-                    return _mvccSpaceEngineHandler.getMatchedEntryAndOperateSA_Entry(context,
-                            template,
-                            makeWaitForInfo,
-                            (MVCCShellEntryCacheInfo) pEntry);
-                } else {
-                    return _mvccSpaceEngineHandler.getMatchedEntryAndOperateSA_Entry(context,
-                            template,
-                            makeWaitForInfo,
-                            (MVCCEntryHolder) entry);
-                }
-            }
             performTemplateOnEntrySA(context, template, entry,
                     makeWaitForInfo);
             return entry;
@@ -5106,9 +5098,6 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
             if (entry.getXidOriginatedTransaction() == null ||
                     !template.getXidOriginatedTransaction().equals(entry.getXidOriginatedTransaction())) {
                 _cacheManager.associateEntryWithXtn(context, entry, template, template.getXidOriginated(), null);
-                if(isMvccEnabled()){
-                    _mvccSpaceEngineHandler.createLogicallyDeletedEntry((MVCCEntryHolder) entry);
-                }
             }
         }
 
@@ -5473,7 +5462,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
      * called when xtn & entry are locked (but called from count w/o locks in order not to harm
      * performance
      */
-    private boolean indicateReadCommitted(ITransactionalEntryData entry, ITemplateHolder template) {
+    public boolean indicateReadCommitted(ITransactionalEntryData entry, ITemplateHolder template) {
         if (indicateDirtyRead(template) || !template.isReadCommittedRequested())
             return false;
 
@@ -6078,7 +6067,6 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
                 context.setFromGateway(xtnEntry.isFromGateway());
 
                 _cacheManager.rollback(context, xtnEntry, xtnEntry.m_AlreadyPrepared, xtnEntry.m_AnyUpdates, supportsTwoPhaseReplication);
-
                 xtnEntry.m_Active = false;
                 //call cache-manager pre-rollback method in order to restore
                 // updated entries to original values
@@ -6100,16 +6088,24 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
                     _coreProcessor.handleLockedFifoEntriesBeforeXtnEnd(context, xtnEntry, true /*fromRollback*/);
                 }
 
+                boolean new_entries_deleted = false;
+                //mvcc - handle new entries under xtn-remove from cache
+                if (isMvccEnabled() && !xtnEntry.m_AlreadyPrepared) {
+                    _coreProcessor.handleNewRolledbackEntries(context, xtnEntry);
+                    _coreProcessor.handleNewMvccGenerationsRolledbackEntries(context, xtnEntry);
+                    new_entries_deleted = true;
+                }
+
                 xtnEntry.setStatus(XtnStatus.ROLLING);
 
                 //fifo group op performed under this xtn
-                if (xtnEntry.getXtnData().anyFifoGroupOperations())
+                if (xtnEntry.getXtnData().anyFifoGroupOperations()) {
                     _cacheManager.handleFifoGroupsCacheOnXtnEnd(context, xtnEntry);
-                _fifoGroupsHandler.prepareForFifoGroupsAfterXtnScans(context, xtnEntry);
+                    _fifoGroupsHandler.prepareForFifoGroupsAfterXtnScans(context, xtnEntry);
+                }
 
                 //handle new entries under xtn-remove from cache
-                boolean new_entries_deleted = false;
-                if (!xtnEntry.m_AlreadyPrepared) {
+                if (!xtnEntry.m_AlreadyPrepared && !new_entries_deleted) {
                     _coreProcessor.handleNewRolledbackEntries(context, xtnEntry);
                     new_entries_deleted = true;
                 }
@@ -6499,6 +6495,13 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
         if (isShadow)
             return XtnConflictCheckIndicators.NO_CONFLICT;  //read committed
 
+        if (isMvccEnabled()){
+            MVCCEntryHolder dirtyEntryHolder = _cacheManager.getMVCCShellEntryCacheInfoByUid(entry.getUID()).getDirtyEntryHolder();
+            if (dirtyEntryHolder != null && entry == dirtyEntryHolder){
+                return SpaceEngine.XtnConflictCheckIndicators.XTN_CONFLICT;
+            }
+        }
+
         if (!context.isNonBlockingReadOp()) {
             if (entry.hasShadow(true /*safeEntry*/))
                 return XtnConflictCheckIndicators.XTN_CONFLICT;//  read-committed only for shadow
@@ -6542,6 +6545,13 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
                                                                          XtnStatus entryWriteLockStatus, int entryWriteLockOperation, IEntryHolder entry, ITransactionalEntryData edata, boolean isShadow) {
         if (isShadow)
             return XtnConflictCheckIndicators.XTN_CONFLICT;// dirty read unrelevant here
+
+        if (isMvccEnabled()){
+            MVCCEntryHolder dirtyEntryHolder = _cacheManager.getMVCCShellEntryCacheInfoByUid(entry.getUID()).getDirtyEntryHolder();
+            if (dirtyEntryHolder != null && entry != dirtyEntryHolder){
+                return SpaceEngine.XtnConflictCheckIndicators.XTN_CONFLICT;
+            }
+        }
 
         if ((entryWriteLockOperation == SpaceOperations.TAKE ||
                 entryWriteLockOperation == SpaceOperations.TAKE_IE) &&

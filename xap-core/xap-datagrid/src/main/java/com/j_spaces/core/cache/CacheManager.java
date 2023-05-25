@@ -2341,7 +2341,9 @@ public class CacheManager extends AbstractCacheManager
 
 
         if (!pXtn.isLockedEntry(pEntry)) {
-            lockEntry(pXtn, pEntry, context.getOperationID());
+            if (!isMVCCEnabled() || !pXtn.getMvccNewGenerationsEntries().containsKey(pEntry.getUID())) {
+                lockEntry(pXtn, pEntry, context.getOperationID());
+            }
         } else {
             updateLock(pXtn, pEntry, context.getOperationID(), template.getTemplateOperation());
         }
@@ -2382,50 +2384,61 @@ public class CacheManager extends AbstractCacheManager
                     pXtn.removeRewrittenEntryIndication(pEntry.getUID());
                 }
                 pXtn.addToTakenEntriesIfNotInside(pEntry);
+
+                if (isMVCCEnabled()) {
+                    MVCCEntryCacheInfo logicallyDeletedEntry = _mvccCacheManagerHandler.createLogicallyDeletedMvccEntryPendingGeneration(((MVCCEntryHolder) pEntry.getEntryHolder(this)));
+                    pXtn.addMvccNewGenerationsEntries(logicallyDeletedEntry);
+                 }
+
                 break;
 
             case SpaceOperations.UPDATE:
                 pEntry.getEntryHolder(this).clearReadLockOwners();
+                if (isMVCCEnabled()){
+                    _mvccCacheManagerHandler.createUpdateMvccEntryPendingGeneration(context, xtnEntry, template.getTemplateOperation(),
+                            (MVCCEntryCacheInfo) pEntry, (MVCCEntryHolder) new_content, typeData);
+                } else{
+                    boolean newShadow = true;
+                    if (pEntry.getEntryHolder(this).getWriteLockOperation() == SpaceOperations.WRITE &&
+                            pEntry.getEntryHolder(this).getWriteLockTransaction() != null &&
+                            pEntry.getEntryHolder(this).getWriteLockTransaction().equals(xtnEntry.m_Transaction))
+                        newShadow = false;
 
-                boolean newShadow = true;
-                if (pEntry.getEntryHolder(this).getWriteLockOperation() == SpaceOperations.WRITE &&
-                        pEntry.getEntryHolder(this).getWriteLockTransaction() != null &&
-                        pEntry.getEntryHolder(this).getWriteLockTransaction().equals(xtnEntry.m_Transaction))
-                    newShadow = false;
+                    if (pEntry.getEntryHolder(this).getWriteLockOperation() == SpaceOperations.UPDATE &&
+                            pEntry.getEntryHolder(this).getWriteLockTransaction() != null && //Already performed an update, so we have a shadow
+                            pEntry.getEntryHolder(this).getWriteLockTransaction().equals(xtnEntry.m_Transaction) &&
+                            pEntry.getEntryHolder(this).hasShadow())
+                        newShadow = false;
 
-                if (pEntry.getEntryHolder(this).getWriteLockOperation() == SpaceOperations.UPDATE &&
-                        pEntry.getEntryHolder(this).getWriteLockTransaction() != null && //Already performed an update, so we have a shadow
-                        pEntry.getEntryHolder(this).getWriteLockTransaction().equals(xtnEntry.m_Transaction) &&
-                        pEntry.getEntryHolder(this).hasShadow())
-                    newShadow = false;
-
-                if ((pEntry.getEntryHolder(this).getWriteLockOperation() == SpaceOperations.TAKE ||
-                        pEntry.getEntryHolder(this).getWriteLockOperation() == SpaceOperations.TAKE_IE) &&
-                        pEntry.getEntryHolder(this).getWriteLockTransaction() != null &&
-                        pEntry.getEntryHolder(this).getWriteLockTransaction().equals(xtnEntry.m_Transaction))
-                //take + write under same xtn, signal "rewrite"
-                {
-                    pXtn.signalRewrittenEntry(pEntry.getUID());
-                    pXtn.removeTakenEntry(pEntry); //no longer its a take
+                    if ((pEntry.getEntryHolder(this).getWriteLockOperation() == SpaceOperations.TAKE ||
+                            pEntry.getEntryHolder(this).getWriteLockOperation() == SpaceOperations.TAKE_IE) &&
+                            pEntry.getEntryHolder(this).getWriteLockTransaction() != null &&
+                            pEntry.getEntryHolder(this).getWriteLockTransaction().equals(xtnEntry.m_Transaction))
+                    //take + write under same xtn, signal "rewrite"
+                    {
+                        pXtn.signalRewrittenEntry(pEntry.getUID());
+                        pXtn.removeTakenEntry(pEntry); //no longer its a take
+                    }
+                    //cater for partial update
+                    if (newShadow) {
+                        if (getTypeData(pEntry.getEntryHolder(this).getServerTypeDesc()).hasFifoGroupingIndex())
+                            pXtn.addToEntriesForFifoGroupScan(pEntry.getEntryHolder(this)); //kepp the shadow value for f-g scans
+                        //create a shadow entry
+                        ShadowEntryHolder shadowEh = createShadowEntry(pEntry, typeData);
+                        pEntry.getEntryHolder(this).setWriteLockOwnerOperationAndShadow(xtnEntry, template.getTemplateOperation(), shadowEh);
+                    }
+                    //we set this flag here before the actual update of the entry
+                    pEntry.getEntryHolder(this).setMaybeUnderXtn(true);
+                    IEntryData new_content_data = new_content.getEntryData();
+                    pEntry = updateEntryInCache(context, pEntry, pEntry.getEntryHolder(this), new_content_data, new_content_data.getExpirationTime(), template.getOperationModifiers());
                 }
-                //cater for partial update
 
-                if (newShadow) {
-                    if (getTypeData(pEntry.getEntryHolder(this).getServerTypeDesc()).hasFifoGroupingIndex())
-                        pXtn.addToEntriesForFifoGroupScan(pEntry.getEntryHolder(this)); //kepp the shadow value for f-g scans
-                    //create a shadow entry
-                    ShadowEntryHolder shadowEh = createShadowEntry(pEntry, typeData);
-                    pEntry.getEntryHolder(this).setWriteLockOwnerOperationAndShadow(xtnEntry, template.getTemplateOperation(), shadowEh);
-                }
-
-                //we set this flag here before the actual update of the entry
-                pEntry.getEntryHolder(this).setMaybeUnderXtn(true);
-                IEntryData new_content_data = new_content.getEntryData();
-                pEntry = updateEntryInCache(context, pEntry, pEntry.getEntryHolder(this), new_content_data, new_content_data.getExpirationTime(), template.getOperationModifiers());
-                if (template.isChange())
+                if (template.isChange()) {
                     pXtn.setInPlaceUpdatedEntry(pEntry.getEntryHolder(this), template.getMutators());
-                else
+                }else {
                     pXtn.setUpdatedEntry(pEntry.getEntryHolder(this), context.getPartialUpdatedValuesIndicators());
+                }
+
                 break;
         } //switch (templateOperation)
 
@@ -2472,6 +2485,9 @@ public class CacheManager extends AbstractCacheManager
     public IEntryCacheInfo getMVCCEntryCacheInfoByEntryHolder(MVCCEntryHolder entryHolder) {
         MVCCShellEntryCacheInfo shellEntryCacheInfo = getMVCCShellEntryCacheInfoByUid(entryHolder.getUID());
         if (shellEntryCacheInfo != null) {
+            if (shellEntryCacheInfo.getDirtyEntryHolder() == entryHolder){
+                return shellEntryCacheInfo.getDirtyEntryCacheInfo();
+            }
             Iterator<MVCCEntryCacheInfo> mvccEntryCacheInfoIterator = shellEntryCacheInfo.descIterator();
             while (mvccEntryCacheInfoIterator.hasNext()) {
                 MVCCEntryCacheInfo next = mvccEntryCacheInfoIterator.next();
@@ -3655,11 +3671,11 @@ public class CacheManager extends AbstractCacheManager
     }
 
     public void handleNewMvccGeneration(Context context, MVCCEntryHolder entry, XtnEntry xtnEntry) throws SAException {
-        _mvccCacheManagerHandler.handleNewMvccGeneration(context, entry, xtnEntry);
+        _mvccCacheManagerHandler.handleDisconnectNewMvccEntryGenerationFromTransaction(context, entry, xtnEntry);
     }
 
     public boolean isMvccEntryValidForWrite(String uid) {
-        return _mvccCacheManagerHandler.isMvccEntryValidForWrite(uid);
+        return _mvccCacheManagerHandler.isMvccEntryValidForWriteOnly(uid);
     }
 
     /**
@@ -3680,7 +3696,7 @@ public class CacheManager extends AbstractCacheManager
     /**
      * Inserts the specified entry to cache.
      */
-    IEntryCacheInfo internalInsertEntryToCache(Context context, IEntryHolder entryHolder, boolean newEntry, TypeData typeData, IEntryCacheInfo pEntry, boolean pin) {
+    public IEntryCacheInfo internalInsertEntryToCache(Context context, IEntryHolder entryHolder, boolean newEntry, TypeData typeData, IEntryCacheInfo pEntry, boolean pin) {
         IEntryCacheInfo res = null;
         boolean recheckedTypeData = false;
         boolean alreadyIn = false;
@@ -3771,8 +3787,12 @@ public class CacheManager extends AbstractCacheManager
             // add entry to Xtn if written under Xtn
             if (newEntry && pEntry.getEntryHolder(this).getXidOriginated() != null) {
                 XtnData pXtn = pEntry.getEntryHolder(this).getXidOriginated().getXtnData();
-                pXtn.getNewEntries(true/*createIfNull*/).add(pEntry);
-                lockEntry(pXtn, pEntry, context.getOperationID());
+                if(isMVCCEnabled() && pEntry.getEntryHolder(this).getWriteLockOperation() != SpaceOperations.WRITE){
+                    pXtn.addMvccNewGenerationsEntries((MVCCEntryCacheInfo) pEntry);
+                } else {
+                    pXtn.getNewEntries(true/*createIfNull*/).add(pEntry);
+                    lockEntry(pXtn, pEntry, context.getOperationID());
+                }
                 pEntry.getEntryHolder(this).getXidOriginated().setOperatedUpon();
             }
 
@@ -4011,7 +4031,7 @@ public class CacheManager extends AbstractCacheManager
      * update entry values in cache. pEntry - the current in cache or null if unknown
      */
 
-    private IEntryCacheInfo updateEntryInCache(Context context, IEntryCacheInfo pEntry, IEntryHolder entryHolder, IEntryData newEntryData, long newExpirationTime,
+    public IEntryCacheInfo updateEntryInCache(Context context, IEntryCacheInfo pEntry, IEntryHolder entryHolder, IEntryData newEntryData, long newExpirationTime,
                                                int modifiers) {
         final TypeData typeData = _typeDataMap.get(entryHolder.getServerTypeDesc());
         final boolean partial_update = UpdateModifiers.isPartialUpdate(modifiers);
