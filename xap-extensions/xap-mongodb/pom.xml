@@ -11,7 +11,7 @@
 	<parent>
 		<artifactId>xap</artifactId>
 		<groupId>org.gigaspaces</groupId>
-		<version>16.4.0-SNAPSHOT</version>
+		<version>16.4.0-ops-ui-fix-tests-fri-728</version>
 		<relativePath>../../</relativePath>
 	</parent>
 
