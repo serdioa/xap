@@ -7,7 +7,7 @@
     <parent>
         <groupId>org.gigaspaces</groupId>
         <artifactId>xap</artifactId>
-        <version>16.4.0-SNAPSHOT</version>
+        <version>16.4.0-PIC-2451_secured_pu_deploy_process-fri-729</version>
         <relativePath>../../</relativePath>
     </parent>
     <artifactId>xap-trove</artifactId>
