@@ -6067,6 +6067,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
                 context.setFromGateway(xtnEntry.isFromGateway());
 
                 _cacheManager.rollback(context, xtnEntry, xtnEntry.m_AlreadyPrepared, xtnEntry.m_AnyUpdates, supportsTwoPhaseReplication);
+
                 xtnEntry.m_Active = false;
                 //call cache-manager pre-rollback method in order to restore
                 // updated entries to original values

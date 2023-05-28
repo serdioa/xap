@@ -60,7 +60,6 @@ public class WriteMultipleProxyActionInfo extends CommonProxyActionInfo {
             throw new UnsupportedOperationException("Write Multiple operation with lease are not allowed when MVCC is enabled.");
         }
 
-
         if (oneWaySystemProperty)
             modifiers |= Modifiers.ONE_WAY;
 
