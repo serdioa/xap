@@ -143,12 +143,17 @@ public class BlobStoreStorageAdapter implements IStorageAdapter, IBlobStoreStora
         while (iter.hasNext()) {
             String className = iter.next();
             //check contains, if not then call introduce type
-            TypeData typeData = _engine.getCacheManager().getTypeData(_engine.getTypeManager().getServerTypeDesc(className));
-            if (typeData != null) {
-
-                BlobStoreStorageAdapterClassInfo cur = _classes.get(className);
-                if (!_classes.isContained(className, typeData)) {
-                    introduceDataType_impl(_engine.getTypeManager().getTypeDesc(className));
+            //DEBUG
+            IServerTypeDesc serverTypeDesc = _engine.getTypeManager().getServerTypeDesc(className);
+            if (serverTypeDesc == null)
+                _logger.error("Type descriptor for: " + className + " is null");
+            else {
+                TypeData typeData = _engine.getCacheManager().getTypeData(serverTypeDesc);
+                if (typeData != null) {
+                    BlobStoreStorageAdapterClassInfo cur = _classes.get(className);
+                    if (!_classes.isContained(className, typeData)) {
+                        introduceDataType_impl(_engine.getTypeManager().getTypeDesc(className));
+                    }
                 }
             }
         }
