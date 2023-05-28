@@ -43,8 +43,9 @@ public class MVCCShellEntryCacheInfo extends MemoryBasedEntryCacheInfo {
     }
 
     public MVCCEntryHolder getDirtyEntryHolder() {
-        if (getDirtyEntryCacheInfo() != null) {
-            return getDirtyEntryCacheInfo().getEntryHolder();
+        MVCCEntryCacheInfo dirtyEntryCacheInfo = getDirtyEntryCacheInfo();
+        if (dirtyEntryCacheInfo != null) {
+            return dirtyEntryCacheInfo.getEntryHolder();
         }
         return null;
     }
@@ -76,12 +77,13 @@ public class MVCCShellEntryCacheInfo extends MemoryBasedEntryCacheInfo {
 
     @Override
     public MVCCEntryHolder getEntryHolder() {
+        MVCCEntryCacheInfo dirtyEntry = this.dirtyEntry;
+        if (dirtyEntry != null) {
+            return dirtyEntry.getEntryHolder();
+        }
         MVCCEntryCacheInfo latestGeneration = getLatestGenerationCacheInfo();
         if (latestGeneration != null) {
             return latestGeneration.getEntryHolder();
-        }
-        if (dirtyEntry != null) {
-            return dirtyEntry.getEntryHolder();
         }
         return EntryHolderFactory.createMvccShellHollowEntry(serverTypeDesc, uid);
     }

@@ -164,6 +164,12 @@ public class LRMISpaceImpl extends RemoteStub<IRemoteSpace>
     }
 
     @Override
+    public void snapshot(ITemplatePacket e, SpaceContext sc) throws UnusableEntryException,
+            RemoteException {
+        getProxy().snapshot(e, sc);
+    }
+
+    @Override
     public void cancel(String entryUID, String classname, int objectType)
             throws UnknownLeaseException, RemoteException {
         getProxy().cancel(entryUID, classname, objectType);

@@ -29,11 +29,19 @@ public class CountClearProxyActionInfo extends QueryProxyActionInfo {
     public CountClearProxyActionInfo(ISpaceProxy spaceProxy, Object query, Transaction txn, int modifiers, boolean isTake, boolean isClear) {
         super(spaceProxy, query, txn, modifiers, isTake, isClear);
         this.isTake = isTake;
+        validateMvcc(spaceProxy);
     }
 
     public CountClearProxyActionInfo(ISpaceProxy spaceProxy, Object query, Transaction txn, int modifiers, boolean isTake) {
         super(spaceProxy, query, txn, modifiers, isTake);
         this.isTake = isTake;
+        validateMvcc(spaceProxy);
+    }
+
+    private void validateMvcc(ISpaceProxy spaceProxy) {
+        if (spaceProxy.getDirectProxy().getProxySettings().isMvccEnabled()) {
+            throw new UnsupportedOperationException("Count / Clear operation unsupported when MVCC is enabled.");
+        }
     }
 
     @Override
