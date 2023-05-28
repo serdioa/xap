@@ -127,7 +127,6 @@ import com.j_spaces.core.cache.context.Context;
 import com.j_spaces.core.cache.context.TemplateMatchTier;
 import com.j_spaces.core.cache.context.TieredState;
 import com.j_spaces.core.cache.mvcc.MVCCEntryHolder;
-import com.j_spaces.core.cache.mvcc.MVCCShellEntryCacheInfo;
 import com.j_spaces.core.client.ReadModifiers;
 import com.j_spaces.core.client.TakeModifiers;
 import com.j_spaces.core.client.*;
@@ -4604,6 +4603,10 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
                     //renewed lru memory entry- mark to rematch
                     needRematch = true;
             }
+            if(isMvccEnabled() && entry.isHollowEntry()){
+                throw ENTRY_DELETED_EXCEPTION;
+            }
+
             // if entry was written under Xtn and the Xtn is aborted, the entry
             // is considered as not exists.
             if (entry.getWriteLockOwner() != null && entry.getWriteLockOperation() == SpaceOperations.WRITE) {
