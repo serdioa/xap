@@ -786,6 +786,8 @@ public class SystemProperties extends CommonSystemProperties {
     public static final String BLOCKING_CLIENT_CONNECT = "com.gs.blocking.client.client.connect";
     public static final String BLOCKING_CLIENT_CONNECT_DEFAULT = "false";
 
+    public static final String SQLITE_ASYNC ="com.gs.sqlite.async";
+
     public static final int EXTRA_BACKUP_SPACE_RESOLUTION_RETRIES_DEFAULT = 15;
     public static final String EXTRA_BACKUP_SPACE_RESOLUTION_RETRIES = "com.gs.cluster.extra_backup_space_resolution_retries";
 

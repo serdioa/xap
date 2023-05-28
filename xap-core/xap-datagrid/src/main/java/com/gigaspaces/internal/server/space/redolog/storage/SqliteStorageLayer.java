@@ -10,6 +10,8 @@ import com.gigaspaces.internal.server.space.redolog.DBSwapRedoLogFileConfig;
 import com.gigaspaces.internal.server.space.redolog.storage.bytebuffer.IPacketStreamSerializer;
 import com.gigaspaces.internal.server.space.redolog.storage.bytebuffer.SwapPacketStreamSerializer;
 import com.gigaspaces.start.SystemLocations;
+import com.j_spaces.core.Constants;
+import com.j_spaces.kernel.SystemProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.sqlite.SQLiteConfig;
@@ -62,6 +64,9 @@ public abstract class SqliteStorageLayer<T extends IReplicationOrderedPacket> {
 
         try {
             SQLiteConfig sqLiteConfig = new SQLiteConfig();
+            if (Boolean.parseBoolean(System.getProperty(SystemProperties.SQLITE_ASYNC, "true")))
+                sqLiteConfig.setSynchronous(SQLiteConfig.SynchronousMode.OFF);
+
             String dbUrl = "jdbc:sqlite:" + path + "/" + dbName;
             connection = connectToDB(JDBC_DRIVER, dbUrl, USER, PASS, sqLiteConfig);
             logger.info("Successfully connected: " + dbUrl);
