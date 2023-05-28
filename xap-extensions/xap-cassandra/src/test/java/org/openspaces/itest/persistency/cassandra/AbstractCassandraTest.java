@@ -19,15 +19,10 @@ package org.openspaces.itest.persistency.cassandra;
 import com.gigaspaces.document.SpaceDocument;
 import com.gigaspaces.metadata.SpaceTypeDescriptorBuilder;
 import com.gigaspaces.metadata.index.SpaceIndexType;
-
 import org.apache.cassandra.cql.jdbc.CassandraDataSource;
 import org.junit.After;
 import org.junit.Before;
-import org.openspaces.persistency.cassandra.CassandraSpaceDataSource;
-import org.openspaces.persistency.cassandra.CassandraSpaceSynchronizationEndpoint;
-import org.openspaces.persistency.cassandra.CassandraSpaceSynchronizationEndpointConfigurer;
-import org.openspaces.persistency.cassandra.HectorCassandraClient;
-import org.openspaces.persistency.cassandra.HectorCassandraClientConfigurer;
+import org.openspaces.persistency.cassandra.*;
 import org.openspaces.persistency.cassandra.meta.mapping.filter.FlattenedPropertiesFilter;
 import org.openspaces.persistency.cassandra.meta.mapping.filter.PropertyContext;
 import org.openspaces.test.common.mock.MockIntroduceTypeData;
@@ -128,7 +123,8 @@ abstract public class AbstractCassandraTest {
                 server.getKeySpaceName(),
                 DEFAULT_AUTH,
                 DEFAULT_AUTH,
-                CQL_VERSION);
+                CQL_VERSION,
+                null);
     }
 
     protected MockIntroduceTypeData createIntroduceTypeDataFromSpaceDocument(
