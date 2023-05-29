@@ -44,14 +44,14 @@ public class MVCCUtils {
         MVCCShellEntryCacheInfo mvccShellEntryCacheInfo = engine.getCacheManager().getMVCCShellEntryCacheInfoByUid(uid);
 
         MVCCEntryCacheInfo dirtyEntry = null;
-        long dirtyId = -1;
+        long dirtyTransactionId = -1;
         if (mvccShellEntryCacheInfo != null) {
             dirtyEntry = mvccShellEntryCacheInfo.getDirtyEntryCacheInfo();
             XtnEntry writeLockOwner = dirtyEntry != null ? dirtyEntry.getEntryHolder().getWriteLockOwner() : null;
-            dirtyId = writeLockOwner != null ? writeLockOwner.m_Transaction.id : -1;
+            dirtyTransactionId = writeLockOwner != null ? writeLockOwner.m_Transaction.id : -1;
         }
-        boolean isDirtyUnderTransaction = dirtyId != -1 && dirtyId == transactionId;
-        return isDirtyUnderTransaction ? dirtyEntry.getEntryHolder().toMVCCEntryMetaData() : null;
+        boolean isDirtyUnderTransaction = dirtyTransactionId != -1 && dirtyTransactionId == transactionId;
+        return isDirtyUnderTransaction ? mvccEntryHolderToMVCCEntryMetaData(dirtyEntry.getEntryHolder()) : null;
     }
 
     public static MVCCEntryMetaData getMVCCDirtyEntryMetaData(SpaceEngine engine, String typeName, Object id) {
@@ -65,10 +65,22 @@ public class MVCCUtils {
                 MVCCEntryHolder entryHolder = dirtyEntry.getEntryHolder();
 
                 if (entryHolder != null) {
-                    return entryHolder.toMVCCEntryMetaData();
+                    return mvccEntryHolderToMVCCEntryMetaData(entryHolder);
                 }
             }
         }
         return null;
+    }
+
+    private static MVCCEntryMetaData mvccEntryHolderToMVCCEntryMetaData(MVCCEntryHolder entryHolder) {
+        if (entryHolder == null) {
+            return null;
+        }
+        MVCCEntryMetaData mvccDirtyEntryMetaData = new MVCCEntryMetaData();
+        mvccDirtyEntryMetaData.setCommittedGeneration(entryHolder.getCommittedGeneration());
+        mvccDirtyEntryMetaData.setOverrideGeneration(entryHolder.getOverrideGeneration());
+        mvccDirtyEntryMetaData.setLogicallyDeleted(entryHolder.isLogicallyDeleted());
+        mvccDirtyEntryMetaData.setOverridingAnother(entryHolder.isOverridingAnother());
+        return mvccDirtyEntryMetaData;
     }
 }

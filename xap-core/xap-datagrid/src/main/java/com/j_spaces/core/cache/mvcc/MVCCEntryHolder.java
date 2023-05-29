@@ -44,15 +44,6 @@ public class MVCCEntryHolder extends EntryHolder implements IMVCCLockObject {
         return dummy;
     }
 
-    public MVCCEntryMetaData toMVCCEntryMetaData() {
-        MVCCEntryMetaData mvccDirtyEntryMetaData = new MVCCEntryMetaData();
-        mvccDirtyEntryMetaData.setCommittedGeneration(this.getCommittedGeneration());
-        mvccDirtyEntryMetaData.setOverrideGeneration(this.getOverrideGeneration());
-        mvccDirtyEntryMetaData.setLogicallyDeleted(this.isLogicallyDeleted());
-        mvccDirtyEntryMetaData.setOverridingAnother(this.isOverridingAnother());
-        return mvccDirtyEntryMetaData;
-    }
-
     @Override
     public int getLockedObjectHashCode() {
         return Math.abs(getUID().hashCode());
