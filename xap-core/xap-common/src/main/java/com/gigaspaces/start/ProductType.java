@@ -5,9 +5,13 @@ package com.gigaspaces.start;
  * @since 12.2
  */
 public enum ProductType {
-    XAP, InsightEdge;
+    XAP("xap"), InsightEdge("insightedge"), SmartCache("smart-cache");
 
-    private final String nameLowerCase = this.name().toLowerCase();
+    private final String nameLowerCase;
+
+    ProductType(String nameLowerCase) {
+        this.nameLowerCase = nameLowerCase;
+    }
 
     public String getNameLowerCase() {
         return nameLowerCase;
