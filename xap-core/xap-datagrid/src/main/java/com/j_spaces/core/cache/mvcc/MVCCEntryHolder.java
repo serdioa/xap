@@ -1,10 +1,7 @@
 package com.j_spaces.core.cache.mvcc;
 
 import com.gigaspaces.internal.server.metadata.IServerTypeDesc;
-import com.gigaspaces.internal.server.storage.EntryHolder;
-import com.gigaspaces.internal.server.storage.FlatEntryData;
-import com.gigaspaces.internal.server.storage.IEntryHolder;
-import com.gigaspaces.internal.server.storage.ITransactionalEntryData;
+import com.gigaspaces.internal.server.storage.*;
 import com.gigaspaces.internal.utils.Textualizer;
 import com.j_spaces.core.Constants;
 import com.j_spaces.core.server.transaction.EntryXtnInfo;
@@ -45,6 +42,15 @@ public class MVCCEntryHolder extends EntryHolder implements IMVCCLockObject {
                 this.isTransient(), ed);
         dummy.setLogicallyDeleted(true);
         return dummy;
+    }
+
+    public MVCCEntryMetaData toMVCCEntryMetaData() {
+        MVCCEntryMetaData mvccDirtyEntryMetaData = new MVCCEntryMetaData();
+        mvccDirtyEntryMetaData.setCommittedGeneration(this.getCommittedGeneration());
+        mvccDirtyEntryMetaData.setOverrideGeneration(this.getOverrideGeneration());
+        mvccDirtyEntryMetaData.setLogicallyDeleted(this.isLogicallyDeleted());
+        mvccDirtyEntryMetaData.setOverridingAnother(this.isOverridingAnother());
+        return mvccDirtyEntryMetaData;
     }
 
     @Override

@@ -36,23 +36,25 @@ public class MVCCUtils {
         return metaDataList;
     }
 
-    public static boolean isMVCCEntryDirtyUnderTransaction(SpaceEngine engine, String typeName, Object id,
-                                                           long transactionId) {
-        if (transactionId == -1) return false;
+    public static MVCCEntryMetaData getMVCCDirtyEntryUnderTransaction(SpaceEngine engine, String typeName, Object id,
+                                                                      long transactionId) {
+        if (transactionId == -1) return null;
         IServerTypeDesc typeDesc = engine.getTypeManager().getServerTypeDesc(typeName);
         String uid = SpaceUidFactory.createUidFromTypeAndId(typeDesc.getTypeDesc(), id);
         MVCCShellEntryCacheInfo mvccShellEntryCacheInfo = engine.getCacheManager().getMVCCShellEntryCacheInfoByUid(uid);
+
+        MVCCEntryCacheInfo dirtyEntry = null;
         long dirtyId = -1;
         if (mvccShellEntryCacheInfo != null) {
-            MVCCEntryCacheInfo dirtyEntry = mvccShellEntryCacheInfo.getDirtyEntryCacheInfo();
+            dirtyEntry = mvccShellEntryCacheInfo.getDirtyEntryCacheInfo();
             XtnEntry writeLockOwner = dirtyEntry != null ? dirtyEntry.getEntryHolder().getWriteLockOwner() : null;
             dirtyId = writeLockOwner != null ? writeLockOwner.m_Transaction.id : -1;
-
         }
-        return dirtyId != -1 && dirtyId == transactionId;
+        boolean isDirtyUnderTransaction = dirtyId != -1 && dirtyId == transactionId;
+        return isDirtyUnderTransaction ? dirtyEntry.getEntryHolder().toMVCCEntryMetaData() : null;
     }
 
-    public static MVCCEntryMetaData getDirtyEntryMetaData(SpaceEngine engine, String typeName, Object id) {
+    public static MVCCEntryMetaData getMVCCDirtyEntryMetaData(SpaceEngine engine, String typeName, Object id) {
         IServerTypeDesc typeDesc = engine.getTypeManager().getServerTypeDesc(typeName);
         String uid = SpaceUidFactory.createUidFromTypeAndId(typeDesc.getTypeDesc(), id);
         MVCCShellEntryCacheInfo mvccShellEntryCacheInfo = engine.getCacheManager().getMVCCShellEntryCacheInfoByUid(uid);
@@ -63,12 +65,7 @@ public class MVCCUtils {
                 MVCCEntryHolder entryHolder = dirtyEntry.getEntryHolder();
 
                 if (entryHolder != null) {
-                    MVCCEntryMetaData mvccDirtyEntryMetaData = new MVCCEntryMetaData();
-                    mvccDirtyEntryMetaData.setCommittedGeneration(entryHolder.getCommittedGeneration());
-                    mvccDirtyEntryMetaData.setOverrideGeneration(entryHolder.getOverrideGeneration());
-                    mvccDirtyEntryMetaData.setLogicallyDeleted(entryHolder.isLogicallyDeleted());
-                    mvccDirtyEntryMetaData.setOverridingAnother(entryHolder.isOverridingAnother());
-                    return mvccDirtyEntryMetaData;
+                    return entryHolder.toMVCCEntryMetaData();
                 }
             }
         }

@@ -128,7 +128,6 @@ import com.gigaspaces.security.authorities.Privilege;
 import com.gigaspaces.security.authorities.SpaceAuthority.SpacePrivilege;
 import com.gigaspaces.security.directory.CredentialsProvider;
 import com.gigaspaces.security.directory.CredentialsProviderHelper;
-import com.gigaspaces.security.service.SecurityContext;
 import com.gigaspaces.security.service.SecurityInterceptor;
 import com.gigaspaces.server.space.suspend.SuspendType;
 import com.gigaspaces.start.SystemInfo;
@@ -2593,12 +2592,12 @@ public class SpaceImpl extends AbstractService implements IRemoteSpace, IInterna
         return MVCCUtils.getMVCCEntryMetaData(getEngine(), typeName, id);
     }
 
-    public boolean isMVCCEntryDirtyUnderTransaction(String typeName, Object id, long transactionId) {
-        return MVCCUtils.isMVCCEntryDirtyUnderTransaction(getEngine(), typeName, id, transactionId);
+    public MVCCEntryMetaData getMVCCDirtyEntryMetaDataUnderTransaction(String typeName, Object id, long transactionId) {
+        return MVCCUtils.getMVCCDirtyEntryUnderTransaction(getEngine(), typeName, id, transactionId);
     }
 
-    public MVCCEntryMetaData getDirtyEntryMetaData(String typeName, Object id) {
-        return MVCCUtils.getDirtyEntryMetaData(getEngine(), typeName, id);
+    public MVCCEntryMetaData getMVCCDirtyEntryMetaData(String typeName, Object id) {
+        return MVCCUtils.getMVCCDirtyEntryMetaData(getEngine(), typeName, id);
     }
 
     public GSEventRegistration notify(ITemplatePacket template, Transaction txn, long lease, SpaceContext sc,
