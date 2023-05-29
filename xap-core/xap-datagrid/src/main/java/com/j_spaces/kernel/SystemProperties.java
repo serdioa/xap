@@ -844,6 +844,8 @@ public class SystemProperties extends CommonSystemProperties {
 
     public static String MATCH_BY_ROUTING_PROPERTY = "com.gs.id-query.match-routing";
 
+    public static String BIG_DECIMAL_STRIP_TRAILING_ZEROS="com.gs.strip-trailing-zeros";
+
     private static final Map<String, String> defaultValues = initDefaultValues();
 
     private static Map<String, String> initDefaultValues() {

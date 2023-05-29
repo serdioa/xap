@@ -28,6 +28,7 @@ import com.gigaspaces.lrmi.LRMIInvocationContext;
 import com.gigaspaces.metadata.SpaceMetadataException;
 import com.gigaspaces.metadata.SpacePropertyDescriptor;
 import com.j_spaces.core.IGSEntry;
+import com.j_spaces.kernel.SystemProperties;
 import net.jini.space.InternalSpaceException;
 
 import java.io.IOException;
@@ -167,9 +168,11 @@ public abstract class AbstractTypeIntrospector<T> implements ITypeIntrospector<T
             return;
 
         try {
+            boolean strip =  SystemProperties.getBoolean(SystemProperties.BIG_DECIMAL_STRIP_TRAILING_ZEROS, false);
+
             for (int i = 0; i < values.length; i++) {
                 Object value = _typeDesc.getFixedProperty(i).beforeSerialize(values[i]);
-                if (value instanceof BigDecimal){
+                if (strip && value instanceof BigDecimal){
                     value =((BigDecimal) value).stripTrailingZeros();
                 }
                 values[i] = value;

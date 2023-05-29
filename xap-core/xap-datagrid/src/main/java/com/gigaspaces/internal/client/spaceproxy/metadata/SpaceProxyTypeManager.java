@@ -424,10 +424,11 @@ public class SpaceProxyTypeManager implements ISpaceProxyTypeManager {
     private ITemplatePacket getTemplatePacketFromIdQuery(IdQuery<?> idQuery) {
         final ITypeDesc typeDesc = _typeDescRepository.getTypeDescByName(idQuery.getTypeName(), null);
         final QueryResultTypeInternal resultType = getIdQueryResultType(idQuery);
+        boolean strip =  SystemProperties.getBoolean(SystemProperties.BIG_DECIMAL_STRIP_TRAILING_ZEROS, false);
 
         Object routing = idQuery.getRouting();
         Object id = idQuery.getId();
-        if (id instanceof BigDecimal){
+        if (strip && id instanceof BigDecimal){
             id = ((BigDecimal) id).stripTrailingZeros();
         }
         int version = idQuery.getVersion();

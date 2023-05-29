@@ -19,6 +19,7 @@ package com.gigaspaces.internal.query.predicate.comparison;
 import com.gigaspaces.internal.io.IOUtils;
 import com.gigaspaces.internal.query.predicate.AbstractSpacePredicate;
 import com.gigaspaces.internal.query.predicate.ISpacePredicate;
+import com.j_spaces.kernel.SystemProperties;
 
 import java.io.IOException;
 import java.io.ObjectInput;
@@ -55,8 +56,10 @@ public class InSpacePredicate extends AbstractSpacePredicate {
      */
     public InSpacePredicate(Object... values) {
         _inValues = new HashSet<Object>();
+        boolean strip =  SystemProperties.getBoolean(SystemProperties.BIG_DECIMAL_STRIP_TRAILING_ZEROS, false);
+
         for (Object value : values) {
-            if(value instanceof BigDecimal){
+            if(strip && value instanceof BigDecimal){
                 value = ((BigDecimal) value).stripTrailingZeros();
             }
             _inValues.add(value);
@@ -69,8 +72,11 @@ public class InSpacePredicate extends AbstractSpacePredicate {
      * @param inValues Values to test.
      */
     public InSpacePredicate(Set<?> inValues) {
-        _inValues = inValues.stream().map(value -> value instanceof BigDecimal ?
-                ((BigDecimal) value).stripTrailingZeros() : value).collect(Collectors.toSet());
+        _inValues = inValues;;
+        boolean strip =  SystemProperties.getBoolean(SystemProperties.BIG_DECIMAL_STRIP_TRAILING_ZEROS, false);
+        if (strip)
+            _inValues = inValues.stream().map(value -> value instanceof BigDecimal ?
+                    ((BigDecimal) value).stripTrailingZeros() : value).collect(Collectors.toSet());
     }
 
     /**

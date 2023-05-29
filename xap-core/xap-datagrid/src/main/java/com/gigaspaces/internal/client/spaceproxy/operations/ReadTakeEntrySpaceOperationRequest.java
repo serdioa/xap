@@ -32,6 +32,7 @@ import com.gigaspaces.query.explainplan.ExplainPlan;
 import com.j_spaces.core.client.Modifiers;
 import com.j_spaces.core.client.ReadModifiers;
 import com.j_spaces.core.exception.internal.InterruptedSpaceException;
+import com.j_spaces.kernel.SystemProperties;
 import net.jini.core.entry.UnusableEntryException;
 import net.jini.core.transaction.Transaction;
 import net.jini.core.transaction.TransactionException;
@@ -84,8 +85,10 @@ public class ReadTakeEntrySpaceOperationRequest extends SpaceOperationRequest<Re
         _templatePacket = templatePacket;
         Object[] fieldValues = templatePacket.getFieldValues();
         if (fieldValues != null) {
+            boolean strip =  SystemProperties.getBoolean(SystemProperties.BIG_DECIMAL_STRIP_TRAILING_ZEROS, false);
+
             for (int i = 0; i < fieldValues.length; i++) {
-                if (fieldValues[i] instanceof BigDecimal) {
+                if (strip && fieldValues[i] instanceof BigDecimal) {
                     Object fieldValue = fieldValues[i];
                     fieldValues[i] = ((BigDecimal) fieldValue).stripTrailingZeros();
                 }

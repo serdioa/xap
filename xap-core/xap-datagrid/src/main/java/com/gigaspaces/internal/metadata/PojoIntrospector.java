@@ -27,6 +27,7 @@ import com.gigaspaces.metadata.SpaceMetadataException;
 import com.gigaspaces.metadata.SpaceMetadataValidationException;
 import com.gigaspaces.time.SystemTime;
 import com.j_spaces.core.IGSEntry;
+import com.j_spaces.kernel.SystemProperties;
 import net.jini.core.lease.Lease;
 
 import java.io.IOException;
@@ -250,6 +251,7 @@ public class PojoIntrospector<T> extends AbstractTypeIntrospector<T> {
     public Object[] getValues(T target) {
         try {
             final Object[] values = _typeInfo.getSpacePropertiesValues(target, false);
+            boolean strip =  SystemProperties.getBoolean(SystemProperties.BIG_DECIMAL_STRIP_TRAILING_ZEROS, false);
 
             for (int i = 0; i < values.length; i++) {
                 SpacePropertyInfo property = _typeInfo.getProperty(i);
@@ -258,7 +260,7 @@ public class PojoIntrospector<T> extends AbstractTypeIntrospector<T> {
                     values[i] = null;
                 else {
                     Object value = property.convertToNullIfNeeded(values[i]);
-                    if (value instanceof BigDecimal){
+                    if (strip && value instanceof BigDecimal){
                         value = ((BigDecimal) value).stripTrailingZeros();
                     }
                     values[i] = value;
@@ -289,7 +291,8 @@ public class PojoIntrospector<T> extends AbstractTypeIntrospector<T> {
 
     private Object getValue(T target, SpacePropertyInfo property) {
         Object value = property.getValue(target);
-        if(value instanceof BigDecimal){
+        boolean strip =  SystemProperties.getBoolean(SystemProperties.BIG_DECIMAL_STRIP_TRAILING_ZEROS, false);
+        if(strip && value instanceof BigDecimal){
             value = ((BigDecimal) value).stripTrailingZeros();
         }
         return property.convertToNullIfNeeded(value);

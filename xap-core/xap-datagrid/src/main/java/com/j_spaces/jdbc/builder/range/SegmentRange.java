@@ -25,6 +25,7 @@ import com.gigaspaces.internal.query.predicate.comparison.*;
 import com.j_spaces.core.client.SQLQuery;
 import com.j_spaces.jdbc.SQLFunctions;
 import com.j_spaces.jdbc.builder.QueryTemplatePacket;
+import com.j_spaces.kernel.SystemProperties;
 
 import java.io.IOException;
 import java.io.ObjectInput;
@@ -55,6 +56,8 @@ public class SegmentRange extends Range {
     private Comparable _max;
     private boolean _includeMax;
 
+    private boolean strip;
+
     public SegmentRange() {
         super();
     }
@@ -67,8 +70,9 @@ public class SegmentRange extends Range {
     public SegmentRange(String colName, FunctionCallDescription functionCallDescription, Comparable<?> value1, boolean includeMin,
                         Comparable<?> value2, boolean includeMax) {
         super(colName, functionCallDescription, createSpacePredicate(value1, includeMin, value2, includeMax));
-        this._min = value1 instanceof BigDecimal ? ((BigDecimal) value1).stripTrailingZeros() : value1;
-        this._max = value2 instanceof BigDecimal ? ((BigDecimal) value2).stripTrailingZeros() : value2;
+        strip =  SystemProperties.getBoolean(SystemProperties.BIG_DECIMAL_STRIP_TRAILING_ZEROS, false);
+        this._min = strip && value1 instanceof BigDecimal ? ((BigDecimal) value1).stripTrailingZeros() : value1;
+        this._max = strip && value2 instanceof BigDecimal ? ((BigDecimal) value2).stripTrailingZeros() : value2;
 
         //noinspection unchecked
         if (_min != null && _max != null && _min.compareTo(_max) > 0)

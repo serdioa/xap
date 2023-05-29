@@ -33,6 +33,7 @@ import com.gigaspaces.metadata.SpaceMetadataException;
 import com.j_spaces.core.AbstractIdsQueryPacket;
 import com.j_spaces.core.UnknownTypeException;
 import com.j_spaces.core.exception.internal.ProxyInternalSpaceException;
+import com.j_spaces.kernel.SystemProperties;
 import net.jini.core.transaction.Transaction;
 
 import java.math.BigDecimal;
@@ -52,12 +53,13 @@ public class ReadTakeByIdsProxyActionInfo extends CommonProxyActionInfo {
         super(txn, modifiers);
 
         try {
+            boolean strip =  SystemProperties.getBoolean(SystemProperties.BIG_DECIMAL_STRIP_TRAILING_ZEROS, false);
             this.ids = ids;
-            if (ids != null) {
+            if (strip && ids != null) {
                 for (int i = 0; i < ids.length; i++) {
-                    if (ids[i] instanceof BigDecimal) {
-                        this.ids[i] = ((BigDecimal) ids[i]).stripTrailingZeros();
-                    }
+                        if (ids[i] instanceof BigDecimal) {
+                            this.ids[i] = ((BigDecimal) ids[i]).stripTrailingZeros();
+                        }
                 }
             }
             this.className = className;

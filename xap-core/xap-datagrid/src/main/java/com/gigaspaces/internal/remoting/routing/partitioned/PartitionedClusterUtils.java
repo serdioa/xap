@@ -19,6 +19,7 @@ package com.gigaspaces.internal.remoting.routing.partitioned;
 import com.gigaspaces.internal.cluster.ClusterTopology;
 import com.gigaspaces.internal.cluster.SpaceClusterInfo;
 import com.gigaspaces.internal.utils.GsEnv;
+import com.j_spaces.kernel.SystemProperties;
 
 import java.math.BigDecimal;
 
@@ -34,6 +35,8 @@ public class PartitionedClusterUtils {
     public static final String DYNAMIC_PARTITIONING_PROPERTY = "pu.dynamic-partitioning";
     private static final boolean DYNAMIC_PARTITIONING_DEFAULT = GsEnv.propertyBoolean("com.gs.pu.dynamic-partitioning").get(false);
 
+
+
     public static boolean isDynamicPartitioningEnabled(String propValue, boolean isPartitioned) {
         if (propValue != null)
             return Boolean.parseBoolean(propValue);
@@ -46,7 +49,8 @@ public class PartitionedClusterUtils {
     public static int getPartitionId(Object routingValue, SpaceClusterInfo clusterInfo) {
         if (routingValue == null)
             return NO_PARTITION;
-        if (routingValue instanceof BigDecimal){
+        boolean strip =  SystemProperties.getBoolean(SystemProperties.BIG_DECIMAL_STRIP_TRAILING_ZEROS, false);
+        if (strip && routingValue instanceof BigDecimal){
             routingValue = ((BigDecimal) routingValue).stripTrailingZeros();
         }
         int numberOfPartitions = clusterInfo.getNumberOfPartitions() != 0 ? clusterInfo.getNumberOfPartitions() : 1;
@@ -59,7 +63,8 @@ public class PartitionedClusterUtils {
     public static int getPartitionId(Object routingValue, ClusterTopology topology) {
         if (routingValue == null)
             return NO_PARTITION;
-        if (routingValue instanceof BigDecimal){
+        boolean strip=SystemProperties.getBoolean(SystemProperties.BIG_DECIMAL_STRIP_TRAILING_ZEROS, false);
+        if (strip && routingValue instanceof BigDecimal){
             routingValue = ((BigDecimal) routingValue).stripTrailingZeros();
         }
         if (routingValue instanceof Long && PRECISE_LONG_ROUTING) {

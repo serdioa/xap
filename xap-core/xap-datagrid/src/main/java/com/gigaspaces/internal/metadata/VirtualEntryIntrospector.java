@@ -24,6 +24,7 @@ import com.gigaspaces.internal.reflection.ReflectionUtil;
 import com.gigaspaces.internal.server.space.SpaceUidFactory;
 import com.gigaspaces.internal.version.PlatformLogicalVersion;
 import com.gigaspaces.metadata.SpaceMetadataException;
+import com.j_spaces.kernel.SystemProperties;
 import net.jini.core.lease.Lease;
 
 import java.io.IOException;
@@ -97,10 +98,12 @@ public class VirtualEntryIntrospector<T extends VirtualEntry> extends AbstractTy
         // generate the uid from the id property and the type's name:
         Object id = TypeDescriptorUtils.toSpaceId(idPropertiesNames, s -> {
             Object value = target.getProperty(s);
+
             if (value == null){
                 throw new SpaceMetadataException("SpaceId(autogenerate=false) property value for " + s + " cannot be null.");
             }
-            if (value instanceof BigDecimal) {
+            boolean strip =  SystemProperties.getBoolean(SystemProperties.BIG_DECIMAL_STRIP_TRAILING_ZEROS, false);
+            if (strip && value instanceof BigDecimal) {
                 value = ((BigDecimal) value).stripTrailingZeros();
             }
             return value;
@@ -219,7 +222,9 @@ public class VirtualEntryIntrospector<T extends VirtualEntry> extends AbstractTy
 
     public Object getValue(T target, int index) {
         Object value = target.getProperty(_typeDesc.getFixedProperty(index).getName());
-        if(value instanceof BigDecimal) {
+        boolean strip =  SystemProperties.getBoolean(SystemProperties.BIG_DECIMAL_STRIP_TRAILING_ZEROS, false);
+
+        if(strip && value instanceof BigDecimal) {
             value = ((BigDecimal) value).stripTrailingZeros();
         }
         return value;
