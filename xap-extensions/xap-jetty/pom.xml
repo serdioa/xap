@@ -301,7 +301,7 @@
     <parent>
         <artifactId>xap</artifactId>
         <groupId>org.gigaspaces</groupId>
-        <version>16.4.0-SNAPSHOT</version>
+        <version>16.4.0-PIC-2206-k8s-hosts-mon-733</version>
         <relativePath>../../</relativePath>
     </parent>
     <repositories>
