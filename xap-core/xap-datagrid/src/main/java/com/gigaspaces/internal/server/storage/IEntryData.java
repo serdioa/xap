@@ -93,4 +93,6 @@ public interface IEntryData extends ServerEntry {
         return getExpirationTime() == Constants.TieredStorage.DUMMY_LEASE_FOR_TRANSACTION;
     }
 
+    default void setVersion(int version){
+    }
 }

@@ -126,6 +126,7 @@ public class MVCCCacheManagerHandler {
                 entryCacheInfo = mvccShellEntryCacheInfo.getLatestGenerationCacheInfo();
                 entryHolder = entryCacheInfo.getEntryHolder();
                 mvccShellEntryCacheInfo.clearDirtyEntry();
+                updatedEntry.setVersion(entryCacheInfo.getVersion() + 1);
             } else {
                 IEntryData updatedEntryData = updatedEntry.getEntryData();
                 cacheManager.updateEntryInCache(context, entryCacheInfo, entryHolder, updatedEntryData, updatedEntryData.getExpirationTime(), templateOperation);

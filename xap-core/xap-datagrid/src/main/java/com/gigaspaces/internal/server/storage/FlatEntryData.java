@@ -31,7 +31,7 @@ import java.util.Map;
 @com.gigaspaces.api.InternalApi
 public class FlatEntryData implements ITransactionalEntryData {
     private final EntryTypeDesc _entryTypeDesc;
-    private final int _versionID;
+    private int _versionID;
     private final long _expirationTime;
     private final EntryXtnInfo _entryTxnInfo;
     private final Object[] _fieldsValues;
@@ -123,6 +123,11 @@ public class FlatEntryData implements ITransactionalEntryData {
         for (int i = 0; i < values.length; i++) {
             _fieldsValues[i] = values[i];
         }
+    }
+
+    @Override
+    public void setVersion(int version) {
+        this._versionID = version;
     }
 
     @Override
