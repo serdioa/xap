@@ -6,7 +6,6 @@ import com.gigaspaces.internal.server.storage.ITemplateHolder;
 import com.j_spaces.core.SpaceOperations;
 import com.j_spaces.core.XtnEntry;
 import com.j_spaces.core.cache.CacheManager;
-import com.j_spaces.core.cache.IEntryCacheInfo;
 import com.j_spaces.core.cache.context.Context;
 import com.j_spaces.core.cache.mvcc.MVCCEntryCacheInfo;
 import com.j_spaces.core.cache.mvcc.MVCCEntryHolder;
@@ -15,8 +14,6 @@ import com.j_spaces.core.sadapter.ISAdapterIterator;
 import com.j_spaces.core.sadapter.SAException;
 import com.j_spaces.core.sadapter.SelectType;
 import com.j_spaces.kernel.locks.ILockObject;
-
-import java.util.Iterator;
 
 public class MVCCSpaceEngineHandler {
 
@@ -73,32 +70,10 @@ public class MVCCSpaceEngineHandler {
         }
     }
 
-    public IEntryHolder getMVCCEntryIfMatched(ITemplateHolder template,
-                                                        IEntryCacheInfo entryCacheInfo) {
-        if (entryCacheInfo instanceof MVCCShellEntryCacheInfo) {
-            MVCCShellEntryCacheInfo shellEntry = (MVCCShellEntryCacheInfo)entryCacheInfo;
-            MVCCEntryHolder dirtyEntryHolder = shellEntry.getDirtyEntryHolder();
-            if (dirtyEntryHolder != null) {
-                MVCCEntryHolder entryHolder = getMVCCEntryIfMatched(template, dirtyEntryHolder);
-                if (entryHolder != null){
-                    return entryHolder;
-                }
-            }
-            final Iterator<MVCCEntryCacheInfo> generationIterator = shellEntry.descIterator();
-            while (generationIterator.hasNext()) {
-                final MVCCEntryHolder entryHolder = generationIterator.next().getEntryHolder();
-                final MVCCEntryHolder matchMvccEntryHolder = getMVCCEntryIfMatched(template, entryHolder);
-                if (matchMvccEntryHolder != null) return matchMvccEntryHolder;
-            }
-            return null; // continue
-        }
-        return getMVCCEntryIfMatched(template, (MVCCEntryHolder)entryCacheInfo.getEntryHolder(_cacheManager));
-
-    }
-
-    private MVCCEntryHolder getMVCCEntryIfMatched(ITemplateHolder template, MVCCEntryHolder entryHolder) {
+    public MVCCEntryHolder getMVCCEntryIfMatched(ITemplateHolder template, MVCCEntryCacheInfo entryCacheInfo) {
+        MVCCEntryHolder entryHolder = entryCacheInfo.getEntryHolder();
         if (entryHolder.isLogicallyDeleted() || !isEntryMatchedByGenerationsState(entryHolder, template)) {
-            return null;
+            return null; // continue
         }
         return entryHolder;
     }
@@ -108,11 +83,13 @@ public class MVCCSpaceEngineHandler {
         final long completedGeneration = mvccGenerationsState == null ? -1 : mvccGenerationsState.getCompletedGeneration();
         final long overrideGeneration = entryHolder.getOverrideGeneration();
         final long committedGeneration = entryHolder.getCommittedGeneration();
+        final boolean isDirtyEntry = committedGeneration == -1 && overrideGeneration == -1;
         if (template.isReadOperation()) {
             if (template.isActiveRead(_spaceEngine)){
                 return committedGeneration == -1 || overrideGeneration == -1;
             } else{
-                return ((committedGeneration != -1)
+                return isDirtyEntry
+                        || ((committedGeneration != -1)
                         && (committedGeneration <= completedGeneration)
                         && (!mvccGenerationsState.isUncompletedGeneration(committedGeneration))
                         && ((overrideGeneration == -1)
@@ -120,7 +97,6 @@ public class MVCCSpaceEngineHandler {
                         || (overrideGeneration <= completedGeneration && mvccGenerationsState.isUncompletedGeneration(overrideGeneration))));
             }
         } else {
-            boolean isDirtyEntry = committedGeneration == -1 && overrideGeneration == -1;
             return isDirtyEntry
                     || ((committedGeneration != -1)
                     && (committedGeneration <= completedGeneration)
