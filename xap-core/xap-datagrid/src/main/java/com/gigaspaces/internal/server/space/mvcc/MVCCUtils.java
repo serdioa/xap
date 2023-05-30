@@ -47,29 +47,11 @@ public class MVCCUtils {
         long dirtyTransactionId = -1;
         if (mvccShellEntryCacheInfo != null) {
             dirtyEntry = mvccShellEntryCacheInfo.getDirtyEntryCacheInfo();
-            XtnEntry writeLockOwner = dirtyEntry != null ? dirtyEntry.getEntryHolder().getWriteLockOwner() : null;
-            dirtyTransactionId = writeLockOwner != null ? writeLockOwner.m_Transaction.id : -1;
+            XtnEntry xidOriginated = dirtyEntry != null ? dirtyEntry.getEntryHolder().getXidOriginated() : null;
+            dirtyTransactionId = xidOriginated != null ? xidOriginated.m_Transaction.id : -1;
         }
         boolean isDirtyUnderTransaction = dirtyTransactionId != -1 && dirtyTransactionId == transactionId;
         return isDirtyUnderTransaction ? mvccEntryHolderToMVCCEntryMetaData(dirtyEntry.getEntryHolder()) : null;
-    }
-
-    public static MVCCEntryMetaData getMVCCDirtyEntryMetaData(SpaceEngine engine, String typeName, Object id) {
-        IServerTypeDesc typeDesc = engine.getTypeManager().getServerTypeDesc(typeName);
-        String uid = SpaceUidFactory.createUidFromTypeAndId(typeDesc.getTypeDesc(), id);
-        MVCCShellEntryCacheInfo mvccShellEntryCacheInfo = engine.getCacheManager().getMVCCShellEntryCacheInfoByUid(uid);
-
-        if (mvccShellEntryCacheInfo != null) {
-            MVCCEntryCacheInfo dirtyEntry = mvccShellEntryCacheInfo.getDirtyEntryCacheInfo();
-            if (dirtyEntry != null) {
-                MVCCEntryHolder entryHolder = dirtyEntry.getEntryHolder();
-
-                if (entryHolder != null) {
-                    return mvccEntryHolderToMVCCEntryMetaData(entryHolder);
-                }
-            }
-        }
-        return null;
     }
 
     private static MVCCEntryMetaData mvccEntryHolderToMVCCEntryMetaData(MVCCEntryHolder entryHolder) {

@@ -2596,10 +2596,6 @@ public class SpaceImpl extends AbstractService implements IRemoteSpace, IInterna
         return MVCCUtils.getMVCCDirtyEntryUnderTransaction(getEngine(), typeName, id, transactionId);
     }
 
-    public MVCCEntryMetaData getMVCCDirtyEntryMetaData(String typeName, Object id) {
-        return MVCCUtils.getMVCCDirtyEntryMetaData(getEngine(), typeName, id);
-    }
-
     public GSEventRegistration notify(ITemplatePacket template, Transaction txn, long lease, SpaceContext sc,
                                       NotifyInfo info)
             throws TransactionException, UnusableEntryException, UnknownTypeException, RemoteException {
