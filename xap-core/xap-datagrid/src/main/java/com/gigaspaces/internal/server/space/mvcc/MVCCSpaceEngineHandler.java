@@ -78,6 +78,13 @@ public class MVCCSpaceEngineHandler {
         return entryHolder;
     }
 
+    public MVCCEntryHolder getMVCCEntryIfMatched(ITemplateHolder template, MVCCEntryHolder entryHolder) {
+        if (entryHolder.isLogicallyDeleted() || !isEntryMatchedByGenerationsState(entryHolder, template)) {
+            return null; // continue
+        }
+        return entryHolder;
+    }
+
     private boolean isEntryMatchedByGenerationsState(MVCCEntryHolder entryHolder, ITemplateHolder template) {
         final MVCCGenerationsState mvccGenerationsState = template.getGenerationsState();
         final long completedGeneration = mvccGenerationsState == null ? -1 : mvccGenerationsState.getCompletedGeneration();
