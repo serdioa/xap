@@ -81,6 +81,7 @@ import com.gigaspaces.internal.server.space.iterator.ServerIteratorInfo;
 import com.gigaspaces.internal.server.space.iterator.ServerIteratorRequestInfo;
 import com.gigaspaces.internal.server.space.iterator.ServerIteratorsManager;
 import com.gigaspaces.internal.server.space.metadata.SpaceTypeManager;
+import com.gigaspaces.internal.server.space.mvcc.MVCCEntryModifyConflictException;
 import com.gigaspaces.internal.server.space.mvcc.MVCCSpaceEngineHandler;
 import com.gigaspaces.internal.server.space.operations.WriteEntriesResult;
 import com.gigaspaces.internal.server.space.operations.WriteEntryResult;
@@ -3899,7 +3900,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
             entry = ((BlobStoreRefEntryCacheInfo) pEntry).getLatestEntryVersion(_cacheManager, false/*attach*/,
                     null /*lastKnownEntry*/, context, onlyIndexesPart/* onlyIndexesPart*/);
         } else if (isMvccEnabled()) {
-            entry = _mvccSpaceEngineHandler.getMVCCEntryIfMatched(template, pEntry);
+            entry = _mvccSpaceEngineHandler.getMatchedMVCCEntry(template, pEntry);
             if (entry == null) {
                 return null;
             }
@@ -4460,6 +4461,15 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
             ILockObject templateLock = null;
             boolean need_xtn_lock = false;
             boolean upgrade_lock = false;
+
+            int timeoutt = _configReader.getIntSpaceProperty("engine.sleep_timeout", "10000");
+            if (!template.isReadOperation() && Thread.currentThread().getName().contains("INVALID")) {
+                try {
+                    Thread.sleep(timeoutt);
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+            }
             while (true) {
                 context.setNonBlockingReadOp(template.isNonBlockingRead() && !context.isUnstableEntry() && !context.isTransactionalMultipleOperation());
                 if (!template.isFifoSearch()) {
@@ -4637,6 +4647,13 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
 
                 }
             }
+            // if updated by other thread - need to rematch
+            if (!needRematch && isMvccEnabled() && !tmpl.isReadOperation()) {
+                MVCCShellEntryCacheInfo mvccShellEntryCacheInfoByUid = _cacheManager.getMVCCShellEntryCacheInfoByUid(ent.getUID());
+                if (mvccShellEntryCacheInfoByUid != null && mvccShellEntryCacheInfoByUid.getEntryHolder() != ent) {
+                    needRematch = true;
+                }
+            }
             if (!needRematch && !tmpl.isMatchByID()) {
                 if (context.getLastRawMatchSnapshot() == null || context.getLastRawmatchTemplate() != tmpl || context.getLastRawmatchEntry() != entry
                         || context.getLastRawMatchSnapshot() != entry.getTxnEntryData() ||
@@ -4808,9 +4825,8 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
                     MatchResult mr = template.match(_cacheManager, entry, -1 /*skipIndex*/, null, true /*safeEntry*/, context, _templateScanner.getRegexCache());
                     tryMaster = (mr == MatchResult.MASTER || mr == MatchResult.MASTER_AND_SHADOW);
                     tryShadow = (mr == MatchResult.SHADOW || mr == MatchResult.MASTER_AND_SHADOW);
-                    if (isMvccEnabled() && _mvccSpaceEngineHandler.getMVCCEntryIfMatched(template, (MVCCEntryHolder) entry) == null) {
-                        tryMaster = false;
-                        tryShadow = false;
+                    if (!MatchResult.NONE.equals(mr) && isMvccEnabled() && _mvccSpaceEngineHandler.getEntryIfMatched(template, (MVCCEntryHolder) entry) == null) {
+                        throw new MVCCEntryModifyConflictException("There is new completed generation created - current is not supported to modify");
                     }
                 }
             }
@@ -4912,7 +4928,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
         XtnConflictCheckIndicators cres = checkTransactionConflict(context, entry, template, isShadow);
 
         if (cres == XtnConflictCheckIndicators.NO_CONFLICT && isMvccEnabled()) {
-            _mvccSpaceEngineHandler.checkTransactionConflict((MVCCEntryHolder) entry, template);
+            cres = _mvccSpaceEngineHandler.checkTransactionConflict((MVCCEntryHolder) entry, template);
         }
 
         if (cres != XtnConflictCheckIndicators.NO_CONFLICT) {
