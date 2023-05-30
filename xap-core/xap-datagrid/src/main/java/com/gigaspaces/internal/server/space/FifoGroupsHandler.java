@@ -250,7 +250,7 @@ public class FifoGroupsHandler {
         if (context.isMultipleOperation() && context.isFifoGroupValueForMiltipleOperations(val))
             return;
         if (!_cacheManager.testAndSetFGCacheForEntry(context, entry, template, template.getXidOriginated() == null/* testOnly*/, tte))
-            throw _spaceEngine.TX_CONFLICT_EXCEPTION;
+            throw SpaceEngine.getTxConflictException();
         template.getXidOriginated().getXtnData().addToFifoGroupsEntries(entry, val);
         if (context.isMultipleOperation())
             context.setToFifoGroupValueForMiltipleOperations(val);
@@ -265,8 +265,7 @@ public class FifoGroupsHandler {
         if (template != null && template.isFifoGroupPoll() && !template.isDeleted()) {//specific template, handle it and return
             try {
                 scanNonNotifyTemplate(template, entry, context, true /*ifExist*/);
-            } catch (TemplateDeletedException ex) {
-            } catch (EntryDeletedException ex) {
+            } catch (TemplateDeletedException | EntryDeletedException ex) {
             }
         } else {
             //create WF iterator on clone

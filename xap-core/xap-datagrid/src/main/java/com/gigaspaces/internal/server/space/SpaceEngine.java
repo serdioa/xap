@@ -127,6 +127,7 @@ import com.j_spaces.core.cache.blobStore.storage.preFetch.BlobStorePreFetchItera
 import com.j_spaces.core.cache.context.Context;
 import com.j_spaces.core.cache.context.TemplateMatchTier;
 import com.j_spaces.core.cache.context.TieredState;
+import com.j_spaces.core.cache.mvcc.MVCCEntryCacheInfo;
 import com.j_spaces.core.cache.mvcc.MVCCEntryHolder;
 import com.j_spaces.core.cache.mvcc.MVCCShellEntryCacheInfo;
 import com.j_spaces.core.client.ReadModifiers;
@@ -187,7 +188,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
     private final static TemplateDeletedException TEMPLATE_DELETED_EXCEPTION = new TemplateDeletedException(null);
     private final static EntryDeletedException ENTRY_DELETED_EXCEPTION = new EntryDeletedException();
     private final static NoMatchException NO_MATCH_EXCEPTION = new NoMatchException(null);
-    final static TransactionConflictException TX_CONFLICT_EXCEPTION = new TransactionConflictException(null, null);
+    private final static TransactionConflictException TX_CONFLICT_EXCEPTION = new TransactionConflictException(null, null);
     private final FifoException _fifoException = new FifoException();
     //---------------  constant exceptions ---------------
 
@@ -2639,7 +2640,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
         XtnEntry txnEntry = attachToXtn((ServerTransaction) txn, fromReplication);
         txnEntry.setFromReplication(fromReplication);
         attachFromGatewayStateToTransactionIfNeeded(sc, txnEntry);
-        if (isMvccEnabled() && txnEntry.getMVCCGenerationsState() == null) {
+        if (isMvccEnabled() && txnEntry.getMVCCGenerationsState() == null && sc != null) {
             txnEntry.setMVCCGenerationsState(sc.getMVCCGenerationsState());
         }
         return txnEntry;
@@ -3736,6 +3737,14 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
 
                 if (res != null)
                     return res;
+            } else if (toScan != null && toScan.isIterator() && isMvccEnabled()) {
+                //TODO: @Sagiv add missing implementation for readByIds
+                toScan = toScan.createCopyForAlternatingThread();
+                res = getMatchedEntryAndOperateSA_Scan(context,
+                        template, makeWaitForInfo,
+                        useSCN, toScan);
+                if (res != null)
+                    return res;
             }
 
             //For tiered storage: We did not find the entry by id in both memory and disk - we can stop.
@@ -3900,7 +3909,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
             entry = ((BlobStoreRefEntryCacheInfo) pEntry).getLatestEntryVersion(_cacheManager, false/*attach*/,
                     null /*lastKnownEntry*/, context, onlyIndexesPart/* onlyIndexesPart*/);
         } else if (isMvccEnabled()) {
-            entry = _mvccSpaceEngineHandler.getMatchedMVCCEntry(template, pEntry);
+            entry = _mvccSpaceEngineHandler.getMVCCEntryIfMatched(template, ((MVCCEntryCacheInfo) pEntry));
             if (entry == null) {
                 return null;
             }
@@ -3926,11 +3935,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
             performTemplateOnEntrySA(context, template, entry,
                     makeWaitForInfo);
             return entry;
-        } catch (EntryDeletedException ex) {
-            return null;
-        } catch (NoMatchException ex) {
-            return null;
-        } catch (FifoException ex) {
+        } catch (EntryDeletedException | NoMatchException | FifoException ex) {
             return null;
         } catch (TransactionConflictException ex) {
             if (template.isFifoGroupPoll())
@@ -4016,9 +4021,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
             return null;
         } catch (TransactionConflictException tcx) {
             return null;
-        } catch (NoMatchException ex) { //cannot happen
-            return null;
-        } catch (FifoException ex) {//cannot happen
+        } catch (NoMatchException | FifoException ex) { //cannot happen
             return null;
         } catch (TransactionNotActiveException tnae) {
             if (template.getXidOriginatedTransaction() != null && tnae.m_Xtn.equals(template.getXidOriginatedTransaction()))
@@ -4308,11 +4311,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
         try {
             performTemplate(context, template, entry, makeWaitForInfo);
 
-        } catch (EntryDeletedException ex) {
-            return;
-        } catch (NoMatchException ex) {
-            return;
-        } catch (FifoException ex) {
+        } catch (EntryDeletedException | NoMatchException | FifoException ex) {
             return;
         } catch (TransactionConflictException ex) {
             if (template.isFifoGroupPoll())
@@ -4825,7 +4824,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
                     MatchResult mr = template.match(_cacheManager, entry, -1 /*skipIndex*/, null, true /*safeEntry*/, context, _templateScanner.getRegexCache());
                     tryMaster = (mr == MatchResult.MASTER || mr == MatchResult.MASTER_AND_SHADOW);
                     tryShadow = (mr == MatchResult.SHADOW || mr == MatchResult.MASTER_AND_SHADOW);
-                    if (!MatchResult.NONE.equals(mr) && isMvccEnabled() && _mvccSpaceEngineHandler.getEntryIfMatched(template, (MVCCEntryHolder) entry) == null) {
+                    if (!MatchResult.NONE.equals(mr) && isMvccEnabled() && _mvccSpaceEngineHandler.getMVCCEntryIfMatched(template, (MVCCEntryHolder) entry) == null) {
                         throw new MVCCEntryModifyConflictException("There is new completed generation created - current is not supported to modify");
                     }
                 }
@@ -6087,6 +6086,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
                 context.setFromGateway(xtnEntry.isFromGateway());
 
                 _cacheManager.rollback(context, xtnEntry, xtnEntry.m_AlreadyPrepared, xtnEntry.m_AnyUpdates, supportsTwoPhaseReplication);
+
                 xtnEntry.m_Active = false;
                 //call cache-manager pre-rollback method in order to restore
                 // updated entries to original values
