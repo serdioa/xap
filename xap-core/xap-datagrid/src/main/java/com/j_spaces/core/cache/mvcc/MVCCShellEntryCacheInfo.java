@@ -4,8 +4,11 @@ import com.gigaspaces.internal.server.metadata.IServerTypeDesc;
 import com.gigaspaces.internal.server.storage.EntryHolderFactory;
 import com.gigaspaces.internal.server.storage.IEntryHolder;
 import com.j_spaces.core.cache.CacheManager;
+import com.j_spaces.core.cache.IEntryCacheInfo;
 import com.j_spaces.core.cache.MemoryBasedEntryCacheInfo;
 import com.j_spaces.core.cache.context.Context;
+import com.j_spaces.core.sadapter.SAException;
+import com.j_spaces.kernel.list.IScanListIterator;
 
 import java.util.Iterator;
 import java.util.concurrent.ConcurrentLinkedDeque;
@@ -93,4 +96,68 @@ public class MVCCShellEntryCacheInfo extends MemoryBasedEntryCacheInfo {
         return getEntryHolder();
     }
 
+    @Override
+    public boolean hasNext() throws SAException {
+        return false;
+    }
+
+    @Override
+    public IEntryCacheInfo next() throws SAException {
+        return null;
+    }
+
+    @Override
+    public boolean isIterator() {
+        return true;
+    }
+
+    @Override
+    public IScanListIterator<MVCCEntryCacheInfo> createCopyForAlternatingThread() {
+        return new MVCCShellIterator();
+    }
+
+    private class MVCCShellIterator implements IScanListIterator<MVCCEntryCacheInfo>, Iterator<MVCCEntryCacheInfo> {
+        private MVCCEntryCacheInfo dirty = getDirtyEntryCacheInfo();
+        private Iterator<MVCCEntryCacheInfo> descIterator = descIterator();
+
+        @Override
+        public boolean hasNext() {
+            return dirty != null || descIterator.hasNext();
+        }
+
+        @Override
+        public MVCCEntryCacheInfo next() {
+            if (dirty != null) {
+                final MVCCEntryCacheInfo toReturn = dirty;
+                dirty = null;
+                return toReturn;
+            }
+            return descIterator.next();
+        }
+
+        @Override
+        public void releaseScan() {
+            if (dirty != null) {
+                dirty = null;
+            }
+            if (descIterator != null) {
+                descIterator = null;
+            }
+        }
+
+        @Override
+        public int getAlreadyMatchedFixedPropertyIndexPos() {
+            return -1;
+        }
+
+        @Override
+        public boolean isAlreadyMatched() {
+            return false;
+        }
+
+        @Override
+        public boolean isIterator() {
+            return true;
+        }
+    }
 }
