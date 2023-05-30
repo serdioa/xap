@@ -29,19 +29,13 @@ import java.util.Map;
  * @since 7.0
  */
 @com.gigaspaces.api.InternalApi
-public class FlatEntryData implements ITransactionalEntryData {
-    private final EntryTypeDesc _entryTypeDesc;
-    private int _versionID;
-    private final long _expirationTime;
-    private final EntryXtnInfo _entryTxnInfo;
+public class FlatEntryData extends AbstractVersionedEntryData {
+
     private final Object[] _fieldsValues;
     private Map<String, Object> _dynamicProperties;
 
     public FlatEntryData(Object[] fieldsValues, Map<String, Object> dynamicProperties, EntryTypeDesc entryTypeDesc, int version, long expirationTime, EntryXtnInfo entryXtnInfo) {
-        this._entryTypeDesc = entryTypeDesc;
-        this._versionID = version;
-        this._expirationTime = expirationTime;
-        this._entryTxnInfo = entryXtnInfo;
+        super(entryTypeDesc, version, expirationTime, entryXtnInfo);
         this._fieldsValues = fieldsValues;
         this._dynamicProperties = dynamicProperties;
     }
@@ -123,11 +117,6 @@ public class FlatEntryData implements ITransactionalEntryData {
         for (int i = 0; i < values.length; i++) {
             _fieldsValues[i] = values[i];
         }
-    }
-
-    @Override
-    public void setVersion(int version) {
-        this._versionID = version;
     }
 
     @Override

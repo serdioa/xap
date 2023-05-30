@@ -133,6 +133,7 @@ public class TemplateEntryData implements IEntryData {
         return _versionID;
     }
 
+    @Override
     public void setVersion(int version) {
         this._versionID = version;
     }

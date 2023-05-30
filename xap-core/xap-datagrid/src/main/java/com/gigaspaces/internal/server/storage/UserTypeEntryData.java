@@ -22,7 +22,6 @@ import com.gigaspaces.internal.metadata.ITypeIntrospector;
 import com.gigaspaces.internal.transport.EntryPacketFactory;
 import com.gigaspaces.internal.transport.IEntryPacket;
 import com.j_spaces.core.server.transaction.EntryXtnInfo;
-
 import net.jini.space.InternalSpaceException;
 
 import java.util.Map;
@@ -32,20 +31,14 @@ import java.util.Map;
  * @since 7.0
  */
 @com.gigaspaces.api.InternalApi
-public class UserTypeEntryData implements ITransactionalEntryData {
-    private final EntryTypeDesc _entryTypeDesc;
-    private final int _versionID;
-    private final long _expirationTime;
-    private final EntryXtnInfo _entryTxnInfo;
+public class UserTypeEntryData extends AbstractVersionedEntryData {
+
     private final Object _data;
     private final Object[] _indexedPropertiesValues;
 
     public UserTypeEntryData(Object data, EntryTypeDesc entryTypeDesc, int version, long expirationTime,
                               EntryXtnInfo entryXtnInfo) {
-        this._entryTypeDesc = entryTypeDesc;
-        this._versionID = version;
-        this._expirationTime = expirationTime;
-        this._entryTxnInfo = entryXtnInfo;
+        super(entryTypeDesc, version, expirationTime, entryXtnInfo);
         this._data = data;
         this._indexedPropertiesValues = initIndexedPropertiesValues();
     }

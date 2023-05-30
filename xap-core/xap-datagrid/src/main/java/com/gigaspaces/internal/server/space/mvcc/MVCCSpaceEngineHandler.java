@@ -57,15 +57,13 @@ public class MVCCSpaceEngineHandler {
                                     mvccShellEntryCacheInfo.addDirtyEntryToGenerationQueue();
                                     break;
                                 case SpaceOperations.WRITE:
-                                    if (xtnEntry.getXtnData().getMvccNewGenerationsEntries().containsKey(entry.getUID())){
-                                        MVCCEntryCacheInfo activeGeneration = mvccShellEntryCacheInfo.getLatestGenerationCacheInfo();
-                                        if (activeGeneration != null) {
-                                            MVCCEntryHolder activeEntryHolder = activeGeneration.getEntryHolder();
-                                            activeEntryHolder.setOverrideGeneration(nextGeneration);
-                                            activeEntryHolder.resetEntryXtnInfo();
-                                            activeEntryHolder.setMaybeUnderXtn(true);
-                                            entry.setOverridingAnother(true);
-                                        }
+                                    MVCCEntryCacheInfo activeTakenGenerationEntry = xtnEntry.getXtnData().getMvccOverriddenActiveTakenEntry(entry.getUID());
+                                    if (activeTakenGenerationEntry != null){ //performing a write operation on a taken entry generation
+                                        MVCCEntryHolder activeEntryHolder = activeTakenGenerationEntry.getEntryHolder();
+                                        activeEntryHolder.setOverrideGeneration(nextGeneration);
+                                        activeEntryHolder.resetEntryXtnInfo();
+                                        activeEntryHolder.setMaybeUnderXtn(true);
+                                        entry.setOverridingAnother(true);
                                     }
                                     entry.setCommittedGeneration(nextGeneration);
                                     mvccShellEntryCacheInfo.addDirtyEntryToGenerationQueue();
@@ -137,7 +135,8 @@ public class MVCCSpaceEngineHandler {
                     }
                     return SpaceEngine.XtnConflictCheckIndicators.XTN_CONFLICT;
                 } else{
-                    if (entry.isLogicallyDeleted() && entry.getCommittedGeneration() > -1 /* dirty entry logically deleted*/){
+                    if (entry.isLogicallyDeleted() && entry.getCommittedGeneration() > -1 /* active entry logically deleted*/
+                            && !template.getGenerationsState().isUncompletedGeneration(entry.getCommittedGeneration())){
                         if (_spaceEngine.getLogger().isDebugEnabled()) {
                             _spaceEngine.getLogger().debug("Encountered a conflict while attempting to modify " + entry
                                     + ", this entry is logically deleted."
