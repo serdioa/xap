@@ -104,11 +104,13 @@ public class MVCCSpaceEngineHandler {
                         || (overrideGeneration <= completedGeneration && mvccGenerationsState.isUncompletedGeneration(overrideGeneration))));
             }
         } else {
-            return isDirtyEntry
-                    || ((committedGeneration != -1)
-                    && (committedGeneration <= completedGeneration)
-                    && (!mvccGenerationsState.isUncompletedGeneration(committedGeneration))
-                    && (overrideGeneration == -1));
+            final boolean matchedForModify = committedGeneration == -1
+                    || ((committedGeneration <= completedGeneration)
+                    && (!mvccGenerationsState.isUncompletedGeneration(committedGeneration)));
+            if (matchedForModify && overrideGeneration == -1) {
+                return matchedForModify;
+            }
+            throw new MVCCEntryModifyConflictException(); // overrided can't be modified
         }
     }
 

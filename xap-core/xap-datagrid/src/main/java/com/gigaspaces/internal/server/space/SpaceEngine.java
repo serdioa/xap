@@ -4825,7 +4825,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
                     tryMaster = (mr == MatchResult.MASTER || mr == MatchResult.MASTER_AND_SHADOW);
                     tryShadow = (mr == MatchResult.SHADOW || mr == MatchResult.MASTER_AND_SHADOW);
                     if (!MatchResult.NONE.equals(mr) && isMvccEnabled() && _mvccSpaceEngineHandler.getMVCCEntryIfMatched(template, (MVCCEntryHolder) entry) == null) {
-                        throw new MVCCEntryModifyConflictException("There is new completed generation created - current is not supported to modify");
+                        throw new MVCCEntryModifyConflictException();
                     }
                 }
             }
