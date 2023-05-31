@@ -635,7 +635,7 @@
                             <additionalparam>-Xdoclint:none</additionalparam>
                             <sourcepath>${project.build.sourceDirectory};${basedir}/../gigaspaces/src/java</sourcepath>
                             <windowtitle>GigaSpaces ${project.version} API</windowtitle>
-                            <source>11</source>
+                            <source>${java.version}</source>
                             <author>true</author>
                             <version>true</version>
                             <use>true</use>
