@@ -17,21 +17,9 @@
 
 package com.j_spaces.kernel.list;
 
-import com.gigaspaces.internal.utils.concurrent.UncheckedAtomicIntegerFieldUpdater;
-import com.gigaspaces.internal.utils.threadlocal.AbstractResource;
-import com.gigaspaces.internal.utils.threadlocal.PoolFactory;
-import com.gigaspaces.internal.utils.threadlocal.ThreadLocalPool;
-import com.j_spaces.kernel.IObjectInfo;
-import com.j_spaces.kernel.IStoredList;
-import com.j_spaces.kernel.IStoredListIterator;
 import com.j_spaces.kernel.SystemProperties;
-import com.j_spaces.kernel.list.StoredListChainSegment.ConcurrentSLObjectInfo;
 
-import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.LongAdder;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * @author Yechiel Fefer
