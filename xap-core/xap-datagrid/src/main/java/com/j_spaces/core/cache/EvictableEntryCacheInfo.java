@@ -18,7 +18,6 @@
 package com.j_spaces.core.cache;
 
 import com.gigaspaces.internal.server.storage.IEntryHolder;
-import com.gigaspaces.internal.utils.concurrent.UncheckedAtomicIntegerFieldUpdater;
 import com.gigaspaces.server.eviction.EvictableServerEntry;
 
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
@@ -48,7 +47,7 @@ public class EvictableEntryCacheInfo extends MemoryBasedEntryCacheInfo implement
 
     //cache status , one of the above values
     private volatile int _cacheStatus;
-    private static final AtomicIntegerFieldUpdater<EvictableEntryCacheInfo> cacheStatusUpdater = UncheckedAtomicIntegerFieldUpdater.newUpdater(EvictableEntryCacheInfo.class, "_cacheStatus");
+    private static final AtomicIntegerFieldUpdater<EvictableEntryCacheInfo> cacheStatusUpdater = AtomicIntegerFieldUpdater.newUpdater(EvictableEntryCacheInfo.class, "_cacheStatus");
     private volatile boolean _notifyOnInsertionCompletion;
 
     //++++++++++++++++  eviction-strategy related fields +++++++++++++++++++++++++++++++++++++++//
@@ -67,7 +66,7 @@ public class EvictableEntryCacheInfo extends MemoryBasedEntryCacheInfo implement
     //number of callers (currently touch callers) currently inside. in a protected E.S.
     //we dont allow touches after entry was removed
     private volatile int _numOfCurrentEvictionStrategyCallers;
-    private static final AtomicIntegerFieldUpdater<EvictableEntryCacheInfo> _numOfCurrentEvictionStrategyCallersUpdater = UncheckedAtomicIntegerFieldUpdater.newUpdater(EvictableEntryCacheInfo.class, "_numOfCurrentEvictionStrategyCallers");
+    private static final AtomicIntegerFieldUpdater<EvictableEntryCacheInfo> _numOfCurrentEvictionStrategyCallersUpdater = AtomicIntegerFieldUpdater.newUpdater(EvictableEntryCacheInfo.class, "_numOfCurrentEvictionStrategyCallers");
     private volatile boolean _needToRemoveFromEvictionStrategy;
 
 

@@ -25,51 +25,25 @@
  */
 package com.gigaspaces.time;
 
-import java.security.AccessController;
-import java.security.PrivilegedAction;
+import java.util.concurrent.TimeUnit;
 
 /**
  * {@linkplain ITimeProvider ITimeProvider} implementation specifying a precise timer, which is not
  * influenced by motions of the wall-clock time.
- *
- * This class contains methods related to millisecond-precision timing, particularly via the {@link
- * #timeMillis()} method. To measure time accurately, this method uses <code>java.sun.Perf</code>
- * (since JDK1.4.2). The resolution of the timer is machine dependent. <p>
- * <i><b>Limitations:</b></i> <li>sun.misc.Perf is not part of the core distribution, so there is no
- * guarantee it will be present in future releases. More likely wont be present in JVMs distributed
- * by other manufacturers.</li> <li>Relative Time is currently limited to Windows OS. <li>Relative
- * time is currently limited to in-memory space.</li> </p>
+ * <p>
+ * Returns the current value of the running Java Virtual Machine's high-resolution time source, converted from
+ * nanoseconds to milliseconds. This method {@link #timeMillis()} can only be used to measure elapsed time and is not
+ * related to any other notion of system or wall-clock time. The value returned represents milliseconds since some fixed
+ * but arbitrary origin time (perhaps in the future, so values may be negative). The same origin is used by all
+ * invocations of this method in an instance of a Java virtual machine; other virtual machine instances are likely to
+ * use a different origin.
  */
 public final class RelativeTime implements ITimeProvider {
-    final sun.misc.Perf _perf;
-    final long TICKS_PER_SECOND;
-    final static long TO_MILLISECONDS = 1000;
 
     /**
-     * Returns a RelativeTime instance based on sun.misc.Perf precision.
-     *
-     * @throws RuntimeException if failed to access to sun.misc.perf
+     * Returns a RelativeTime instance based on nanosecond precision.
      */
     public RelativeTime() {
-        _perf =
-                AccessController.doPrivileged(new PrivilegedAction<sun.misc.Perf>() {
-                    public sun.misc.Perf run() {
-                        return sun.misc.Perf.getPerf();
-                    }
-                });
-
-        /*
-         * Verify limitations as specified in the class javadoc.
-         */
-        if (_perf == null)
-            throw new RuntimeException("Limitation - unable to load sun.misc.Perf provider; " +
-                    "\n\t The undocumented sun.misc.Perf class provides high resolution access " +
-                    "to the system clock. @since Sun JDK1.4.2\n");
-
-        if (!System.getProperty("file.separator").equals("\\"))
-            throw new RuntimeException("Limitation - Relative Time is currently limited to Windows OS.");
-
-        TICKS_PER_SECOND = _perf.highResFrequency();
     }
 
     /**
@@ -80,7 +54,7 @@ public final class RelativeTime implements ITimeProvider {
      * @return The current value of the system timer, in milliseconds.
      */
     public long timeMillis() {
-        return ((_perf.highResCounter() * TO_MILLISECONDS) / TICKS_PER_SECOND);
+        return TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
     }
 
     @Override

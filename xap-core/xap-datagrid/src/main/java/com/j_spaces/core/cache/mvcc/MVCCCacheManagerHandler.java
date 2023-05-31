@@ -142,9 +142,10 @@ public class MVCCCacheManagerHandler {
 
     }
 
-    public MVCCEntryCacheInfo createLogicallyDeletedMvccEntryPendingGeneration(MVCCEntryHolder entryHolder) {
+    public MVCCEntryCacheInfo createLogicallyDeletedMvccEntryPendingGeneration(MVCCEntryHolder entryHolder, XtnEntry xtnEntry) {
         MVCCShellEntryCacheInfo mvccShellEntryCacheInfo = cacheManager.getMVCCShellEntryCacheInfoByUid(entryHolder.getUID());
         EntryXtnInfo entryXtnInfo = entryHolder.getTxnEntryData().copyTxnInfo(true, false);
+        entryXtnInfo.setXidOriginated(xtnEntry);
         MVCCEntryHolder dummyEntry = entryHolder.createLogicallyDeletedDummyEntry(entryXtnInfo);
         dummyEntry.setMaybeUnderXtn(true);
         MVCCEntryCacheInfo dirtyEntryCacheInfo = new MVCCEntryCacheInfo(dummyEntry, 2);

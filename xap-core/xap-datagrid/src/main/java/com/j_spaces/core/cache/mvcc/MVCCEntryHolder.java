@@ -1,10 +1,7 @@
 package com.j_spaces.core.cache.mvcc;
 
 import com.gigaspaces.internal.server.metadata.IServerTypeDesc;
-import com.gigaspaces.internal.server.storage.EntryHolder;
-import com.gigaspaces.internal.server.storage.FlatEntryData;
-import com.gigaspaces.internal.server.storage.IEntryHolder;
-import com.gigaspaces.internal.server.storage.ITransactionalEntryData;
+import com.gigaspaces.internal.server.storage.*;
 import com.gigaspaces.internal.utils.Textualizer;
 import com.j_spaces.core.Constants;
 import com.j_spaces.core.server.transaction.EntryXtnInfo;
