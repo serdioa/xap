@@ -35,7 +35,7 @@ public class MVCCEntryHolder extends EntryHolder implements IMVCCLockObject {
                 new Object[0],
                 null,
                 getEntryData().getEntryTypeDesc(),
-                1 /*versionID*/,
+                0 /*versionID*/,
                 Long.MAX_VALUE, /* expirationTime */
                 entryXtnInfo);
         MVCCEntryHolder dummy = new MVCCEntryHolder(this.getServerTypeDesc(), this.getUID(), this.getSCN(),
@@ -79,6 +79,10 @@ public class MVCCEntryHolder extends EntryHolder implements IMVCCLockObject {
 
     public void setLogicallyDeleted(boolean logicallyDeleted) {
         setFlag(Constants.SpaceItem.IS_LOGICALLY_DELETED, logicallyDeleted);
+    }
+
+    public void setVersion(int version){
+        getEntryData().setVersion(version);
     }
 
     @Override

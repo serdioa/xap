@@ -30,6 +30,7 @@ public class MVCCUtils {
             metaData.setOverrideGeneration(next.getOverrideGeneration());
             metaData.setLogicallyDeleted(next.isLogicallyDeleted());
             metaData.setOverridingAnother(next.isOverridingAnother());
+            metaData.setVersion(next.getVersionID());
             metaDataList.add(metaData);
         }
         engine.getCacheManager().freeCacheContext(context);

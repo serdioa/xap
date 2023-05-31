@@ -61,6 +61,7 @@ public class XtnData {
 
     //hashmap for new mvcc generation entries - uid to CacheInfo.
     private volatile HashMap<String, MVCCEntryCacheInfo> _mvccNewGenerationsEntries = new HashMap<>();
+    private volatile HashMap<String, MVCCEntryCacheInfo> _mvccOverriddenActiveTakenEntries = new HashMap<>();
 
     private static final boolean[] EMPTY_INDICATORS = new boolean[0];
 
@@ -129,11 +130,10 @@ public class XtnData {
                 entries = _lockedFifoEntries;
                 break;
             case SelectType.MVCC_NEW_GENERATION:
-                IStoredList<IEntryCacheInfo> finalEntries = StoredListFactory.createHashList();;
-                _mvccNewGenerationsEntries.values().forEach(finalEntries::add);
-                entries = finalEntries;
+                IStoredList<IEntryCacheInfo> newMvccGenerationsEntries = StoredListFactory.createHashList();
+                _mvccNewGenerationsEntries.values().forEach(newMvccGenerationsEntries::add);
+                entries = newMvccGenerationsEntries;
                 break;
-
             default:
                 entries = _lockedEntries;
         }
@@ -463,5 +463,17 @@ public class XtnData {
 
     public void addMvccNewGenerationsEntries(MVCCEntryCacheInfo mvccEntryCacheInfo) {
         _mvccNewGenerationsEntries.put(mvccEntryCacheInfo.getUID(), mvccEntryCacheInfo);
+    }
+
+    public MVCCEntryCacheInfo getMvccOverriddenActiveTakenEntry(String uid) {
+        return _mvccOverriddenActiveTakenEntries.get(uid);
+    }
+
+    public MVCCEntryCacheInfo removeMvccOverriddenActiveTakenEntry(String uid) {
+        return _mvccOverriddenActiveTakenEntries.remove(uid);
+    }
+
+    public void addMvccOverriddenActiveTakenEntries(MVCCEntryCacheInfo mvccEntryCacheInfo) {
+        _mvccOverriddenActiveTakenEntries.put(mvccEntryCacheInfo.getUID(), mvccEntryCacheInfo);
     }
 }
