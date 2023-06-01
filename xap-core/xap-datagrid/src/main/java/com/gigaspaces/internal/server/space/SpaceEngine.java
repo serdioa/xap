@@ -3738,7 +3738,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
                 if (res != null)
                     return res;
             } else if (toScan != null && toScan.isIterator() && isMvccEnabled()) {
-                //TODO: @Sagiv add missing implementation for readByIds
+                //TODO: @MVCC add missing implementation for readByIds
                 toScan = toScan.createCopyForAlternatingThread();
                 res = getMatchedEntryAndOperateSA_Scan(context,
                         template, makeWaitForInfo,
@@ -4613,6 +4613,10 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
                     //renewed lru memory entry- mark to rematch
                     needRematch = true;
             }
+            if(isMvccEnabled() && entry.isHollowEntry()){ //TODO: @MVCC see if this is needed here after rematch logic is applied
+                throw ENTRY_DELETED_EXCEPTION;
+            }
+
             // if entry was written under Xtn and the Xtn is aborted, the entry
             // is considered as not exists.
             if (entry.getWriteLockOwner() != null && entry.getWriteLockOperation() == SpaceOperations.WRITE) {

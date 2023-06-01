@@ -26,6 +26,7 @@ import com.gigaspaces.metadata.SpaceTypeDescriptor;
  * @since 7.1
  */
 public interface ServerEntry {
+
     /**
      * Gets the entry's type descriptor.
      *

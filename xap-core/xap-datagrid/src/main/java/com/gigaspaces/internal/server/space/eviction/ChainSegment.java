@@ -16,8 +16,6 @@
 
 package com.gigaspaces.internal.server.space.eviction;
 
-import com.gigaspaces.internal.utils.concurrent.UncheckedAtomicIntegerFieldUpdater;
-import com.gigaspaces.internal.utils.concurrent.UncheckedAtomicReferenceFieldUpdater;
 import com.gigaspaces.server.eviction.EvictableServerEntry;
 
 import java.util.Iterator;
@@ -327,7 +325,7 @@ public class ChainSegment implements IEvictionChain {
 
             private volatile int _dataStatus = VALID;
 
-            private static final AtomicIntegerFieldUpdater<Data> dataStatusUpdater = UncheckedAtomicIntegerFieldUpdater.newUpdater(Data.class, "_dataStatus");
+            private static final AtomicIntegerFieldUpdater<Data> dataStatusUpdater = AtomicIntegerFieldUpdater.newUpdater(Data.class, "_dataStatus");
 
             private boolean _wasInserted; //this data was in the chain
 
@@ -382,7 +380,7 @@ public class ChainSegment implements IEvictionChain {
         public final static int REMOVED = 2; //node removed
 
         volatile int _infoStatus = INSERTING;
-        private static final AtomicIntegerFieldUpdater<LRUInfo> infoStatusUpdater = UncheckedAtomicIntegerFieldUpdater.newUpdater(LRUInfo.class, "_infoStatus");
+        private static final AtomicIntegerFieldUpdater<LRUInfo> infoStatusUpdater = AtomicIntegerFieldUpdater.newUpdater(LRUInfo.class, "_infoStatus");
 
         //node ( removed) is also disconnected from list
         private boolean _disconnected;
@@ -391,7 +389,7 @@ public class ChainSegment implements IEvictionChain {
         private volatile LRUInfo fwdRef;  //forward-to head
         private volatile LRUInfo backRef;  //backward-to tail
 
-        private static final AtomicReferenceFieldUpdater<LRUInfo, LRUInfo> bwdUpdater = UncheckedAtomicReferenceFieldUpdater.newUpdater(LRUInfo.class, LRUInfo.class, "backRef");
+        private static final AtomicReferenceFieldUpdater<LRUInfo, LRUInfo> bwdUpdater = AtomicReferenceFieldUpdater.newUpdater(LRUInfo.class, LRUInfo.class, "backRef");
 
         LRUInfo(short segment, EvictableServerEntry data, LRUInfo fwd, LRUInfo bwd) {
             lruData = new Data(data);

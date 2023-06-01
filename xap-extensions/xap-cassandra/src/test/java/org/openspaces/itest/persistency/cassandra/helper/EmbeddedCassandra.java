@@ -14,25 +14,20 @@
  * limitations under the License.
  */
 
-/**
- *
- */
 package org.openspaces.itest.persistency.cassandra.helper;
 
 import com.gigaspaces.logger.GSLogConfigLoader;
-
 import org.apache.cassandra.cql.jdbc.CassandraDataSource;
-import org.apache.cassandra.thrift.CassandraDaemon;
+import org.cassandraunit.utils.EmbeddedCassandraServerHelper;
 import org.openspaces.itest.persistency.cassandra.helper.config.CassandraTestUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
 import java.rmi.Remote;
 import java.sql.Connection;
 import java.sql.SQLException;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 
 public class EmbeddedCassandra implements IEmbeddedCassandra, Remote {
@@ -46,40 +41,18 @@ public class EmbeddedCassandra implements IEmbeddedCassandra, Remote {
     private static final String LOCALHOST = "localhost";
 
     private final Logger _logger = LoggerFactory.getLogger(getClass().getName());
-    private final EmbeddedCassandraThread _thread;
 
     private final int _rpcPort;
 
-    private class EmbeddedCassandraThread extends Thread {
-        CassandraDaemon daemon;
-
-        private EmbeddedCassandraThread(CassandraDaemon cassandraDaemon) {
-            super(EmbeddedCassandraThread.class.getSimpleName());
-            setDaemon(true);
-            this.daemon = cassandraDaemon;
-        }
-
-        public void run() {
-            daemon.start();
-        }
-    }
-
     public EmbeddedCassandra() {
         GSLogConfigLoader.getLoader();
+        cleanup();
         _rpcPort = Integer.getInteger(RPC_PORT_PROP, DEFAULT_RPC_PORT);
         _logger.info("Starting Embedded Cassandra with keyspace ");
-        cleanup();
-        CassandraDaemon cassandraDaemon = new CassandraDaemon();
         try {
-            cassandraDaemon.init(null);
-        } catch (IOException e) {
-            throw new IllegalStateException(e);
-        }
-        _thread = new EmbeddedCassandraThread(cassandraDaemon);
-        _thread.start();
-        try {
-            Thread.sleep(100);
-        } catch (InterruptedException e) {
+            EmbeddedCassandraServerHelper.startEmbeddedCassandra();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
         _logger.info("Started Embedded Cassandra");
     }
@@ -104,16 +77,12 @@ public class EmbeddedCassandra implements IEmbeddedCassandra, Remote {
 
     @Override
     public void destroy() {
-        _thread.interrupt();
-        try {
-            _thread.join();
-        } catch (InterruptedException e) {
-            _logger.warn("Interrupted while waiting for EmbeddedCassandra shutdown", e);
-        }
+        EmbeddedCassandraServerHelper.stopEmbeddedCassandra();
     }
 
     private void cleanup() {
         try {
+            EmbeddedCassandraServerHelper.cleanEmbeddedCassandra();
             CassandraTestUtils.deleteFileOrDirectory(new File("target/cassandra"));
         } catch (IOException e) {
             _logger.warn("Failed deleting cassandra directory", e);
@@ -131,12 +100,14 @@ public class EmbeddedCassandra implements IEmbeddedCassandra, Remote {
     }
 
     private void executeUpdate(String statement) throws SQLException {
+        //String host, int port, String keyspace, String user, String password, String version, String consistency
         CassandraDataSource ds = new CassandraDataSource(LOCALHOST,
                 _rpcPort,
                 SYSTEM_KEYSPACE_NAME,
                 USERNAME,
                 PASSWORD,
-                CQL_VERSION);
+                CQL_VERSION,
+                null);
         Connection conn = ds.getConnection();
         conn.createStatement().executeUpdate(statement);
         conn.close();

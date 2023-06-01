@@ -16,19 +16,15 @@ package com.j_spaces.kernel.list;
  */
 
 
-import com.gigaspaces.internal.utils.concurrent.UncheckedAtomicIntegerFieldUpdater;
 import com.gigaspaces.internal.utils.threadlocal.AbstractResource;
 import com.gigaspaces.internal.utils.threadlocal.PoolFactory;
 import com.gigaspaces.internal.utils.threadlocal.ThreadLocalPool;
 import com.j_spaces.kernel.IObjectInfo;
 import com.j_spaces.kernel.IStoredList;
 import com.j_spaces.kernel.IStoredListIterator;
-import com.j_spaces.kernel.SystemProperties;
+import org.slf4j.Logger;
 
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * @author Yechiel Fefer
@@ -54,7 +50,7 @@ public class ConcurrentStoredList<T>
     // counts the number of scans - used to spread the start between segments
     private int scanCounter = 0;
 
-    private static final AtomicIntegerFieldUpdater<ConcurrentStoredList> sizeUpdater = UncheckedAtomicIntegerFieldUpdater.newUpdater(ConcurrentStoredList.class, "_size");
+    private static final AtomicIntegerFieldUpdater<ConcurrentStoredList> sizeUpdater = AtomicIntegerFieldUpdater.newUpdater(ConcurrentStoredList.class, "_size");
 
 
     public ConcurrentStoredList(boolean segmented, boolean supportFifoPerSegment) {

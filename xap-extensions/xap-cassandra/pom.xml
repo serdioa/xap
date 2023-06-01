@@ -8,13 +8,13 @@
         <artifactId>xap</artifactId>
         <groupId>org.gigaspaces</groupId>
         <version>16.4.0-SNAPSHOT</version>
-        <relativePath>../../</relativePath>
+        <relativePath>../../pom.xml</relativePath>
     </parent>
 
     <properties>
-        <cassandraJdbcVersion>1.1.2</cassandraJdbcVersion>
+        <cassandraVersion>1.2.5</cassandraVersion>
+        <cassandraJdbcVersion>1.2.5</cassandraJdbcVersion>
         <hectorVersion>1.1-2</hectorVersion>
-        <cassandraVersion>1.1.6</cassandraVersion>
         <junitVersion>4.12</junitVersion>
         <skipTests>false</skipTests>
     </properties>
@@ -47,7 +47,14 @@
         </dependency>
 
         <dependency>
-            <groupId>org.apache.cassandra</groupId>
+            <groupId>org.cassandraunit</groupId>
+            <artifactId>cassandra-unit</artifactId>
+            <version>4.3.1.0</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache-extras.cassandra-jdbc</groupId>
             <artifactId>cassandra-jdbc</artifactId>
             <version>${cassandraJdbcVersion}</version>
         </dependency>
@@ -122,10 +129,7 @@
         <plugins>
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <configuration>
-                    <source>1.8</source>
-                    <target>1.8</target>
-                </configuration>
+                <version>3.8.0</version>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>

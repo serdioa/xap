@@ -18,7 +18,6 @@ package com.j_spaces.core.cache.blobStore;
 
 //
 
-import com.gigaspaces.internal.utils.concurrent.UncheckedAtomicIntegerFieldUpdater;
 import com.gigaspaces.metrics.LongCounter;
 import com.j_spaces.core.sadapter.SAException;
 import com.j_spaces.kernel.IObjectInfo;
@@ -27,13 +26,13 @@ import com.j_spaces.kernel.StoredListFactory;
 import com.j_spaces.kernel.SystemProperties;
 import com.j_spaces.kernel.list.IScanListIterator;
 import com.j_spaces.kernel.list.ScanSingleListIterator;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 
 /**
@@ -229,7 +228,7 @@ public class BlobStoreCacheImpl implements IBlobStoreCacheImpl{
         static final int _STATUS_REMOVED = 1 << 2;  //physical remove
         private volatile int _status;
 
-        private static final AtomicIntegerFieldUpdater<CacheInfoHolder> cacheStatusUpdater = UncheckedAtomicIntegerFieldUpdater.newUpdater(CacheInfoHolder.class, "_status");
+        private static final AtomicIntegerFieldUpdater<CacheInfoHolder> cacheStatusUpdater = AtomicIntegerFieldUpdater.newUpdater(CacheInfoHolder.class, "_status");
 
 
         CacheInfoHolder(BlobStoreEntryHolder entry) {

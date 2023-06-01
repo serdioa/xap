@@ -20,7 +20,6 @@ package com.sun.jini.mahalo;
 import com.gigaspaces.client.transaction.xa.GSServerTransaction;
 import com.gigaspaces.internal.client.spaceproxy.IDirectSpaceProxy;
 import com.gigaspaces.internal.server.space.IRemoteSpace;
-import com.gigaspaces.internal.utils.concurrent.UncheckedAtomicIntegerFieldUpdater;
 import com.gigaspaces.logger.LogUtils;
 import com.gigaspaces.lrmi.ILRMIProxy;
 import com.gigaspaces.time.SystemTime;
@@ -151,7 +150,7 @@ class TxnManagerTransaction
      */
     private volatile int _trState = ACTIVE;
 
-    private static final AtomicIntegerFieldUpdater<TxnManagerTransaction> _stateUpdater = UncheckedAtomicIntegerFieldUpdater.newUpdater(TxnManagerTransaction.class, "_trState");
+    private static final AtomicIntegerFieldUpdater<TxnManagerTransaction> _stateUpdater = AtomicIntegerFieldUpdater.newUpdater(TxnManagerTransaction.class, "_trState");
 
     /**
      * @serial

@@ -2386,7 +2386,7 @@ public class CacheManager extends AbstractCacheManager
                 pXtn.addToTakenEntriesIfNotInside(pEntry);
 
                 if (isMVCCEnabled()) {
-                    MVCCEntryCacheInfo logicallyDeletedEntry = _mvccCacheManagerHandler.createLogicallyDeletedMvccEntryPendingGeneration(((MVCCEntryHolder) pEntry.getEntryHolder(this)));
+                    MVCCEntryCacheInfo logicallyDeletedEntry = _mvccCacheManagerHandler.createLogicallyDeletedMvccEntryPendingGeneration((MVCCEntryHolder) pEntry.getEntryHolder(this), xtnEntry);
                     pXtn.addMvccNewGenerationsEntries(logicallyDeletedEntry);
                  }
 
