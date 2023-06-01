@@ -18,7 +18,13 @@
 package com.gigaspaces.lrmi.nio.filters;
 
 import com.j_spaces.kernel.ResourceLoader;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.TrustManagerFactory;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -29,14 +35,6 @@ import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import javax.net.ssl.KeyManagerFactory;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.TrustManagerFactory;
 
 /**
  * A factory class used to load SSL network filter
@@ -75,20 +73,9 @@ public class SSLFilterFactory implements IOFilterFactory {
 
     private void createSelfSignedCertificate() {
         try {
-            ks = SelfSignedCertificate.keystore();
-        } catch (Throwable e) {
-            if (_logger.isTraceEnabled()) {
-                _logger.trace("Failed to create self signed certificate using sun classes will try Bouncy Castle.", e);
-            } else if (_logger.isInfoEnabled()) {
-                _logger.info("Could not create self signed certificate using sun classes - trying Bouncy Castle");
-            }
-            try {
-                ks = BouncyCastleSelfSignedCertificate.keystore();
-            } catch (Throwable t) {
-                _logger.warn("Failed to create self signed certificate using Bouncy Castle classes.\n" +
-                        " please add Bouncy Castle jars to classpath (or add the artifact org.bouncycastle.bcpkix-jdk15on to maven)", t);
-
-            }
+            ks = BouncyCastleSelfSignedCertificate.keystore();
+        } catch (Throwable t) {
+            _logger.warn("Since 16.4.0, Bouncy Castle is used for self-sign certificate, but there was an error", t);
         }
     }
 

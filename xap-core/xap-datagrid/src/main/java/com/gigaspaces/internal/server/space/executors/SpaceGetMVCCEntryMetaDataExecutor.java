@@ -1,6 +1,7 @@
 package com.gigaspaces.internal.server.space.executors;
 
 import com.gigaspaces.internal.server.space.SpaceImpl;
+import com.gigaspaces.internal.server.storage.MVCCEntryMetaData;
 import com.gigaspaces.internal.space.requests.GetMVCCEntryMetaDataRequestInfo;
 import com.gigaspaces.internal.space.requests.SpaceRequestInfo;
 import com.gigaspaces.internal.space.responses.GetMVCCEntryMetaDataResponseInfo;
@@ -14,9 +15,8 @@ public class SpaceGetMVCCEntryMetaDataExecutor extends SpaceActionExecutor{
         GetMVCCEntryMetaDataRequestInfo request = (GetMVCCEntryMetaDataRequestInfo) spaceRequestInfo;
         for (Object id : request.getIds()) {
             response.addEntryMetaData(id, space.getMVCCEntryMetaData(request.getTypeName(), id));
-            if (space.isMVCCEntryDirtyUnderTransaction(request.getTypeName(), id, request.getTransactionId())) {
-                response.addDirtyMetaData(id, space.getDirtyEntryMetaData(request.getTypeName(), id));
-            }
+            MVCCEntryMetaData mvccDirtyEntryMetaDataUnderTransaction = space.getMVCCDirtyEntryMetaDataUnderTransaction(request.getTypeName(), id, request.getTransactionId());
+            response.addDirtyMetaData(id, mvccDirtyEntryMetaDataUnderTransaction);
         }
         return response;
     }

@@ -32,11 +32,8 @@ import java.util.Map;
  * @since 15.8
  */
 @com.gigaspaces.api.InternalApi
-public class HybridEntryData implements IBinaryEntryData {
-    protected final EntryTypeDesc _entryTypeDesc;
-    protected final int _versionID;
-    protected final long _expirationTime;
-    protected final EntryXtnInfo _entryTxnInfo;
+public class HybridEntryData extends AbstractVersionedEntryData implements IBinaryEntryData {
+
     protected Map<String, Object> _dynamicProperties;
     private byte[] serializedProperties;
     private Object[] nonSerializedProperties;
@@ -48,10 +45,7 @@ public class HybridEntryData implements IBinaryEntryData {
 
     public HybridEntryData(HybridPropertiesHolder propertiesHolder, Map<String, Object> dynamicProperties, EntryTypeDesc entryTypeDesc, int version,
                            long expirationTime, EntryXtnInfo entryXtnInfo) {
-        this._entryTypeDesc = entryTypeDesc;
-        this._versionID = version;
-        this._expirationTime = expirationTime;
-        this._entryTxnInfo = entryXtnInfo;
+        super(entryTypeDesc, version, expirationTime, entryXtnInfo);
         this._dynamicProperties = dynamicProperties;
         this.nonSerializedProperties = propertiesHolder.getNonSerializedProperties();
         if (propertiesHolder.isDirty()) {
@@ -63,10 +57,7 @@ public class HybridEntryData implements IBinaryEntryData {
 
     private HybridEntryData(Object[] nonSerializedProperties, byte[] packedSerializedProperties, Map<String, Object> dynamicProperties, EntryTypeDesc entryTypeDesc, int version,
                             long expirationTime, EntryXtnInfo entryXtnInfo) {
-        this._entryTypeDesc = entryTypeDesc;
-        this._versionID = version;
-        this._expirationTime = expirationTime;
-        this._entryTxnInfo = entryXtnInfo;
+        super(entryTypeDesc, version, expirationTime, entryXtnInfo);
         this._dynamicProperties = dynamicProperties;
         this.nonSerializedProperties = nonSerializedProperties;
         this.serializedProperties = packedSerializedProperties;

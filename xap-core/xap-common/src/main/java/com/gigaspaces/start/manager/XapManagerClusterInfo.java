@@ -13,12 +13,12 @@ import com.gigaspaces.logger.Constants;
 import com.gigaspaces.serialization.SmartExternalizable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import sun.net.util.IPAddressUtil;
 
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.*;
 
 public class XapManagerClusterInfo implements ManagerClusterInfo, SmartExternalizable {
@@ -201,7 +201,13 @@ public class XapManagerClusterInfo implements ManagerClusterInfo, SmartExternali
         if(JavaUtils.greaterOrEquals(17) && BurningWave.enabled()){
             BurningWave.exportPackageToAllUnnamed("java.base", "sun.net.util");
         }
-        return IPAddressUtil.textToNumericFormatV6(s);
+
+        try {
+            return InetAddress.getByName(s).getAddress(); //was sun.net.util.IPAddressUtil.textToNumericFormatV6(s);
+        } catch (UnknownHostException e) {
+            logger.warn("Caught {} while trying to parse {} ", e, s);
+            return null;
+        }
     }
 
     @Override

@@ -1,10 +1,7 @@
 package com.j_spaces.core.cache.mvcc;
 
 import com.gigaspaces.internal.server.metadata.IServerTypeDesc;
-import com.gigaspaces.internal.server.storage.EntryHolder;
-import com.gigaspaces.internal.server.storage.FlatEntryData;
-import com.gigaspaces.internal.server.storage.IEntryHolder;
-import com.gigaspaces.internal.server.storage.ITransactionalEntryData;
+import com.gigaspaces.internal.server.storage.*;
 import com.gigaspaces.internal.utils.Textualizer;
 import com.j_spaces.core.Constants;
 import com.j_spaces.core.server.transaction.EntryXtnInfo;
@@ -38,7 +35,7 @@ public class MVCCEntryHolder extends EntryHolder implements IMVCCLockObject {
                 new Object[0],
                 null,
                 getEntryData().getEntryTypeDesc(),
-                1 /*versionID*/,
+                0 /*versionID*/,
                 Long.MAX_VALUE, /* expirationTime */
                 entryXtnInfo);
         MVCCEntryHolder dummy = new MVCCEntryHolder(this.getServerTypeDesc(), this.getUID(), this.getSCN(),
@@ -82,6 +79,10 @@ public class MVCCEntryHolder extends EntryHolder implements IMVCCLockObject {
 
     public void setLogicallyDeleted(boolean logicallyDeleted) {
         setFlag(Constants.SpaceItem.IS_LOGICALLY_DELETED, logicallyDeleted);
+    }
+
+    public void setVersion(int version){
+        getEntryData().setVersion(version);
     }
 
     @Override

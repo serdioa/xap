@@ -30,48 +30,40 @@ public class MVCCUtils {
             metaData.setOverrideGeneration(next.getOverrideGeneration());
             metaData.setLogicallyDeleted(next.isLogicallyDeleted());
             metaData.setOverridingAnother(next.isOverridingAnother());
+            metaData.setVersion(next.getVersionID());
             metaDataList.add(metaData);
         }
         engine.getCacheManager().freeCacheContext(context);
         return metaDataList;
     }
 
-    public static boolean isMVCCEntryDirtyUnderTransaction(SpaceEngine engine, String typeName, Object id,
-                                                           long transactionId) {
-        if (transactionId == -1) return false;
+    public static MVCCEntryMetaData getMVCCDirtyEntryUnderTransaction(SpaceEngine engine, String typeName, Object id,
+                                                                      long transactionId) {
+        if (transactionId == -1) return null;
         IServerTypeDesc typeDesc = engine.getTypeManager().getServerTypeDesc(typeName);
         String uid = SpaceUidFactory.createUidFromTypeAndId(typeDesc.getTypeDesc(), id);
         MVCCShellEntryCacheInfo mvccShellEntryCacheInfo = engine.getCacheManager().getMVCCShellEntryCacheInfoByUid(uid);
-        long dirtyId = -1;
-        if (mvccShellEntryCacheInfo != null) {
-            MVCCEntryCacheInfo dirtyEntry = mvccShellEntryCacheInfo.getDirtyEntryCacheInfo();
-            XtnEntry writeLockOwner = dirtyEntry != null ? dirtyEntry.getEntryHolder().getWriteLockOwner() : null;
-            dirtyId = writeLockOwner != null ? writeLockOwner.m_Transaction.id : -1;
 
+        MVCCEntryCacheInfo dirtyEntry = null;
+        long dirtyTransactionId = -1;
+        if (mvccShellEntryCacheInfo != null) {
+            dirtyEntry = mvccShellEntryCacheInfo.getDirtyEntryCacheInfo();
+            XtnEntry xidOriginated = dirtyEntry != null ? dirtyEntry.getEntryHolder().getXidOriginated() : null;
+            dirtyTransactionId = xidOriginated != null ? xidOriginated.m_Transaction.id : -1;
         }
-        return dirtyId != -1 && dirtyId == transactionId;
+        boolean isDirtyUnderTransaction = dirtyTransactionId != -1 && dirtyTransactionId == transactionId;
+        return isDirtyUnderTransaction ? mvccEntryHolderToMVCCEntryMetaData(dirtyEntry.getEntryHolder()) : null;
     }
 
-    public static MVCCEntryMetaData getDirtyEntryMetaData(SpaceEngine engine, String typeName, Object id) {
-        IServerTypeDesc typeDesc = engine.getTypeManager().getServerTypeDesc(typeName);
-        String uid = SpaceUidFactory.createUidFromTypeAndId(typeDesc.getTypeDesc(), id);
-        MVCCShellEntryCacheInfo mvccShellEntryCacheInfo = engine.getCacheManager().getMVCCShellEntryCacheInfoByUid(uid);
-
-        if (mvccShellEntryCacheInfo != null) {
-            MVCCEntryCacheInfo dirtyEntry = mvccShellEntryCacheInfo.getDirtyEntryCacheInfo();
-            if (dirtyEntry != null) {
-                MVCCEntryHolder entryHolder = dirtyEntry.getEntryHolder();
-
-                if (entryHolder != null) {
-                    MVCCEntryMetaData mvccDirtyEntryMetaData = new MVCCEntryMetaData();
-                    mvccDirtyEntryMetaData.setCommittedGeneration(entryHolder.getCommittedGeneration());
-                    mvccDirtyEntryMetaData.setOverrideGeneration(entryHolder.getOverrideGeneration());
-                    mvccDirtyEntryMetaData.setLogicallyDeleted(entryHolder.isLogicallyDeleted());
-                    mvccDirtyEntryMetaData.setOverridingAnother(entryHolder.isOverridingAnother());
-                    return mvccDirtyEntryMetaData;
-                }
-            }
+    private static MVCCEntryMetaData mvccEntryHolderToMVCCEntryMetaData(MVCCEntryHolder entryHolder) {
+        if (entryHolder == null) {
+            return null;
         }
-        return null;
+        MVCCEntryMetaData mvccDirtyEntryMetaData = new MVCCEntryMetaData();
+        mvccDirtyEntryMetaData.setCommittedGeneration(entryHolder.getCommittedGeneration());
+        mvccDirtyEntryMetaData.setOverrideGeneration(entryHolder.getOverrideGeneration());
+        mvccDirtyEntryMetaData.setLogicallyDeleted(entryHolder.isLogicallyDeleted());
+        mvccDirtyEntryMetaData.setOverridingAnother(entryHolder.isOverridingAnother());
+        return mvccDirtyEntryMetaData;
     }
 }

@@ -17,11 +17,9 @@
 
 package com.j_spaces.kernel.list;
 
-import com.gigaspaces.internal.utils.concurrent.UncheckedAtomicReferenceFieldUpdater;
 import com.j_spaces.kernel.IObjectInfo;
 import com.j_spaces.kernel.list.ConcurrentStoredList.SegmentedListIterator;
 
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
@@ -57,8 +55,8 @@ public class StoredListChainSegment<T> {
         private volatile ConcurrentSLObjectInfo backwardRef;  //to tail
         private volatile ConcurrentSLObjectInfo forwardRef;  //to head
 
-        private static final AtomicReferenceFieldUpdater<ConcurrentSLObjectInfo, ConcurrentSLObjectInfo> forwardUpdater = UncheckedAtomicReferenceFieldUpdater.newUpdater(ConcurrentSLObjectInfo.class, ConcurrentSLObjectInfo.class, "forwardRef");
-        private static final AtomicReferenceFieldUpdater<ConcurrentSLObjectInfo, ConcurrentSLObjectInfo> backwardUpdater = UncheckedAtomicReferenceFieldUpdater.newUpdater(ConcurrentSLObjectInfo.class, ConcurrentSLObjectInfo.class, "backwardRef");
+        private static final AtomicReferenceFieldUpdater<ConcurrentSLObjectInfo, ConcurrentSLObjectInfo> forwardUpdater = AtomicReferenceFieldUpdater.newUpdater(ConcurrentSLObjectInfo.class, ConcurrentSLObjectInfo.class, "forwardRef");
+        private static final AtomicReferenceFieldUpdater<ConcurrentSLObjectInfo, ConcurrentSLObjectInfo> backwardUpdater = AtomicReferenceFieldUpdater.newUpdater(ConcurrentSLObjectInfo.class, ConcurrentSLObjectInfo.class, "backwardRef");
 
         private final short _segment;
         //info status values

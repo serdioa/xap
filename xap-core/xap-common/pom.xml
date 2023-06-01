@@ -9,7 +9,7 @@
         <artifactId>xap</artifactId>
         <groupId>org.gigaspaces</groupId>
         <version>16.4.0-SNAPSHOT</version>
-        <relativePath>../../</relativePath>
+        <relativePath>../../pom.xml</relativePath>
     </parent>
     <artifactId>xap-common</artifactId>
 
@@ -56,9 +56,7 @@
         </dependency>
 
         <!--
-         Bouncy Castle - completely optional, only needed when:
-       - you generate a temporary self-signed certificate using SelfSignedCertificate, and
-       - you don't use the JDK which doesn't provide sun.security.x509 package.
+         Since 16.4.0 Bouncy Castle is needed for generating a self-signed certificate
        -->
         <dependency>
             <groupId>org.bouncycastle</groupId>
