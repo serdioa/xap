@@ -338,6 +338,7 @@ public class SystemConfig {
             classpathBuilder.appendRequiredJar("spring-security-oauth2-resource-server.jar");
             classpathBuilder.appendRequiredJar("spring-security-oauth2-core.jar");
             classpathBuilder.appendRequiredJar("nimbus-jose-jwt.jar");
+            //classpathBuilder.appendRequiredJar("bcpkix-jdk15on.jar");
         }
 
         return classpathBuilder.toURLs();
