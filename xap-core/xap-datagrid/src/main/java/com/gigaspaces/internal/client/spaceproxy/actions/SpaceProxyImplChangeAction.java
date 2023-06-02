@@ -24,6 +24,7 @@ import com.gigaspaces.internal.client.spaceproxy.operations.ChangeEntriesSpaceOp
 import com.j_spaces.core.client.Modifiers;
 import com.j_spaces.jdbc.builder.SQLQueryTemplatePacket;
 
+import net.jini.core.lease.Lease;
 import net.jini.core.transaction.TransactionException;
 
 import java.rmi.RemoteException;
@@ -52,6 +53,11 @@ public class SpaceProxyImplChangeAction
                 actionInfo.modifiers,
                 actionInfo.mutators,
                 actionInfo.getQuery());
+
+        if (spaceProxy.getProxySettings().isMvccEnabled() && request.getLease() != Lease.FOREVER) {
+            throw new UnsupportedOperationException("Change operation with lease are not allowed when MVCC is enabled.");
+        }
+
         if (Modifiers.contains(actionInfo.modifiers, Modifiers.ONE_WAY)) {
             spaceProxy.getProxyRouter().executeOneway(request);
             return null;
