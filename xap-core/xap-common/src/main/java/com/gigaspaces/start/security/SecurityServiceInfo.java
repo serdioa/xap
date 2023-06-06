@@ -1,8 +1,10 @@
 package com.gigaspaces.start.security;
 
+import com.gigaspaces.start.SystemLocations;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.FileInputStream;
 import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
@@ -10,7 +12,7 @@ import java.util.Properties;
 
 public class SecurityServiceInfo {
 
-    private static final Logger logger = LoggerFactory.getLogger("com.gigaspaces.security.spring");
+    private static final Logger logger = LoggerFactory.getLogger("com.gigaspaces.security.openid");
     public static final String SECURITY_MANAGER_CLASS = "com.gs.security.security-manager.class";
     public static final String ID_SECURITY_MANAGER = "com.gigaspaces.security.openid.OpenIdSecurityManager";
     public static final String ZK_CON_STR = "ZK_CON_STR";
@@ -44,7 +46,7 @@ public class SecurityServiceInfo {
         if (logger.isDebugEnabled()) {
             logger.debug("path to security properties " + securityPropertyFile);
         }
-        try (InputStream input = Thread.currentThread().getContextClassLoader().getResourceAsStream(securityPropertyFile)) {
+        try (InputStream input = new FileInputStream((SystemLocations.singleton().homeFwdSlash() + "/" + securityPropertyFile))) {
             Properties prop = new Properties();
             prop.load(input);
             prop.forEach((key, value) -> properties.put((String) key, (String) value));
