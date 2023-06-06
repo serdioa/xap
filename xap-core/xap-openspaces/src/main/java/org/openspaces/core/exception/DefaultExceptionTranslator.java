@@ -31,6 +31,7 @@ import com.j_spaces.core.exception.ClosedResourceException;
 import net.jini.core.transaction.TransactionException;
 
 import org.openspaces.core.*;
+import org.openspaces.core.executor.mvcc.exception.MVCCEntryModifyConflictException;
 import org.springframework.dao.DataAccessException;
 
 import java.rmi.RemoteException;
@@ -232,6 +233,11 @@ public class DefaultExceptionTranslator implements ExceptionTranslator {
 
         if (e instanceof com.gigaspaces.cluster.replication.ConsistencyLevelViolationException) {
             return new ConsistencyLevelViolationException((com.gigaspaces.cluster.replication.ConsistencyLevelViolationException) e);
+        }
+
+        //mvcc transaction exceptions
+        if (e instanceof com.gigaspaces.internal.server.space.mvcc.MVCCEntryModifyConflictException) {
+            return new MVCCEntryModifyConflictException((com.gigaspaces.internal.server.space.mvcc.MVCCEntryModifyConflictException) e);
         }
         return null;
     }

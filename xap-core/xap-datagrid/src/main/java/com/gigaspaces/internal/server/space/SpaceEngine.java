@@ -3902,36 +3902,30 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
             return null; //try to save getting the entry to memory
 
         long scnFilter = useSCN ? template.getSCN() : 0;
-
-        IEntryHolder entry;
-        if (pEntry.isBlobStoreEntry()) {
-            boolean onlyIndexesPart = BlobStoreOperationOptimizations.isConsiderOptimizedForBlobstore(this, context, template, pEntry);
-            entry = ((BlobStoreRefEntryCacheInfo) pEntry).getLatestEntryVersion(_cacheManager, false/*attach*/,
-                    null /*lastKnownEntry*/, context, onlyIndexesPart/* onlyIndexesPart*/);
-        } else if (isMvccEnabled()) {
-            entry = _mvccSpaceEngineHandler.getMVCCEntryIfMatched(template, ((MVCCEntryCacheInfo) pEntry));
-            if (entry == null) {
-                return null;
-            }
-        } else {
-            entry = pEntry.getEntryHolder(_cacheManager, context);
-        }
-        if(entry.getServerTypeDesc().getTypeDesc().isBroadcast() && skipBroadcastTable(context, template))
-            return null;
-        if (scnFilter != 0 && entry.getSCN() < scnFilter)
-            return null;
-        if (!(isMvccEnabled() && entry.isHollowEntry())) {
-            if (entry.isExpired(leaseFilter) && disqualifyExpiredEntry(entry) && template.isReadOperation()) {
-                context.setPendingExpiredEntriesExist(true);
-                return null;
-            }
-            if (needMatch && !_templateScanner.match(context, entry, template, skipAlreadyMatchedFixedPropertyIndex, skipAlreadyMatchedIndexPath, false))
-                return null;
-        }
-        if (!template.isNonBlockingRead() && entry.isDeleted())
-            return null;
-
         try {
+            IEntryHolder entry;
+            if (pEntry.isBlobStoreEntry()) {
+                boolean onlyIndexesPart = BlobStoreOperationOptimizations.isConsiderOptimizedForBlobstore(this, context, template, pEntry);
+                entry = ((BlobStoreRefEntryCacheInfo) pEntry).getLatestEntryVersion(_cacheManager, false/*attach*/,
+                        null /*lastKnownEntry*/, context, onlyIndexesPart/* onlyIndexesPart*/);
+            } else {
+                entry = pEntry.getEntryHolder(_cacheManager, context);
+            }
+            if (entry.getServerTypeDesc().getTypeDesc().isBroadcast() && skipBroadcastTable(context, template))
+                return null;
+            if (scnFilter != 0 && entry.getSCN() < scnFilter)
+                return null;
+            if (!(isMvccEnabled() && entry.isHollowEntry())) {
+                if (entry.isExpired(leaseFilter) && disqualifyExpiredEntry(entry) && template.isReadOperation()) {
+                    context.setPendingExpiredEntriesExist(true);
+                    return null;
+                }
+                if (needMatch && !_templateScanner.match(context, entry, template, skipAlreadyMatchedFixedPropertyIndex, skipAlreadyMatchedIndexPath, false))
+                    return null;
+            }
+            if (!template.isNonBlockingRead() && entry.isDeleted())
+                return null;
+
             performTemplateOnEntrySA(context, template, entry,
                     makeWaitForInfo);
             return entry;
@@ -4461,14 +4455,6 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
             boolean need_xtn_lock = false;
             boolean upgrade_lock = false;
 
-            int timeoutt = _configReader.getIntSpaceProperty("engine.sleep_timeout", "10000");
-            if (!template.isReadOperation() && Thread.currentThread().getName().contains("INVALID")) {
-                try {
-                    Thread.sleep(timeoutt);
-                } catch (InterruptedException e) {
-                    throw new RuntimeException(e);
-                }
-            }
             while (true) {
                 context.setNonBlockingReadOp(template.isNonBlockingRead() && !context.isUnstableEntry() && !context.isTransactionalMultipleOperation());
                 if (!template.isFifoSearch()) {
@@ -4650,11 +4636,20 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
 
                 }
             }
-            // if updated by other thread - need to rematch
-            if (!needRematch && isMvccEnabled() && !tmpl.isReadOperation()) {
+            // only with mvcc enabled
+            // if there is a new active data and active read is used -> rematch new entry
+            // if modify operation -> throw an exception
+            if (!needRematch && isMvccEnabled()) {
                 MVCCShellEntryCacheInfo mvccShellEntryCacheInfoByUid = _cacheManager.getMVCCShellEntryCacheInfoByUid(ent.getUID());
-                if (mvccShellEntryCacheInfoByUid != null && mvccShellEntryCacheInfoByUid.getEntryHolder() != ent) {
-                    needRematch = true;
+                if (mvccShellEntryCacheInfoByUid != null && mvccShellEntryCacheInfoByUid.getEntryHolder() != null
+                        && mvccShellEntryCacheInfoByUid.getEntryHolder() != entry) {
+                    if (!tmpl.isReadOperation()) {
+                        throw new MVCCEntryModifyConflictException();
+                    }
+                    if (tmpl.isActiveRead(this)) {
+                        entry = mvccShellEntryCacheInfoByUid.getEntryHolder();
+                        needRematch = true;
+                    }
                 }
             }
             if (!needRematch && !tmpl.isMatchByID()) {
@@ -4824,13 +4819,9 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
                 tryShadow = entry.hasShadow(true /*safeEntry*/);
             } else {
                 if (needRematch) {
-
                     MatchResult mr = template.match(_cacheManager, entry, -1 /*skipIndex*/, null, true /*safeEntry*/, context, _templateScanner.getRegexCache());
                     tryMaster = (mr == MatchResult.MASTER || mr == MatchResult.MASTER_AND_SHADOW);
                     tryShadow = (mr == MatchResult.SHADOW || mr == MatchResult.MASTER_AND_SHADOW);
-                    if (!MatchResult.NONE.equals(mr) && isMvccEnabled() && _mvccSpaceEngineHandler.getMVCCEntryIfMatched(template, (MVCCEntryHolder) entry) == null) {
-                        throw new MVCCEntryModifyConflictException();
-                    }
                 }
             }
         } else {//non blocking read

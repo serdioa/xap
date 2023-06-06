@@ -78,50 +78,6 @@ public class MVCCSpaceEngineHandler {
         }
     }
 
-    public MVCCEntryHolder getMVCCEntryIfMatched(ITemplateHolder template, MVCCEntryCacheInfo entryCacheInfo) {
-        MVCCEntryHolder entryHolder = entryCacheInfo.getEntryHolder();
-        if (entryHolder.isLogicallyDeleted() || !isEntryMatchedByGenerationsState(entryHolder, template)) {
-            return null; // continue
-        }
-        return entryHolder;
-    }
-
-    public MVCCEntryHolder getMVCCEntryIfMatched(ITemplateHolder template, MVCCEntryHolder entryHolder) {
-        if (entryHolder.isLogicallyDeleted() || !isEntryMatchedByGenerationsState(entryHolder, template)) {
-            return null; // continue
-        }
-        return entryHolder;
-    }
-
-    private boolean isEntryMatchedByGenerationsState(MVCCEntryHolder entryHolder, ITemplateHolder template) {
-        final MVCCGenerationsState mvccGenerationsState = template.getGenerationsState();
-        final long completedGeneration = mvccGenerationsState == null ? -1 : mvccGenerationsState.getCompletedGeneration();
-        final long overrideGeneration = entryHolder.getOverrideGeneration();
-        final long committedGeneration = entryHolder.getCommittedGeneration();
-        final boolean isDirtyEntry = committedGeneration == -1 && overrideGeneration == -1;
-        if (template.isReadOperation()) {
-            if (template.isActiveRead(_spaceEngine)){
-                return committedGeneration == -1 || overrideGeneration == -1;
-            } else{
-                return isDirtyEntry
-                        || ((committedGeneration != -1)
-                        && (committedGeneration <= completedGeneration)
-                        && (!mvccGenerationsState.isUncompletedGeneration(committedGeneration))
-                        && ((overrideGeneration == -1)
-                        || (overrideGeneration > completedGeneration)
-                        || (overrideGeneration <= completedGeneration && mvccGenerationsState.isUncompletedGeneration(overrideGeneration))));
-            }
-        } else {
-            final boolean matchedForModify = committedGeneration == -1
-                    || ((committedGeneration <= completedGeneration)
-                    && (!mvccGenerationsState.isUncompletedGeneration(committedGeneration)));
-            if (matchedForModify && overrideGeneration == -1) {
-                return matchedForModify;
-            }
-            throw new MVCCEntryModifyConflictException(); // overrided can't be modified
-        }
-    }
-
     public SpaceEngine.XtnConflictCheckIndicators checkTransactionConflict(MVCCEntryHolder entry, ITemplateHolder template) {
         int templateOperation = template.getTemplateOperation();
         switch (templateOperation) {
