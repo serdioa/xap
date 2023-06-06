@@ -54,10 +54,6 @@ public class SpaceProxyImplChangeAction
                 actionInfo.mutators,
                 actionInfo.getQuery());
 
-        if (spaceProxy.getProxySettings().isMvccEnabled() && request.getLease() != Lease.FOREVER) {
-            throw new UnsupportedOperationException("Change operation with lease are not allowed when MVCC is enabled.");
-        }
-
         if (Modifiers.contains(actionInfo.modifiers, Modifiers.ONE_WAY)) {
             spaceProxy.getProxyRouter().executeOneway(request);
             return null;
