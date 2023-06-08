@@ -723,7 +723,7 @@ public class TemplateHolder extends AbstractSpaceItem implements ITemplateHolder
             res = MatchResult.NONE;
         else if (_uidToOperateBy != null && (!_uidToOperateBy.equals(entry.getUID())))
             res = MatchResult.NONE;
-        else if (cacheManager.getEngine().isMvccEnabled() && !isMVCCEntryMatchedByGenerationsState((MVCCEntryHolder) entry, cacheManager))
+        else if (cacheManager.getEngine().isMvccEnabled() && (((MVCCEntryHolder)entry).isLogicallyDeleted() || entry.isHollowEntry()))
             res = MatchResult.NONE;
         else {
             //obtain the relevant field values
@@ -755,6 +755,12 @@ public class TemplateHolder extends AbstractSpaceItem implements ITemplateHolder
             }
         }
 
+        if (cacheManager.getEngine().isMvccEnabled()
+                && res != MatchResult.NONE
+                && !isMVCCEntryMatchedByGenerationsState((MVCCEntryHolder) entry, cacheManager)) {
+            res = MatchResult.NONE;
+        }
+
         if (context != null) {
             if (res == MatchResult.NONE)
                 context.setRawmatchResult(null, MatchResult.NONE, null, null);
@@ -775,9 +781,6 @@ public class TemplateHolder extends AbstractSpaceItem implements ITemplateHolder
     }
 
     private boolean isMVCCEntryMatchedByGenerationsState(MVCCEntryHolder entryHolder, CacheManager cacheManager) {
-        if (entryHolder.isLogicallyDeleted() || entryHolder.isHollowEntry()) {
-            return false;
-        }
         final MVCCGenerationsState mvccGenerationsState = getGenerationsState();
         final long completedGeneration = mvccGenerationsState == null ? -1 : mvccGenerationsState.getCompletedGeneration();
         final long overrideGeneration = entryHolder.getOverrideGeneration();
