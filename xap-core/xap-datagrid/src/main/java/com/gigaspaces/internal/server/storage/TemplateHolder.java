@@ -775,7 +775,7 @@ public class TemplateHolder extends AbstractSpaceItem implements ITemplateHolder
     }
 
     private boolean isMVCCEntryMatchedByGenerationsState(MVCCEntryHolder entryHolder, CacheManager cacheManager) {
-        if (entryHolder.isLogicallyDeleted()) {
+        if (entryHolder.isLogicallyDeleted() || entryHolder.isHollowEntry()) {
             return false;
         }
         final MVCCGenerationsState mvccGenerationsState = getGenerationsState();
@@ -783,10 +783,10 @@ public class TemplateHolder extends AbstractSpaceItem implements ITemplateHolder
         final long overrideGeneration = entryHolder.getOverrideGeneration();
         final long committedGeneration = entryHolder.getCommittedGeneration();
         final boolean isDirtyEntry = committedGeneration == -1;
-        if (isReadOperation()) {
+        if (isReadOperation() && !isExclusiveReadLockOperation()) {
             if (isActiveRead(cacheManager.getEngine())){
                 return committedGeneration == -1 || overrideGeneration == -1;
-            } else{
+            } else {
                 return isDirtyEntry
                         || ((committedGeneration != -1)
                         && (committedGeneration <= completedGeneration)
@@ -797,9 +797,13 @@ public class TemplateHolder extends AbstractSpaceItem implements ITemplateHolder
             }
         } else {
             if (overrideGeneration != -1
-                    && overrideGeneration <= completedGeneration
+                    && overrideGeneration >= completedGeneration
                     && !mvccGenerationsState.isUncompletedGeneration(overrideGeneration)) {
                 throw new MVCCEntryModifyConflictException(); // overrided can't be modified
+            }
+            if ((committedGeneration > completedGeneration)
+                    && (!mvccGenerationsState.isUncompletedGeneration(committedGeneration))) {
+                throw new MVCCEntryModifyConflictException(); // entry already modified
             }
             return isDirtyEntry
                     || ((committedGeneration != -1)

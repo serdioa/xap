@@ -3934,6 +3934,9 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
         } catch (TransactionConflictException ex) {
             if (template.isFifoGroupPoll())
                 context.setFifoGroupScanEncounteredXtnConflict(true);
+            if (isMvccEnabled() && (!template.isReadOperation() || template.isExclusiveReadLockOperation())) {
+                throw new MVCCEntryModifyConflictException();
+            }
             return null;
         } catch (TransactionNotActiveException ex) {
             if (ex.m_Xtn.equals(template.getXidOriginatedTransaction()))
@@ -3998,9 +4001,9 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
                 returnEntryNotInSpaceError(context, template, null, makeWaitForInfo);
             return null;
         }
-
+        // if its mvcc -> should match active data
         // match should be done against all fields even when uid is provided gs-4091
-        if ((!template.isMatchByID() || template.isChangeQuery() /*fix for GS-13604*/) && !entry.isHollowEntry()
+        if ((isMvccEnabled() || ((!template.isMatchByID() || template.isChangeQuery() /*fix for GS-13604*/) && !entry.isHollowEntry()))
                 && !_templateScanner.match(context, entry, template))
             return null;
 
@@ -4014,6 +4017,9 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
                 returnEntryNotInSpaceError(context, template, edx, makeWaitForInfo);
             return null;
         } catch (TransactionConflictException tcx) {
+            if (isMvccEnabled() && (!template.isReadOperation() || template.isExclusiveReadLockOperation())) {
+                throw new MVCCEntryModifyConflictException();
+            }
             return null;
         } catch (NoMatchException | FifoException ex) { //cannot happen
             return null;
