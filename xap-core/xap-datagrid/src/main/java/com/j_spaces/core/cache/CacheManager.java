@@ -2504,7 +2504,11 @@ public class CacheManager extends AbstractCacheManager
      * @return <code>true</code> if this entry is in pure cache; <code>false</code> otherwise.
      */
     public boolean isEntryInPureCache(String uid) {
-        return _entries.containsKey(uid);
+        IEntryCacheInfo entryCacheInfo = _entries.get(uid);
+        if (entryCacheInfo != null && _engine.isMvccEnabled()) {
+            return !entryCacheInfo.getEntryHolder(this).isHollowEntry();
+        }
+        return entryCacheInfo != null;
     }
 
 

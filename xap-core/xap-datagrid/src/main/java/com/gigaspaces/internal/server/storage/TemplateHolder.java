@@ -756,9 +756,12 @@ public class TemplateHolder extends AbstractSpaceItem implements ITemplateHolder
         }
 
         if (cacheManager.getEngine().isMvccEnabled()
-                && res != MatchResult.NONE
-                && !isMVCCEntryMatchedByGenerationsState((MVCCEntryHolder) entry, cacheManager)) {
-            res = MatchResult.NONE;
+                && (res != MatchResult.NONE || ((MVCCEntryHolder)entry).isLogicallyDeleted())) {
+            if (isMVCCEntryMatchedByGenerationsState((MVCCEntryHolder) entry, cacheManager)) {
+                res = MatchResult.MASTER;
+            } else {
+                res = MatchResult.NONE;
+            }
         }
 
         if (context != null) {
@@ -802,11 +805,11 @@ public class TemplateHolder extends AbstractSpaceItem implements ITemplateHolder
             if (overrideGeneration != -1
                     && overrideGeneration >= completedGeneration
                     && !mvccGenerationsState.isUncompletedGeneration(overrideGeneration)) {
-                throw new MVCCEntryModifyConflictException(); // overrided can't be modified
+                throw new MVCCEntryModifyConflictException(mvccGenerationsState, entryHolder); // overrided can't be modified
             }
             if ((committedGeneration > completedGeneration)
                     && (!mvccGenerationsState.isUncompletedGeneration(committedGeneration))) {
-                throw new MVCCEntryModifyConflictException(); // entry already modified
+                throw new MVCCEntryModifyConflictException(mvccGenerationsState, entryHolder); // entry already younger than completedGen
             }
             return isDirtyEntry
                     || ((committedGeneration != -1)

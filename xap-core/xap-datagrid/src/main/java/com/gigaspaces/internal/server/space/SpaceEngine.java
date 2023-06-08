@@ -3902,8 +3902,8 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
             return null; //try to save getting the entry to memory
 
         long scnFilter = useSCN ? template.getSCN() : 0;
+        IEntryHolder entry = null;
         try {
-            IEntryHolder entry;
             if (pEntry.isBlobStoreEntry()) {
                 boolean onlyIndexesPart = BlobStoreOperationOptimizations.isConsiderOptimizedForBlobstore(this, context, template, pEntry);
                 entry = ((BlobStoreRefEntryCacheInfo) pEntry).getLatestEntryVersion(_cacheManager, false/*attach*/,
@@ -3935,7 +3935,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
             if (template.isFifoGroupPoll())
                 context.setFifoGroupScanEncounteredXtnConflict(true);
             if (isMvccEnabled() && (!template.isReadOperation() || template.isExclusiveReadLockOperation())) {
-                throw new MVCCEntryModifyConflictException();
+                throw new MVCCEntryModifyConflictException(template.getGenerationsState(), (MVCCEntryHolder) entry);
             }
             return null;
         } catch (TransactionNotActiveException ex) {
@@ -4018,7 +4018,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
             return null;
         } catch (TransactionConflictException tcx) {
             if (isMvccEnabled() && (!template.isReadOperation() || template.isExclusiveReadLockOperation())) {
-                throw new MVCCEntryModifyConflictException();
+                throw new MVCCEntryModifyConflictException(template.getGenerationsState(), (MVCCEntryHolder) entry);
             }
             return null;
         } catch (NoMatchException | FifoException ex) { //cannot happen
@@ -4605,9 +4605,6 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
                     //renewed lru memory entry- mark to rematch
                     needRematch = true;
             }
-            if(isMvccEnabled() && entry.isHollowEntry()){ //TODO: @MVCC see if this is needed here after rematch logic is applied
-                throw ENTRY_DELETED_EXCEPTION;
-            }
 
             // if entry was written under Xtn and the Xtn is aborted, the entry
             // is considered as not exists.
@@ -4650,7 +4647,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
                 if (mvccShellEntryCacheInfoByUid != null && mvccShellEntryCacheInfoByUid.getEntryHolder() != null
                         && mvccShellEntryCacheInfoByUid.getEntryHolder() != entry) {
                     if (!tmpl.isReadOperation()) {
-                        throw new MVCCEntryModifyConflictException();
+                        throw new MVCCEntryModifyConflictException(tmpl.getGenerationsState(), (MVCCEntryHolder) entry);
                     }
                     if (tmpl.isActiveRead(this)) {
                         entry = mvccShellEntryCacheInfoByUid.getEntryHolder();
