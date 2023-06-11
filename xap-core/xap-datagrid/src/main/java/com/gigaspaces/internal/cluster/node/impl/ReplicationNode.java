@@ -1021,11 +1021,11 @@ public class ReplicationNode
     }
 
     protected Path copyRedologToTarget(String spaceName, String fullSpaceName) throws IOException{
-
-        Path directoryTarget = SystemLocations.singleton().work("redo-log-backup").resolve(fullSpaceName);
+        String filter = _name.substring(0, _name.indexOf(":"));
+        Path directoryTarget = SystemLocations.singleton().work("redo-log-backup").resolve(spaceName);
         Path directorySrc = SystemLocations.singleton().work("redo-log").resolve(spaceName);
         if (!directoryTarget.toFile().exists()) directoryTarget.toFile().mkdirs();
-        String filter = _name.substring(0, _name.indexOf(":"));
+
         FileUtils.copyRecursively(directorySrc, directoryTarget,filter);
         return directoryTarget;
     }

@@ -13,6 +13,7 @@ import com.j_spaces.core.cluster.startup.RedoLogCompactionUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
 import java.io.FileOutputStream;
 import java.io.ObjectOutputStream;
 import java.nio.file.Path;
@@ -32,6 +33,7 @@ public class DBSwapRedoLogFile<T extends IReplicationOrderedPacket> implements I
     private final AbstractSingleFileGroupBacklog<?, ?> _groupBacklog;
     private long _lastCompactionRangeEndKey = -1;
     private long _lastSeenTransientPacketKey = -1;
+    private int _lastCodeMapRevision = 0;
 
     public DBSwapRedoLogFile(DBSwapRedoLogFileConfig<T> config,
                              AbstractSingleFileGroupBacklog<?, ?> groupBacklog) {
@@ -89,6 +91,15 @@ public class DBSwapRedoLogFile<T extends IReplicationOrderedPacket> implements I
             }
             //move packets from memory to external storage
             _externalRedoLogStorage.appendBatch(packetsRemoved);
+
+            // keep code map also updated when configured to always flush to disk
+            if (_config.getMemoryPacketCapacity() == 0) {
+                final int codeMapRevision = IOUtils.getCodeMapRevision();
+                if (codeMapRevision > _lastCodeMapRevision) {
+                    _lastCodeMapRevision = codeMapRevision;
+                    writeCodeMapToDisk();
+                }
+            }
         }
         if (RedoLogCompactionUtil.isCompactable(replicationPacket)) {
             _lastSeenTransientPacketKey = replicationPacket.getKey();
@@ -250,19 +261,31 @@ public class DBSwapRedoLogFile<T extends IReplicationOrderedPacket> implements I
         if (!moveToDisk.isEmpty()) {
             _externalRedoLogStorage.appendBatch(moveToDisk);
         }
-        try {
-                Path directory = SystemLocations.singleton().work("redo-log").resolve(_config.getSpaceName());
-                Path codeMapFile = directory.resolve(_config.getContainerName() + "_code_map");
-                try (FileOutputStream file = new FileOutputStream(codeMapFile.toFile())) {
-                    try (ObjectOutputStream oos = new ObjectOutputStream(file)) {
-                        IOUtils.writeCodeMaps(oos);
-                    }
-                }
-        } catch (Exception e) {
-                throw new RuntimeException("failed to write code maps to disk", e);
-        }
+       writeCodeMapToDisk();
 
         return moveToDisk.size();
+    }
+
+    private void writeCodeMapToDisk() {
+        try {
+            Path directory = SystemLocations.singleton().work("redo-log").resolve(_config.getSpaceName());
+            Path codeMapPath = directory.resolve(_config.getContainerName() + "_code_map");
+            File codeMapFile = codeMapPath.toFile();
+            _logger.info("Write code map with revision {} to file {}", _lastCodeMapRevision, codeMapFile.getAbsoluteFile());
+            if (codeMapFile.exists()) {
+                boolean deleted = codeMapFile.delete();
+                if (!deleted) {
+                    _logger.warn("Could not delete code map file {}", codeMapFile);
+                }
+            }
+            try (FileOutputStream file = new FileOutputStream(codeMapFile)) {
+                try (ObjectOutputStream oos = new ObjectOutputStream(file)) {
+                    IOUtils.writeCodeMaps(oos);
+                }
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("failed to write code maps to disk", e);
+        }
     }
 
     private class ExternalStorageCompactionReadOnlyIterator implements ReadOnlyIterator<T> {
