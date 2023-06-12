@@ -10,13 +10,17 @@ import com.gigaspaces.internal.server.space.redolog.DBSwapRedoLogFileConfig;
 import com.gigaspaces.internal.server.space.redolog.storage.bytebuffer.IPacketStreamSerializer;
 import com.gigaspaces.internal.server.space.redolog.storage.bytebuffer.SwapPacketStreamSerializer;
 import com.gigaspaces.start.SystemLocations;
+import com.gigaspaces.utils.FileUtils;
+import com.gigaspaces.utils.RedologFlushNotifier;
 import com.j_spaces.core.Constants;
+import com.j_spaces.kernel.ClassLoaderHelper;
 import com.j_spaces.kernel.SystemProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.sqlite.SQLiteConfig;
 
 import java.io.File;
+import java.io.IOException;
 import java.nio.file.Path;
 import java.sql.*;
 import java.util.Arrays;
@@ -36,7 +40,7 @@ public abstract class SqliteStorageLayer<T extends IReplicationOrderedPacket> {
 
     private final Path path;
     private final String dbName;
-    protected final Connection connection;
+    protected  Connection connection;
     private final ReentrantLock modifierLock = new ReentrantLock();
     protected final List<String> COLUMN_NAMES = Arrays.asList("redo_key", "type_name", "operation_type", "uuid", "packet_count", "packet_weight", "packet");
     protected final int REDO_KEY_COLUMN_INDEX = 1;
@@ -59,9 +63,34 @@ public abstract class SqliteStorageLayer<T extends IReplicationOrderedPacket> {
                 throw new StorageException("failed to mkdir " + path);
             }
         } else if (!config.shouldKeepDatabaseFile()) {
+            boolean flushRedolog = SystemProperties.getBoolean(SystemProperties.REDOLOG_FLUSH_ON_SHUTDOWN, true);
+            long redologSize = getStorageRedoLogSize();
+            if (redologSize> 0 && flushRedolog){
+                try {
+                    logger.info("redolog for: " + config.getContainerName() + " about to copy to target");
+                    Path target = copyRedologToTarget(config.getSpaceName(), config.getContainerName());
+                    logger.info("redolog for: " + config.getContainerName() + " was copied to target");
+                    notifyOnFlushRedologToStorage(config.getContainerName(), config.getSpaceName(), redologSize,target);
+                }
+                catch (Throwable t){
+                    logger.error("Fail to Flush redolog to Storage for:"+ config.getContainerName(), t);
+                }
+            }
             deleteDataFile();
         }
 
+        connectToDB();
+        if (!config.shouldKeepDatabaseFile()){
+            createTable();
+        }
+
+        final IPacketStreamSerializer<T> packetStreamSerializer = config.getPacketStreamSerializer();
+        this.packetSerializer = new DBPacketSerializer<>(packetStreamSerializer == null
+                ? new SwapPacketStreamSerializer<T>() //for tests - use default one
+                : packetStreamSerializer);
+    }
+
+    private void connectToDB(){
         try {
             SQLiteConfig sqLiteConfig = new SQLiteConfig();
             if (Boolean.parseBoolean(System.getProperty(SystemProperties.SQLITE_ASYNC, "true")))
@@ -74,14 +103,6 @@ public abstract class SqliteStorageLayer<T extends IReplicationOrderedPacket> {
             logger.error("Failed to initialize Sqlite RDBMS", e);
             throw new StorageException("failed to initialize internal sqlite RDBMS", e);
         }
-        if (!config.shouldKeepDatabaseFile()){
-            createTable();
-        }
-
-        final IPacketStreamSerializer<T> packetStreamSerializer = config.getPacketStreamSerializer();
-        this.packetSerializer = new DBPacketSerializer<>(packetStreamSerializer == null
-                ? new SwapPacketStreamSerializer<T>() //for tests - use default one
-                : packetStreamSerializer);
     }
 
     private Connection connectToDB(String jdbcDriver, String dbUrl, String user, String password, SQLiteConfig sqLiteConfig) throws ClassNotFoundException, SQLException {
@@ -94,6 +115,64 @@ public abstract class SqliteStorageLayer<T extends IReplicationOrderedPacket> {
         properties.setProperty("password", password);
         conn = DriverManager.getConnection(dbUrl, properties);
         return conn;
+    }
+
+    /**
+     *
+     * @return
+     */
+    protected long getStorageRedoLogSize() {
+        boolean closeConnection = false;
+        try {
+            if (connection == null) {
+                connectToDB();
+                closeConnection = true;
+            }
+            String query = " SELECT COUNT(*) FROM " + TABLE_NAME;
+            ResultSet rs = executeQuery(query);
+            if (rs == null || !rs.next()) return 0;
+            return rs.getLong(1);
+        }
+        catch (Throwable t){
+            logger.error("Fail to get storage redolog size for: " +dbName);
+            return  0;
+        }
+        finally {
+            if (closeConnection) {
+                try {
+                    connection.close();
+                }
+                catch (SQLException e) {
+                }
+                connection = null;
+            }
+        }
+
+    }
+
+    protected Path copyRedologToTarget(String spaceName, String containerName) throws IOException {
+        String filter = containerName;
+        Path directoryTarget = SystemLocations.singleton().work("redo-log-backup").resolve(spaceName);
+        Path directorySrc = SystemLocations.singleton().work("redo-log").resolve(spaceName);
+        if (!directoryTarget.toFile().exists()) directoryTarget.toFile().mkdirs();
+        FileUtils.copyRecursively(directorySrc, directoryTarget,filter);
+        return directoryTarget;
+    }
+
+    protected void notifyOnFlushRedologToStorage(String fullSpaceName, String space, long redologSize, Path target){
+        String className = System.getProperty(SystemProperties.REDOLOG_FLUSH_NOTIFY_CLASS, null);
+        if (className == null){
+            logger.info(SystemProperties.REDOLOG_FLUSH_NOTIFY_CLASS + "not set - no notification is called");
+            return;
+        }
+        try {
+            Class<RedologFlushNotifier> loadClass = ClassLoaderHelper.loadClass(className, true);
+            RedologFlushNotifier notifier = loadClass.newInstance();
+            notifier.notifyOnFlush(fullSpaceName, space, redologSize, target);
+            logger.info("notifier.notifyOnFlush was called.");
+        } catch (Exception e) {
+            logger.error("Calling specified " + SystemProperties.REDOLOG_FLUSH_NOTIFY_CLASS + "[" + className + "] failed", e);
+        }
     }
 
     private void createTable() throws StorageException {
