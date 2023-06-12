@@ -83,14 +83,6 @@ public class MVCCSpaceEngineHandler {
         switch (templateOperation) {
             case SpaceOperations.TAKE_IE:
             case SpaceOperations.TAKE:
-                if (entry.isLogicallyDeleted()) {
-                    if (_spaceEngine.getLogger().isDebugEnabled()) {
-                        _spaceEngine.getLogger().debug("Encountered a conflict while attempting to modify " + entry
-                                + ", this entry is logically deleted."
-                                + " the current generation state is " + template.getGenerationsState());
-                    }
-                    return SpaceEngine.XtnConflictCheckIndicators.ENTRY_DELETED;
-                }
             case SpaceOperations.UPDATE:
                 if (entry.getOverrideGeneration() > -1) {
                     if (_spaceEngine.getLogger().isDebugEnabled()) {
@@ -99,16 +91,6 @@ public class MVCCSpaceEngineHandler {
                                 + " the current generation state is " + template.getGenerationsState());
                     }
                     return SpaceEngine.XtnConflictCheckIndicators.XTN_CONFLICT;
-                } else{
-                    if (entry.isLogicallyDeleted() && entry.getCommittedGeneration() > -1 /* active entry logically deleted*/
-                            && !template.getGenerationsState().isUncompletedGeneration(entry.getCommittedGeneration())){
-                        if (_spaceEngine.getLogger().isDebugEnabled()) {
-                            _spaceEngine.getLogger().debug("Encountered a conflict while attempting to modify " + entry
-                                    + ", this entry is logically deleted."
-                                    + " the current generation state is " + template.getGenerationsState());
-                        }
-                        return SpaceEngine.XtnConflictCheckIndicators.ENTRY_DELETED;
-                    }
                 }
         }
         return SpaceEngine.XtnConflictCheckIndicators.NO_CONFLICT;

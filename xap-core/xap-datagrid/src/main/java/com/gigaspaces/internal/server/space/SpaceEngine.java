@@ -1471,7 +1471,8 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
                         tHolder.isReadOperation() &&
                         !tHolder.isExclusiveReadLockOperation() &&
                         (tHolder.getXidOriginated() == null || _useDirtyRead || ReadModifiers.isDirtyRead(tHolder.getOperationModifiers()) || ReadModifiers.isReadCommitted(tHolder.getOperationModifiers())) &&
-                        (tHolder.getTemplateOperation() != SpaceOperations.READ_IE || tHolder.getExpirationTime() == 0);
+                        (tHolder.getTemplateOperation() != SpaceOperations.READ_IE || tHolder.getExpirationTime() == 0)
+                && !isMvccEnabled();
 
     }
 
@@ -4578,6 +4579,9 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
         }
 
         boolean needRematch = false;
+        if (isMvccEnabled() && ((MVCCEntryHolder)ent).isLogicallyDeleted()) {
+            throw ENTRY_DELETED_EXCEPTION;
+        }
         if (needXtnLocked) { // TODO - tiered storage - handle tiered storage when adding support for txn
             if (ent.isDeleted()) {
                 throw ENTRY_DELETED_EXCEPTION/*new EntryDeletedException(ent.m_UID)*/;
@@ -4724,6 +4728,23 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
 
             if ((tmpl.isFifoSearch()) && !context.isNonBlockingReadOp() && entry.isMaybeUnderXtn())
                 return true;
+
+            // only with mvcc enabled
+            // if there is a new active data and active read is used -> rematch new entry
+            // if modify operation -> throw an exception
+            if (!needRematch && isMvccEnabled()) {
+                MVCCShellEntryCacheInfo mvccShellEntryCacheInfoByUid = _cacheManager.getMVCCShellEntryCacheInfoByUid(ent.getUID());
+                if (mvccShellEntryCacheInfoByUid != null && mvccShellEntryCacheInfoByUid.getEntryHolder() != null
+                        && mvccShellEntryCacheInfoByUid.getEntryHolder() != entry) {
+                    if (!tmpl.isReadOperation() || tmpl.isExclusiveReadLockOperation()) { //todo: test
+                        throw new MVCCEntryModifyConflictException(tmpl.getGenerationsState(), (MVCCEntryHolder) entry);
+                    }
+                    if (tmpl.isActiveRead(this)) {
+                        entry = mvccShellEntryCacheInfoByUid.getEntryHolder();
+                        needRematch = true;
+                    }
+                }
+            }
 
             if (!needRematch && (!tmpl.isMatchByID() || ent.isHollowEntry())) {
                 if (context.getLastRawMatchSnapshot() == null || context.getLastRawmatchTemplate() != tmpl || context.getLastRawmatchEntry() != entry)
