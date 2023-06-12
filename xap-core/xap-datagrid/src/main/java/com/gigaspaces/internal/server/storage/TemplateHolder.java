@@ -814,7 +814,8 @@ public class TemplateHolder extends AbstractSpaceItem implements ITemplateHolder
             return isDirtyEntry
                     || ((committedGeneration != -1)
                     && (committedGeneration <= completedGeneration)
-                    && (!mvccGenerationsState.isUncompletedGeneration(committedGeneration)));
+                    && (!mvccGenerationsState.isUncompletedGeneration(committedGeneration))
+                    && (overrideGeneration == -1));
         }
     }
 
