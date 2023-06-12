@@ -22,6 +22,7 @@ import com.gigaspaces.client.mutators.SpaceEntryMutator;
 import com.gigaspaces.internal.client.spaceproxy.ISpaceProxy;
 import com.j_spaces.core.client.Modifiers;
 
+import net.jini.core.lease.Lease;
 import net.jini.core.transaction.Transaction;
 
 import java.util.Collection;
@@ -42,19 +43,27 @@ public class ChangeProxyActionInfo extends QueryProxyActionInfo {
                                  Transaction txn, long timeout, com.gigaspaces.client.ChangeModifiers modifiers) {
         super(spaceProxy, template, txn, modifiers.getCode(), true);
 
-        if (template == null)
+        if (template == null) {
             throw new IllegalArgumentException("change operation cannot accept null template.");
-        if(queryPacket.isBroadcast())
+        }
+        if (queryPacket.isBroadcast()) {
             throw new UnsupportedOperationException("change operation of broadcast table " + queryPacket.getTypeName() + " is not supported");
+        }
         this.timeout = timeout;
-        if (timeout < 0)
+        if (timeout < 0) {
             throw new IllegalArgumentException("timeout parameter must be greater than or equal to zero.");
+        }
         this.mutators = ChangeSetInternalUtils.getMutators(changeSet);
         this.lease = ChangeSetInternalUtils.getLease(changeSet);
-        if (lease < 0)
+        if (lease < 0) {
             throw new IllegalArgumentException("lease parameter must be greater than or equal to zero.");
-        if (this.mutators.isEmpty() && this.lease == 0)
+        }
+        if (this.mutators.isEmpty() && this.lease == 0) {
             throw new IllegalArgumentException("change operation cannot accept empty changeSet.");
+        }
+        if (spaceProxy.getDirectProxy().getProxySettings().isMvccEnabled() && lease != Lease.FOREVER) {
+            throw new UnsupportedOperationException("Change operation with lease are not allowed when MVCC is enabled.");
+        }
 
         final boolean oneWay = Modifiers.contains(this.modifiers, Modifiers.ONE_WAY);
         if (oneWay) {

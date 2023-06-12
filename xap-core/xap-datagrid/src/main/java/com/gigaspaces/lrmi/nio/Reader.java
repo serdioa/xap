@@ -31,11 +31,9 @@ import com.gigaspaces.time.SystemTime;
 import com.j_spaces.kernel.SystemProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import sun.misc.BASE64Encoder;
 
 import java.io.IOException;
 import java.io.ObjectStreamConstants;
-import java.io.UnsupportedEncodingException;
 import java.net.ConnectException;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
@@ -45,6 +43,7 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.rmi.NoSuchObjectException;
 import java.util.Arrays;
 import java.util.concurrent.atomic.LongAdder;
@@ -430,20 +429,13 @@ public class Reader {
                 String offendingAddress = _socketChannel.socket() != null ? String.valueOf(_socketChannel.socket().getRemoteSocketAddress()) : "unknown";
                 String msg = "Handshake failed, expecting message of up to " + ctx.messageSizeLimit + " bytes, actual size is: " + ctx.dataLength + " bytes, offending address is " + offendingAddress;
                 if (offendingMessageLogger.isTraceEnabled()) {
-                    try {
-                        ByteBuffer buffer = getByteBufferAllocated(ctx.createNewBuffer, Math.min(ctx.dataLength, 5 * 1024));
-                        _socketChannel.read(buffer);
-                        buffer.flip();
-                        byte[] bytes = new byte[buffer.remaining()];
-                        buffer.get(bytes);
-                        try {
-                            String str = new String(bytes, "UTF-8");
-                            offendingMessageLogger.trace(msg + ", received string is : " + str);
-                        } catch (UnsupportedEncodingException e) {
-                            offendingMessageLogger.trace(msg + ", base64 encoding of the received  buffer is : " + new BASE64Encoder().encode(bytes));
-                        }
-                    } catch (Exception ignored) {
-                    }
+                    ByteBuffer buffer = getByteBufferAllocated(ctx.createNewBuffer, Math.min(ctx.dataLength, 5 * 1024));
+                    _socketChannel.read(buffer);
+                    buffer.flip();
+                    byte[] bytes = new byte[buffer.remaining()];
+                    buffer.get(bytes);
+                    String str = new String(bytes, StandardCharsets.UTF_8);
+                    offendingMessageLogger.trace(msg + ", received string is : " + str);
                 }
                 throw new ConnectException(msg);
             }

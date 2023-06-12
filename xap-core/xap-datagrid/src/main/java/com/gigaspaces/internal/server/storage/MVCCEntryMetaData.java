@@ -9,6 +9,7 @@ public class MVCCEntryMetaData implements Serializable {
     private long overrideGeneration;
     private boolean isOverridingAnother;
     private boolean isLogicallyDeleted;
+    private int version;
 
     public MVCCEntryMetaData() {
     }
@@ -45,6 +46,14 @@ public class MVCCEntryMetaData implements Serializable {
         isLogicallyDeleted = logicallyDeleted;
     }
 
+    public int getVersion() {
+        return version;
+    }
+
+    public void setVersion(int version) {
+        this.version = version;
+    }
+
     @Override
     public String toString() {
         return "MVCCEntryMetaData{" +
@@ -52,6 +61,7 @@ public class MVCCEntryMetaData implements Serializable {
                 ", overrideGeneration=" + overrideGeneration +
                 ", isOverridingAnother=" + isOverridingAnother +
                 ", isLogicallyDeleted=" + isLogicallyDeleted +
+                ", version=" + version +
                 '}';
     }
 }

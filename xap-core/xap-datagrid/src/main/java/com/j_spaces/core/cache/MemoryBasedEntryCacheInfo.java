@@ -428,7 +428,6 @@ public class MemoryBasedEntryCacheInfo implements IEntryCacheInfo {
      */
     public int getVersion() {
         return getEntryHolder().getEntryData().getVersion();
-
     }
 
     /**

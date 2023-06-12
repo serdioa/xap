@@ -18,7 +18,6 @@
 
     <properties>
         <javax.version>3.0.1</javax.version>
-        <java.version>{{java.version}}</java.version>
         <slf4j.version>{{slf4j.version}}</slf4j.version>
         <gs.version>{{gs.version}}</gs.version>
     </properties>

@@ -19,44 +19,10 @@ package org.jini.rio.tools.webster;
 import com.gigaspaces.internal.io.BootIOUtils;
 import com.gigaspaces.internal.utils.concurrent.GSThread;
 import com.gigaspaces.lrmi.nio.filters.BouncyCastleSelfSignedCertificate;
-import com.gigaspaces.lrmi.nio.filters.SelfSignedCertificate;
 import com.gigaspaces.start.SystemInfo;
-
 import com.gigaspaces.start.SystemLocations;
 import org.jini.rio.boot.PUZipUtils;
 import org.jini.rio.resources.resource.ThreadPool;
-
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.File;
-import java.io.FileFilter;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.io.RandomAccessFile;
-import java.net.BindException;
-import java.net.InetAddress;
-import java.net.ServerSocket;
-import java.net.Socket;
-import java.net.URL;
-import java.net.URLEncoder;
-import java.security.KeyStore;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Enumeration;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Properties;
-import java.util.Random;
-import java.util.StringTokenizer;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadFactory;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -64,6 +30,13 @@ import javax.net.ServerSocketFactory;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLServerSocketFactory;
+import java.io.*;
+import java.net.*;
+import java.security.KeyStore;
+import java.util.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
 
 /**
  * Webster is a HTTP server which can serve code from multiple codebases. Environment variables used
@@ -357,21 +330,9 @@ public class Webster implements Runnable {
 
     private KeyStore keystore() {
         try {
-            return SelfSignedCertificate.keystore();
-        } catch (Throwable e) {
-            e.printStackTrace();
-            if (logger.isTraceEnabled()) {
-                logger.trace("Failed to create self signed certificate using sun classes will try Bouncy Castle.", e);
-            } else if (logger.isInfoEnabled()) {
-                logger.info("Could not create self signed certificate using sun classes - trying Bouncy Castle");
-            }
-            try {
-                return BouncyCastleSelfSignedCertificate.keystore();
-            } catch (Throwable t) {
-                logger.warn("Failed to create self signed certificate using Bouncy Castle classes.\n" +
-                        " please add Bouncy Castle jars to classpath (or add the artifact org.bouncycastle.bcpkix-jdk15on to maven)", t);
-
-            }
+            return BouncyCastleSelfSignedCertificate.keystore();
+        } catch (Throwable t) {
+            logger.warn("Since 16.4.0, Bouncy Castle is used for self-sign certificate, but there was an error", t);
         }
         return null;
     }

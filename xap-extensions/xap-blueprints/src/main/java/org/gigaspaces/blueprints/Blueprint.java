@@ -1,5 +1,6 @@
 package org.gigaspaces.blueprints;
 
+import com.gigaspaces.internal.jvm.JavaUtils;
 import com.gigaspaces.internal.utils.yaml.YamlUtils;
 import com.gigaspaces.internal.version.PlatformVersion;
 import com.gigaspaces.start.SystemLocations;
@@ -9,7 +10,10 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.*;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -99,6 +103,7 @@ public class Blueprint {
             merged.putAll(overrides);
         merged.putIfAbsent("gs.version", PlatformVersion.getInstance().getId());
         merged.putIfAbsent("gs.home", SystemLocations.singleton().home().toString());
+        merged.putIfAbsent("java.version", JavaUtils.getVersion());
         if (!merged.containsKey("project.package-path")) {
             String groupId = (String) merged.get("project.groupId");
             if (groupId != null)
