@@ -9,6 +9,7 @@ import com.j_spaces.core.admin.ZKCollocatedClientConfig;
 import com.j_spaces.kernel.ClassLoaderHelper;
 import com.j_spaces.kernel.JSpaceUtilities;
 import com.j_spaces.kernel.log.JProperties;
+import net.jini.core.entry.UnusableEntryException;
 import net.jini.core.lease.LeaseDeniedException;
 import net.jini.core.transaction.Transaction;
 import net.jini.core.transaction.TransactionException;
@@ -128,5 +129,5 @@ public abstract class AbstractPrepareTwoPhaseTask implements IMVCCTask<AbstractM
     }
 
     protected abstract AbstractMVCCProtocolTaskResult executePrepareTask(IDirectSpaceProxy proxy, Transaction transaction)
-            throws MVCCRetryTaskException, TransactionException, RemoteException;
+            throws MVCCRetryTaskException, TransactionException, RemoteException, UnusableEntryException, InterruptedException;
 }

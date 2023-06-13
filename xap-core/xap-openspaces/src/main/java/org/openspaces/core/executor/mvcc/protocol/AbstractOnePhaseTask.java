@@ -3,6 +3,7 @@ package org.openspaces.core.executor.mvcc.protocol;
 import com.gigaspaces.internal.client.spaceproxy.IDirectSpaceProxy;
 import com.gigaspaces.internal.server.space.SpaceImpl;
 import com.gigaspaces.internal.server.space.mvcc.MVCCGenerationsState;
+import net.jini.core.entry.UnusableEntryException;
 import net.jini.core.lease.LeaseDeniedException;
 import net.jini.core.transaction.Transaction;
 import net.jini.core.transaction.TransactionException;
@@ -54,6 +55,7 @@ public abstract class AbstractOnePhaseTask implements IMVCCTask<AbstractMVCCProt
             AbstractMVCCProtocolTaskResult result = executeTask(directProxy, transaction);
             result.addActiveGeneration(getActiveGeneration());
             transaction.commit();
+            clearGenerationState();
             return result;
         } catch (MVCCRetryTaskException e) {
             logger.warn("Caught while executing prepare task", e);
@@ -68,6 +70,10 @@ public abstract class AbstractOnePhaseTask implements IMVCCTask<AbstractMVCCProt
         return generationsState.getNextGeneration();
     }
 
+    private void clearGenerationState() {
+        space.getSpace().getDirectProxy().setMVCCGenerationsState(null);
+    }
+
     protected abstract AbstractMVCCProtocolTaskResult executeTask(IDirectSpaceProxy proxy, Transaction transaction)
-            throws MVCCRetryTaskException, TransactionException, RemoteException;
+            throws MVCCRetryTaskException, TransactionException, RemoteException, UnusableEntryException, InterruptedException;
 }

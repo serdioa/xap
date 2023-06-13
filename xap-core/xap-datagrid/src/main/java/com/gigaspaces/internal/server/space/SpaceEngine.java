@@ -3150,6 +3150,10 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
             monitorMemoryUsage(false);
             context = _cacheManager.getCacheContext();
             context.setOperationID(operationID);
+            if (isMvccEnabled()){
+                SpaceContext spaceContext = _spaceImpl.getTaskProxy().getDirectProxy().getProxyRouter().getDefaultSpaceContext();
+                context.setMvccGenerationsState(spaceContext != null ? spaceContext.getMVCCGenerationsState() : null);
+            }
             while (true) {
                 boolean relock = false;
                 xtnEntry = getTransaction(st);
