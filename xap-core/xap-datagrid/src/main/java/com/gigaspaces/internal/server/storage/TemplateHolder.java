@@ -803,13 +803,13 @@ public class TemplateHolder extends AbstractSpaceItem implements ITemplateHolder
 
         } else {
             if (overrideGeneration != -1
-                    && overrideGeneration > completedGeneration
+                    && overrideGeneration >= completedGeneration
                     && !mvccGenerationsState.isUncompletedGeneration(overrideGeneration)) {
-                throw new MVCCEntryModifyConflictException(mvccGenerationsState, entryHolder); // overrided can't be modified
+                throw new MVCCEntryModifyConflictException(mvccGenerationsState, entryHolder, getTemplateOperation()); // overrided can't be modified
             }
             if ((committedGeneration > completedGeneration)
                     && (!mvccGenerationsState.isUncompletedGeneration(committedGeneration))) {
-                throw new MVCCEntryModifyConflictException(mvccGenerationsState, entryHolder); // entry already younger than completedGen
+                throw new MVCCEntryModifyConflictException(mvccGenerationsState, entryHolder, getTemplateOperation()); // entry already younger than completedGen
             }
             return isDirtyEntry
                     || ((committedGeneration != -1)
