@@ -4,7 +4,7 @@
     <groupId>org.gigaspaces</groupId>
     <artifactId>xap</artifactId>
     <packaging>pom</packaging>
-    <version>16.3.0</version>
+    <version>16.3.0-patch-p-1</version>
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <oshi.version>5.5.0</oshi.version>
@@ -15,7 +15,7 @@
         <junit.version>4.12</junit.version>
         <jetty.version>9.4.44.v20210927</jetty.version>
         <jetty.mortbay.jasper.version>9.0.52</jetty.mortbay.jasper.version>
-        <gs.build-name>16.3.0-m0</gs.build-name>
+        <gs.build-name>16.3.0-patch-p-1-m0</gs.build-name>
         <gs.git-tag>Unspecified</gs.git-tag>
         <gs.git-sha.xap>unspecified</gs.git-sha.xap>
         <xap.git.branch>master</xap.git.branch>
