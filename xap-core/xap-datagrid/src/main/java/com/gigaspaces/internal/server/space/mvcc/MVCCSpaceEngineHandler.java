@@ -92,6 +92,17 @@ public class MVCCSpaceEngineHandler {
                     }
                     return SpaceEngine.XtnConflictCheckIndicators.XTN_CONFLICT;
                 }
+            case SpaceOperations.READ:
+            case SpaceOperations.READ_IE:
+                if (entry.isLogicallyDeleted()) {
+                    if (_spaceEngine.getLogger().isDebugEnabled()) {
+                        _spaceEngine.getLogger().debug("Encountered a conflict while attempting to operate(" + templateOperation + ") with " + entry
+                                + ", this entry is logically deleted."
+                                + " the current generation state is " + template.getGenerationsState());
+                    }
+                    return SpaceEngine.XtnConflictCheckIndicators.ENTRY_DELETED;
+                }
+                break;
         }
         return SpaceEngine.XtnConflictCheckIndicators.NO_CONFLICT;
     }

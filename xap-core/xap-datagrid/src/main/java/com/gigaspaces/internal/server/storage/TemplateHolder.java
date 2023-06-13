@@ -723,7 +723,7 @@ public class TemplateHolder extends AbstractSpaceItem implements ITemplateHolder
             res = MatchResult.NONE;
         else if (_uidToOperateBy != null && (!_uidToOperateBy.equals(entry.getUID())))
             res = MatchResult.NONE;
-        else if (cacheManager.getEngine().isMvccEnabled() && (((MVCCEntryHolder)entry).isLogicallyDeleted() || entry.isHollowEntry()))
+        else if (cacheManager.getEngine().isMvccEnabled() && (((MVCCEntryHolder) entry).isLogicallyDeleted() || entry.isHollowEntry()))
             res = MatchResult.NONE;
         else {
             //obtain the relevant field values
@@ -756,7 +756,7 @@ public class TemplateHolder extends AbstractSpaceItem implements ITemplateHolder
         }
 
         if (cacheManager.getEngine().isMvccEnabled()
-                && (res != MatchResult.NONE || ((MVCCEntryHolder)entry).isLogicallyDeleted())) { // todo: after the exchange - need revalidate
+                && (res != MatchResult.NONE || ((MVCCEntryHolder) entry).isLogicallyDeleted())) {
             if (isMVCCEntryMatchedByGenerationsState((MVCCEntryHolder) entry, cacheManager)) {
                 res = MatchResult.MASTER;
             } else {
@@ -789,21 +789,21 @@ public class TemplateHolder extends AbstractSpaceItem implements ITemplateHolder
         final long overrideGeneration = entryHolder.getOverrideGeneration();
         final long committedGeneration = entryHolder.getCommittedGeneration();
         final boolean isDirtyEntry = committedGeneration == -1;
+        if (isActiveRead(cacheManager.getEngine())) {
+            return committedGeneration == -1 || overrideGeneration == -1;
+        }
         if (isReadOperation() && !isExclusiveReadLockOperation()) {
-            if (isActiveRead(cacheManager.getEngine())){
-                return committedGeneration == -1 || overrideGeneration == -1;
-            } else {
-                return isDirtyEntry
-                        || ((committedGeneration != -1)
-                        && (committedGeneration <= completedGeneration)
-                        && (!mvccGenerationsState.isUncompletedGeneration(committedGeneration))
-                        && ((overrideGeneration == -1)
-                        || (overrideGeneration > completedGeneration)
-                        || (overrideGeneration <= completedGeneration && mvccGenerationsState.isUncompletedGeneration(overrideGeneration))));
-            }
+            return isDirtyEntry
+                    || ((committedGeneration != -1)
+                    && (committedGeneration <= completedGeneration)
+                    && (!mvccGenerationsState.isUncompletedGeneration(committedGeneration))
+                    && ((overrideGeneration == -1)
+                    || (overrideGeneration > completedGeneration)
+                    || (overrideGeneration <= completedGeneration && mvccGenerationsState.isUncompletedGeneration(overrideGeneration))));
+
         } else {
             if (overrideGeneration != -1
-                    && overrideGeneration >= completedGeneration
+                    && overrideGeneration > completedGeneration
                     && !mvccGenerationsState.isUncompletedGeneration(overrideGeneration)) {
                 throw new MVCCEntryModifyConflictException(mvccGenerationsState, entryHolder); // overrided can't be modified
             }

@@ -91,6 +91,7 @@ public class MVCCEntryHolder extends EntryHolder implements IMVCCLockObject {
         textualizer.append("uid", getUID());
         textualizer.append("committedGeneration", getCommittedGeneration());
         textualizer.append("overrideGeneration", getOverrideGeneration());
+        textualizer.append("isLogicallyDeleted", isLogicallyDeleted());
     }
 
 }

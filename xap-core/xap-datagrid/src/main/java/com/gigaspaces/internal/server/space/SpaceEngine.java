@@ -4648,17 +4648,16 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
             // if modify operation -> throw an exception
             if (!needRematch && isMvccEnabled()) {
                 MVCCShellEntryCacheInfo mvccShellEntryCacheInfoByUid = _cacheManager.getMVCCShellEntryCacheInfoByUid(ent.getUID());
-                if (mvccShellEntryCacheInfoByUid != null && mvccShellEntryCacheInfoByUid.getEntryHolder() != null
-                        && mvccShellEntryCacheInfoByUid.getEntryHolder() != entry) {
+                MVCCEntryHolder latestGenEntry = mvccShellEntryCacheInfoByUid.getEntryHolder();
+                if (mvccShellEntryCacheInfoByUid != null && latestGenEntry != null
+                        && latestGenEntry != entry) {
                     if (!tmpl.isReadOperation() || tmpl.isExclusiveReadLockOperation()) { //todo: test
                         throw new MVCCEntryModifyConflictException(tmpl.getGenerationsState(), (MVCCEntryHolder) entry);
                     }
                     if (tmpl.isActiveRead(this)) {
-                        if (tmpl.isReadCommittedRequested()) {
-                            entry = mvccShellEntryCacheInfoByUid.getLatestOrHollow();
-                        } else {
-                            entry = mvccShellEntryCacheInfoByUid.getEntryHolder();
-                        }
+                        entry = tmpl.isReadCommittedRequested() ?
+                                mvccShellEntryCacheInfoByUid.getLatestOrHollow() :
+                                latestGenEntry;
                         needRematch = true;
                     }
                 }
@@ -4733,18 +4732,18 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
             if ((tmpl.isFifoSearch()) && !context.isNonBlockingReadOp() && entry.isMaybeUnderXtn())
                 return true;
 
-            // only with mvcc enabled
-            // if there is a new active data and active read is used -> rematch new entry
-            // if modify operation -> throw an exception
             if (!needRematch && isMvccEnabled()) {
                 MVCCShellEntryCacheInfo mvccShellEntryCacheInfoByUid = _cacheManager.getMVCCShellEntryCacheInfoByUid(ent.getUID());
-                if (mvccShellEntryCacheInfoByUid != null && mvccShellEntryCacheInfoByUid.getEntryHolder() != null
-                        && mvccShellEntryCacheInfoByUid.getEntryHolder() != entry) {
+                MVCCEntryHolder latestGenEntry = mvccShellEntryCacheInfoByUid.getEntryHolder();
+                if (mvccShellEntryCacheInfoByUid != null && latestGenEntry != null
+                        && latestGenEntry != entry) {
                     if (!tmpl.isReadOperation() || tmpl.isExclusiveReadLockOperation()) { //todo: test
                         throw new MVCCEntryModifyConflictException(tmpl.getGenerationsState(), (MVCCEntryHolder) entry);
                     }
                     if (tmpl.isActiveRead(this)) {
-                        entry = mvccShellEntryCacheInfoByUid.getEntryHolder();
+                        entry = tmpl.isReadCommittedRequested() ?
+                                mvccShellEntryCacheInfoByUid.getLatestOrHollow() :
+                                latestGenEntry;
                         needRematch = true;
                     }
                 }
