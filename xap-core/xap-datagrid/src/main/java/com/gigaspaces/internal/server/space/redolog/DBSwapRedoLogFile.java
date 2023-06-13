@@ -246,23 +246,28 @@ public class DBSwapRedoLogFile<T extends IReplicationOrderedPacket> implements I
             T oldest = _memoryRedoLog.removeOldest();
             moveToDisk.add(oldest);
         }
-        //move packets from memory to external storage
+        // move packets from memory to external storage
         if (!moveToDisk.isEmpty()) {
             _externalRedoLogStorage.appendBatch(moveToDisk);
-
-            try {
-                Path directory = SystemLocations.singleton().work("redo-log").resolve(_config.getSpaceName());
-                Path codeMapFile = directory.resolve(_config.getContainerName() + "_code_map");
-                try (FileOutputStream file = new FileOutputStream(codeMapFile.toFile())) {
-                    try (ObjectOutputStream oos = new ObjectOutputStream(file)) {
-                        IOUtils.writeCodeMaps(oos);
-                    }
-                }
-            } catch (Exception e) {
-                throw new RuntimeException("failed to write code maps to disk", e);
-            }
         }
+        // write code map to disk (even if there are no redo-log entries)
+        writeCodeMapToDisk();
+
         return moveToDisk.size();
+    }
+
+    private void writeCodeMapToDisk() {
+        try {
+            Path directory = SystemLocations.singleton().work("redo-log").resolve(_config.getSpaceName());
+            Path codeMapFile = directory.resolve(_config.getContainerName() + "_code_map");
+            try (FileOutputStream file = new FileOutputStream(codeMapFile.toFile())) {
+                try (ObjectOutputStream oos = new ObjectOutputStream(file)) {
+                    IOUtils.writeCodeMaps(oos);
+                }
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("failed to write code maps to disk", e);
+        }
     }
 
     private class ExternalStorageCompactionReadOnlyIterator implements ReadOnlyIterator<T> {

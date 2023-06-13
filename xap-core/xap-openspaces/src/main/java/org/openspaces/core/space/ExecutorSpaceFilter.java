@@ -24,9 +24,7 @@ import com.j_spaces.core.SpaceContext;
 import com.j_spaces.core.filters.FilterOperationCodes;
 import com.j_spaces.core.filters.ISpaceFilter;
 import com.j_spaces.core.filters.entry.ISpaceFilterEntry;
-
 import net.jini.core.entry.UnusableEntryException;
-
 import org.openspaces.core.GigaSpace;
 import org.openspaces.core.GigaSpaceConfigurer;
 import org.openspaces.core.cluster.ClusterInfo;
