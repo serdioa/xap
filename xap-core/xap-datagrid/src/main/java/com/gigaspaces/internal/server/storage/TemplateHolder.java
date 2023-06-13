@@ -756,7 +756,7 @@ public class TemplateHolder extends AbstractSpaceItem implements ITemplateHolder
         }
 
         if (cacheManager.getEngine().isMvccEnabled()
-                && (res != MatchResult.NONE || ((MVCCEntryHolder)entry).isLogicallyDeleted())) {
+                && (res != MatchResult.NONE || ((MVCCEntryHolder)entry).isLogicallyDeleted())) { // todo: after the exchange - need revalidate
             if (isMVCCEntryMatchedByGenerationsState((MVCCEntryHolder) entry, cacheManager)) {
                 res = MatchResult.MASTER;
             } else {

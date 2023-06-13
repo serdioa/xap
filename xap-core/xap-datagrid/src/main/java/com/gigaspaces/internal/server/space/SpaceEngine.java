@@ -4654,7 +4654,11 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
                         throw new MVCCEntryModifyConflictException(tmpl.getGenerationsState(), (MVCCEntryHolder) entry);
                     }
                     if (tmpl.isActiveRead(this)) {
-                        entry = mvccShellEntryCacheInfoByUid.getEntryHolder();
+                        if (tmpl.isReadCommittedRequested()) {
+                            entry = mvccShellEntryCacheInfoByUid.getLatestOrHollow();
+                        } else {
+                            entry = mvccShellEntryCacheInfoByUid.getEntryHolder();
+                        }
                         needRematch = true;
                     }
                 }
