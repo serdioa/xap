@@ -4295,11 +4295,6 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
         IEntryHolder entry;
         if(BlobStoreOperationOptimizations.isConsiderOptimizedForBlobstore(this, context, template, pEntry)){
             entry = ((BlobStoreRefEntryCacheInfo) pEntry).getLatestEntryVersion(_cacheManager, false/*attach*/, null /*lastKnownEntry*/, context, true/* onlyIndexesPart*/);
-        }else if (isMvccEnabled()) {
-            entry = _mvccSpaceEngineHandler.getMVCCEntryIfMatched(template, ((MVCCEntryCacheInfo) pEntry));
-            if (entry == null) {
-                return;
-            }
         }else{
             entry = pEntry.getEntryHolder(_cacheManager, context);
         }
