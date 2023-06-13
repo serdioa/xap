@@ -19,8 +19,12 @@ package com.gigaspaces.security.directory;
 
 import com.gigaspaces.security.Authority;
 import com.gigaspaces.security.AuthorityFactory;
+import com.gigaspaces.security.authorities.PopulatedRoleAuthority;
+import com.google.common.collect.Lists;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 /**
  * Models user details retrieved by a {@link UserManager}. <p> Implementors may use this class
@@ -47,6 +51,17 @@ public class User implements UserDetails {
         this.username = username;
         this.password = password;
         this.authorities = authorities;
+    }
+
+    public User(String username, String password, PopulatedRoleAuthority... authorities) {
+        this.username = username;
+        this.password = password;
+        List<Authority> authorityList = new ArrayList<>();
+        for (PopulatedRoleAuthority populatedRoleAuthority : authorities) {
+            authorityList.addAll(Arrays.asList(
+                    populatedRoleAuthority.getAuthorities()));
+        }
+        this.authorities = authorityList.toArray(new Authority[authorityList.size()]);
     }
 
     public User(String username, String password, String... authorities) {

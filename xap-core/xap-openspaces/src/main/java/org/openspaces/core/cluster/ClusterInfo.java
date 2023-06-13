@@ -60,6 +60,8 @@ public class ClusterInfo implements Cloneable, Serializable {
 
     private String name;
 
+    private boolean dedicatedSecurity;
+
     /**
      * Constructs a new cluster info with null values on all the fields
      */
@@ -91,6 +93,7 @@ public class ClusterInfo implements Cloneable, Serializable {
         this.numberOfBackups = builder.getNumberOfBackups();
         this.instanceId = builder.getInstanceId();
         this.backupId = builder.getBackupId();
+        this.dedicatedSecurity = builder.isDedicatedSecurity();
     }
 
     protected ClusterInfo(ClusterInfo other) {
@@ -100,6 +103,11 @@ public class ClusterInfo implements Cloneable, Serializable {
         this.numberOfBackups = other.getNumberOfBackups();
         this.instanceId = other.getInstanceId();
         this.backupId = other.getBackupId();
+        this.dedicatedSecurity = other.isDedicatedSecurity();
+    }
+
+    public boolean isDedicatedSecurity() {
+        return dedicatedSecurity;
     }
 
     /**
