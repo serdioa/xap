@@ -11,7 +11,7 @@ public class MVCCEntryModifyConflictException extends DataAccessException {
 
     private static final long serialVersionUID = 7382997159809192427L;
 
-    public MVCCEntryModifyConflictException(com.gigaspaces.internal.server.space.mvcc.MVCCEntryModifyConflictException cause) {
+    public MVCCEntryModifyConflictException(Throwable cause) {
         super(cause.getMessage(), cause);
     }
 

@@ -5,7 +5,6 @@ import com.gigaspaces.internal.server.storage.IEntryHolder;
 import com.gigaspaces.internal.server.storage.ITemplateHolder;
 import com.j_spaces.core.SpaceOperations;
 import com.j_spaces.core.XtnEntry;
-import com.j_spaces.core.XtnStatus;
 import com.j_spaces.core.cache.CacheManager;
 import com.j_spaces.core.cache.context.Context;
 import com.j_spaces.core.cache.mvcc.MVCCEntryCacheInfo;
@@ -88,7 +87,7 @@ public class MVCCSpaceEngineHandler {
                 XtnEntry writeLockOwner = entry.getWriteLockOwner();
                 boolean isDirtyEntry = entry.getCommittedGeneration() == -1;
                 if (isDirtyEntry &&
-                        writeLockOwner != null && (writeLockOwner.getStatus() != XtnStatus.COMMITED || writeLockOwner.getStatus() != XtnStatus.COMMITING)) {
+                        writeLockOwner != null && writeLockOwner.equals(template.getXidOriginated())) {
                     return SpaceEngine.XtnConflictCheckIndicators.NO_CONFLICT;
                 }
                 if (entry.getOverrideGeneration() > -1) {

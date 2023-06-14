@@ -350,10 +350,14 @@ public class Processor implements IConsumerObject<BusPacket<Processor>> {
         ILockObject entryLock = null;
 
         if (curEh == null && (_cacheManager.getLockManager().isEntryLocksItsSelf(entry) || alreadyLocked)) {
-            if (_cacheManager.isBlobStoreCachePolicy())
+            if (_cacheManager.isBlobStoreCachePolicy()) {
                 curEh = _cacheManager.getEntryByUidFromPureCache(entry.getUID());
-            else
+            }
+            else if (_cacheManager.isMVCCEnabled()) {
+                curEh = entry;
+            } else {
                 curEh = _cacheManager.getEntry(context, entry, true /*tryInsertToCache*/, alreadyLocked);
+            }
             if (curEh == null)
                 return true;  //entry no longer exist
         }

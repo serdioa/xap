@@ -20,16 +20,12 @@ package org.openspaces.core.exception;
 import com.gigaspaces.client.protective.ProtectiveModeException;
 import com.gigaspaces.security.SecurityException;
 import com.j_spaces.core.MemoryShortageException;
-import com.j_spaces.core.client.CacheException;
-import com.j_spaces.core.client.CacheTimeoutException;
-import com.j_spaces.core.client.DuplicateIndexValueException;
-import com.j_spaces.core.client.EntryVersionConflictException;
-import com.j_spaces.core.client.OperationTimeoutException;
+import com.j_spaces.core.client.*;
 import com.j_spaces.core.client.sql.SQLQueryException;
 import com.j_spaces.core.exception.ClosedResourceException;
-
 import net.jini.core.transaction.TransactionException;
-
+import org.openspaces.core.EntryAlreadyInSpaceException;
+import org.openspaces.core.EntryNotInSpaceException;
 import org.openspaces.core.*;
 import org.openspaces.core.executor.mvcc.exception.MVCCEntryModifyConflictException;
 import org.springframework.dao.DataAccessException;
@@ -237,7 +233,7 @@ public class DefaultExceptionTranslator implements ExceptionTranslator {
 
         //mvcc transaction exceptions
         if (e instanceof com.gigaspaces.internal.server.space.mvcc.MVCCEntryModifyConflictException) {
-            return new MVCCEntryModifyConflictException((com.gigaspaces.internal.server.space.mvcc.MVCCEntryModifyConflictException) e);
+            return new MVCCEntryModifyConflictException(e);
         }
         return null;
     }

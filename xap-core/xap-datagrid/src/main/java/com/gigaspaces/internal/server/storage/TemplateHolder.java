@@ -803,7 +803,7 @@ public class TemplateHolder extends AbstractSpaceItem implements ITemplateHolder
 
         } else { //locking operations
             if (overrideGeneration != -1
-                    && overrideGeneration >= completedGeneration
+                    && overrideGeneration > completedGeneration
                     && !mvccGenerationsState.isUncompletedGeneration(overrideGeneration)) {
                 throw new MVCCEntryModifyConflictException(mvccGenerationsState, entryHolder, getTemplateOperation()); // overrided can't be modified
             }
