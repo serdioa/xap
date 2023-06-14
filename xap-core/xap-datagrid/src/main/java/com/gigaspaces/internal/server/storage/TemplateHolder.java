@@ -789,19 +789,19 @@ public class TemplateHolder extends AbstractSpaceItem implements ITemplateHolder
         final long overrideGeneration = entryHolder.getOverrideGeneration();
         final long committedGeneration = entryHolder.getCommittedGeneration();
         final boolean isDirtyEntry = committedGeneration == -1;
-        if (isActiveRead(cacheManager.getEngine())) {
+        if (isActiveRead(cacheManager.getEngine())) { //active read
             return committedGeneration == -1 || overrideGeneration == -1;
         }
-        if (isReadOperation() && !isExclusiveReadLockOperation()) {
+        if (isReadOperation() && !isExclusiveReadLockOperation()) { //historic read
             return isDirtyEntry
                     || ((committedGeneration != -1)
-                    && (committedGeneration <= completedGeneration)
-                    && (!mvccGenerationsState.isUncompletedGeneration(committedGeneration))
-                    && ((overrideGeneration == -1)
-                    || (overrideGeneration > completedGeneration)
-                    || (overrideGeneration <= completedGeneration && mvccGenerationsState.isUncompletedGeneration(overrideGeneration))));
+                        && (committedGeneration <= completedGeneration)
+                        && (!mvccGenerationsState.isUncompletedGeneration(committedGeneration))
+                        && ((overrideGeneration == -1)
+                        || (overrideGeneration > completedGeneration)
+                        || (overrideGeneration <= completedGeneration && mvccGenerationsState.isUncompletedGeneration(overrideGeneration))));
 
-        } else {
+        } else { //locking operations
             if (overrideGeneration != -1
                     && overrideGeneration >= completedGeneration
                     && !mvccGenerationsState.isUncompletedGeneration(overrideGeneration)) {

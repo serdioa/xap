@@ -65,14 +65,6 @@ public class MVCCShellEntryCacheInfo extends MemoryBasedEntryCacheInfo {
         return allEntryGenerations.peekLast();
     }
 
-    public boolean isLogicallyDeletedOrEmpty() {
-        MVCCEntryCacheInfo latestGeneration = getLatestGenerationCacheInfo();
-        if (latestGeneration != null) {
-            return latestGeneration.getEntryHolder().isLogicallyDeleted();
-        }
-        return true; //if no generations exist it's same as logically deleted
-    }
-
     public MVCCEntryHolder getLatestOrHollow() {
         MVCCEntryCacheInfo latestGeneration = getLatestGenerationCacheInfo();
         if (latestGeneration != null) {

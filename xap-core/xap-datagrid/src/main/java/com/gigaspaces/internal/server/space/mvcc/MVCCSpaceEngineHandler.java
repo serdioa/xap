@@ -5,6 +5,7 @@ import com.gigaspaces.internal.server.storage.IEntryHolder;
 import com.gigaspaces.internal.server.storage.ITemplateHolder;
 import com.j_spaces.core.SpaceOperations;
 import com.j_spaces.core.XtnEntry;
+import com.j_spaces.core.XtnStatus;
 import com.j_spaces.core.cache.CacheManager;
 import com.j_spaces.core.cache.context.Context;
 import com.j_spaces.core.cache.mvcc.MVCCEntryCacheInfo;
@@ -57,8 +58,8 @@ public class MVCCSpaceEngineHandler {
                                     mvccShellEntryCacheInfo.addDirtyEntryToGenerationQueue();
                                     break;
                                 case SpaceOperations.WRITE:
-                                    MVCCEntryCacheInfo activeTakenGenerationEntry = xtnEntry.getXtnData().getMvccOverriddenActiveTakenEntry(entry.getUID());
-                                    if (activeTakenGenerationEntry != null){ //performing a write operation on a taken entry generation
+                                    MVCCEntryCacheInfo activeTakenGenerationEntry = xtnEntry.getXtnData().getMvccWriteActiveLogicallyDeletedEntry(entry.getUID());
+                                    if (activeTakenGenerationEntry != null){ //performing a write operation on a taken (logicallyDeleted) entry generation
                                         MVCCEntryHolder activeEntryHolder = activeTakenGenerationEntry.getEntryHolder();
                                         activeEntryHolder.setOverrideGeneration(nextGeneration);
                                         activeEntryHolder.resetEntryXtnInfo();
@@ -84,6 +85,12 @@ public class MVCCSpaceEngineHandler {
             case SpaceOperations.TAKE_IE:
             case SpaceOperations.TAKE:
             case SpaceOperations.UPDATE:
+                XtnEntry writeLockOwner = entry.getWriteLockOwner();
+                boolean isDirtyEntry = entry.getCommittedGeneration() == -1;
+                if (isDirtyEntry &&
+                        writeLockOwner != null && (writeLockOwner.getStatus() != XtnStatus.COMMITED || writeLockOwner.getStatus() != XtnStatus.COMMITING)) {
+                    return SpaceEngine.XtnConflictCheckIndicators.NO_CONFLICT;
+                }
                 if (entry.getOverrideGeneration() > -1) {
                     if (_spaceEngine.getLogger().isDebugEnabled()) {
                         _spaceEngine.getLogger().debug("Encountered a conflict while attempting to modify " + entry

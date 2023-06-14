@@ -25,23 +25,27 @@ public class MVCCCacheManagerHandler {
 
     public IEntryCacheInfo insertMvccEntryToCache(MVCCEntryCacheInfo pEntry, ConcurrentMap<String, IEntryCacheInfo> entries) throws SAException {
         String uid = pEntry.getUID();
-        MVCCShellEntryCacheInfo oldEntry = (MVCCShellEntryCacheInfo) entries.get(uid);
-        IEntryHolder entryHolder = pEntry.getEntryHolder();
-        if (oldEntry == null){
-            oldEntry = new MVCCShellEntryCacheInfo(entryHolder, pEntry);
-            entries.put(uid,oldEntry);
-        } else if (oldEntry.getDirtyEntryCacheInfo() == null) {
-            MVCCEntryCacheInfo activeGeneration = oldEntry.getLatestGenerationCacheInfo();
-            if (activeGeneration != null && activeGeneration.getEntryHolder().isLogicallyDeleted()) {
-                XtnEntry xtnEntry = entryHolder.getXidOriginated();
-                XtnData pXtn = xtnEntry.getXtnData();
-                activeGeneration.getEntryHolder().setWriteLockOwnerAndOperation(entryHolder.getWriteLockOwner(), entryHolder.getWriteLockOperation());
-                activeGeneration.getEntryHolder().getTxnEntryData().setXidOriginated(xtnEntry);
-                pXtn.addMvccOverriddenActiveTakenEntries(activeGeneration);
+        MVCCShellEntryCacheInfo existingShell = (MVCCShellEntryCacheInfo) entries.get(uid);
+        IEntryHolder newEntryToWrite = pEntry.getEntryHolder();
+        if (existingShell == null){
+            existingShell = new MVCCShellEntryCacheInfo(newEntryToWrite, pEntry);
+            entries.put(uid, existingShell);
+        } else {
+            MVCCEntryCacheInfo dirtyEntryCacheInfo = existingShell.getDirtyEntryCacheInfo();
+            MVCCEntryHolder dirtyEntryHolder = existingShell.getDirtyEntryHolder();
+            MVCCEntryCacheInfo activeGeneration = existingShell.getLatestGenerationCacheInfo();
+            if (dirtyEntryCacheInfo == null) {
+                // so it is new write
+                if (activeGeneration != null && activeGeneration.getEntryHolder().isLogicallyDeleted()) {
+                    XtnEntry xtnEntry = newEntryToWrite.getXidOriginated();
+                    XtnData pXtn = xtnEntry.getXtnData();
+                    activeGeneration.getEntryHolder().setWriteLockOwnerAndOperation(newEntryToWrite.getWriteLockOwner(), newEntryToWrite.getWriteLockOperation());
+                    pXtn.addWriteActiveLogicallyDeletedEntries(activeGeneration);
+                } // else it is an update
+                existingShell.setDirtyEntryCacheInfo(pEntry);
+            } else {
+                return existingShell;
             }
-            oldEntry.setDirtyEntryCacheInfo(pEntry);
-        } else{
-            return oldEntry;
         }
         return null;
     }
@@ -104,14 +108,6 @@ public class MVCCCacheManagerHandler {
             disconnectMvccEntryFromXtn(context, newMvccGenerationCacheInfo, xtnEntry, true);
         }
 
-    }
-
-    public boolean isMvccEntryValidForWriteOnly(String uid) {
-        return isMvccEntryValidForWriteOnly(cacheManager.getMVCCShellEntryCacheInfoByUid(uid));
-    }
-
-    public boolean isMvccEntryValidForWriteOnly(MVCCShellEntryCacheInfo shellEntryCacheInfo) {
-        return shellEntryCacheInfo.getDirtyEntryCacheInfo() == null && shellEntryCacheInfo.isLogicallyDeletedOrEmpty();
     }
 
     public void createUpdateMvccEntryPendingGeneration(Context context, XtnEntry xtnEntry, int templateOperation, MVCCEntryCacheInfo entryCacheInfo, MVCCEntryHolder updatedEntry, TypeData typeData) throws SAException {
