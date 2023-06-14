@@ -217,7 +217,6 @@
                 <groupId>org.bouncycastle</groupId>
                 <artifactId>bcpkix-jdk15on</artifactId>
                 <version>1.50</version>
-                <scope>provided</scope>
             </dependency>
             <dependency>
                 <groupId>com.github.oshi</groupId>
