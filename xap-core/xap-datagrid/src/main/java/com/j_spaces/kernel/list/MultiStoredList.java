@@ -16,6 +16,7 @@
 
 package com.j_spaces.kernel.list;
 
+import com.j_spaces.core.cache.mvcc.MVCCShellEntryCacheInfo;
 import com.j_spaces.core.sadapter.SAException;
 import com.j_spaces.kernel.ICollection;
 import com.j_spaces.kernel.IStoredList;
@@ -179,16 +180,16 @@ public class MultiStoredList<T>
     }
 
     protected IScanListIterator<T> prepareListIterator(IObjectsList list) {
-        if (!list.isIterator())
-        {
+        if (!list.isIterator()) {
             if (_alternatingThread)
-                return new ScanSingleListIterator((IStoredList<T>) list, _fifoScan,true);
+                return new ScanSingleListIterator((IStoredList<T>) list, _fifoScan, true);
             else
                 return new ScanSingleListIterator((IStoredList<T>) list, _fifoScan);
+        } else if (list instanceof MVCCShellEntryCacheInfo) {
+            return ((IScanListIterator<T>) list).createCopyForAlternatingThread();
+        } else {
+            return ((IScanListIterator<T>) list);
         }
-        else
-            return (IScanListIterator<T>) list;
-
     }
 
     protected IScanListIterator<T> getCurrentList() {
