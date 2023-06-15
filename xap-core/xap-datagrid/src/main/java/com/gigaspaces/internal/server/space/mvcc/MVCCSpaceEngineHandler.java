@@ -26,7 +26,10 @@ public class MVCCSpaceEngineHandler {
     }
 
     public void preCommitMvccEntries(Context context, XtnEntry xtnEntry) throws SAException {
-        final MVCCGenerationsState mvccGenerationsState = xtnEntry.getMVCCGenerationsState();
+        MVCCGenerationsState mvccGenerationsState = context.getMvccGenerationsState();
+        if (mvccGenerationsState == null){
+            mvccGenerationsState = xtnEntry.getMVCCGenerationsState();
+        }
         if (mvccGenerationsState == null) return;
         final long nextGeneration = mvccGenerationsState.getNextGeneration();
         ISAdapterIterator<IEntryHolder> entriesIter = null;

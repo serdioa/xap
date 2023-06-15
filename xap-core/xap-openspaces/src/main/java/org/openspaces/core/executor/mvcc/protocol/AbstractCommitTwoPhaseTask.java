@@ -36,10 +36,16 @@ public abstract class AbstractCommitTwoPhaseTask implements IMVCCTask<AbstractMV
 
     protected void commitEmbeddedTransaction() throws UnknownTransactionException, RemoteException, CannotCommitException {
         getEmbeddedTransactionManager(getDirectProxy()).commit(transactionId);
+        clearGenerationState();
+    }
+
+    private void clearGenerationState() {
+        space.getSpace().getDirectProxy().setMVCCGenerationsState(null);
     }
 
     protected void abortEmbeddedTransaction() throws UnknownTransactionException, RemoteException, CannotAbortException {
         getEmbeddedTransactionManager(getDirectProxy()).abort(transactionId);
+        clearGenerationState();
     }
 
     private TransactionManager getEmbeddedTransactionManager(IDirectSpaceProxy directSpaceProxy) {
@@ -57,7 +63,6 @@ public abstract class AbstractCommitTwoPhaseTask implements IMVCCTask<AbstractMV
     @Override
     public AbstractMVCCProtocolTaskResult execute() throws Exception {
         AbstractMVCCProtocolTaskResult result = executeCommitTask();
-        result.addActiveGeneration(getActiveGeneration());
         return result;
     }
 
