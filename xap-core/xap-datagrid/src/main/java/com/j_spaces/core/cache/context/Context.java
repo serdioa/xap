@@ -27,6 +27,7 @@ import com.gigaspaces.internal.server.space.MatchResult;
 import com.gigaspaces.internal.server.space.ReadByIdsInfo;
 import com.gigaspaces.internal.server.space.SpaceEngine;
 import com.gigaspaces.internal.server.space.SpaceImpl;
+import com.gigaspaces.internal.server.space.mvcc.MVCCGenerationsState;
 import com.gigaspaces.internal.server.space.operations.ChangeEntriesSpaceOperation;
 import com.gigaspaces.internal.server.space.operations.WriteEntryResult;
 import com.gigaspaces.internal.server.storage.*;
@@ -248,6 +249,9 @@ public class Context {
     private TieredState entryTieredState;
     private TemplateMatchTier templateTieredState;
     private boolean templateMaybeUnderTransaction;
+
+    //mvcc
+    private MVCCGenerationsState mvccGenerationsState;
 
     public Context() {
     }
@@ -1354,6 +1358,14 @@ public class Context {
 
     public void setTemplateMaybeUnderTransaction(boolean templateMaybeUnderTransaction) {
         this.templateMaybeUnderTransaction = templateMaybeUnderTransaction;
+    }
+
+    public MVCCGenerationsState getMvccGenerationsState() {
+        return mvccGenerationsState;
+    }
+
+    public void setMvccGenerationsState(MVCCGenerationsState mvccGenerationsState) {
+        this.mvccGenerationsState = mvccGenerationsState;
     }
 
 }
