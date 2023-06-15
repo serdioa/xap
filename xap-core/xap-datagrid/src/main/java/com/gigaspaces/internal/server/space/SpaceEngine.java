@@ -3907,29 +3907,28 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
 
         long scnFilter = useSCN ? template.getSCN() : 0;
         IEntryHolder entry = null;
+        if (pEntry.isBlobStoreEntry()) {
+            boolean onlyIndexesPart = BlobStoreOperationOptimizations.isConsiderOptimizedForBlobstore(this, context, template, pEntry);
+            entry = ((BlobStoreRefEntryCacheInfo) pEntry).getLatestEntryVersion(_cacheManager, false/*attach*/,
+                    null /*lastKnownEntry*/, context, onlyIndexesPart/* onlyIndexesPart*/);
+        } else {
+            entry = pEntry.getEntryHolder(_cacheManager, context);
+        }
+        if (entry.getServerTypeDesc().getTypeDesc().isBroadcast() && skipBroadcastTable(context, template))
+            return null;
+        if (scnFilter != 0 && entry.getSCN() < scnFilter)
+                return null;
+        if (!(isMvccEnabled() && entry.isHollowEntry())) {
+            if (entry.isExpired(leaseFilter) && disqualifyExpiredEntry(entry) && template.isReadOperation()) {
+                context.setPendingExpiredEntriesExist(true);
+                return null;
+            }
+            if (needMatch && !_templateScanner.match(context, entry, template, skipAlreadyMatchedFixedPropertyIndex, skipAlreadyMatchedIndexPath, false))
+                return null;
+        }
+        if (!template.isNonBlockingRead() && entry.isDeleted())
+            return null;
         try {
-            if (pEntry.isBlobStoreEntry()) {
-                boolean onlyIndexesPart = BlobStoreOperationOptimizations.isConsiderOptimizedForBlobstore(this, context, template, pEntry);
-                entry = ((BlobStoreRefEntryCacheInfo) pEntry).getLatestEntryVersion(_cacheManager, false/*attach*/,
-                        null /*lastKnownEntry*/, context, onlyIndexesPart/* onlyIndexesPart*/);
-            } else {
-                entry = pEntry.getEntryHolder(_cacheManager, context);
-            }
-            if (entry.getServerTypeDesc().getTypeDesc().isBroadcast() && skipBroadcastTable(context, template))
-                return null;
-            if (scnFilter != 0 && entry.getSCN() < scnFilter)
-                return null;
-            if (!(isMvccEnabled() && entry.isHollowEntry())) {
-                if (entry.isExpired(leaseFilter) && disqualifyExpiredEntry(entry) && template.isReadOperation()) {
-                    context.setPendingExpiredEntriesExist(true);
-                    return null;
-                }
-                if (needMatch && !_templateScanner.match(context, entry, template, skipAlreadyMatchedFixedPropertyIndex, skipAlreadyMatchedIndexPath, false))
-                    return null;
-            }
-            if (!template.isNonBlockingRead() && entry.isDeleted())
-                return null;
-
             performTemplateOnEntrySA(context, template, entry,
                     makeWaitForInfo);
             return entry;
@@ -4641,21 +4640,18 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
             }
             // only with mvcc enabled
             // if there is a new active data and active read is used -> rematch new entry
-            // if modify operation -> throw an exception
-            if (!needRematch && isMvccEnabled()) {
+            // if modify operation(exclusive read or not read) -> throw an exception
+            if (!needRematch && isMvccEnabled() && !tmpl.isHistoricalRead(this)) {
                 MVCCShellEntryCacheInfo mvccShellEntryCacheInfoByUid = _cacheManager.getMVCCShellEntryCacheInfoByUid(ent.getUID());
-                MVCCEntryHolder latestGenEntry = mvccShellEntryCacheInfoByUid.getEntryHolder();
-                if (mvccShellEntryCacheInfoByUid != null && latestGenEntry != null
-                        && latestGenEntry != entry) {
-                    if (!tmpl.isReadOperation() || tmpl.isExclusiveReadLockOperation()) {
+                MVCCEntryHolder activeData = mvccShellEntryCacheInfoByUid.getEntryHolder();
+                if (activeData != null && activeData != entry) {
+                    if (!tmpl.isActiveRead(this)) {
                         throw new MVCCEntryModifyConflictException(tmpl.getGenerationsState(), (MVCCEntryHolder) entry, tmpl.getTemplateOperation());
                     }
-                    if (tmpl.isActiveRead(this)) {
-                        entry = tmpl.isReadCommittedRequested() ?
-                                mvccShellEntryCacheInfoByUid.getLatestOrHollow() :
-                                latestGenEntry;
-                        needRematch = true;
-                    }
+                    entry = tmpl.isReadCommittedRequested() ?
+                            mvccShellEntryCacheInfoByUid.getLatestOrHollow() :
+                            activeData;
+                    needRematch = true;
                 }
             }
             if (!needRematch && !tmpl.isMatchByID()) {
@@ -4728,20 +4724,20 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
             if ((tmpl.isFifoSearch()) && !context.isNonBlockingReadOp() && entry.isMaybeUnderXtn())
                 return true;
 
-            if (!needRematch && isMvccEnabled()) {
+            // only with mvcc enabled
+            // if there is a new active data and active read is used -> rematch new entry
+            // if modify operation(exclusive read or not read) -> throw an exception
+            if (!needRematch && isMvccEnabled() && !tmpl.isHistoricalRead(this)) {
                 MVCCShellEntryCacheInfo mvccShellEntryCacheInfoByUid = _cacheManager.getMVCCShellEntryCacheInfoByUid(ent.getUID());
-                MVCCEntryHolder latestGenEntry = mvccShellEntryCacheInfoByUid.getEntryHolder();
-                if (mvccShellEntryCacheInfoByUid != null && latestGenEntry != null
-                        && latestGenEntry != entry) {
-                    if (!tmpl.isReadOperation() || tmpl.isExclusiveReadLockOperation()) {
+                MVCCEntryHolder activeData = mvccShellEntryCacheInfoByUid.getEntryHolder();
+                if (activeData != null && activeData != entry) {
+                    if (!tmpl.isActiveRead(this)) {
                         throw new MVCCEntryModifyConflictException(tmpl.getGenerationsState(), (MVCCEntryHolder) entry, tmpl.getTemplateOperation());
                     }
-                    if (tmpl.isActiveRead(this)) {
-                        entry = tmpl.isReadCommittedRequested() ?
-                                mvccShellEntryCacheInfoByUid.getLatestOrHollow() :
-                                latestGenEntry;
-                        needRematch = true;
-                    }
+                    entry = tmpl.isReadCommittedRequested() ?
+                            mvccShellEntryCacheInfoByUid.getLatestOrHollow() :
+                            activeData;
+                    needRematch = true;
                 }
             }
 

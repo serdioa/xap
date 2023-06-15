@@ -723,7 +723,7 @@ public class TemplateHolder extends AbstractSpaceItem implements ITemplateHolder
             res = MatchResult.NONE;
         else if (_uidToOperateBy != null && (!_uidToOperateBy.equals(entry.getUID())))
             res = MatchResult.NONE;
-        else if (cacheManager.getEngine().isMvccEnabled() && (((MVCCEntryHolder) entry).isLogicallyDeleted() || entry.isHollowEntry()))
+        else if (cacheManager.isMVCCEnabled() && (((MVCCEntryHolder) entry).isLogicallyDeleted() || entry.isHollowEntry()))
             res = MatchResult.NONE;
         else {
             //obtain the relevant field values
@@ -755,7 +755,7 @@ public class TemplateHolder extends AbstractSpaceItem implements ITemplateHolder
             }
         }
 
-        if (cacheManager.getEngine().isMvccEnabled()
+        if (cacheManager.isMVCCEnabled()
                 && (res != MatchResult.NONE || ((MVCCEntryHolder) entry).isLogicallyDeleted())) {
             if (isMVCCEntryMatchedByGenerationsState((MVCCEntryHolder) entry, cacheManager)) {
                 res = MatchResult.MASTER;
@@ -1300,5 +1300,14 @@ public class TemplateHolder extends AbstractSpaceItem implements ITemplateHolder
                         || engine.indicateDirtyRead(this));
         }
         return true;
+    }
+
+    /*
+     * relevant for mvcc only
+     * does operation allow to read old mvcc generations
+     */
+    @Override
+    public boolean isHistoricalRead(SpaceEngine engine) {
+        return isReadOperation() && !isExclusiveReadLockOperation() && !isActiveRead(engine);
     }
 }

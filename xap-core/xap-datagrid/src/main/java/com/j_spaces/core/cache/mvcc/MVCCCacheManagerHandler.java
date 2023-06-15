@@ -42,7 +42,7 @@ public class MVCCCacheManagerHandler {
                 } else if (isLatestCommittedExist) { //it already exists and not logically deleted.
                     return existingShell;
                 }
-            } // else its update / write on empty shell
+            } // else its write operation on empty shell / update operation on active data
             existingShell.setDirtyEntryCacheInfo(pEntry);
             return null;
         }
