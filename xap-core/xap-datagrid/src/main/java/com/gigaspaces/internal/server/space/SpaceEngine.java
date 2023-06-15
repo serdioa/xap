@@ -3906,7 +3906,8 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
             return null; //try to save getting the entry to memory
 
         long scnFilter = useSCN ? template.getSCN() : 0;
-        IEntryHolder entry = null;
+
+        IEntryHolder entry;
         if (pEntry.isBlobStoreEntry()) {
             boolean onlyIndexesPart = BlobStoreOperationOptimizations.isConsiderOptimizedForBlobstore(this, context, template, pEntry);
             entry = ((BlobStoreRefEntryCacheInfo) pEntry).getLatestEntryVersion(_cacheManager, false/*attach*/,
