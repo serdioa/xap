@@ -816,6 +816,10 @@ public class SystemProperties extends CommonSystemProperties {
     //GS-13424 java 9 support: VisualVM is not part of JDK 9
     public static final String VISUAL_VM_LAUNCH_FILE_PATH = "com.gs.visualvm.binary";
 
+    public static final String SPACE_RECOVERY_FILTER_AFTER_COPY ="com.gs.recovery.filter.after.copy.enabled";
+
+    public static final boolean SPACE_RECOVERY_FILTER_AFTER_COPY_DEFAULT = true;
+
     private static final Map<String, String> defaultValues = initDefaultValues();
 
     private static Map<String, String> initDefaultValues() {

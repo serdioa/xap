@@ -22,6 +22,7 @@ import com.gigaspaces.internal.cluster.node.impl.packets.data.IReplicationPacket
 import com.gigaspaces.internal.collections.CollectionsFactory;
 import com.gigaspaces.internal.collections.ObjectLongMap;
 import com.j_spaces.core.exception.internal.ReplicationInternalSpaceException;
+import com.j_spaces.kernel.SystemProperties;
 
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -34,12 +35,17 @@ public class SynchronizingData<T extends IReplicationPacketData<?>> {
     private final ObjectLongMap<String> _entriesUidMap = CollectionsFactory.getInstance().createObjectLongMap();
     private final Logger _logger;
     private final boolean _isDirectPersistencySync;
+    private final boolean _isFilterEnabled;
+
     private final ObjectLongMap<Object> _dataIdMap = CollectionsFactory.getInstance().createObjectLongMap();
     private long _keyWhenCopyStageCompleted = -1L;
 
     public SynchronizingData(Logger logger, boolean isDirectPersistencySync) {
         _logger = logger;
         _isDirectPersistencySync = isDirectPersistencySync;
+        _isFilterEnabled = SystemProperties.getBoolean(SystemProperties.SPACE_RECOVERY_FILTER_AFTER_COPY, SystemProperties.SPACE_RECOVERY_FILTER_AFTER_COPY_DEFAULT);
+        _logger.info("Max number of operations allowed after Copy stage is: "+ _maxAfterIterationDoneStageLength + " filter enabled: " + _isFilterEnabled);
+
     }
 
     /**
@@ -87,10 +93,10 @@ public class SynchronizingData<T extends IReplicationPacketData<?>> {
         if (!_entriesUidMap.containsKey(uid)) {
             if (_logger.isLoggable(Level.FINER)) {
                 _logger.finer("[SynchronizingData::filterEntryData] not in _entriesUidMap: uid=" + uid + " ,_keyWhenCopyStageCompleted=" + _keyWhenCopyStageCompleted +
-                        " ,packetKey=" + packetKey + " ,isDirectPersistency=" + _isDirectPersistencySync);
+                        " ,packetKey=" + packetKey + " ,isDirectPersistency=" + _isDirectPersistencySync +" ,isFilterEnabled="+_isFilterEnabled);
             }
             //don't filter any data from redo log (which is not in sync list) when doing direct persistency sync list recovery
-            if (_isDirectPersistencySync) {
+            if (_isDirectPersistencySync || !_isFilterEnabled) {
                 return false;
             }
             // If this operation is not filtered if not present in the replica,
@@ -114,7 +120,7 @@ public class SynchronizingData<T extends IReplicationPacketData<?>> {
         // newer events
         if (_logger.isLoggable(Level.FINER)) {
             _logger.finer("[SynchronizingData::filterEntryData] in _entriesUidMap: uid=" + uid + " ,_keyWhenCopyStageCompleted=" + _keyWhenCopyStageCompleted +
-                    " ,packetKey=" + packetKey + " ,isDirectPersistency=" + _isDirectPersistencySync);
+                    " ,packetKey=" + packetKey + " ,isDirectPersistency=" + _isDirectPersistencySync+" , _isFilterEnabled="+_isFilterEnabled);
         }
         return keyAtGenerationTime >= packetKey;
     }
@@ -129,7 +135,7 @@ public class SynchronizingData<T extends IReplicationPacketData<?>> {
         // Filtering single operations inside a transaction (multiple operations) will be done in filterEntryData method.
         // A transaction of X operations can be filtered into a transaction with X-Y operations if Y operations had redo key
         // which is smaller than it's key at recovery time.
-        if (_isDirectPersistencySync) {
+        if (_isDirectPersistencySync || !_isFilterEnabled) {
             return ReplicationChannelDataFilterResult.PASS;
         }
         switch (operationType) {
