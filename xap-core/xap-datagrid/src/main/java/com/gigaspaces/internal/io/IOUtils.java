@@ -184,6 +184,10 @@ public class IOUtils {
         return new UUID(most, least);
     }
 
+    public static int getCodeMapRevision() {
+        return _codeToClass.size(); //we use size as an indication for changes
+    }
+
     public static void writeCodeMaps(ObjectOutput out) throws IOException {
         out.writeObject(_classToCode);
         out.writeObject(_codeToClass);

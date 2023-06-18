@@ -16,6 +16,7 @@
 
 package com.gigaspaces.internal.cluster.node.impl;
 
+import com.gigaspaces.cluster.activeelection.SpaceMode;
 import com.gigaspaces.cluster.replication.IRedoLogStatistics;
 import com.gigaspaces.cluster.replication.IncomingReplicationOutOfSyncException;
 import com.gigaspaces.cluster.replication.RedoLogStatistics;
@@ -52,19 +53,32 @@ import com.gigaspaces.internal.utils.concurrent.IAsyncHandlerProvider;
 import com.gigaspaces.internal.utils.threadlocal.PoolFactory;
 import com.gigaspaces.internal.utils.threadlocal.ThreadLocalPool;
 import com.gigaspaces.logger.Constants;
+import com.gigaspaces.lrmi.DefaultNetworkMapper;
+import com.gigaspaces.lrmi.INetworkMapper;
 import com.gigaspaces.metrics.MetricConstants;
 import com.gigaspaces.metrics.MetricRegistrator;
+import com.gigaspaces.start.SystemLocations;
 import com.gigaspaces.time.SystemTime;
+import com.gigaspaces.utils.FileUtils;
+import com.gigaspaces.utils.RedologFlushNotifier;
 import com.j_spaces.core.OperationID;
 import com.j_spaces.core.cache.blobStore.BlobStoreReplicaConsumeHelper;
 import com.j_spaces.core.cache.blobStore.BlobStoreReplicationBulkConsumeHelper;
 import com.j_spaces.core.exception.ClosedResourceException;
+import com.j_spaces.kernel.ClassLoaderHelper;
+import com.j_spaces.kernel.SystemProperties;
+import com.sun.nio.file.ExtendedCopyOption;
 import net.jini.core.event.EventRegistration;
 import net.jini.core.transaction.server.ServerTransaction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.rmi.RemoteException;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Map;
@@ -953,20 +967,67 @@ public class ReplicationNode
             _logger.debug(getLogPrefix()
                     + "initiating flush of pending replication");
         long remainingTime = units.toMillis(timeout);
-        for (IReplicationSourceGroup sourceGroup : _groupsHolder.getSourceGroups()) {
-            long iterationStartTime = SystemTime.timeMillis();
-            boolean flushPendingReplication = sourceGroup.flushPendingReplication(remainingTime,
-                    TimeUnit.MILLISECONDS);
-            if (!flushPendingReplication)
-                return false;
-            remainingTime = remainingTime
-                    - (SystemTime.timeMillis() - iterationStartTime);
-            if (remainingTime <= 0)
-                return false;
+        try {
+            for (IReplicationSourceGroup sourceGroup : _groupsHolder.getSourceGroups()) {
+                long iterationStartTime = SystemTime.timeMillis();
+                boolean flushPendingReplication = sourceGroup.flushPendingReplication(remainingTime,
+                        TimeUnit.MILLISECONDS);
+                if (!flushPendingReplication)
+                    return false;
+                remainingTime = remainingTime
+                        - (SystemTime.timeMillis() - iterationStartTime);
+                if (remainingTime <= 0)
+                    return false;
+            }
         }
+        finally {
+                boolean flushRedolog = SystemProperties.getBoolean(SystemProperties.REDOLOG_FLUSH_ON_SHUTDOWN, true);
+                long redologSize = getBackLogStatistics().size();
+                if (redologSize> 0 && flushRedolog){
+                    try {
+                        _logger.info("redolog for: " + _name + " about to flush to Storage");
+                        String spaceName = _name.substring(_name.indexOf(":") + 1, _name.length());
+
+                        flushRedoLogToStorage();
+                        Path target = copyRedologToTarget(spaceName, _name);
+                        notifyOnFlushRedologToStorage(_name, spaceName,getBackLogStatistics().size(),target);
+                        _logger.info("redolog for: " + _name + " was flushed to Storage");
+                    }
+                    catch (Throwable t){
+                        _logger.error("Fail to Flush redolog to Storage for:"+ _name, t);
+                    }
+                }
+        }
+
         if (_logger.isInfoEnabled())
             _logger.info(getLogPrefix() + "completed replication.");
         return true;
+    }
+
+    protected void notifyOnFlushRedologToStorage(String fullSpaceName, String space, long redologSize, Path target){
+        String className = System.getProperty(SystemProperties.REDOLOG_FLUSH_NOTIFY_CLASS, null);
+        if (className == null){
+            _logger.info(SystemProperties.REDOLOG_FLUSH_NOTIFY_CLASS + "not set - no notification is called");
+            return;
+        }
+        try {
+            Class<RedologFlushNotifier> loadClass = ClassLoaderHelper.loadClass(className, true);
+            RedologFlushNotifier notifier = loadClass.newInstance();
+            notifier.notifyOnFlush(fullSpaceName, space, redologSize, target);
+            _logger.info("notifier.notifyOnFlush was called.");
+        } catch (Exception e) {
+            _logger.error("Calling specified " + SystemProperties.REDOLOG_FLUSH_NOTIFY_CLASS + "[" + className + "] failed", e);
+        }
+    }
+
+    protected Path copyRedologToTarget(String spaceName, String fullSpaceName) throws IOException{
+        String filter = _name.substring(0, _name.indexOf(":"));
+        Path directoryTarget = SystemLocations.singleton().work("redo-log-backup").resolve(spaceName);
+        Path directorySrc = SystemLocations.singleton().work("redo-log").resolve(spaceName);
+        if (!directoryTarget.toFile().exists()) directoryTarget.toFile().mkdirs();
+
+        FileUtils.copyRecursively(directorySrc, directoryTarget,filter);
+        return directoryTarget;
     }
 
     public String dumpState() {
@@ -1026,7 +1087,6 @@ public class ReplicationNode
     public IDirectPersistencySyncHandler getDirectPesistencySyncHandler() {
         return _directPesistencySyncHandler;
     }
-
 
     @Override
     public DirectPersistencyBackupSyncIteratorHandler getDirectPersistencyBackupSyncIteratorHandler() {
