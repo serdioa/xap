@@ -291,4 +291,6 @@ public interface ITemplateHolder extends ISpaceItem, IEntryHolder {
     MVCCGenerationsState getGenerationsState();
 
     boolean isActiveRead(SpaceEngine engine);
+
+    boolean isHistoricalRead(SpaceEngine engine);
 }

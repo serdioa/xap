@@ -27,6 +27,7 @@ import com.gigaspaces.internal.query.explainplan.SingleExplainPlan;
 import com.gigaspaces.internal.server.metadata.IServerTypeDesc;
 import com.gigaspaces.internal.server.space.*;
 import com.gigaspaces.internal.server.space.iterator.ServerIteratorInfo;
+import com.gigaspaces.internal.server.space.mvcc.MVCCEntryModifyConflictException;
 import com.gigaspaces.internal.server.space.mvcc.MVCCGenerationsState;
 import com.gigaspaces.internal.transport.AbstractProjectionTemplate;
 import com.gigaspaces.internal.transport.IEntryPacket;
@@ -37,6 +38,7 @@ import com.j_spaces.core.cache.CacheManager;
 import com.j_spaces.core.cache.TerminatingFifoXtnsInfo;
 import com.j_spaces.core.cache.TypeData;
 import com.j_spaces.core.cache.context.Context;
+import com.j_spaces.core.cache.mvcc.MVCCEntryHolder;
 import com.j_spaces.core.client.*;
 import com.j_spaces.core.filters.FilterManager;
 import com.j_spaces.jdbc.builder.QueryTemplatePacket;
@@ -721,6 +723,8 @@ public class TemplateHolder extends AbstractSpaceItem implements ITemplateHolder
             res = MatchResult.NONE;
         else if (_uidToOperateBy != null && (!_uidToOperateBy.equals(entry.getUID())))
             res = MatchResult.NONE;
+        else if (cacheManager.isMVCCEnabled() && (((MVCCEntryHolder) entry).isLogicallyDeleted() || entry.isHollowEntry()))
+            res = MatchResult.NONE;
         else {
             //obtain the relevant field values
             masterEntryData = entry.getTxnEntryData();
@@ -751,6 +755,15 @@ public class TemplateHolder extends AbstractSpaceItem implements ITemplateHolder
             }
         }
 
+        if (cacheManager.isMVCCEnabled()
+                && (res != MatchResult.NONE || ((MVCCEntryHolder) entry).isLogicallyDeleted())) {
+            if (isMVCCEntryMatchedByGenerationsState((MVCCEntryHolder) entry, cacheManager)) {
+                res = MatchResult.MASTER;
+            } else {
+                res = MatchResult.NONE;
+            }
+        }
+
         if (context != null) {
             if (res == MatchResult.NONE)
                 context.setRawmatchResult(null, MatchResult.NONE, null, null);
@@ -768,6 +781,42 @@ public class TemplateHolder extends AbstractSpaceItem implements ITemplateHolder
             }
         }
         return res;
+    }
+
+    private boolean isMVCCEntryMatchedByGenerationsState(MVCCEntryHolder entryHolder, CacheManager cacheManager) {
+        final MVCCGenerationsState mvccGenerationsState = getGenerationsState();
+        final long completedGeneration = mvccGenerationsState == null ? -1 : mvccGenerationsState.getCompletedGeneration();
+        final long overrideGeneration = entryHolder.getOverrideGeneration();
+        final long committedGeneration = entryHolder.getCommittedGeneration();
+        final boolean isDirtyEntry = committedGeneration == -1;
+        if (isActiveRead(cacheManager.getEngine())) { //active read
+            return committedGeneration == -1 || overrideGeneration == -1;
+        }
+        if (isReadOperation() && !isExclusiveReadLockOperation()) { //historic read
+            return isDirtyEntry
+                    || ((committedGeneration != -1)
+                        && (committedGeneration <= completedGeneration)
+                        && (!mvccGenerationsState.isUncompletedGeneration(committedGeneration))
+                        && ((overrideGeneration == -1)
+                        || (overrideGeneration > completedGeneration)
+                        || (overrideGeneration <= completedGeneration && mvccGenerationsState.isUncompletedGeneration(overrideGeneration))));
+
+        } else { //locking operations
+            if (overrideGeneration != -1
+                    && overrideGeneration > completedGeneration
+                    && !mvccGenerationsState.isUncompletedGeneration(overrideGeneration)) {
+                throw new MVCCEntryModifyConflictException(mvccGenerationsState, entryHolder, getTemplateOperation()); // overrided can't be modified
+            }
+            if ((committedGeneration > completedGeneration)
+                    && (!mvccGenerationsState.isUncompletedGeneration(committedGeneration))) {
+                throw new MVCCEntryModifyConflictException(mvccGenerationsState, entryHolder, getTemplateOperation()); // entry already younger than completedGen
+            }
+            return isDirtyEntry
+                    || ((committedGeneration != -1)
+                    && (committedGeneration <= completedGeneration)
+                    && (!mvccGenerationsState.isUncompletedGeneration(committedGeneration))
+                    && (overrideGeneration == -1));
+        }
     }
 
     @Override
@@ -1245,11 +1294,20 @@ public class TemplateHolder extends AbstractSpaceItem implements ITemplateHolder
     @Override
     public boolean isActiveRead(SpaceEngine engine) {
         if (engine.isMvccEnabled()) {
-            return !isReadOperation()
-                    || (mvccGenerationsState == null
+            return isReadOperation()
+                    && (mvccGenerationsState == null
                         || mvccGenerationsState.getCompletedGeneration() == -1
                         || engine.indicateDirtyRead(this));
         }
         return true;
+    }
+
+    /*
+     * relevant for mvcc only
+     * does operation allow to read old mvcc generations
+     */
+    @Override
+    public boolean isHistoricalRead(SpaceEngine engine) {
+        return isReadOperation() && !isExclusiveReadLockOperation() && !isActiveRead(engine);
     }
 }

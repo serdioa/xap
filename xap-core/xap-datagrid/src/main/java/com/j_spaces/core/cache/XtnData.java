@@ -61,7 +61,7 @@ public class XtnData {
 
     //hashmap for new mvcc generation entries - uid to CacheInfo.
     private volatile HashMap<String, MVCCEntryCacheInfo> _mvccNewGenerationsEntries = new HashMap<>();
-    private volatile HashMap<String, MVCCEntryCacheInfo> _mvccOverriddenActiveTakenEntries = new HashMap<>();
+    private volatile HashMap<String, MVCCEntryCacheInfo> _mvccWriteActiveLogicallyDeletedEntries = new HashMap<>();
 
     private static final boolean[] EMPTY_INDICATORS = new boolean[0];
 
@@ -472,15 +472,19 @@ public class XtnData {
         _mvccNewGenerationsEntries.put(mvccEntryCacheInfo.getUID(), mvccEntryCacheInfo);
     }
 
-    public MVCCEntryCacheInfo getMvccOverriddenActiveTakenEntry(String uid) {
-        return _mvccOverriddenActiveTakenEntries.get(uid);
+    public MVCCEntryCacheInfo removeMvccNewGenerationsEntries(String uid) {
+        return _mvccNewGenerationsEntries.remove(uid);
     }
 
-    public MVCCEntryCacheInfo removeMvccOverriddenActiveTakenEntry(String uid) {
-        return _mvccOverriddenActiveTakenEntries.remove(uid);
+    public MVCCEntryCacheInfo getMvccWriteActiveLogicallyDeletedEntry(String uid) {
+        return _mvccWriteActiveLogicallyDeletedEntries.get(uid);
     }
 
-    public void addMvccOverriddenActiveTakenEntries(MVCCEntryCacheInfo mvccEntryCacheInfo) {
-        _mvccOverriddenActiveTakenEntries.put(mvccEntryCacheInfo.getUID(), mvccEntryCacheInfo);
+    public void addWriteActiveLogicallyDeletedEntries(MVCCEntryCacheInfo mvccEntryCacheInfo) {
+        _mvccWriteActiveLogicallyDeletedEntries.put(mvccEntryCacheInfo.getUID(), mvccEntryCacheInfo);
+    }
+
+    public MVCCEntryCacheInfo removeWriteActiveLogicallyDeletedEntry(String uid) {
+        return _mvccWriteActiveLogicallyDeletedEntries.remove(uid);
     }
 }
