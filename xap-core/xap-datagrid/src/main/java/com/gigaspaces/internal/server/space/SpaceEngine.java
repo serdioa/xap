@@ -81,6 +81,7 @@ import com.gigaspaces.internal.server.space.iterator.ServerIteratorInfo;
 import com.gigaspaces.internal.server.space.iterator.ServerIteratorRequestInfo;
 import com.gigaspaces.internal.server.space.iterator.ServerIteratorsManager;
 import com.gigaspaces.internal.server.space.metadata.SpaceTypeManager;
+import com.gigaspaces.internal.server.space.mvcc.MVCCEntryModifyConflictException;
 import com.gigaspaces.internal.server.space.mvcc.MVCCSpaceEngineHandler;
 import com.gigaspaces.internal.server.space.operations.WriteEntriesResult;
 import com.gigaspaces.internal.server.space.operations.WriteEntryResult;
@@ -3915,18 +3916,13 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
             boolean onlyIndexesPart = BlobStoreOperationOptimizations.isConsiderOptimizedForBlobstore(this, context, template, pEntry);
             entry = ((BlobStoreRefEntryCacheInfo) pEntry).getLatestEntryVersion(_cacheManager, false/*attach*/,
                     null /*lastKnownEntry*/, context, onlyIndexesPart/* onlyIndexesPart*/);
-        } else if (isMvccEnabled()) {
-            entry = _mvccSpaceEngineHandler.getMVCCEntryIfMatched(template, ((MVCCEntryCacheInfo) pEntry));
-            if (entry == null) {
-                return null;
-            }
         } else {
             entry = pEntry.getEntryHolder(_cacheManager, context);
         }
-        if(entry.getServerTypeDesc().getTypeDesc().isBroadcast() && skipBroadcastTable(context, template))
+        if (entry.getServerTypeDesc().getTypeDesc().isBroadcast() && skipBroadcastTable(context, template))
             return null;
         if (scnFilter != 0 && entry.getSCN() < scnFilter)
-            return null;
+                return null;
         if (!(isMvccEnabled() && entry.isHollowEntry())) {
             if (entry.isExpired(leaseFilter) && disqualifyExpiredEntry(entry) && template.isReadOperation()) {
                 context.setPendingExpiredEntriesExist(true);
@@ -3937,7 +3933,6 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
         }
         if (!template.isNonBlockingRead() && entry.isDeleted())
             return null;
-
         try {
             performTemplateOnEntrySA(context, template, entry,
                     makeWaitForInfo);
@@ -3947,6 +3942,9 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
         } catch (TransactionConflictException ex) {
             if (template.isFifoGroupPoll())
                 context.setFifoGroupScanEncounteredXtnConflict(true);
+            if (isMvccEnabled() && (!template.isReadOperation() || template.isExclusiveReadLockOperation())) {
+                throw new MVCCEntryModifyConflictException(template.getGenerationsState(), (MVCCEntryHolder) entry, template.getTemplateOperation());
+            }
             return null;
         } catch (TransactionNotActiveException ex) {
             if (ex.m_Xtn.equals(template.getXidOriginatedTransaction()))
@@ -4011,9 +4009,9 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
                 returnEntryNotInSpaceError(context, template, null, makeWaitForInfo);
             return null;
         }
-
+        // if its mvcc -> should match active data
         // match should be done against all fields even when uid is provided gs-4091
-        if ((!template.isMatchByID() || template.isChangeQuery() /*fix for GS-13604*/) && !entry.isHollowEntry()
+        if ((isMvccEnabled() || ((!template.isMatchByID() || template.isChangeQuery() /*fix for GS-13604*/) && !entry.isHollowEntry()))
                 && !_templateScanner.match(context, entry, template))
             return null;
 
@@ -4027,6 +4025,9 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
                 returnEntryNotInSpaceError(context, template, edx, makeWaitForInfo);
             return null;
         } catch (TransactionConflictException tcx) {
+            if (isMvccEnabled() && (!template.isReadOperation() || template.isExclusiveReadLockOperation())) {
+                throw new MVCCEntryModifyConflictException(template.getGenerationsState(), (MVCCEntryHolder) entry, template.getTemplateOperation());
+            }
             return null;
         } catch (NoMatchException | FifoException ex) { //cannot happen
             return null;
@@ -4298,11 +4299,6 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
         IEntryHolder entry;
         if(BlobStoreOperationOptimizations.isConsiderOptimizedForBlobstore(this, context, template, pEntry)){
             entry = ((BlobStoreRefEntryCacheInfo) pEntry).getLatestEntryVersion(_cacheManager, false/*attach*/, null /*lastKnownEntry*/, context, true/* onlyIndexesPart*/);
-        }else if (isMvccEnabled()) {
-            entry = _mvccSpaceEngineHandler.getMVCCEntryIfMatched(template, ((MVCCEntryCacheInfo) pEntry));
-            if (entry == null) {
-                return;
-            }
         }else{
             entry = pEntry.getEntryHolder(_cacheManager, context);
         }
@@ -4468,6 +4464,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
             ILockObject templateLock = null;
             boolean need_xtn_lock = false;
             boolean upgrade_lock = false;
+
             while (true) {
                 context.setNonBlockingReadOp(template.isNonBlockingRead() && !context.isUnstableEntry() && !context.isTransactionalMultipleOperation());
                 if (!template.isFifoSearch()) {
@@ -4612,9 +4609,6 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
                     //renewed lru memory entry- mark to rematch
                     needRematch = true;
             }
-            if(isMvccEnabled() && entry.isHollowEntry()){ //TODO: @MVCC see if this is needed here after rematch logic is applied
-                throw ENTRY_DELETED_EXCEPTION;
-            }
 
             // if entry was written under Xtn and the Xtn is aborted, the entry
             // is considered as not exists.
@@ -4647,6 +4641,22 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
                     }
                     throw ENTRY_DELETED_EXCEPTION/*new EntryDeletedException(entry.m_UID)*/;
 
+                }
+            }
+            // only with mvcc enabled
+            // if there is a new active data and active read is used -> rematch new entry
+            // if modify operation(exclusive read or not read) -> throw an exception
+            if (!needRematch && isMvccEnabled() && !tmpl.isHistoricalRead(this)) {
+                MVCCShellEntryCacheInfo mvccShellEntryCacheInfoByUid = _cacheManager.getMVCCShellEntryCacheInfoByUid(ent.getUID());
+                MVCCEntryHolder activeData = mvccShellEntryCacheInfoByUid.getEntryHolder();
+                if (activeData != null && activeData != entry) {
+                    if (!tmpl.isActiveRead(this)) {
+                        throw new MVCCEntryModifyConflictException(tmpl.getGenerationsState(), (MVCCEntryHolder) entry, tmpl.getTemplateOperation());
+                    }
+                    entry = tmpl.isReadCommittedRequested() ?
+                            mvccShellEntryCacheInfoByUid.getLatestOrHollow() :
+                            activeData;
+                    needRematch = true;
                 }
             }
             if (!needRematch && !tmpl.isMatchByID()) {
@@ -4718,6 +4728,23 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
 
             if ((tmpl.isFifoSearch()) && !context.isNonBlockingReadOp() && entry.isMaybeUnderXtn())
                 return true;
+
+            // only with mvcc enabled
+            // if there is a new active data and active read is used -> rematch new entry
+            // if modify operation(exclusive read or not read) -> throw an exception
+            if (!needRematch && isMvccEnabled() && !tmpl.isHistoricalRead(this)) {
+                MVCCShellEntryCacheInfo mvccShellEntryCacheInfoByUid = _cacheManager.getMVCCShellEntryCacheInfoByUid(ent.getUID());
+                MVCCEntryHolder activeData = mvccShellEntryCacheInfoByUid.getEntryHolder();
+                if (activeData != null && activeData != entry) {
+                    if (!tmpl.isActiveRead(this)) {
+                        throw new MVCCEntryModifyConflictException(tmpl.getGenerationsState(), (MVCCEntryHolder) entry, tmpl.getTemplateOperation());
+                    }
+                    entry = tmpl.isReadCommittedRequested() ?
+                            mvccShellEntryCacheInfoByUid.getLatestOrHollow() :
+                            activeData;
+                    needRematch = true;
+                }
+            }
 
             if (!needRematch && (!tmpl.isMatchByID() || ent.isHollowEntry())) {
                 if (context.getLastRawMatchSnapshot() == null || context.getLastRawmatchTemplate() != tmpl || context.getLastRawmatchEntry() != entry)
@@ -4816,7 +4843,6 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
                 tryShadow = entry.hasShadow(true /*safeEntry*/);
             } else {
                 if (needRematch) {
-
                     MatchResult mr = template.match(_cacheManager, entry, -1 /*skipIndex*/, null, true /*safeEntry*/, context, _templateScanner.getRegexCache());
                     tryMaster = (mr == MatchResult.MASTER || mr == MatchResult.MASTER_AND_SHADOW);
                     tryShadow = (mr == MatchResult.SHADOW || mr == MatchResult.MASTER_AND_SHADOW);
@@ -4920,7 +4946,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
         XtnConflictCheckIndicators cres = checkTransactionConflict(context, entry, template, isShadow);
 
         if (cres == XtnConflictCheckIndicators.NO_CONFLICT && isMvccEnabled()) {
-            cres = _mvccSpaceEngineHandler.checkTransactionConflict(context, (MVCCEntryHolder) entry, template);
+            cres = _mvccSpaceEngineHandler.checkTransactionConflict((MVCCEntryHolder) entry, template);
         }
 
         if (cres != XtnConflictCheckIndicators.NO_CONFLICT) {

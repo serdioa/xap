@@ -79,6 +79,7 @@ import com.gigaspaces.internal.server.space.broadcast_table.BroadcastTableHandle
 import com.gigaspaces.internal.server.space.demote.DemoteHandler;
 import com.gigaspaces.internal.server.space.executors.SpaceActionExecutor;
 import com.gigaspaces.internal.server.space.iterator.ServerIteratorRequestInfo;
+import com.gigaspaces.internal.server.space.mvcc.MVCCEntryModifyConflictException;
 import com.gigaspaces.internal.server.space.mvcc.MVCCUtils;
 import com.gigaspaces.internal.server.space.operations.SpaceOperationsExecutor;
 import com.gigaspaces.internal.server.space.operations.WriteEntriesResult;
@@ -1993,7 +1994,10 @@ public class SpaceImpl extends AbstractService implements IRemoteSpace, IInterna
     }
 
     private <T extends Throwable> T logException(T e) {
-        if (!(e instanceof ProtectiveModeException) && (!(e instanceof ConsistencyLevelViolationException)) && (!(e instanceof QuiesceException))
+        if (!(e instanceof ProtectiveModeException)
+                && !(e instanceof ConsistencyLevelViolationException)
+                && !(e instanceof QuiesceException)
+                && !(e instanceof MVCCEntryModifyConflictException)
                 && _logger.isErrorEnabled())
             _logger.error(e.toString(), e);
         return e;
