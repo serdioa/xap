@@ -28,6 +28,7 @@ import com.gigaspaces.internal.server.space.FifoSearch;
 import com.gigaspaces.internal.server.space.SpaceEngine;
 import com.gigaspaces.internal.server.space.events.NotifyContextsHolder;
 import com.gigaspaces.internal.server.space.events.UpdateNotifyContextHolder;
+import com.gigaspaces.internal.server.space.mvcc.MVCCEntryModifyConflictException;
 import com.gigaspaces.internal.server.space.operations.WriteEntryResult;
 import com.gigaspaces.internal.server.storage.IEntryHolder;
 import com.gigaspaces.internal.server.storage.ITemplateHolder;
@@ -223,8 +224,7 @@ public class Processor implements IConsumerObject<BusPacket<Processor>> {
 
     private boolean needReadBeforeWriteToSpace(Context context) {
         return (_cacheManager.isTieredStorageCachePolicy() && context.getEntryTieredState() != TieredState.TIERED_COLD)
-                || (_cacheManager.isEvictableFromSpaceCachePolicy() && !_cacheManager.isMemorySpace())
-                || _cacheManager.isMVCCEnabled();
+                || (_cacheManager.isEvictableFromSpaceCachePolicy() && !_cacheManager.isMemorySpace());
     }
 
     private void insertToSpaceLoop(Context context, IEntryHolder entry, IServerTypeDesc typeDesc, boolean fromReplication, boolean origin,
@@ -278,12 +278,7 @@ public class Processor implements IConsumerObject<BusPacket<Processor>> {
                         if (_engine.isSyncReplicationEnabled() && _engine.getLeaseManager().replicateLeaseExpirationEventsForEntries())
                             context.setSyncReplFromMultipleOperation(true); //piggyback the lease expiration replication
 
-                        if(_engine.isMvccEnabled()) {
-                            if (!_cacheManager.isMvccEntryValidForWrite(curEh.getUID())){
-                                alreadyIn = true;
-                                throw new EntryAlreadyInSpaceException(entry.getUID(), entry.getClassName());
-                            }
-                        } else if (_engine.isExpiredEntryStayInSpace(entry) || !leaseExpiredInInsertWithSameUid(context, entry, typeDesc, curEh, true /*alreadyLocked*/)) {
+                        if (_engine.isExpiredEntryStayInSpace(entry) || !leaseExpiredInInsertWithSameUid(context, entry, typeDesc, curEh, true /*alreadyLocked*/)) {
                             alreadyIn = true;
                             throw new EntryAlreadyInSpaceException(entry.getUID(), entry.getClassName());
                         }
@@ -355,10 +350,14 @@ public class Processor implements IConsumerObject<BusPacket<Processor>> {
         ILockObject entryLock = null;
 
         if (curEh == null && (_cacheManager.getLockManager().isEntryLocksItsSelf(entry) || alreadyLocked)) {
-            if (_cacheManager.isBlobStoreCachePolicy())
+            if (_cacheManager.isBlobStoreCachePolicy()) {
                 curEh = _cacheManager.getEntryByUidFromPureCache(entry.getUID());
-            else
+            }
+            else if (_cacheManager.isMVCCEnabled()) {
+                curEh = entry;
+            } else {
                 curEh = _cacheManager.getEntry(context, entry, true /*tryInsertToCache*/, alreadyLocked);
+            }
             if (curEh == null)
                 return true;  //entry no longer exist
         }
@@ -518,8 +517,12 @@ public class Processor implements IConsumerObject<BusPacket<Processor>> {
             }
 
         } catch (Exception ex) {
-            if (_logger.isErrorEnabled()) {
-                _logger.error("Error handling update.", ex);
+            LogLevel level = LogLevel.SEVERE;
+            if (ex instanceof MVCCEntryModifyConflictException) {
+                level = LogLevel.DEBUG;
+            }
+            if (level.isEnabled(_logger)) {
+                level.log(_logger, "Error handling update.", ex);
             }
             if (templateLock == null)
                 templateLock = getTemplateLockObject(template);
@@ -814,7 +817,7 @@ public class Processor implements IConsumerObject<BusPacket<Processor>> {
             }
         } catch (Exception ex) {
             LogLevel level = LogLevel.SEVERE;
-            if (ex instanceof ProtectiveModeException)
+            if (ex instanceof ProtectiveModeException || ex instanceof MVCCEntryModifyConflictException)
                 level = LogLevel.DEBUG;
             else if (ex instanceof ChangeInternalException) {
                 ex = ((ChangeInternalException) ex).getInternalException();
@@ -1035,7 +1038,7 @@ public class Processor implements IConsumerObject<BusPacket<Processor>> {
             }
         } catch (Exception ex) {
             LogLevel level = LogLevel.SEVERE;
-            if (ex instanceof ProtectiveModeException)
+            if (ex instanceof ProtectiveModeException || ex instanceof MVCCEntryModifyConflictException)
                 level = LogLevel.DEBUG;
             else if (ex instanceof ChangeInternalException) {
                 ex = ((ChangeInternalException) ex).getInternalException();
@@ -2028,7 +2031,7 @@ public class Processor implements IConsumerObject<BusPacket<Processor>> {
                             boolean fromLeaseExpiration = !_engine.getLeaseManager().isNoReapUnderXtnLeases() && entry.isExpired(_engine.getLeaseManager().getEffectiveEntryLeaseTime(xtnEntry.m_CommitRollbackTimeStamp)) && !_engine.isExpiredEntryStayInSpace(entry);
                             context.setOperationID(pXtn.getOperationID(entry.getUID()));
                             if(_engine.isMvccEnabled()){
-                                _cacheManager.disconnectMVCCEntryFromXtn(context,  pXtn.removeMvccOverriddenActiveTakenEntry(entry.getUID()), xtnEntry, false);
+                                _cacheManager.disconnectMVCCEntryFromXtn(context,  pXtn.removeWriteActiveLogicallyDeletedEntry(entry.getUID()), xtnEntry, false);
                             }
                             _engine.removeEntrySA(context, entry, false /*fromReplication*/,
                                     true /*origin*/, false /*ofReplClass*/, fromLeaseExpiration ? SpaceEngine.EntryRemoveReasonCodes.LEASE_EXPIRED : SpaceEngine.EntryRemoveReasonCodes.TAKE /*fromLeaseExpiration*/,
@@ -2365,7 +2368,7 @@ public class Processor implements IConsumerObject<BusPacket<Processor>> {
             }
         } catch (Exception ex) {
             LogLevel level = LogLevel.SEVERE;
-            if (ex instanceof ProtectiveModeException)
+            if (ex instanceof ProtectiveModeException || ex instanceof MVCCEntryModifyConflictException)
                 level = LogLevel.DEBUG;
             else if (ex instanceof ChangeInternalException) {
                 ex = ((ChangeInternalException) ex).getInternalException();
@@ -2622,7 +2625,7 @@ public class Processor implements IConsumerObject<BusPacket<Processor>> {
             }
         } catch (Exception ex) {
             LogLevel level = LogLevel.SEVERE;
-            if (ex instanceof ProtectiveModeException)
+            if (ex instanceof ProtectiveModeException || ex instanceof MVCCEntryModifyConflictException)
                 level = LogLevel.DEBUG;
             else if (ex instanceof ChangeInternalException) {
                 ex = ((ChangeInternalException) ex).getInternalException();
