@@ -117,8 +117,6 @@ public class MVCCCacheManagerHandler {
 
         if (mvccShellEntryCacheInfo.getDirtyEntryCacheInfo() == entryCacheInfo) { //update dirty entry under same transaction as other operation
             if (entryCacheInfo.getEntryHolder().isLogicallyDeleted()) {
-        if (mvccShellEntryCacheInfo.getDirtyEntryCacheInfo() == entryCacheInfo) { //update dirty entry under same transaction as other operation
-            if(entryCacheInfo.getEntryHolder().isLogicallyDeleted()) {
                 //the dirty entry is logically deleted need to act like regular update on the active generation and ignore taken dirty entry
                 disconnectMvccEntryFromXtn(context, entryCacheInfo, xtnEntry, false);
                 entryCacheInfo = mvccShellEntryCacheInfo.getLatestGenerationCacheInfo();
@@ -144,29 +142,27 @@ public class MVCCCacheManagerHandler {
         MVCCShellEntryCacheInfo mvccShellEntryCacheInfo = cacheManager.getMVCCShellEntryCacheInfoByUid(pEntry.getUID());
         MVCCEntryHolder entryHolder = pEntry.getEntryHolder();
 
-        EntryXtnInfo entryXtnInfo = entryHolder.getTxnEntryData().copyTxnInfo(true, false);
-
         if (mvccShellEntryCacheInfo.getDirtyEntryCacheInfo() != null) {
             disconnectMvccEntryFromXtn(context, pEntry, xtnEntry, false);// disconnecting old data from txn
 
             xtnEntry.getXtnData().removeUpdatedEntry(pEntry);
+            xtnEntry.getXtnData().removeTakenEntry(pEntry);
 
             pEntry = mvccShellEntryCacheInfo.getLatestGenerationCacheInfo();
             entryHolder = pEntry.getEntryHolder();
 
-            xtnEntry.getXtnData().removeTakenEntry(pEntry);
             xtnEntry.getXtnData().addToTakenEntriesIfNotInside(pEntry);
 
             mvccShellEntryCacheInfo.clearDirtyEntry();
             entryHolder.setWriteLockOperation(operationId, false /*createSnapshot*/);
         }
 
+        EntryXtnInfo entryXtnInfo = entryHolder.getTxnEntryData().copyTxnInfo(true, false);
         entryXtnInfo.setXidOriginated(xtnEntry);
 
         MVCCEntryHolder dummyEntry = entryHolder.createLogicallyDeletedDummyEntry(entryXtnInfo);// has to be from pEntry
         dummyEntry.setMaybeUnderXtn(true);
         MVCCEntryCacheInfo dirtyEntryCacheInfo = new MVCCEntryCacheInfo(dummyEntry, 2);
-
         mvccShellEntryCacheInfo.setDirtyEntryCacheInfo(dirtyEntryCacheInfo);
         return dirtyEntryCacheInfo;
     }
