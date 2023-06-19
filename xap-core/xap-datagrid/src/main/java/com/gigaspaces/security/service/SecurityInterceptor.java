@@ -97,6 +97,8 @@ public class SecurityInterceptor {
                 return false;
             return (this.getClass() == obj.getClass());
         }
+
+
     }
 
     public SecurityInterceptor(String component) {
