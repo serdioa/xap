@@ -309,7 +309,7 @@ public class JSpaceContainerImpl implements IJSpaceContainer, IJSpaceContainerAd
         return _startTime;
     }
 
-    private static void initSecurity() {
+    public static void initSecurity() {
         // This will eliminate the need to modify the IBM JDK java.security when using IBM JDK.
         if(JavaUtils.getVendor().equals("IBM")) {
             try {
