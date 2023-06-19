@@ -114,28 +114,29 @@ public class MVCCCacheManagerHandler {
         return shellEntryCacheInfo.getDirtyEntryCacheInfo() == null && shellEntryCacheInfo.isLogicallyDeletedOrEmpty();
     }
 
-    public void createUpdateMvccEntryPendingGeneration(Context context, XtnEntry xtnEntry, int templateOperation, MVCCEntryCacheInfo pEntry, MVCCEntryHolder updatedEntry, TypeData typeData) throws SAException {
+    public void createUpdateMvccEntryPendingGeneration(Context context, XtnEntry xtnEntry, int templateOperation, MVCCEntryCacheInfo entryCacheInfo, MVCCEntryHolder updatedEntry, TypeData typeData) throws SAException {
         MVCCShellEntryCacheInfo mvccShellEntryCacheInfo = cacheManager.getMVCCShellEntryCacheInfoByUid(updatedEntry.getUID());
-        MVCCEntryHolder entryHolder = pEntry.getEntryHolder();
+        MVCCEntryHolder entryHolder = entryCacheInfo.getEntryHolder();
         updatedEntry.setWriteLockOwnerAndOperation(xtnEntry, templateOperation);
         updatedEntry.getTxnEntryData().setXidOriginated(xtnEntry);
 
-        if(mvccShellEntryCacheInfo.getDirtyEntryCacheInfo() == pEntry){ //update dirty entry under same transaction as other operation
-            if(pEntry.getEntryHolder().isLogicallyDeleted()) {
+        if (mvccShellEntryCacheInfo.getDirtyEntryCacheInfo() == entryCacheInfo) { //update dirty entry under same transaction as other operation
+            if(entryCacheInfo.getEntryHolder().isLogicallyDeleted()) {
                 //the dirty entry is logically deleted need to act like regular update on the active generation and ignore taken dirty entry
-                disconnectMvccEntryFromXtn(context, pEntry, xtnEntry, false);
-                pEntry = mvccShellEntryCacheInfo.getLatestGenerationCacheInfo();
-                entryHolder = pEntry.getEntryHolder();
+                disconnectMvccEntryFromXtn(context, entryCacheInfo, xtnEntry, false);
+                entryCacheInfo = mvccShellEntryCacheInfo.getLatestGenerationCacheInfo();
+                entryHolder = entryCacheInfo.getEntryHolder();
+                xtnEntry.getXtnData().removeTakenEntry(entryCacheInfo);
                 mvccShellEntryCacheInfo.clearDirtyEntry();
-                updatedEntry.setVersion(pEntry.getVersion() + 1); //the version should be incremented from the active version
+                updatedEntry.setVersion(entryCacheInfo.getVersion() + 1); //the version should be incremented from the active version
             } else {
                 //update dirty entry created by write or update operation, performing the update in-place on existing dirty entry
                 IEntryData updatedEntryData = updatedEntry.getEntryData();
-                cacheManager.updateEntryInCache(context, pEntry, entryHolder, updatedEntryData, updatedEntryData.getExpirationTime(), templateOperation);
+                cacheManager.updateEntryInCache(context, entryCacheInfo, entryHolder, updatedEntryData, updatedEntryData.getExpirationTime(), templateOperation);
                 return;
             }
         }
-        MVCCEntryCacheInfo updatedEntryCacheInfo = new MVCCEntryCacheInfo(updatedEntry, pEntry.getBackRefs().size());
+        MVCCEntryCacheInfo updatedEntryCacheInfo = new MVCCEntryCacheInfo(updatedEntry, entryCacheInfo.getBackRefs().size());
         entryHolder.setWriteLockOwnerAndOperation(xtnEntry, templateOperation);
         entryHolder.setMaybeUnderXtn(true);
         cacheManager.internalInsertEntryToCache(context, updatedEntry, true, typeData, updatedEntryCacheInfo, false);
@@ -149,7 +150,6 @@ public class MVCCCacheManagerHandler {
         EntryXtnInfo entryXtnInfo = entryHolder.getTxnEntryData().copyTxnInfo(true, false);
 
         if (mvccShellEntryCacheInfo.getDirtyEntryCacheInfo() != null) {
-
             disconnectMvccEntryFromXtn(context, pEntry, xtnEntry, false);// disconnecting old data from txn
 
             xtnEntry.getXtnData().removeUpdatedEntry(pEntry);
