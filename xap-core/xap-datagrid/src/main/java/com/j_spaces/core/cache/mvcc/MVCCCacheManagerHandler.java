@@ -142,6 +142,9 @@ public class MVCCCacheManagerHandler {
         MVCCShellEntryCacheInfo mvccShellEntryCacheInfo = cacheManager.getMVCCShellEntryCacheInfoByUid(pEntry.getUID());
         MVCCEntryHolder entryHolder = pEntry.getEntryHolder();
 
+        // this block is true in case if this is a take operation after update
+        // dirty updated entry gets disconnected from transaction and cleaned from XtnData
+        // taken entry in XtnData and pEntry get changed from updated dirty to the latest generation version
         if (mvccShellEntryCacheInfo.getDirtyEntryCacheInfo() != null) {
             disconnectMvccEntryFromXtn(context, pEntry, xtnEntry, false);// disconnecting old data from txn
 
@@ -160,7 +163,7 @@ public class MVCCCacheManagerHandler {
         EntryXtnInfo entryXtnInfo = entryHolder.getTxnEntryData().copyTxnInfo(true, false);
         entryXtnInfo.setXidOriginated(xtnEntry);
 
-        MVCCEntryHolder dummyEntry = entryHolder.createLogicallyDeletedDummyEntry(entryXtnInfo);// has to be from pEntry
+        MVCCEntryHolder dummyEntry = entryHolder.createLogicallyDeletedDummyEntry(entryXtnInfo);
         dummyEntry.setMaybeUnderXtn(true);
         MVCCEntryCacheInfo dirtyEntryCacheInfo = new MVCCEntryCacheInfo(dummyEntry, 2);
         mvccShellEntryCacheInfo.setDirtyEntryCacheInfo(dirtyEntryCacheInfo);
