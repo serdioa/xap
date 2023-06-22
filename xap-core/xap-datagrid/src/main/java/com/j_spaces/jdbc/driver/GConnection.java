@@ -116,11 +116,11 @@ public class GConnection implements Connection {
 
             String username = properties.getProperty(ConnectionContext.USER);
             String password = properties.getProperty(ConnectionContext.PASSWORD);
+            logger.info("Username is " + username + " , password is " + password);
             if (username != null && username.length() > 0) {
                 // TODO: Consider warning/skipping if already logged in.
                 SecurityContext login = space.getDirectProxy().login(new DefaultCredentialsProvider(username, password));
                 logger.info("SecurityContext " + login);
-                logger.info("Username is " + username + " , password is " + password);
             }
         }
 
