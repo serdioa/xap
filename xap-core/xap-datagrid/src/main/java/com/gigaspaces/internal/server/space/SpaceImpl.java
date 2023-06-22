@@ -2122,6 +2122,7 @@ public class SpaceImpl extends AbstractService implements IRemoteSpace, IInterna
     @Override
     public <T extends RemoteOperationResult> T executeOperation(RemoteOperationRequest<T> request)
             throws RemoteException {
+
         return _operationsExecutor.executeOperation(request, this, false);
     }
 

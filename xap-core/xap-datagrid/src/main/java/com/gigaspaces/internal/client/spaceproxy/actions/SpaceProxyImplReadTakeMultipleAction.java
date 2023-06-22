@@ -98,12 +98,14 @@ public class SpaceProxyImplReadTakeMultipleAction extends ReadTakeMultipleProxyA
                 actionInfo.timeout,
                 actionInfo.ifExist,
                 actionInfo.getQuery());
-        logger.info("executing request with context " + request.getSpaceContext());
 
         spaceProxy.beforeExecute(request, spaceProxy.getRemoteJSpace(), spaceProxy.getSpaceClusterInfo().getNumberOfPartitions(),
                 spaceProxy.getSpaceClusterInfo().getClusterName(), spaceProxy.isEmbedded());
 
+        logger.info("executing request with context " + request.getSpaceContext());
+
         spaceProxy.getProxyRouter().execute(request);
+
         if (actionInfo.isTake && request.getRemoteOperationResult() != null) {
             actionInfo.setSyncReplicationLevel(request.getRemoteOperationResult().getSyncReplicationLevel());
         } else if (actionInfo.isTake && request.getLevels() != null) {
