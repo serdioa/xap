@@ -768,6 +768,9 @@ public class SystemProperties extends CommonSystemProperties {
     public static final String REDOLOG_FLUSH_NOTIFY_CLASS = "com.gs.redolog.flush.notify.class";
     public static final String REDOLOG_FLUSH_ON_SHUTDOWN = "com.gs.redolog.flush.on.shutdown";
 
+    public static final boolean REDOLOG_FLUSH_ON_SHUTDOWN_DEFAULT = true;
+
+
     public static final String REQUIRED_CONSISTENCY_LEVEL = "com.gs.replication.required_consistency_level";
     public static final int REQUIRED_CONSISTENCY_LEVEL_DEFAULT = 1;
 

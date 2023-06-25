@@ -981,20 +981,19 @@ public class ReplicationNode
             }
         }
         finally {
-                boolean flushRedolog = SystemProperties.getBoolean(SystemProperties.REDOLOG_FLUSH_ON_SHUTDOWN, true);
+                boolean flushRedolog = SystemProperties.getBoolean(SystemProperties.REDOLOG_FLUSH_ON_SHUTDOWN, SystemProperties.REDOLOG_FLUSH_ON_SHUTDOWN_DEFAULT);
                 long redologSize = getBackLogStatistics().size();
                 if (redologSize> 0 && flushRedolog){
                     try {
                         _logger.info("redolog for: " + _name + " about to flush to Storage");
                         String spaceName = _name.substring(_name.indexOf(":") + 1, _name.length());
-
                         flushRedoLogToStorage();
-                        Path target = copyRedologToTarget(spaceName, _name);
-                        notifyOnFlushRedologToStorage(_name, spaceName,getBackLogStatistics().size(),target);
+                        Path target = FileUtils.copyRedologToTarget(spaceName, _name);
+                        FileUtils.notifyOnFlushRedologToStorage(_name, spaceName,redologSize,target);
                         _logger.info("redolog for: " + _name + " was flushed to Storage");
                     }
                     catch (Throwable t){
-                        _logger.error("Fail to Flush redolog to Storage for:"+ _name, t);
+                        _logger.error("Fail to Flush redolog to Storage for: "+ _name, t);
                     }
                 }
         }
@@ -1004,31 +1003,7 @@ public class ReplicationNode
         return true;
     }
 
-    protected void notifyOnFlushRedologToStorage(String fullSpaceName, String space, long redologSize, Path target){
-        String className = System.getProperty(SystemProperties.REDOLOG_FLUSH_NOTIFY_CLASS, null);
-        if (className == null){
-            _logger.info(SystemProperties.REDOLOG_FLUSH_NOTIFY_CLASS + "not set - no notification is called");
-            return;
-        }
-        try {
-            Class<RedologFlushNotifier> loadClass = ClassLoaderHelper.loadClass(className, true);
-            RedologFlushNotifier notifier = loadClass.newInstance();
-            notifier.notifyOnFlush(fullSpaceName, space, redologSize, target);
-            _logger.info("notifier.notifyOnFlush was called.");
-        } catch (Exception e) {
-            _logger.error("Calling specified " + SystemProperties.REDOLOG_FLUSH_NOTIFY_CLASS + "[" + className + "] failed", e);
-        }
-    }
 
-    protected Path copyRedologToTarget(String spaceName, String fullSpaceName) throws IOException{
-        String filter = _name.substring(0, _name.indexOf(":"));
-        Path directoryTarget = SystemLocations.singleton().work("redo-log-backup").resolve(spaceName);
-        Path directorySrc = SystemLocations.singleton().work("redo-log").resolve(spaceName);
-        if (!directoryTarget.toFile().exists()) directoryTarget.toFile().mkdirs();
-
-        FileUtils.copyRecursively(directorySrc, directoryTarget,filter);
-        return directoryTarget;
-    }
 
     public String dumpState() {
         return "---- Replication Groups ----" + StringUtils.NEW_LINE
