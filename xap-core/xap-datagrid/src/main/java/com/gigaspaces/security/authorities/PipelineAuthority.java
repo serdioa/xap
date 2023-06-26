@@ -7,8 +7,7 @@ public class PipelineAuthority implements InternalAuthority {
      */
     public enum PipelinePrivilege implements Privilege {
         CREATE,
-        START,
-        STOP,
+        START_STOP,
         EDIT,
         DELETE;
 
@@ -17,10 +16,8 @@ public class PipelineAuthority implements InternalAuthority {
             switch (this) {
                 case CREATE:
                     return "Create pipeline";
-                case START:
-                    return "Start pipeline";
-                case STOP:
-                    return "Stop pipeline";
+                case START_STOP:
+                    return "Start/Stop pipeline";
                 case DELETE:
                     return "Delete pipeline";
                 default:
