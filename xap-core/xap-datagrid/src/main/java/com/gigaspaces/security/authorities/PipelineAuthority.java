@@ -3,24 +3,13 @@ package com.gigaspaces.security.authorities;
 public class PipelineAuthority implements InternalAuthority {
 
     /**
-     * Defines monitoring privileges
+     * Defines pipeline privileges
      */
     public enum PipelinePrivilege implements Privilege {
-        /**
-         * managing of roles
-         */
         CREATE,
-        /**
-         * managing of pu/space settings
-         */
         START,
-        /**
-         * managing of users
-         */
         STOP,
-        /**
-         * managing of identity provider settings
-         */
+        EDIT,
         DELETE;
 
         @Override
