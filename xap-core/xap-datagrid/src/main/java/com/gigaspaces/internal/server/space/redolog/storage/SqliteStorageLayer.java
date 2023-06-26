@@ -63,8 +63,8 @@ public abstract class SqliteStorageLayer<T extends IReplicationOrderedPacket> {
                 throw new StorageException("failed to mkdir " + path);
             }
         } else if (!config.shouldKeepDatabaseFile()) {
-            boolean flushRedolog = SystemProperties.getBoolean(SystemProperties.REDOLOG_FLUSH_ON_SHUTDOWN, SystemProperties.REDOLOG_FLUSH_ON_SHUTDOWN_DEFAULT);
-            if ( flushRedolog) {
+            boolean copyRedolog = SystemProperties.getBoolean(SystemProperties.REDOLOG_COPY_ON_STARTUP, SystemProperties.REDOLOG_COPY_ON_STARTUP_DEFAULT);
+            if ( copyRedolog) {
                 long redologSize = getStorageRedoLogSize();
                 if (redologSize > 0) {
                     try {
@@ -96,7 +96,7 @@ public abstract class SqliteStorageLayer<T extends IReplicationOrderedPacket> {
     private void connectToDB(){
         try {
             SQLiteConfig sqLiteConfig = new SQLiteConfig();
-            if (Boolean.parseBoolean(System.getProperty(SystemProperties.SQLITE_ASYNC, "true")))
+            if (SystemProperties.getBoolean(SystemProperties.SQLITE_ASYNC, SystemProperties.SQLITE_ASYNC_DEFAULT))
                 sqLiteConfig.setSynchronous(SQLiteConfig.SynchronousMode.OFF);
 
             String dbUrl = "jdbc:sqlite:" + path + "/" + dbName;
