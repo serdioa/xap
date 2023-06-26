@@ -64,17 +64,18 @@ public abstract class SqliteStorageLayer<T extends IReplicationOrderedPacket> {
             }
         } else if (!config.shouldKeepDatabaseFile()) {
             boolean flushRedolog = SystemProperties.getBoolean(SystemProperties.REDOLOG_FLUSH_ON_SHUTDOWN, SystemProperties.REDOLOG_FLUSH_ON_SHUTDOWN_DEFAULT);
-            long redologSize = getStorageRedoLogSize();
-            if (redologSize>0  && flushRedolog){
-                try {
-                    String fullSpaceName= config.getContainerName()+":" + config.getSpaceName();
-                    logger.info("redolog for: " + config.getContainerName() + " about to copy to target");
-                    Path target = FileUtils.copyRedologToTarget(config.getSpaceName(), fullSpaceName);
-                    logger.info("redolog for: " + config.getContainerName() + " was copied to target");
-                    FileUtils.notifyOnFlushRedologToStorage(fullSpaceName, config.getSpaceName(), redologSize, target);
-                }
-                catch (Throwable t){
-                    logger.error("Fail to copy or notify redolog backup on startup :"+ config.getContainerName(), t);
+            if ( flushRedolog) {
+                long redologSize = getStorageRedoLogSize();
+                if (redologSize > 0) {
+                    try {
+                        String fullSpaceName = config.getContainerName() + ":" + config.getSpaceName();
+                        logger.info("redolog for: " + config.getContainerName() + " about to copy to target");
+                        Path target = FileUtils.copyRedologToTarget(config.getSpaceName(), fullSpaceName);
+                        logger.info("redolog for: " + config.getContainerName() + " was copied to target");
+                        FileUtils.notifyOnFlushRedologToStorage(fullSpaceName, config.getSpaceName(), redologSize, target);
+                    } catch (Throwable t) {
+                        logger.error("Fail to copy or notify redolog backup on startup :" + config.getContainerName(), t);
+                    }
                 }
             }
             deleteDataFile();
