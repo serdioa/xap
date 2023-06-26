@@ -811,7 +811,7 @@ public class TemplateHolder extends AbstractSpaceItem implements ITemplateHolder
                     return committedIsCompleted && overrideIsValidForHistoricalRead;
                 }
             }
-            return !isCommittedEntry || (committedIsCompleted && overrideIsValidForHistoricalRead);
+            return (!isCommittedEntry && !isReadCommittedRequested()) || (committedIsCompleted && overrideIsValidForHistoricalRead);
 
         } else { //locking operations (take/update/exclusiveRead)
             if (isOverridedEntry
@@ -1302,9 +1302,7 @@ public class TemplateHolder extends AbstractSpaceItem implements ITemplateHolder
     @Override
     public boolean isActiveRead(SpaceEngine engine) {
         if (engine.isMvccEnabled()) {
-            return isReadOperation()
-                    && (mvccGenerationsState == null
-                        || mvccGenerationsState.getCompletedGeneration() == -1);
+            return isReadOperation() && mvccGenerationsState == null;
         }
         return true;
     }
