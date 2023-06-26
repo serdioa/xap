@@ -18,6 +18,8 @@ public class PipelineAuthority implements InternalAuthority {
                     return "Create pipeline";
                 case START_STOP:
                     return "Start/Stop pipeline";
+                case EDIT:
+                    return "Edit pipeline (tables)";
                 case DELETE:
                     return "Delete pipeline";
                 default:
