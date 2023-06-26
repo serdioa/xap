@@ -813,7 +813,7 @@ public class TemplateHolder extends AbstractSpaceItem implements ITemplateHolder
             }
             return !isCommittedEntry || (committedIsCompleted && overrideIsValidForHistoricalRead);
 
-        } else { //locking operations
+        } else { //locking operations (take/update/exclusiveRead)
             if (isOverridedEntry
                     && overrideGeneration > completedGeneration
                     && !mvccGenerationsState.isUncompletedGeneration(overrideGeneration)) {
