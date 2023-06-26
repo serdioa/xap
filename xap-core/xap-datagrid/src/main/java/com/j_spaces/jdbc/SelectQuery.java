@@ -717,44 +717,49 @@ public class SelectQuery extends AbstractDMLQuery implements Externalizable {
      */
     private ResponsePacket executeCountAll(IJSpace space, Transaction txn) throws RemoteException, TransactionException,
             UnusableEntryException {
-        ResponsePacket packet = new ResponsePacket();
+        try {
+            ResponsePacket packet = new ResponsePacket();
 
-        // GS-7406: In embedded QP, a security check needs to be done since interception was skipped.
-        // call space API and don't go through runtimeInfo which is currently not secured
-        boolean embeddedQpNeedsSecurityCheck = space.isSecured() && getSecurityInterceptor() == null;
+            // GS-7406: In embedded QP, a security check needs to be done since interception was skipped.
+            // call space API and don't go through runtimeInfo which is currently not secured
+            boolean embeddedQpNeedsSecurityCheck = space.isSecured() && getSecurityInterceptor() == null;
 
-        Integer count = 0;
-        if (((ISpaceProxy) space).isClustered() || embeddedQpNeedsSecurityCheck) {
-            QueryTemplatePacket template = new QueryTemplatePacket(getTableData(), _queryResultType);
-            template.setRouting(getRouting());
-            count = space.count(template, txn);
-        } else {
-            // Optimized solution using Runtimeinfo for single proxy
-            // Get class hierarchy count
-            try {
-                SpaceRuntimeInfo info = SQLUtil.getAdmin(space).getRuntimeInfo(getTableName());
-                // Add subclasses count to the total count
-                for (int entryCount : info.m_NumOFEntries) {
-                    count += entryCount;
+            Integer count = 0;
+            if (((ISpaceProxy) space).isClustered() || embeddedQpNeedsSecurityCheck) {
+                QueryTemplatePacket template = new QueryTemplatePacket(getTableData(), _queryResultType);
+                template.setRouting(getRouting());
+                count = space.count(template, txn);
+            } else {
+                // Optimized solution using Runtimeinfo for single proxy
+                // Get class hierarchy count
+                try {
+                    SpaceRuntimeInfo info = SQLUtil.getAdmin(space).getRuntimeInfo(getTableName());
+                    // Add subclasses count to the total count
+                    for (int entryCount : info.m_NumOFEntries) {
+                        count += entryCount;
+                    }
+                } catch (IllegalArgumentException ex) {
+                    if (_logger.isDebugEnabled()) {
+                        _logger.debug("Trying to count single space when the metadata is not available.", ex);
+                    }
+                    // Workaround in case the type was not introduced yet.
                 }
-            } catch (IllegalArgumentException ex) {
-                if (_logger.isDebugEnabled()) {
-                    _logger.debug("Trying to count single space when the metadata is not available.", ex);
-                }
-                // Workaround in case the type was not introduced yet.
             }
+
+            // COUNT's column tablename is always an empty String
+            ResultEntry result = new ResultEntry(
+                    new String[]{getCountColumnName()},
+                    new String[]{getCountColumnLabel()},
+                    new String[]{""},
+                    new Object[][]{{count}});
+
+            packet.setResultEntry(result);
+
+            return packet;
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw e;
         }
-
-        // COUNT's column tablename is always an empty String
-        ResultEntry result = new ResultEntry(
-                new String[]{getCountColumnName()},
-                new String[]{getCountColumnLabel()},
-                new String[]{""},
-                new Object[][]{{count}});
-
-        packet.setResultEntry(result);
-
-        return packet;
     }
 
 

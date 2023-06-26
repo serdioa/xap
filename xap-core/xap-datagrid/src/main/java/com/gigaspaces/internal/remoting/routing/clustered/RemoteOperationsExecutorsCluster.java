@@ -364,8 +364,10 @@ public class RemoteOperationsExecutorsCluster {
     }
 
     public long getRemainingTime(RemoteOperationRequest<?> request, long initialFailureTime) {
+        _logger.info("_config.getActiveServerLookupTimeout(): {}", _config.getActiveServerLookupTimeout());
         long remainingTime = _config.getActiveServerLookupTimeout() - (SystemTime.timeMillis() - initialFailureTime);
         if (remainingTime <= 0) {
+            _logger.info("remainingTime <= 0");
             request.setRemoteOperationExecutionError(new RemoteException(generateTimeoutErrorMessage(initialFailureTime, request)));
         }
         return remainingTime;
