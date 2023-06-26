@@ -704,11 +704,6 @@ public class SpaceProxyImpl extends AbstractDirectSpaceProxy implements SameProx
                 if (spaceContext != null)
                     spaceContext.setQuiesceToken(token);
             }
-            _clientLogger.info("spaceRequest is " + spaceRequest);
-            _clientLogger.info("spaceContext is " + spaceContext);
-
-            // TODO : where to find spaceContext ?
-
             spaceRequest.setSpaceContext(spaceContext);
 
             // for broadcast table operation we need to set SpaceContext inside SpaceRequestInfo before task is

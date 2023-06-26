@@ -120,14 +120,14 @@ public class GConnection implements Connection {
             if (username != null && username.length() > 0) {
                 // TODO: Consider warning/skipping if already logged in.
                 SecurityContext login = space.getDirectProxy().login(new DefaultCredentialsProvider(username, password));
-                logger.info("SecurityContext " + login);
+                logger.debug("SecurityContext " + login);
             }
         }
 
         qp = QueryProcessorFactory.newInstance(space, remoteSpace, properties);
         context = qp.newConnection();
         context.setSpaceContext(space.getDirectProxy().getSecurityManager().acquireContext(remoteSpace));
-        logger.info("Acquired context is " + context.getSpaceContext() );
+        logger.debug("Acquired context is " + context.getSpaceContext() );
     }
 
     public static GConnection getInstance(IJSpace space)

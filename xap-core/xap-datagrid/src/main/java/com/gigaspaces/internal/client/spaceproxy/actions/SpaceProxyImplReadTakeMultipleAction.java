@@ -23,12 +23,9 @@ import com.gigaspaces.internal.client.spaceproxy.actioninfo.ReadTakeMultipleProx
 import com.gigaspaces.internal.client.spaceproxy.operations.ReadTakeEntriesSpaceOperationRequest;
 import com.gigaspaces.internal.transport.IEntryPacket;
 import com.j_spaces.core.client.ReadModifiers;
-import com.j_spaces.core.client.SQLQuery;
 
 import net.jini.core.entry.UnusableEntryException;
 import net.jini.core.transaction.TransactionException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.rmi.RemoteException;
 
@@ -37,9 +34,6 @@ import java.rmi.RemoteException;
  */
 @com.gigaspaces.api.InternalApi
 public class SpaceProxyImplReadTakeMultipleAction extends ReadTakeMultipleProxyAction<SpaceProxyImpl> {
-
-    private static final Logger logger = LoggerFactory.getLogger(SpaceProxyImplReadTakeMultipleAction.class);
-
     @SuppressWarnings("deprecation")
     @Override
     public Object[] readMultiple(SpaceProxyImpl spaceProxy, ReadTakeMultipleProxyActionInfo actionInfo)
@@ -87,7 +81,6 @@ public class SpaceProxyImplReadTakeMultipleAction extends ReadTakeMultipleProxyA
         if (actionInfo.isSqlQuery)
             return spaceProxy.getQueryManager().readTakeMultiple(actionInfo);
 
-        // TODO : define context!
         final ReadTakeEntriesSpaceOperationRequest request = new ReadTakeEntriesSpaceOperationRequest(
                 actionInfo.queryPacket,
                 actionInfo.txn,
@@ -101,11 +94,7 @@ public class SpaceProxyImplReadTakeMultipleAction extends ReadTakeMultipleProxyA
 
         spaceProxy.beforeExecute(request, spaceProxy.getRemoteJSpace(), spaceProxy.getSpaceClusterInfo().getNumberOfPartitions(),
                 spaceProxy.getSpaceClusterInfo().getClusterName(), spaceProxy.isEmbedded());
-
-        logger.info("executing request with context " + request.getSpaceContext());
-
         spaceProxy.getProxyRouter().execute(request);
-
         if (actionInfo.isTake && request.getRemoteOperationResult() != null) {
             actionInfo.setSyncReplicationLevel(request.getRemoteOperationResult().getSyncReplicationLevel());
         } else if (actionInfo.isTake && request.getLevels() != null) {
