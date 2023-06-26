@@ -3936,6 +3936,9 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
         try {
             performTemplateOnEntrySA(context, template, entry,
                     makeWaitForInfo);
+            if (getLogger().isDebugEnabled() && isMvccEnabled() && entry != null) {
+                getLogger().debug("Operated mvcc entry: {}", entry);
+            }
             return entry;
         } catch (EntryDeletedException | NoMatchException | FifoException ex) {
             return null;
