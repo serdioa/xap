@@ -18,11 +18,15 @@ package com.j_spaces.jdbc.builder.range;
 
 import com.gigaspaces.internal.io.IOUtils;
 import com.gigaspaces.internal.query.predicate.ISpacePredicate;
+import com.gigaspaces.utils.TransformUtils;
+import com.j_spaces.kernel.SystemProperties;
 
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.math.BigDecimal;
+
+import static com.gigaspaces.utils.TransformUtils.stripTrailingZerosIfNeeded;
 
 public abstract class SingleValueRange extends Range {
     // serialVersionUID should never be changed.
@@ -32,7 +36,7 @@ public abstract class SingleValueRange extends Range {
 
     protected SingleValueRange(String colPath, FunctionCallDescription functionCallDescription, Object value, ISpacePredicate predicate) {
         super(colPath, functionCallDescription, predicate);
-        this.value = value instanceof BigDecimal ? ((BigDecimal) value).stripTrailingZeros() : value;
+        this.value = TransformUtils.stripTrailingZerosIfNeeded(value);
     }
 
     public SingleValueRange() {
@@ -50,8 +54,10 @@ public abstract class SingleValueRange extends Range {
      * @param value the value to set
      */
     public void setValue(Object value) {
-        this.value = value instanceof BigDecimal ? ((BigDecimal) value).stripTrailingZeros() : value;
+        this.value=TransformUtils.stripTrailingZerosIfNeeded(value);
     }
+
+
 
     @Override
     public boolean isRelevantForAllIndexValuesOptimization() {

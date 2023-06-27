@@ -28,9 +28,10 @@ import com.gigaspaces.internal.remoting.routing.RemoteOperationRouterException;
 import com.gigaspaces.internal.remoting.routing.clustered.RemoteOperationsExecutorProxy;
 import com.gigaspaces.internal.remoting.routing.clustered.RemoteOperationsExecutorsCluster;
 import com.gigaspaces.internal.utils.concurrent.CyclicAtomicInteger;
+import com.gigaspaces.utils.TransformUtils;
+import com.j_spaces.kernel.SystemProperties;
 import org.slf4j.Logger;
 
-import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -51,6 +52,7 @@ public class PartitionedClusterRemoteOperationRouter extends AbstractRemoteOpera
     private int _roundRobinApproxIndex = 0;
 
 
+
     public PartitionedClusterRemoteOperationRouter(String name,
                                                    RemoteOperationRouter[] partitions,
                                                    CoordinatorFactory coordinatorFactory,
@@ -58,6 +60,7 @@ public class PartitionedClusterRemoteOperationRouter extends AbstractRemoteOpera
                                                    int numberOfPerciseRoundRobingOperations,
                                                    RemoteOperationsExecutorsCluster partitionedCluster, SpaceClusterInfo clusterInfo) {
         super(name);
+
         this._partitions = partitions;
         this._clusterInfo = clusterInfo;
         this._listenerFactory = coordinatorFactory;
@@ -223,17 +226,12 @@ public class PartitionedClusterRemoteOperationRouter extends AbstractRemoteOpera
 
     private <T extends RemoteOperationResult> Object getPartiotionedClusterRoutingValue(RemoteOperationRequest<T> request) {
         Object routingValue = request.getPartitionedClusterRoutingValue(this);
-        if (routingValue instanceof BigDecimal){
-            routingValue = ((BigDecimal) routingValue).stripTrailingZeros();
-        }
-        return routingValue;
+        return TransformUtils.stripTrailingZerosIfNeeded(routingValue);
     }
 
     private <T extends RemoteOperationResult> void executeSingleAsync(RemoteOperationRequest<T> request, RemoteOperationFutureListener<T> listener) {
         Object routingValue = request.getPartitionedClusterRoutingValue(this);
-        if (routingValue instanceof BigDecimal){
-            routingValue = ((BigDecimal) routingValue).stripTrailingZeros();
-        }
+        routingValue = TransformUtils.stripTrailingZerosIfNeeded(routingValue);
         int partitionId = PartitionedClusterUtils.getPartitionId(routingValue, _clusterInfo);
         if (partitionId == PartitionedClusterUtils.NO_PARTITION) {
             request.setRemoteOperationExecutionError(new RemoteOperationRouterException("Cannot execute operation on partitioned cluster without routing value"));
