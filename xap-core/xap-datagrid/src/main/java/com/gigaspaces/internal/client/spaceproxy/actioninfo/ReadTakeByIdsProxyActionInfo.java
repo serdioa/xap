@@ -30,12 +30,13 @@ import com.gigaspaces.internal.transport.IEntryPacket;
 import com.gigaspaces.internal.transport.ProjectionTemplate;
 import com.gigaspaces.internal.transport.TemplatePacketFactory;
 import com.gigaspaces.metadata.SpaceMetadataException;
+import com.gigaspaces.utils.TransformUtils;
 import com.j_spaces.core.AbstractIdsQueryPacket;
 import com.j_spaces.core.UnknownTypeException;
 import com.j_spaces.core.exception.internal.ProxyInternalSpaceException;
+import com.j_spaces.kernel.SystemProperties;
 import net.jini.core.transaction.Transaction;
 
-import java.math.BigDecimal;
 
 @com.gigaspaces.api.InternalApi
 public class ReadTakeByIdsProxyActionInfo extends CommonProxyActionInfo {
@@ -55,9 +56,7 @@ public class ReadTakeByIdsProxyActionInfo extends CommonProxyActionInfo {
             this.ids = ids;
             if (ids != null) {
                 for (int i = 0; i < ids.length; i++) {
-                    if (ids[i] instanceof BigDecimal) {
-                        this.ids[i] = ((BigDecimal) ids[i]).stripTrailingZeros();
-                    }
+                    this.ids[i] = TransformUtils.stripTrailingZerosIfNeeded(ids[i]);;
                 }
             }
             this.className = className;
