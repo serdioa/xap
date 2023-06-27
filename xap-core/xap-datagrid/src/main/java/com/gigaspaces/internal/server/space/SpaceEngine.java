@@ -4655,7 +4655,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
                     if (!tmpl.isActiveRead(this)) {
                         throw new MVCCEntryModifyConflictException(tmpl.getGenerationsState(), (MVCCEntryHolder) entry, tmpl.getTemplateOperation());
                     }
-                    if (getLogger().isDebugEnabled() && isMvccEnabled()) {
+                    if (getLogger().isDebugEnabled()) {
                         getLogger().debug("{}: need rematch for entry: {}, new entry: {}, genState: {}", Thread.currentThread().getName(), entry, activeData, tmpl.getGenerationsState());
                     }
                     entry = activeData;
@@ -4744,7 +4744,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
                     if (!tmpl.isActiveRead(this)) {
                         throw new MVCCEntryModifyConflictException(tmpl.getGenerationsState(), (MVCCEntryHolder) entry, tmpl.getTemplateOperation());
                     }
-                    if (getLogger().isDebugEnabled() && isMvccEnabled()) {
+                    if (getLogger().isDebugEnabled()) {
                         getLogger().debug("{}: need rematch for entry: {}, new entry: {}, genState: {}", Thread.currentThread().getName(), entry, activeData, tmpl.getGenerationsState());
                     }
                     entry = activeData;
@@ -4852,7 +4852,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
                     MatchResult mr = template.match(_cacheManager, entry, -1 /*skipIndex*/, null, true /*safeEntry*/, context, _templateScanner.getRegexCache());
                     tryMaster = (mr == MatchResult.MASTER || mr == MatchResult.MASTER_AND_SHADOW);
                     tryShadow = (mr == MatchResult.SHADOW || mr == MatchResult.MASTER_AND_SHADOW);
-                    if (getLogger().isDebugEnabled() && isMvccEnabled()) {
+                    if (getLogger().isDebugEnabled()) {
                         getLogger().debug("{}: rematching result={} for entry {}", Thread.currentThread().getName(), mr != MatchResult.NONE, entry);
                     }
                 }
