@@ -4852,7 +4852,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
                     MatchResult mr = template.match(_cacheManager, entry, -1 /*skipIndex*/, null, true /*safeEntry*/, context, _templateScanner.getRegexCache());
                     tryMaster = (mr == MatchResult.MASTER || mr == MatchResult.MASTER_AND_SHADOW);
                     tryShadow = (mr == MatchResult.SHADOW || mr == MatchResult.MASTER_AND_SHADOW);
-                    if (getLogger().isDebugEnabled()) {
+                    if (getLogger().isDebugEnabled() && isMvccEnabled()) {
                         getLogger().debug("{}: rematching result={} for entry {}", Thread.currentThread().getName(), mr != MatchResult.NONE, entry);
                     }
                 }
