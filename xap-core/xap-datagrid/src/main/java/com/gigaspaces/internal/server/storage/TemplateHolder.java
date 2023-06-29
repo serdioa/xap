@@ -792,9 +792,7 @@ public class TemplateHolder extends AbstractSpaceItem implements ITemplateHolder
         final boolean isOverridedEntry = overrideGeneration != -1;
         final boolean isDirtyRead = cacheManager.getEngine().indicateDirtyRead(this);
         if (isActiveRead(cacheManager.getEngine())) { //active read
-            return isDirtyRead
-                    ? (!isCommittedEntry || !isOverridedEntry)
-                    : (isCommittedEntry && !isOverridedEntry);
+            return !isDirtyRead ? isCommittedEntry : isDirtyRead;
         }
         final boolean committedIsCompleted = isCommittedEntry && (committedGeneration <= completedGeneration)
                 && (!mvccGenerationsState.isUncompletedGeneration(committedGeneration));
