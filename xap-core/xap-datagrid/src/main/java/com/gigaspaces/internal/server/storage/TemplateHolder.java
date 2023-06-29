@@ -790,7 +790,7 @@ public class TemplateHolder extends AbstractSpaceItem implements ITemplateHolder
         final long committedGeneration = entryHolder.getCommittedGeneration();
         final boolean isDirtyEntry = committedGeneration == -1;
         if (isActiveRead(cacheManager.getEngine())) { //active read
-            return committedGeneration == -1 || overrideGeneration == -1;
+            return true; // after the lock retrieving latest not overrided entry to rematch
         }
         if (isReadOperation() && !isExclusiveReadLockOperation()) { //historic read
             return isDirtyEntry
