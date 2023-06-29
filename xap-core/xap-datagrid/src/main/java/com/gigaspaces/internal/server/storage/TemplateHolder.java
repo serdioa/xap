@@ -809,7 +809,7 @@ public class TemplateHolder extends AbstractSpaceItem implements ITemplateHolder
                     return committedIsCompleted && overrideIsValidForHistoricalRead;
                 }
             }
-            return (!isCommittedEntry && !isReadCommittedRequested()) || (committedIsCompleted && overrideIsValidForHistoricalRead);
+            return !isCommittedEntry || (committedIsCompleted && overrideIsValidForHistoricalRead);
 
         } else { //locking operations (take/update/exclusiveRead)
             if (isOverridedEntry
