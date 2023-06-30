@@ -138,27 +138,11 @@ public class MVCCCacheManagerHandler {
 
     }
 
-    public MVCCEntryCacheInfo createLogicallyDeletedMvccEntryPendingGeneration(Context context, XtnEntry xtnEntry, MVCCEntryCacheInfo pEntry, int operationId) throws SAException {
+    public MVCCEntryCacheInfo createLogicallyDeletedMvccEntryPendingGeneration(XtnEntry xtnEntry, MVCCEntryCacheInfo pEntry, int operationId) {
         MVCCShellEntryCacheInfo mvccShellEntryCacheInfo = cacheManager.getMVCCShellEntryCacheInfoByUid(pEntry.getUID());
         MVCCEntryHolder entryHolder = pEntry.getEntryHolder();
 
-        // this block is true in case if this is a take operation after update
-        // dirty updated entry gets disconnected from transaction and cleaned from XtnData
-        // taken entry in XtnData and pEntry get changed from updated dirty to the latest generation version
-        if (mvccShellEntryCacheInfo.getDirtyEntryCacheInfo() != null) {
-            disconnectMvccEntryFromXtn(context, pEntry, xtnEntry, false);// disconnecting old data from txn
-
-            xtnEntry.getXtnData().removeUpdatedEntry(pEntry);
-            xtnEntry.getXtnData().removeTakenEntry(pEntry);
-
-            pEntry = mvccShellEntryCacheInfo.getLatestGenerationCacheInfo();
-            entryHolder = pEntry.getEntryHolder();
-
-            xtnEntry.getXtnData().addToTakenEntriesIfNotInside(pEntry);
-
-            mvccShellEntryCacheInfo.clearDirtyEntry();
-            entryHolder.setWriteLockOperation(operationId, false /*createSnapshot*/);
-        }
+        entryHolder.setWriteLockOperation(operationId, false);
 
         EntryXtnInfo entryXtnInfo = entryHolder.getTxnEntryData().copyTxnInfo(true, false);
         entryXtnInfo.setXidOriginated(xtnEntry);

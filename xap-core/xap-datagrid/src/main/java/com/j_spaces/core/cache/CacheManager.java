@@ -2370,7 +2370,8 @@ public class CacheManager extends AbstractCacheManager
                 // and it has a shadow- restore shadow values in order not
                 // to cause dummy WF connections
                 boolean restoreShadowValues = false;
-                if (pEntry.getEntryHolder(this).getWriteLockTransaction() != null && pEntry.getEntryHolder(this).hasShadow())
+
+                if (pEntry.getEntryHolder(this).getWriteLockTransaction() != null && (pEntry.getEntryHolder(this).hasShadow() || isMvccWithLatestGeneration(pEntry)))
                     if (pEntry.getEntryHolder(this).getWriteLockOperation() == SpaceOperations.UPDATE && pEntry.getEntryHolder(this).getWriteLockTransaction().equals(xtnEntry.m_Transaction))
                         restoreShadowValues = true;
 
@@ -2379,14 +2380,32 @@ public class CacheManager extends AbstractCacheManager
                 pEntry.getEntryHolder(this).setWriteLockOwnerAndOperation(xtnEntry, template.getTemplateOperation());
 
                 if (restoreShadowValues) {
-                    consolidateWithShadowEntry(typeData, pEntry, true /* restoreOriginalValus*/, false /*onError*/);
+                    if (!isMVCCEnabled()) {
+                        consolidateWithShadowEntry(typeData, pEntry, true /* restoreOriginalValus*/, false /*onError*/);
+                    } else {
+                        MVCCShellEntryCacheInfo mvccShellEntryCacheInfo = getMVCCShellEntryCacheInfoByUid(pEntry.getUID());
+                        MVCCEntryHolder entry = mvccShellEntryCacheInfo.getDirtyEntryHolder();
+
+                        IServerTypeDesc tte = _engine.getTypeManager().getServerTypeDesc(entry.getClassName());
+                        context.setOperationID(pXtn.getOperationID(entry.getUID()));
+                        _engine.removeEntrySA(context, entry, tte, xtnEntry.isFromReplication() /*fromReplication*/,
+                                true /*origin*/, SpaceEngine.EntryRemoveReasonCodes.TAKE,
+                                true/* disable replication */, false /* disable processor call */,
+                                true /*disableSADelete*/);
+                        mvccShellEntryCacheInfo.clearDirtyEntry();
+                        xtnEntry.getXtnData().removeUpdatedEntry(pEntry);
+
+                        // set pEntry value of the latest generation value
+                        pEntry = mvccShellEntryCacheInfo.getLatestGenerationCacheInfo();
+                    }
+
                     //remove indication of rewritten entry (if exists)
                     pXtn.removeRewrittenEntryIndication(pEntry.getUID());
                 }
                 pXtn.addToTakenEntriesIfNotInside(pEntry);
 
                 if (isMVCCEnabled()) {
-                    MVCCEntryCacheInfo logicallyDeletedEntry = _mvccCacheManagerHandler.createLogicallyDeletedMvccEntryPendingGeneration(context, xtnEntry, (MVCCEntryCacheInfo) pEntry, template.getTemplateOperation());
+                    MVCCEntryCacheInfo logicallyDeletedEntry = _mvccCacheManagerHandler.createLogicallyDeletedMvccEntryPendingGeneration(xtnEntry, (MVCCEntryCacheInfo) pEntry, template.getTemplateOperation());
                     pXtn.addMvccNewGenerationsEntries(logicallyDeletedEntry);
                  }
 
@@ -2444,6 +2463,11 @@ public class CacheManager extends AbstractCacheManager
 
         pEntry.getEntryHolder(this).setMaybeUnderXtn(true);
         return pEntry.getEntryHolder(this);
+    }
+
+    private boolean isMvccWithLatestGeneration(IEntryCacheInfo pEntry) {
+        return isMVCCEnabled()
+                && getMVCCShellEntryCacheInfoByUid(pEntry.getUID()).getLatestGenerationCacheInfo() != null;
     }
 
     private TieredState getEntryTieredState(IEntryHolder entryHolder) {
