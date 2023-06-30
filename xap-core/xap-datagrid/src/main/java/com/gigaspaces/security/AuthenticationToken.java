@@ -80,6 +80,13 @@ public class AuthenticationToken implements SmartExternalizable {
         return true;
     }
 
+    @Override
+    public String toString() {
+        return "AuthenticationToken{" +
+                "sessionId=" + sessionId +
+                '}';
+    }
+
     public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         sessionId = new SessionId();
         sessionId.readExternal(in);

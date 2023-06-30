@@ -23,7 +23,6 @@ import com.gigaspaces.internal.client.spaceproxy.actioninfo.ReadTakeMultipleProx
 import com.gigaspaces.internal.client.spaceproxy.operations.ReadTakeEntriesSpaceOperationRequest;
 import com.gigaspaces.internal.transport.IEntryPacket;
 import com.j_spaces.core.client.ReadModifiers;
-import com.j_spaces.core.client.SQLQuery;
 
 import net.jini.core.entry.UnusableEntryException;
 import net.jini.core.transaction.TransactionException;
@@ -92,6 +91,9 @@ public class SpaceProxyImplReadTakeMultipleAction extends ReadTakeMultipleProxyA
                 actionInfo.timeout,
                 actionInfo.ifExist,
                 actionInfo.getQuery());
+
+        spaceProxy.beforeExecute(request, spaceProxy.getRemoteJSpace(), spaceProxy.getSpaceClusterInfo().getNumberOfPartitions(),
+                spaceProxy.getSpaceClusterInfo().getClusterName(), spaceProxy.isEmbedded());
         spaceProxy.getProxyRouter().execute(request);
         if (actionInfo.isTake && request.getRemoteOperationResult() != null) {
             actionInfo.setSyncReplicationLevel(request.getRemoteOperationResult().getSyncReplicationLevel());

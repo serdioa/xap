@@ -167,4 +167,12 @@ public final class GrantedAuthorities implements Serializable {
         }
         return list.toArray(new Authority[0]);
     }
+
+    @Override
+    public String toString() {
+        return "GrantedAuthorities{" +
+                "authorityMap=" + authorityMap +
+                ", roles=" + roles +
+                '}';
+    }
 }

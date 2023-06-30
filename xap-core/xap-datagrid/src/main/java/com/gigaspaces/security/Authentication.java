@@ -63,4 +63,12 @@ public final class Authentication implements Serializable {
     public GrantedAuthorities getGrantedAuthorities() {
         return grantedAuthorities;
     }
+
+    @Override
+    public String toString() {
+        return "Authentication{" +
+                "userDetails=" + userDetails +
+                ", grantedAuthorities=" + grantedAuthorities +
+                '}';
+    }
 }
