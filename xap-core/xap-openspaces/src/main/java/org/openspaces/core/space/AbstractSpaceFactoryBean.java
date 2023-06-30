@@ -570,4 +570,22 @@ public abstract class AbstractSpaceFactoryBean implements BeanNameAware, Initial
         }
     }
 
+    @Override
+    public String toString() {
+        return "AbstractSpaceFactoryBean{" +
+                "beanName='" + beanName + '\'' +
+                ", space=" + space +
+                ", applicationContext=" + applicationContext +
+                ", currentSpaceMode=" + currentSpaceMode +
+                ", currentSuspendType=" + currentSuspendType +
+                ", appContextPrimaryBackupListener=" + appContextPrimaryBackupListener +
+                ", suspendTypeInternalListener=" + suspendTypeInternalListener +
+                ", primaryBackupListener=" + primaryBackupListener +
+                ", registerForSpaceMode=" + registerForSpaceMode +
+                ", enableMemberAliveIndicator=" + enableMemberAliveIndicator +
+                ", memberAliveIndicator=" + memberAliveIndicator +
+                ", securityConfig=" + securityConfig +
+                ", serviceDetailsList=" + serviceDetailsList +
+                '}';
+    }
 }

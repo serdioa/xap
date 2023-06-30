@@ -37,6 +37,8 @@ import org.openspaces.core.config.SpaceSqlFunctionBean;
 import org.openspaces.core.space.filter.FilterProviderFactory;
 import org.openspaces.core.space.filter.replication.ReplicationFilterProviderFactory;
 import org.openspaces.core.transaction.DistributedTransactionProcessingConfigurationFactoryBean;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
@@ -46,6 +48,9 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class InternalSpaceFactory {
+
+    private static final Logger logger = LoggerFactory.getLogger(InternalSpaceFactory.class);
+
     private static final boolean enableExecutorInjection = true;
     private final SpaceProxyFactory factory = new SpaceProxyFactory();
     private ClusterInfo clusterInfo;
@@ -125,6 +130,10 @@ public class InternalSpaceFactory {
             name = spaceFactoryBean.getName();
         Assert.notNull(name, "name property is required");
         factory.setClusterConfig(toClusterConfig(clusterInfo));
+        // TODO : add loggers and release to see input arguments!
+        logger.info("spaceFactoryBean "+ spaceFactoryBean);
+        logger.info("clusterInfo " + clusterInfo);
+//        spaceFactoryBean.getSecurityConfig().
         beforeCreateSpace(spaceFactoryBean, isRemote);
         try {
             return factory.createSpaceProxy(name, isRemote);
@@ -181,6 +190,8 @@ public class InternalSpaceFactory {
             factory.addFilterProvider(filterProvider);
         }
 
+        // TODO : is secured ?
+//        spaceFactoryBean.getSecurityConfig().
         if (clusterInfo!=null && clusterInfo.isDedicatedSecurity()) {
             Pair<ISpaceFilter, int[]> securityFilterPair = loadSecurityFilter(spaceFactoryBean.getName());
 
