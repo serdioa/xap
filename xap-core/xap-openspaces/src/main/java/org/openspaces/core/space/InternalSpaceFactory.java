@@ -130,10 +130,6 @@ public class InternalSpaceFactory {
             name = spaceFactoryBean.getName();
         Assert.notNull(name, "name property is required");
         factory.setClusterConfig(toClusterConfig(clusterInfo));
-        // TODO : add loggers and release to see input arguments!
-        logger.info("spaceFactoryBean "+ spaceFactoryBean);
-        logger.info("clusterInfo " + clusterInfo);
-//        spaceFactoryBean.getSecurityConfig().
         beforeCreateSpace(spaceFactoryBean, isRemote);
         try {
             return factory.createSpaceProxy(name, isRemote);
@@ -184,6 +180,9 @@ public class InternalSpaceFactory {
     }
 
     private void beforeCreateSpace(AbstractSpaceFactoryBean spaceFactoryBean, boolean isRemote) {
+        logger.info("spaceFactoryBean "+ spaceFactoryBean);
+        logger.info("clusterInfo " + clusterInfo);
+
         if (!isRemote && enableExecutorInjection) {
             FilterProvider filterProvider = new FilterProvider("InjectionExecutorFilter", new ExecutorSpaceFilter(spaceFactoryBean, clusterInfo));
             filterProvider.setOpCodes(FilterOperationCodes.BEFORE_EXECUTE);
