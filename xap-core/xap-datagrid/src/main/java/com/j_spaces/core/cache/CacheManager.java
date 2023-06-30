@@ -2413,48 +2413,67 @@ public class CacheManager extends AbstractCacheManager
 
             case SpaceOperations.UPDATE:
                 pEntry.getEntryHolder(this).clearReadLockOwners();
-                if (isMVCCEnabled()){
-                    _mvccCacheManagerHandler.createUpdateMvccEntryPendingGeneration(context, xtnEntry, template.getTemplateOperation(),
-                            (MVCCEntryCacheInfo) pEntry, (MVCCEntryHolder) new_content, typeData);
-                } else{
-                    boolean newShadow = true;
-                    if (pEntry.getEntryHolder(this).getWriteLockOperation() == SpaceOperations.WRITE &&
-                            pEntry.getEntryHolder(this).getWriteLockTransaction() != null &&
-                            pEntry.getEntryHolder(this).getWriteLockTransaction().equals(xtnEntry.m_Transaction))
-                        newShadow = false;
 
-                    if (pEntry.getEntryHolder(this).getWriteLockOperation() == SpaceOperations.UPDATE &&
-                            pEntry.getEntryHolder(this).getWriteLockTransaction() != null && //Already performed an update, so we have a shadow
-                            pEntry.getEntryHolder(this).getWriteLockTransaction().equals(xtnEntry.m_Transaction) &&
-                            pEntry.getEntryHolder(this).hasShadow())
-                        newShadow = false;
+                boolean newShadow = true;
+                boolean isRewrite = false;
+                if (pEntry.getEntryHolder(this).getWriteLockOperation() == SpaceOperations.WRITE &&
+                        pEntry.getEntryHolder(this).getWriteLockTransaction() != null &&
+                        pEntry.getEntryHolder(this).getWriteLockTransaction().equals(xtnEntry.m_Transaction))
+                    newShadow = false;
 
-                    if ((pEntry.getEntryHolder(this).getWriteLockOperation() == SpaceOperations.TAKE ||
-                            pEntry.getEntryHolder(this).getWriteLockOperation() == SpaceOperations.TAKE_IE) &&
-                            pEntry.getEntryHolder(this).getWriteLockTransaction() != null &&
-                            pEntry.getEntryHolder(this).getWriteLockTransaction().equals(xtnEntry.m_Transaction))
-                    //take + write under same xtn, signal "rewrite"
-                    {
-                        pXtn.signalRewrittenEntry(pEntry.getUID());
-                        pXtn.removeTakenEntry(pEntry); //no longer its a take
-                    }
-                    //cater for partial update
-                    if (newShadow) {
-                        if (getTypeData(pEntry.getEntryHolder(this).getServerTypeDesc()).hasFifoGroupingIndex())
-                            pXtn.addToEntriesForFifoGroupScan(pEntry.getEntryHolder(this)); //kepp the shadow value for f-g scans
+                if (pEntry.getEntryHolder(this).getWriteLockOperation() == SpaceOperations.UPDATE &&
+                        pEntry.getEntryHolder(this).getWriteLockTransaction() != null && //Already performed an update, so we have a shadow
+                        pEntry.getEntryHolder(this).getWriteLockTransaction().equals(xtnEntry.m_Transaction) &&
+                        (pEntry.getEntryHolder(this).hasShadow() || isMvccWithLatestGeneration(pEntry)))
+                    newShadow = false;
+
+                if ((pEntry.getEntryHolder(this).getWriteLockOperation() == SpaceOperations.TAKE ||
+                        pEntry.getEntryHolder(this).getWriteLockOperation() == SpaceOperations.TAKE_IE) &&
+                        pEntry.getEntryHolder(this).getWriteLockTransaction() != null &&
+                        pEntry.getEntryHolder(this).getWriteLockTransaction().equals(xtnEntry.m_Transaction))
+                //take + write under same xtn, signal "rewrite"
+                {
+                    isRewrite = true;
+                    pXtn.signalRewrittenEntry(pEntry.getUID());
+                    pXtn.removeTakenEntry(pEntry); //no longer its a take
+                }
+                //cater for partial update
+                if (newShadow) {
+                    if (getTypeData(pEntry.getEntryHolder(this).getServerTypeDesc()).hasFifoGroupingIndex())
+                        pXtn.addToEntriesForFifoGroupScan(pEntry.getEntryHolder(this)); //kepp the shadow value for f-g scans
+                    if (!isMVCCEnabled()) {
                         //create a shadow entry
                         ShadowEntryHolder shadowEh = createShadowEntry(pEntry, typeData);
                         pEntry.getEntryHolder(this).setWriteLockOwnerOperationAndShadow(xtnEntry, template.getTemplateOperation(), shadowEh);
+                    } else { // mvcc case
+                        MVCCShellEntryCacheInfo mvccShellEntryCacheInfo = getMVCCShellEntryCacheInfoByUid(new_content.getUID());
+                        new_content.setWriteLockOwnerAndOperation(xtnEntry, template.getTemplateOperation());
+                        new_content.getTxnEntryData().setXidOriginated(xtnEntry);
+
+                        if (isRewrite) {
+                            _mvccCacheManagerHandler.disconnectMvccEntryFromXtn(context, (MVCCEntryCacheInfo) pEntry, xtnEntry, false);
+                            pEntry = mvccShellEntryCacheInfo.getLatestGenerationCacheInfo();
+                            mvccShellEntryCacheInfo.clearDirtyEntry();
+                        }
+                        ((MVCCEntryHolder) new_content).setVersion(pEntry.getVersion() + 1); //the version should be incremented from the active version
                     }
+                }
+
+                // update entries in cache
+                if (!isMVCCEnabled()) {
                     //we set this flag here before the actual update of the entry
                     pEntry.getEntryHolder(this).setMaybeUnderXtn(true);
                     IEntryData new_content_data = new_content.getEntryData();
                     pEntry = updateEntryInCache(context, pEntry, pEntry.getEntryHolder(this), new_content_data, new_content_data.getExpirationTime(), template.getOperationModifiers());
+                } else {
+                    _mvccCacheManagerHandler.createUpdateMvccEntryPendingGeneration(context, xtnEntry, template.getTemplateOperation(),
+                            (MVCCEntryCacheInfo) pEntry, (MVCCEntryHolder) new_content, typeData);
                 }
+
 
                 if (template.isChange()) {
                     pXtn.setInPlaceUpdatedEntry(pEntry.getEntryHolder(this), template.getMutators());
-                }else {
+                } else {
                     pXtn.setUpdatedEntry(pEntry.getEntryHolder(this), context.getPartialUpdatedValuesIndicators());
                 }
 
@@ -2747,11 +2766,17 @@ public class CacheManager extends AbstractCacheManager
                         || eh.getWriteLockOperation() == SpaceOperations.TAKE || eh.getWriteLockOperation() == SpaceOperations.TAKE_IE) {
                     if (eh.getWriteLockOperation() == SpaceOperations.UPDATE && pXtn.isReWrittenEntry(eh.getUID())) {
                         //in case entry was taken + written under same xtn, notify for both (op code is update)
-                        IEntryCacheInfo pe = EntryCacheInfoFactory.createEntryCacheInfo(eh.getShadow().createCopy());
+                        IEntryCacheInfo pe = isMVCCEnabled()
+                                ? EntryCacheInfoFactory.createMvccEntryCacheInfo(eh.createCopy())
+                                : EntryCacheInfoFactory.createEntryCacheInfo(eh.getShadow().createCopy());
+
                         pe.getEntryHolder(this).setWriteLockOperation(SpaceOperations.TAKE, false /*createSnapshot*/);
                         pe.getEntryHolder(this).setUID(eh.getUID());
                         pXtn.getNeedNotifyEntries(true).add(pe);
-                        pe = EntryCacheInfoFactory.createEntryCacheInfo(eh.createCopy());
+                        pe = isMVCCEnabled() // todo: clear this?
+                                ? EntryCacheInfoFactory.createMvccEntryCacheInfo(eh.createCopy())
+                                : EntryCacheInfoFactory.createEntryCacheInfo(eh.getShadow().createCopy());
+
                         pe.getEntryHolder(this).setWriteLockOperation(SpaceOperations.WRITE, false /*createSnapshot*/);
                         pXtn.getNeedNotifyEntries(true).add(pe);
                     } else if (eh.getWriteLockOperation() == SpaceOperations.UPDATE && (_templatesManager.anyNotifyUnmatchedTemplates()//notify for UNMATCHED operation
