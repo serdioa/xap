@@ -64,6 +64,7 @@ import com.gigaspaces.utils.RedologFlushNotifier;
 import com.j_spaces.core.OperationID;
 import com.j_spaces.core.cache.blobStore.BlobStoreReplicaConsumeHelper;
 import com.j_spaces.core.cache.blobStore.BlobStoreReplicationBulkConsumeHelper;
+import com.j_spaces.core.cluster.RedoLogSwapStorageType;
 import com.j_spaces.core.exception.ClosedResourceException;
 import com.j_spaces.kernel.ClassLoaderHelper;
 import com.j_spaces.kernel.SystemProperties;
@@ -874,7 +875,12 @@ public class ReplicationNode
         // get shared backlog - use the first backlog
         for (IReplicationSourceGroup group : getReplicationSourceGroups()) {
             IReplicationGroupBacklog groupBacklog = group.getGroupBacklog();
-            return groupBacklog.flushRedoLogToStorage();
+            if (groupBacklog.getSwapStorageType().equals(RedoLogSwapStorageType.SQLITE))
+                return groupBacklog.flushRedoLogToStorage();
+            else {
+                _logger.error("Flush is not supported for ByteBuffer swap redolog file.");
+                return -1;
+            }
         }
         return 0;
     }
@@ -986,11 +992,12 @@ public class ReplicationNode
                 if (redologSize> 0 && flushRedolog){
                     try {
                         _logger.info("redolog for: " + _name + " about to flush to Storage");
-                        String spaceName = _name.substring(_name.indexOf(":") + 1, _name.length());
-                        flushRedoLogToStorage();
-                        Path target = FileUtils.copyRedologToTarget(spaceName, _name);
-                        FileUtils.notifyOnFlushRedologToStorage(_name, spaceName,redologSize,target);
-                        _logger.info("redolog for: " + _name + " was flushed to Storage");
+                        if (flushRedoLogToStorage() >=0) {
+                            String spaceName = _name.substring(_name.indexOf(":") + 1, _name.length());
+                            Path target = FileUtils.copyRedologToTarget(spaceName, _name);
+                            FileUtils.notifyOnFlushRedologToStorage(_name, spaceName, redologSize, target);
+                            _logger.info("redolog for: " + _name + " was flushed to Storage");
+                        }
                     }
                     catch (Throwable t){
                         _logger.error("Fail to Flush redolog to Storage for: "+ _name, t);
