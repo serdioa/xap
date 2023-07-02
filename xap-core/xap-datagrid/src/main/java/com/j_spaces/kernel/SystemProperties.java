@@ -768,7 +768,7 @@ public class SystemProperties extends CommonSystemProperties {
     public static final String REDOLOG_FLUSH_NOTIFY_CLASS = "com.gs.redolog.flush.notify.class";
     public static final String REDOLOG_FLUSH_ON_SHUTDOWN = "com.gs.redolog.flush.on.shutdown";
 
-    public static final boolean REDOLOG_FLUSH_ON_SHUTDOWN_DEFAULT = true;
+    public static final boolean REDOLOG_FLUSH_ON_SHUTDOWN_DEFAULT = false;
 
     public static final String REDOLOG_COPY_ON_STARTUP = "com.gs.redolog.copy.on.startup";
 
@@ -796,7 +796,7 @@ public class SystemProperties extends CommonSystemProperties {
 
     public static final String SQLITE_ASYNC ="com.gs.sqlite.async";
 
-    public static final boolean SQLITE_ASYNC_DEFAULT = true;
+    public static final boolean SQLITE_ASYNC_DEFAULT = false;
 
     public static final int EXTRA_BACKUP_SPACE_RESOLUTION_RETRIES_DEFAULT = 15;
     public static final String EXTRA_BACKUP_SPACE_RESOLUTION_RETRIES = "com.gs.cluster.extra_backup_space_resolution_retries";
