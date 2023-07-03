@@ -7,7 +7,7 @@
     <parent>
         <artifactId>xap</artifactId>
         <groupId>org.gigaspaces</groupId>
-        <version>16.4.0-SNAPSHOT</version>
+        <version>16.4.0-PIC-2618-mon-878</version>
         <relativePath>../../pom.xml</relativePath>
     </parent>
     <artifactId>xap-asm</artifactId>
