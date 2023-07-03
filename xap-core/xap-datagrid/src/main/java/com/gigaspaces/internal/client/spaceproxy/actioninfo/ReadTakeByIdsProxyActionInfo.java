@@ -126,8 +126,9 @@ public class ReadTakeByIdsProxyActionInfo extends CommonProxyActionInfo {
                 if (routing != null || (routings != null && routings != ids))
                     throw new IllegalArgumentException("When the id property is used for routing, the routing argument must be null.");
             }
+            //GS-14947 fix optimization regression due to read from localcahe
              else {
-                if (routing != null && routing != ids[0])
+                if ((routing != null && routing != ids[0]) || (routings!=null && routings != ids))
                     throw new IllegalArgumentException("When the id property is used for routing, the routing argument must be null or same as id.");
             }
 
