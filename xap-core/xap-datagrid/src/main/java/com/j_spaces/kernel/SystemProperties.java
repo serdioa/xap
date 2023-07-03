@@ -846,7 +846,7 @@ public class SystemProperties extends CommonSystemProperties {
 
     public static String BIG_DECIMAL_STRIP_TRAILING_ZEROS="com.gs.strip-trailing-zeros";
 
-    public static boolean BIG_DECIMAL_STRIP_TRAILING_ZEROS_DEFAULT=false;
+    public static boolean BIG_DECIMAL_STRIP_TRAILING_ZEROS_DEFAULT=true;
 
 
 
