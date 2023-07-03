@@ -2773,7 +2773,7 @@ public class CacheManager extends AbstractCacheManager
                         pe.getEntryHolder(this).setWriteLockOperation(SpaceOperations.TAKE, false /*createSnapshot*/);
                         pe.getEntryHolder(this).setUID(eh.getUID());
                         pXtn.getNeedNotifyEntries(true).add(pe);
-                        pe = isMVCCEnabled() // todo: clear this?
+                        pe = isMVCCEnabled()
                                 ? EntryCacheInfoFactory.createMvccEntryCacheInfo(eh.createCopy())
                                 : EntryCacheInfoFactory.createEntryCacheInfo(eh.getShadow().createCopy());
 
