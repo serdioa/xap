@@ -125,6 +125,7 @@ public class SystemBoot {
             final StringBuilder sb = new StringBuilder();
             final ExecutorService singleThreadExecutor = Executors.newSingleThreadExecutor();
             final long start = System.currentTimeMillis();
+            int timeout = Integer.parseInt(System.getProperty(CommonSystemProperties.SHUTDOWN_HOOK_TIMEOUT,"10"));
             synchronized (shutdownHooks) {
                 //process shutdown hooks in reverse order (of registration)
                 Collections.reverse(shutdownHooks);
@@ -142,7 +143,7 @@ public class SystemBoot {
                                 .append(shutdownHook.getName())
                                 .append("]\n");
                         future = singleThreadExecutor.submit(shutdownHook);
-                        future.get(10, TimeUnit.SECONDS);
+                        future.get(timeout, TimeUnit.SECONDS);
                     } catch (Exception e) {
                         if (future != null) {
                             future.cancel(true);

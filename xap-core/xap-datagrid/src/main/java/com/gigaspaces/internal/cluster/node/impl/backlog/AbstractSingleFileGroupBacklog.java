@@ -357,6 +357,8 @@ public abstract class AbstractSingleFileGroupBacklog<T extends IReplicationOrder
         return new MemoryRedoLogFile<T>(_name, this);
     }
 
+
+
     private IRedoLogFile<T> createSwapBacklog(SourceGroupConfig groupConfig) {
         final BacklogConfig backlogConfig = groupConfig.getBacklogConfig();
         final SwapBacklogConfig swapBacklogConfig = backlogConfig.getSwapBacklogConfig();
@@ -1355,6 +1357,10 @@ public abstract class AbstractSingleFileGroupBacklog<T extends IReplicationOrder
         } finally {
             _rwLock.writeLock().lock();
         }
+    }
+
+    public RedoLogSwapStorageType  getSwapStorageType(){
+        return getBacklogFile().getSwapStorageType();
     }
 
     private Map<String, ReplicationTargetInfo> generateInfotForMemberMap() {

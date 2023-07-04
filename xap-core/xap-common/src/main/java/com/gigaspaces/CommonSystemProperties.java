@@ -96,4 +96,10 @@ public class CommonSystemProperties {
     public final static Boolean JNDI_ENABLED_DEFAULT_BOOLEAN_VALUE = Boolean.TRUE;
 
     public final static String BURNINGWAVE_ENABLED = "com.gs.burningwave.enabled";
+
+    /*
+    shutdown hook timeout in seconds
+    */
+    public final static String SHUTDOWN_HOOK_TIMEOUT = "com.gs.shutdownhook.timeout";
+
 }

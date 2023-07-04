@@ -27,13 +27,14 @@ import com.gigaspaces.internal.version.PlatformLogicalVersion;
 import com.gigaspaces.lrmi.LRMIInvocationContext;
 import com.gigaspaces.metadata.SpaceMetadataException;
 import com.gigaspaces.metadata.SpacePropertyDescriptor;
+import com.gigaspaces.utils.TransformUtils;
 import com.j_spaces.core.IGSEntry;
+import com.j_spaces.kernel.SystemProperties;
 import net.jini.space.InternalSpaceException;
 
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.math.BigDecimal;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -167,11 +168,10 @@ public abstract class AbstractTypeIntrospector<T> implements ITypeIntrospector<T
             return;
 
         try {
+
             for (int i = 0; i < values.length; i++) {
                 Object value = _typeDesc.getFixedProperty(i).beforeSerialize(values[i]);
-                if (value instanceof BigDecimal){
-                    value =((BigDecimal) value).stripTrailingZeros();
-                }
+                value = TransformUtils.stripTrailingZerosIfNeeded(value);
                 values[i] = value;
             }
         } catch (IOException e) {
