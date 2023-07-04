@@ -121,16 +121,10 @@ public class ReadTakeByIdsProxyActionInfo extends CommonProxyActionInfo {
         }
 
         if (typeDesc.isRoutingSameAsId()) {
-        //gs-14947 fix for optimization in case method called twice as in read from local cache
-            if (this.ids.length > 1){
-                if (routing != null || (routings != null && routings != ids))
+            if ((routings != null && routings != ids)
+                        || (routing != null && (this.ids.length > 1 || routing != ids[0])))
                     throw new IllegalArgumentException("When the id property is used for routing, the routing argument must be null.");
-            }
-            //GS-14947 fix optimization regression due to read from localcahe
-             else {
-                if ((routing != null && routing != ids[0]) || (routings!=null && routings != ids))
-                    throw new IllegalArgumentException("When the id property is used for routing, the routing argument must be null or same as id.");
-            }
+
 
             if (typeDesc.isAutoGenerateRouting()) {
                 routings = new Object[ids.length];
