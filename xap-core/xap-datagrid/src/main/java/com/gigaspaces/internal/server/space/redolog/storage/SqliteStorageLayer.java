@@ -10,11 +10,17 @@ import com.gigaspaces.internal.server.space.redolog.DBSwapRedoLogFileConfig;
 import com.gigaspaces.internal.server.space.redolog.storage.bytebuffer.IPacketStreamSerializer;
 import com.gigaspaces.internal.server.space.redolog.storage.bytebuffer.SwapPacketStreamSerializer;
 import com.gigaspaces.start.SystemLocations;
+import com.gigaspaces.utils.FileUtils;
+import com.gigaspaces.utils.RedologFlushNotifier;
+import com.j_spaces.core.Constants;
+import com.j_spaces.kernel.ClassLoaderHelper;
+import com.j_spaces.kernel.SystemProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.sqlite.SQLiteConfig;
 
 import java.io.File;
+import java.io.IOException;
 import java.nio.file.Path;
 import java.sql.*;
 import java.util.Arrays;
@@ -34,7 +40,7 @@ public abstract class SqliteStorageLayer<T extends IReplicationOrderedPacket> {
 
     private final Path path;
     private final String dbName;
-    protected final Connection connection;
+    protected  Connection connection;
     private final ReentrantLock modifierLock = new ReentrantLock();
     protected final List<String> COLUMN_NAMES = Arrays.asList("redo_key", "type_name", "operation_type", "uuid", "packet_count", "packet_weight", "packet");
     protected final int REDO_KEY_COLUMN_INDEX = 1;
@@ -57,18 +63,25 @@ public abstract class SqliteStorageLayer<T extends IReplicationOrderedPacket> {
                 throw new StorageException("failed to mkdir " + path);
             }
         } else if (!config.shouldKeepDatabaseFile()) {
+            boolean copyRedolog = SystemProperties.getBoolean(SystemProperties.REDOLOG_COPY_ON_STARTUP, SystemProperties.REDOLOG_COPY_ON_STARTUP_DEFAULT);
+            if ( copyRedolog) {
+                long redologSize = getStorageRedoLogSize();
+                if (redologSize > 0) {
+                    try {
+                        String fullSpaceName = config.getContainerName() + ":" + config.getSpaceName();
+                        logger.info("redolog for: " + config.getContainerName() + " about to copy to target");
+                        Path target = FileUtils.copyRedologToTarget(config.getSpaceName(), fullSpaceName);
+                        logger.info("redolog for: " + config.getContainerName() + " was copied to target");
+                        FileUtils.notifyOnFlushRedologToStorage(fullSpaceName, config.getSpaceName(), redologSize, target);
+                    } catch (Throwable t) {
+                        logger.error("Fail to copy or notify redolog backup on startup :" + config.getContainerName(), t);
+                    }
+                }
+            }
             deleteDataFile();
         }
 
-        try {
-            SQLiteConfig sqLiteConfig = new SQLiteConfig();
-            String dbUrl = "jdbc:sqlite:" + path + "/" + dbName;
-            connection = connectToDB(JDBC_DRIVER, dbUrl, USER, PASS, sqLiteConfig);
-            logger.info("Successfully connected: " + dbUrl);
-        } catch (ClassNotFoundException | SQLException e) {
-            logger.error("Failed to initialize Sqlite RDBMS", e);
-            throw new StorageException("failed to initialize internal sqlite RDBMS", e);
-        }
+        connectToDB();
         if (!config.shouldKeepDatabaseFile()){
             createTable();
         }
@@ -77,6 +90,22 @@ public abstract class SqliteStorageLayer<T extends IReplicationOrderedPacket> {
         this.packetSerializer = new DBPacketSerializer<>(packetStreamSerializer == null
                 ? new SwapPacketStreamSerializer<T>() //for tests - use default one
                 : packetStreamSerializer);
+    }
+
+
+    private void connectToDB(){
+        try {
+            SQLiteConfig sqLiteConfig = new SQLiteConfig();
+            if (SystemProperties.getBoolean(SystemProperties.SQLITE_ASYNC, SystemProperties.SQLITE_ASYNC_DEFAULT))
+                sqLiteConfig.setSynchronous(SQLiteConfig.SynchronousMode.OFF);
+
+            String dbUrl = "jdbc:sqlite:" + path + "/" + dbName;
+            connection = connectToDB(JDBC_DRIVER, dbUrl, USER, PASS, sqLiteConfig);
+            logger.info("Successfully connected: " + dbUrl);
+        } catch (ClassNotFoundException | SQLException e) {
+            logger.error("Failed to initialize Sqlite RDBMS", e);
+            throw new StorageException("failed to initialize internal sqlite RDBMS", e);
+        }
     }
 
     private Connection connectToDB(String jdbcDriver, String dbUrl, String user, String password, SQLiteConfig sqLiteConfig) throws ClassNotFoundException, SQLException {
@@ -90,6 +119,37 @@ public abstract class SqliteStorageLayer<T extends IReplicationOrderedPacket> {
         conn = DriverManager.getConnection(dbUrl, properties);
         return conn;
     }
+
+    protected long getStorageRedoLogSize() {
+        boolean closeConnection = false;
+        try {
+            if (connection == null) {
+                connectToDB();
+                closeConnection = true;
+            }
+            String query = " SELECT COUNT(*) FROM " + TABLE_NAME;
+            ResultSet rs = executeQuery(query);
+            if (rs == null || !rs.next()) return 0;
+            return rs.getLong(1);
+        }
+        catch (Throwable t){
+            logger.error("Fail to get storage redolog size for: " +dbName);
+            return  0;
+        }
+        finally {
+            if (closeConnection) {
+                try {
+                    connection.close();
+                }
+                catch (SQLException e) {
+                }
+                connection = null;
+            }
+        }
+
+    }
+
+
 
     private void createTable() throws StorageException {
         String query = "CREATE TABLE " + TABLE_NAME +

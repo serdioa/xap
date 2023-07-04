@@ -765,6 +765,14 @@ public class SystemProperties extends CommonSystemProperties {
     public static final String REPLICATION_REPLICA_PROGRESS_TIMEOUT = "com.gs.replication.replicaProgressTimeout";
     public static final long REPLICATION_REPLICA_PROGRESS_TIMEOUT_DEFAULT = 60000;
 
+    public static final String REDOLOG_FLUSH_NOTIFY_CLASS = "com.gs.redolog.flush.notify.class";
+    public static final String REDOLOG_FLUSH_ON_SHUTDOWN = "com.gs.redolog.flush.on.shutdown";
+
+    public static final boolean REDOLOG_FLUSH_ON_SHUTDOWN_DEFAULT = false;
+
+    public static final String REDOLOG_COPY_ON_STARTUP = "com.gs.redolog.copy.on.startup";
+
+    public static final boolean REDOLOG_COPY_ON_STARTUP_DEFAULT = false;
     public static final String REQUIRED_CONSISTENCY_LEVEL = "com.gs.replication.required_consistency_level";
     public static final int REQUIRED_CONSISTENCY_LEVEL_DEFAULT = 1;
 
@@ -785,6 +793,10 @@ public class SystemProperties extends CommonSystemProperties {
 
     public static final String BLOCKING_CLIENT_CONNECT = "com.gs.blocking.client.client.connect";
     public static final String BLOCKING_CLIENT_CONNECT_DEFAULT = "false";
+
+    public static final String SQLITE_ASYNC ="com.gs.sqlite.async";
+
+    public static final boolean SQLITE_ASYNC_DEFAULT = false;
 
     public static final int EXTRA_BACKUP_SPACE_RESOLUTION_RETRIES_DEFAULT = 15;
     public static final String EXTRA_BACKUP_SPACE_RESOLUTION_RETRIES = "com.gs.cluster.extra_backup_space_resolution_retries";
