@@ -788,28 +788,28 @@ public class TemplateHolder extends AbstractSpaceItem implements ITemplateHolder
         final long completedGeneration = mvccGenerationsState == null ? -1 : mvccGenerationsState.getCompletedGeneration();
         final long overrideGeneration = entryHolder.getOverrideGeneration();
         final long committedGeneration = entryHolder.getCommittedGeneration();
-        final boolean isCommittedEntry = committedGeneration != -1;
+        final boolean isDirtyEntry = committedGeneration == -1;
         final boolean isOverridedEntry = overrideGeneration != -1;
         final boolean isDirtyRead = cacheManager.getEngine().indicateDirtyRead(this);
-        if (isActiveRead(cacheManager.getEngine())) { //active read
-            return !isDirtyRead ? isCommittedEntry : isDirtyRead; // after the lock retrieving latest not overrided entry to rematch
+        if (isActiveRead(cacheManager.getEngine())) { // active read
+            return !isDirtyRead ? !isDirtyEntry : isDirtyRead; // after the lock retrieving latest not overrided entry to rematch
         }
-        final boolean committedIsCompleted = isCommittedEntry && (committedGeneration <= completedGeneration)
+        final boolean committedIsCompleted = !isDirtyEntry && (committedGeneration <= completedGeneration)
                 && (!mvccGenerationsState.isUncompletedGeneration(committedGeneration));
-        if (isHistoricalRead(cacheManager.getEngine())) { //historic read
+        if (isHistoricalRead(cacheManager.getEngine())) { // historical read
             final boolean overrideIsValidForHistoricalRead = !isOverridedEntry
                     || (overrideGeneration > completedGeneration)
                     || (overrideGeneration <= completedGeneration && mvccGenerationsState.isUncompletedGeneration(overrideGeneration));
-            if (isDirtyRead) {
+            if (isDirtyRead) { // section to verify that dirty entry can't be matched
                 final long latestCommittedGeneration = cacheManager.getMVCCShellEntryCacheInfoByUid(entryHolder.getUID())
                         .getLatestCommittedOrHollow().getCommittedGeneration(); // latest committed gen from shell by uid
                 if (latestCommittedGeneration != -1 // latest committed entry is not hollow
                         && latestCommittedGeneration > completedGeneration // completed is less than latest -> not committed entry shouldn't be matched
-                        && (!mvccGenerationsState.isUncompletedGeneration(latestCommittedGeneration))) { //if latestCommitted is completed
+                        && (!mvccGenerationsState.isUncompletedGeneration(latestCommittedGeneration))) { // if latestCommitted is completed
                     return committedIsCompleted && overrideIsValidForHistoricalRead; // not committed is not considered
                 }
             }
-            return !isCommittedEntry || (committedIsCompleted && overrideIsValidForHistoricalRead);
+            return isDirtyEntry || (committedIsCompleted && overrideIsValidForHistoricalRead); // if dirty or completed with valid override version
 
         } else { //locking operations (take/update/exclusiveRead)
             if (isOverridedEntry
@@ -821,7 +821,7 @@ public class TemplateHolder extends AbstractSpaceItem implements ITemplateHolder
                     && (!mvccGenerationsState.isUncompletedGeneration(committedGeneration))) {
                 throw new MVCCEntryModifyConflictException(mvccGenerationsState, entryHolder, getTemplateOperation()); // entry already younger than completedGen
             }
-            return !isCommittedEntry || (committedIsCompleted && !isOverridedEntry);
+            return isDirtyEntry || (committedIsCompleted && !isOverridedEntry);
         }
     }
 
