@@ -988,19 +988,20 @@ public class ReplicationNode
         }
         finally {
                 boolean flushRedolog = SystemProperties.getBoolean(SystemProperties.REDOLOG_FLUSH_ON_SHUTDOWN, SystemProperties.REDOLOG_FLUSH_ON_SHUTDOWN_DEFAULT);
-                long redologSize = getBackLogStatistics().size();
-                if (redologSize> 0 && flushRedolog){
-                    try {
-                        _logger.info("redolog for: " + _name + " about to flush to Storage");
-                        if (flushRedoLogToStorage() >=0) {
-                            String spaceName = _name.substring(_name.indexOf(":") + 1, _name.length());
-                            Path target = FileUtils.copyRedologToTarget(spaceName, _name);
-                            FileUtils.notifyOnFlushRedologToStorage(_name, spaceName, redologSize, target);
-                            _logger.info("redolog for: " + _name + " was flushed to Storage");
+                if (flushRedolog) {
+                    long redologSize = getBackLogStatistics().size();
+                    if (redologSize > 0 && flushRedolog) {
+                        try {
+                            _logger.info("redolog for: " + _name + " about to flush to Storage");
+                            if (flushRedoLogToStorage() >= 0) {
+                                String spaceName = _name.substring(_name.indexOf(":") + 1, _name.length());
+                                Path target = FileUtils.copyRedologToTarget(spaceName, _name);
+                                FileUtils.notifyOnFlushRedologToStorage(_name, spaceName, redologSize, target);
+                                _logger.info("redolog for: " + _name + " was flushed to Storage");
+                            }
+                        } catch (Throwable t) {
+                            _logger.error("Fail to Flush redolog to Storage for: " + _name, t);
                         }
-                    }
-                    catch (Throwable t){
-                        _logger.error("Fail to Flush redolog to Storage for: "+ _name, t);
                     }
                 }
         }
