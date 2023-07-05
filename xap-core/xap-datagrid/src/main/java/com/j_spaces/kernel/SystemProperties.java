@@ -853,6 +853,11 @@ public class SystemProperties extends CommonSystemProperties {
 
     private static final Map<String, String> defaultValues = initDefaultValues();
 
+    public static String BIG_DECIMAL_STRIP_TRAILING_ZEROS="com.gs.strip-trailing-zeros";
+
+    public static boolean BIG_DECIMAL_STRIP_TRAILING_ZEROS_DEFAULT=true;
+
+
     private static Map<String, String> initDefaultValues() {
         Map<String, String> result = new HashMap<>(30);
 
