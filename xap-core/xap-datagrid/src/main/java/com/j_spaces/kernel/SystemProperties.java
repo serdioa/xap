@@ -856,13 +856,20 @@ public class SystemProperties extends CommonSystemProperties {
 
     public static String MATCH_BY_ROUTING_PROPERTY = "com.gs.id-query.match-routing";
 
+    public static final String SPACE_RECOVERY_MAX_OPERATIONS_AFTER_COPY="com.gs.recovery.max.operations.after.copy";
+    public static final int SPACE_RECOVERY_MAX_OPERATIONS_AFTER_COPY_DEFAULT=100000;
+
+    public static final String SPACE_RECOVERY_FILTER_AFTER_COPY ="com.gs.recovery.filter.after.copy.enabled";
+
+    public static final boolean SPACE_RECOVERY_FILTER_AFTER_COPY_DEFAULT = true;
+
     public static String BIG_DECIMAL_STRIP_TRAILING_ZEROS="com.gs.strip-trailing-zeros";
 
     public static boolean BIG_DECIMAL_STRIP_TRAILING_ZEROS_DEFAULT=true;
 
-
-
     private static final Map<String, String> defaultValues = initDefaultValues();
+
+
 
     private static Map<String, String> initDefaultValues() {
         Map<String, String> result = new HashMap<>(30);
