@@ -287,4 +287,16 @@ public class SpaceContext implements SmartExternalizable {
     public void setQuiesceToken(QuiesceToken quiesceToken) {
         this.quiesceToken = quiesceToken;
     }
+
+    @Override
+    public String toString() {
+        return "SpaceContext{" +
+                "securityContext=" + securityContext +
+                ", chunksMapGeneration=" + chunksMapGeneration +
+                ", fromGateway=" + fromGateway +
+                ", quiesceToken=" + quiesceToken +
+                ", clustered=" + clustered +
+                ", generationsState=" + generationsState +
+                '}';
+    }
 }

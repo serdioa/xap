@@ -1038,7 +1038,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
             throws TransactionException, UnusableEntryException, UnknownTypeException, RemoteException, InterruptedException {
         monitorMemoryUsage(false);
         //set default isolation level for MVCC
-        if (isMvccEnabled() && ReadModifiers.isDefaultReadModifier(operationModifiers) && spaceContext.getMVCCGenerationsState() != null) {
+        if (isMvccEnabled() && ReadModifiers.isDefaultReadModifier(operationModifiers) && spaceContext != null && spaceContext.getMVCCGenerationsState() != null) {
             operationModifiers = Modifiers.add(operationModifiers, ReadModifiers.READ_COMMITTED);
         }
         if (take)
@@ -1193,7 +1193,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
                              int operationModifiers)
             throws TransactionException, UnusableEntryException, UnknownTypeException, RemoteException, InterruptedException {
         //set default isolation level for MVCC
-        if (isMvccEnabled() && ReadModifiers.isDefaultReadModifier(operationModifiers) && sc.getMVCCGenerationsState() != null) {
+        if (isMvccEnabled() && ReadModifiers.isDefaultReadModifier(operationModifiers) && sc != null && sc.getMVCCGenerationsState() != null) {
             operationModifiers = Modifiers.add(operationModifiers, ReadModifiers.READ_COMMITTED);
         }
         if (Modifiers.contains(operationModifiers, Modifiers.EXPLAIN_PLAN)) {
@@ -1983,7 +1983,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
             throws TransactionException, UnusableEntryException, UnknownTypeException, RemoteException, InterruptedException {
         monitorMemoryUsage(false);
         //set default isolation level for MVCC
-        if (isMvccEnabled() && ReadModifiers.isDefaultReadModifier(operationModifiers) && sc.getMVCCGenerationsState() != null) {
+        if (isMvccEnabled() && ReadModifiers.isDefaultReadModifier(operationModifiers) && sc != null && sc.getMVCCGenerationsState() != null) {
             operationModifiers = Modifiers.add(operationModifiers, ReadModifiers.READ_COMMITTED);
         }
         if (Modifiers.contains(operationModifiers, Modifiers.EXPLAIN_PLAN)) {
@@ -2154,7 +2154,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
             throws UnusableEntryException, UnknownTypeException, TransactionException, RemoteException {
         monitorMemoryUsage(false);
         //set default isolation level for MVCC
-        if (isMvccEnabled() && ReadModifiers.isDefaultReadModifier(operationModifiers) && sc.getMVCCGenerationsState() != null) {
+        if (isMvccEnabled() && ReadModifiers.isDefaultReadModifier(operationModifiers) && sc != null && sc.getMVCCGenerationsState() != null) {
             operationModifiers = Modifiers.add(operationModifiers, CountModifiers.READ_COMMITTED.getCode());
         }
         if (Modifiers.contains(operationModifiers, Modifiers.EXPLAIN_PLAN)) {
@@ -3936,6 +3936,9 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
         try {
             performTemplateOnEntrySA(context, template, entry,
                     makeWaitForInfo);
+            if (getLogger().isDebugEnabled() && isMvccEnabled() && entry != null) {
+                getLogger().debug("Operated mvcc entry: {}", entry);
+            }
             return entry;
         } catch (EntryDeletedException | NoMatchException | FifoException ex) {
             return null;
@@ -3943,7 +3946,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
             if (template.isFifoGroupPoll())
                 context.setFifoGroupScanEncounteredXtnConflict(true);
             if (isMvccEnabled() && (!template.isReadOperation() || template.isExclusiveReadLockOperation())) {
-                throw new MVCCEntryModifyConflictException(template.getGenerationsState(), (MVCCEntryHolder) entry, template.getTemplateOperation());
+                throw new MVCCEntryModifyConflictException(template.getGenerationsState(), (MVCCEntryHolder) entry, template.getTemplateOperation(), ex);
             }
             return null;
         } catch (TransactionNotActiveException ex) {
@@ -4026,7 +4029,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
             return null;
         } catch (TransactionConflictException tcx) {
             if (isMvccEnabled() && (!template.isReadOperation() || template.isExclusiveReadLockOperation())) {
-                throw new MVCCEntryModifyConflictException(template.getGenerationsState(), (MVCCEntryHolder) entry, template.getTemplateOperation());
+                throw new MVCCEntryModifyConflictException(template.getGenerationsState(), (MVCCEntryHolder) entry, template.getTemplateOperation(), tcx);
             }
             return null;
         } catch (NoMatchException | FifoException ex) { //cannot happen
@@ -4648,14 +4651,17 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
             // if modify operation(exclusive read or not read) -> throw an exception
             if (!needRematch && isMvccEnabled() && !tmpl.isHistoricalRead(this)) {
                 MVCCShellEntryCacheInfo mvccShellEntryCacheInfoByUid = _cacheManager.getMVCCShellEntryCacheInfoByUid(ent.getUID());
-                MVCCEntryHolder activeData = mvccShellEntryCacheInfoByUid.getEntryHolder();
+                MVCCEntryHolder activeData = (tmpl.isReadCommittedRequested() && (tmpl.getXidOriginated() == null || tmpl.getXidOriginated() != entry.getWriteLockOwner())) ?
+                            mvccShellEntryCacheInfoByUid.getLatestCommittedOrHollow() :
+                            mvccShellEntryCacheInfoByUid.getEntryHolder();
                 if (activeData != null && activeData != entry) {
                     if (!tmpl.isActiveRead(this)) {
                         throw new MVCCEntryModifyConflictException(tmpl.getGenerationsState(), (MVCCEntryHolder) entry, tmpl.getTemplateOperation());
                     }
-                    entry = tmpl.isReadCommittedRequested() ?
-                            mvccShellEntryCacheInfoByUid.getLatestOrHollow() :
-                            activeData;
+                    if (getLogger().isDebugEnabled()) {
+                        getLogger().debug("{}: need rematch for entry: {}, new entry: {}, genState: {}", Thread.currentThread().getName(), entry, activeData, tmpl.getGenerationsState());
+                    }
+                    entry = activeData;
                     needRematch = true;
                 }
             }
@@ -4734,14 +4740,17 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
             // if modify operation(exclusive read or not read) -> throw an exception
             if (!needRematch && isMvccEnabled() && !tmpl.isHistoricalRead(this)) {
                 MVCCShellEntryCacheInfo mvccShellEntryCacheInfoByUid = _cacheManager.getMVCCShellEntryCacheInfoByUid(ent.getUID());
-                MVCCEntryHolder activeData = mvccShellEntryCacheInfoByUid.getEntryHolder();
+                MVCCEntryHolder activeData = (tmpl.isReadCommittedRequested() && (tmpl.getXidOriginated() == null || tmpl.getXidOriginated() != entry.getWriteLockOwner())) ?
+                        mvccShellEntryCacheInfoByUid.getLatestCommittedOrHollow() :
+                        mvccShellEntryCacheInfoByUid.getEntryHolder();
                 if (activeData != null && activeData != entry) {
                     if (!tmpl.isActiveRead(this)) {
                         throw new MVCCEntryModifyConflictException(tmpl.getGenerationsState(), (MVCCEntryHolder) entry, tmpl.getTemplateOperation());
                     }
-                    entry = tmpl.isReadCommittedRequested() ?
-                            mvccShellEntryCacheInfoByUid.getLatestOrHollow() :
-                            activeData;
+                    if (getLogger().isDebugEnabled()) {
+                        getLogger().debug("{}: need rematch for entry: {}, new entry: {}, genState: {}", Thread.currentThread().getName(), entry, activeData, tmpl.getGenerationsState());
+                    }
+                    entry = activeData;
                     needRematch = true;
                 }
             }
@@ -4846,6 +4855,9 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
                     MatchResult mr = template.match(_cacheManager, entry, -1 /*skipIndex*/, null, true /*safeEntry*/, context, _templateScanner.getRegexCache());
                     tryMaster = (mr == MatchResult.MASTER || mr == MatchResult.MASTER_AND_SHADOW);
                     tryShadow = (mr == MatchResult.SHADOW || mr == MatchResult.MASTER_AND_SHADOW);
+                    if (getLogger().isDebugEnabled() && isMvccEnabled()) {
+                        getLogger().debug("{}: rematching result={} for entry {}", Thread.currentThread().getName(), mr != MatchResult.NONE, entry);
+                    }
                 }
             }
         } else {//non blocking read
