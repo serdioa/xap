@@ -27,6 +27,7 @@ import com.gigaspaces.internal.query.explainplan.SingleExplainPlan;
 import com.gigaspaces.internal.server.metadata.IServerTypeDesc;
 import com.gigaspaces.internal.server.space.*;
 import com.gigaspaces.internal.server.space.iterator.ServerIteratorInfo;
+import com.gigaspaces.internal.server.space.mvcc.MVCCEntryModifyConflictException;
 import com.gigaspaces.internal.server.space.mvcc.MVCCGenerationsState;
 import com.gigaspaces.internal.transport.AbstractProjectionTemplate;
 import com.gigaspaces.internal.transport.IEntryPacket;
@@ -37,6 +38,7 @@ import com.j_spaces.core.cache.CacheManager;
 import com.j_spaces.core.cache.TerminatingFifoXtnsInfo;
 import com.j_spaces.core.cache.TypeData;
 import com.j_spaces.core.cache.context.Context;
+import com.j_spaces.core.cache.mvcc.MVCCEntryHolder;
 import com.j_spaces.core.client.*;
 import com.j_spaces.core.filters.FilterManager;
 import com.j_spaces.jdbc.builder.QueryTemplatePacket;
@@ -721,6 +723,8 @@ public class TemplateHolder extends AbstractSpaceItem implements ITemplateHolder
             res = MatchResult.NONE;
         else if (_uidToOperateBy != null && (!_uidToOperateBy.equals(entry.getUID())))
             res = MatchResult.NONE;
+        else if (cacheManager.isMVCCEnabled() && (((MVCCEntryHolder) entry).isLogicallyDeleted() || entry.isHollowEntry()))
+            res = MatchResult.NONE;
         else {
             //obtain the relevant field values
             masterEntryData = entry.getTxnEntryData();
@@ -751,6 +755,15 @@ public class TemplateHolder extends AbstractSpaceItem implements ITemplateHolder
             }
         }
 
+        if (cacheManager.isMVCCEnabled()
+                && (res != MatchResult.NONE || ((MVCCEntryHolder) entry).isLogicallyDeleted())) {
+            if (isMVCCEntryMatchedByGenerationsState((MVCCEntryHolder) entry, cacheManager)) {
+                res = MatchResult.MASTER;
+            } else {
+                res = MatchResult.NONE;
+            }
+        }
+
         if (context != null) {
             if (res == MatchResult.NONE)
                 context.setRawmatchResult(null, MatchResult.NONE, null, null);
@@ -768,6 +781,48 @@ public class TemplateHolder extends AbstractSpaceItem implements ITemplateHolder
             }
         }
         return res;
+    }
+
+    private boolean isMVCCEntryMatchedByGenerationsState(MVCCEntryHolder entryHolder, CacheManager cacheManager) {
+        final MVCCGenerationsState mvccGenerationsState = getGenerationsState();
+        final long completedGeneration = mvccGenerationsState == null ? -1 : mvccGenerationsState.getCompletedGeneration();
+        final long overrideGeneration = entryHolder.getOverrideGeneration();
+        final long committedGeneration = entryHolder.getCommittedGeneration();
+        final boolean isDirtyEntry = committedGeneration == -1;
+        final boolean isOverridenEntry = overrideGeneration != -1;
+        final boolean isDirtyRead = cacheManager.getEngine().indicateDirtyRead(this);
+        if (isActiveRead(cacheManager.getEngine())) { // active read
+            return isDirtyRead || !isDirtyEntry; // after the lock retrieving latest not overriden entry to rematch
+        }
+        final boolean committedIsCompleted = !isDirtyEntry && (committedGeneration <= completedGeneration)
+                && (!mvccGenerationsState.isUncompletedGeneration(committedGeneration));
+        if (isHistoricalRead(cacheManager.getEngine())) { // historical read
+            final boolean isOverridenEntryGenerationValidForHistoricalRead = !isOverridenEntry
+                    || (overrideGeneration > completedGeneration)
+                    || (overrideGeneration <= completedGeneration && mvccGenerationsState.isUncompletedGeneration(overrideGeneration));
+            if (isDirtyRead) { // section to verify that dirty entry can't be matched
+                final long latestCommittedGeneration = cacheManager.getMVCCShellEntryCacheInfoByUid(entryHolder.getUID())
+                        .getLatestCommittedOrHollow().getCommittedGeneration(); // latest committed gen from shell by uid
+                if (latestCommittedGeneration != -1 // latest committed entry is not hollow
+                        && latestCommittedGeneration > completedGeneration // completed is less than latest -> not committed entry shouldn't be matched
+                        && (!mvccGenerationsState.isUncompletedGeneration(latestCommittedGeneration))) { // if latestCommitted is completed
+                    return committedIsCompleted && isOverridenEntryGenerationValidForHistoricalRead; // not committed is not considered
+                }
+            }
+            return isDirtyEntry || (committedIsCompleted && isOverridenEntryGenerationValidForHistoricalRead); // if dirty or completed with valid override version
+
+        } else { //locking operations (take/update/exclusiveRead)
+            if (isOverridenEntry
+                    && overrideGeneration > completedGeneration
+                    && !mvccGenerationsState.isUncompletedGeneration(overrideGeneration)) {
+                throw new MVCCEntryModifyConflictException(mvccGenerationsState, entryHolder, getTemplateOperation()); // overriden can't be modified
+            }
+            if ((committedGeneration > completedGeneration)
+                    && (!mvccGenerationsState.isUncompletedGeneration(committedGeneration))) {
+                throw new MVCCEntryModifyConflictException(mvccGenerationsState, entryHolder, getTemplateOperation()); // entry already younger than completedGen
+            }
+            return isDirtyEntry || (committedIsCompleted && !isOverridenEntry);
+        }
     }
 
     @Override
@@ -1245,11 +1300,17 @@ public class TemplateHolder extends AbstractSpaceItem implements ITemplateHolder
     @Override
     public boolean isActiveRead(SpaceEngine engine) {
         if (engine.isMvccEnabled()) {
-            return !isReadOperation()
-                    || (mvccGenerationsState == null
-                        || mvccGenerationsState.getCompletedGeneration() == -1
-                        || engine.indicateDirtyRead(this));
+            return isReadOperation() && mvccGenerationsState == null;
         }
         return true;
+    }
+
+    /*
+     * relevant for mvcc only
+     * does operation allow to read old mvcc generations
+     */
+    @Override
+    public boolean isHistoricalRead(SpaceEngine engine) {
+        return isReadOperation() && !isExclusiveReadLockOperation() && !isActiveRead(engine);
     }
 }

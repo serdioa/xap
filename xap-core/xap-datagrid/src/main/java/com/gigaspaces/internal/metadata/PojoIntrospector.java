@@ -26,7 +26,9 @@ import com.gigaspaces.internal.version.PlatformLogicalVersion;
 import com.gigaspaces.metadata.SpaceMetadataException;
 import com.gigaspaces.metadata.SpaceMetadataValidationException;
 import com.gigaspaces.time.SystemTime;
+import com.gigaspaces.utils.TransformUtils;
 import com.j_spaces.core.IGSEntry;
+import com.j_spaces.kernel.SystemProperties;
 import net.jini.core.lease.Lease;
 
 import java.io.IOException;
@@ -258,9 +260,7 @@ public class PojoIntrospector<T> extends AbstractTypeIntrospector<T> {
                     values[i] = null;
                 else {
                     Object value = property.convertToNullIfNeeded(values[i]);
-                    if (value instanceof BigDecimal){
-                        value = ((BigDecimal) value).stripTrailingZeros();
-                    }
+                    value = TransformUtils.stripTrailingZerosIfNeeded(value);
                     values[i] = value;
                 }
             }
@@ -289,9 +289,7 @@ public class PojoIntrospector<T> extends AbstractTypeIntrospector<T> {
 
     private Object getValue(T target, SpacePropertyInfo property) {
         Object value = property.getValue(target);
-        if(value instanceof BigDecimal){
-            value = ((BigDecimal) value).stripTrailingZeros();
-        }
+        value = TransformUtils.stripTrailingZerosIfNeeded(value);
         return property.convertToNullIfNeeded(value);
     }
 

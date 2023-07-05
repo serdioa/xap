@@ -65,12 +65,12 @@ public class MVCCShellEntryCacheInfo extends MemoryBasedEntryCacheInfo {
         return allEntryGenerations.peekLast();
     }
 
-    public boolean isLogicallyDeletedOrEmpty() {
+    public MVCCEntryHolder getLatestCommittedOrHollow() {
         MVCCEntryCacheInfo latestGeneration = getLatestGenerationCacheInfo();
         if (latestGeneration != null) {
-            return latestGeneration.getEntryHolder().isLogicallyDeleted();
+            return latestGeneration.getEntryHolder();
         }
-        return true; //if no generations exist it's same as logically deleted
+        return EntryHolderFactory.createMvccShellHollowEntry(serverTypeDesc, uid);
     }
 
     @Override
@@ -84,11 +84,7 @@ public class MVCCShellEntryCacheInfo extends MemoryBasedEntryCacheInfo {
         if (dirtyEntry != null) {
             return dirtyEntry.getEntryHolder();
         }
-        MVCCEntryCacheInfo latestGeneration = getLatestGenerationCacheInfo();
-        if (latestGeneration != null) {
-            return latestGeneration.getEntryHolder();
-        }
-        return EntryHolderFactory.createMvccShellHollowEntry(serverTypeDesc, uid);
+        return getLatestCommittedOrHollow();
     }
 
     @Override

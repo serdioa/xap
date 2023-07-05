@@ -16,6 +16,7 @@
 
 package com.gigaspaces.internal.cluster.node.impl;
 
+import com.gigaspaces.cluster.activeelection.SpaceMode;
 import com.gigaspaces.cluster.replication.IRedoLogStatistics;
 import com.gigaspaces.cluster.replication.IncomingReplicationOutOfSyncException;
 import com.gigaspaces.cluster.replication.RedoLogStatistics;
@@ -52,19 +53,33 @@ import com.gigaspaces.internal.utils.concurrent.IAsyncHandlerProvider;
 import com.gigaspaces.internal.utils.threadlocal.PoolFactory;
 import com.gigaspaces.internal.utils.threadlocal.ThreadLocalPool;
 import com.gigaspaces.logger.Constants;
+import com.gigaspaces.lrmi.DefaultNetworkMapper;
+import com.gigaspaces.lrmi.INetworkMapper;
 import com.gigaspaces.metrics.MetricConstants;
 import com.gigaspaces.metrics.MetricRegistrator;
+import com.gigaspaces.start.SystemLocations;
 import com.gigaspaces.time.SystemTime;
+import com.gigaspaces.utils.FileUtils;
+import com.gigaspaces.utils.RedologFlushNotifier;
 import com.j_spaces.core.OperationID;
 import com.j_spaces.core.cache.blobStore.BlobStoreReplicaConsumeHelper;
 import com.j_spaces.core.cache.blobStore.BlobStoreReplicationBulkConsumeHelper;
+import com.j_spaces.core.cluster.RedoLogSwapStorageType;
 import com.j_spaces.core.exception.ClosedResourceException;
+import com.j_spaces.kernel.ClassLoaderHelper;
+import com.j_spaces.kernel.SystemProperties;
+import com.sun.nio.file.ExtendedCopyOption;
 import net.jini.core.event.EventRegistration;
 import net.jini.core.transaction.server.ServerTransaction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.rmi.RemoteException;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Map;
@@ -860,7 +875,12 @@ public class ReplicationNode
         // get shared backlog - use the first backlog
         for (IReplicationSourceGroup group : getReplicationSourceGroups()) {
             IReplicationGroupBacklog groupBacklog = group.getGroupBacklog();
-            return groupBacklog.flushRedoLogToStorage();
+            if (groupBacklog.getSwapStorageType().equals(RedoLogSwapStorageType.SQLITE))
+                return groupBacklog.flushRedoLogToStorage();
+            else {
+                _logger.error("Flush is not supported for ByteBuffer swap redolog file.");
+                return -1;
+            }
         }
         return 0;
     }
@@ -953,21 +973,45 @@ public class ReplicationNode
             _logger.debug(getLogPrefix()
                     + "initiating flush of pending replication");
         long remainingTime = units.toMillis(timeout);
-        for (IReplicationSourceGroup sourceGroup : _groupsHolder.getSourceGroups()) {
-            long iterationStartTime = SystemTime.timeMillis();
-            boolean flushPendingReplication = sourceGroup.flushPendingReplication(remainingTime,
-                    TimeUnit.MILLISECONDS);
-            if (!flushPendingReplication)
-                return false;
-            remainingTime = remainingTime
-                    - (SystemTime.timeMillis() - iterationStartTime);
-            if (remainingTime <= 0)
-                return false;
+        try {
+            for (IReplicationSourceGroup sourceGroup : _groupsHolder.getSourceGroups()) {
+                long iterationStartTime = SystemTime.timeMillis();
+                boolean flushPendingReplication = sourceGroup.flushPendingReplication(remainingTime,
+                        TimeUnit.MILLISECONDS);
+                if (!flushPendingReplication)
+                    return false;
+                remainingTime = remainingTime
+                        - (SystemTime.timeMillis() - iterationStartTime);
+                if (remainingTime <= 0)
+                    return false;
+            }
         }
+        finally {
+                boolean flushRedolog = SystemProperties.getBoolean(SystemProperties.REDOLOG_FLUSH_ON_SHUTDOWN, SystemProperties.REDOLOG_FLUSH_ON_SHUTDOWN_DEFAULT);
+                if (flushRedolog) {
+                    long redologSize = getBackLogStatistics().size();
+                    if (redologSize > 0 && flushRedolog) {
+                        try {
+                            _logger.info("redolog for: " + _name + " about to flush to Storage");
+                            if (flushRedoLogToStorage() >= 0) {
+                                String spaceName = _name.substring(_name.indexOf(":") + 1, _name.length());
+                                Path target = FileUtils.copyRedologToTarget(spaceName, _name);
+                                FileUtils.notifyOnFlushRedologToStorage(_name, spaceName, redologSize, target);
+                                _logger.info("redolog for: " + _name + " was flushed to Storage");
+                            }
+                        } catch (Throwable t) {
+                            _logger.error("Fail to Flush redolog to Storage for: " + _name, t);
+                        }
+                    }
+                }
+        }
+
         if (_logger.isInfoEnabled())
             _logger.info(getLogPrefix() + "completed replication.");
         return true;
     }
+
+
 
     public String dumpState() {
         return "---- Replication Groups ----" + StringUtils.NEW_LINE
@@ -1026,7 +1070,6 @@ public class ReplicationNode
     public IDirectPersistencySyncHandler getDirectPesistencySyncHandler() {
         return _directPesistencySyncHandler;
     }
-
 
     @Override
     public DirectPersistencyBackupSyncIteratorHandler getDirectPersistencyBackupSyncIteratorHandler() {

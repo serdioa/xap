@@ -22,9 +22,7 @@ import com.gigaspaces.security.AuthorityFactory;
 import com.gigaspaces.security.authorities.PopulatedRoleAuthority;
 import com.google.common.collect.Lists;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 
 /**
  * Models user details retrieved by a {@link UserManager}. <p> Implementors may use this class
@@ -40,6 +38,7 @@ public class User implements UserDetails {
     private final String username;
     private String password;
     private final Authority[] authorities;
+    private Set<String> roles;
 
     public User(String username, String password) {
         this.username = username;
@@ -57,10 +56,13 @@ public class User implements UserDetails {
         this.username = username;
         this.password = password;
         List<Authority> authorityList = new ArrayList<>();
+        Set<String> mutededRoles = new HashSet<>();
         for (PopulatedRoleAuthority populatedRoleAuthority : authorities) {
             authorityList.addAll(Arrays.asList(
                     populatedRoleAuthority.getAuthorities()));
+            mutededRoles.add(populatedRoleAuthority.getRole());
         }
+        roles = Collections.unmodifiableSet(mutededRoles);
         this.authorities = authorityList.toArray(new Authority[authorityList.size()]);
     }
 
@@ -71,6 +73,10 @@ public class User implements UserDetails {
         for (int i = 0; i < authorities.length; ++i) {
             this.authorities[i] = AuthorityFactory.valueOf(authorities[i]);
         }
+    }
+
+    public Set<String> roles() {
+        return roles;
     }
 
     /*
@@ -147,5 +153,12 @@ public class User implements UserDetails {
         return true;
     }
 
-
+    @Override
+    public String toString() {
+        return "User{" +
+                "username='" + username + '\'' +
+                ", password='" + password + '\'' +
+                ", authorities=" + Arrays.toString(authorities) +
+                '}';
+    }
 }

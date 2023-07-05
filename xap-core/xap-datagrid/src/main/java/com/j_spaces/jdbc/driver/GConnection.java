@@ -20,6 +20,7 @@ import com.gigaspaces.internal.client.spaceproxy.ISpaceProxy;
 import com.gigaspaces.internal.client.spaceproxy.router.SpaceProxyRouter;
 import com.gigaspaces.internal.server.space.IRemoteSpace;
 import com.gigaspaces.security.directory.DefaultCredentialsProvider;
+import com.gigaspaces.security.service.SecurityContext;
 import com.j_spaces.core.IJSpace;
 import com.j_spaces.core.admin.IRemoteJSpaceAdmin;
 import com.j_spaces.core.client.BasicTypeInfo;
@@ -32,6 +33,8 @@ import com.j_spaces.jdbc.request.SetTransaction;
 import com.j_spaces.jdbc.request.SetUseSingleSpace;
 import net.jini.core.transaction.Transaction;
 import net.jini.core.transaction.server.ServerTransaction;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.rmi.RemoteException;
@@ -50,6 +53,8 @@ import java.util.concurrent.Executor;
  */
 @com.gigaspaces.api.InternalApi
 public class GConnection implements Connection {
+
+    private static final Logger logger = LoggerFactory.getLogger(GConnection.class);
 
     public static final String READ_MODIFIERS = "readModifiers";
     public static final String JDBC_GIGASPACES = "jdbc:gigaspaces:";
@@ -111,15 +116,18 @@ public class GConnection implements Connection {
 
             String username = properties.getProperty(ConnectionContext.USER);
             String password = properties.getProperty(ConnectionContext.PASSWORD);
+            logger.info("Username is " + username + " , password is " + password);
             if (username != null && username.length() > 0) {
                 // TODO: Consider warning/skipping if already logged in.
-                space.getDirectProxy().login(new DefaultCredentialsProvider(username, password));
+                SecurityContext login = space.getDirectProxy().login(new DefaultCredentialsProvider(username, password));
+                logger.debug("SecurityContext " + login);
             }
         }
 
         qp = QueryProcessorFactory.newInstance(space, remoteSpace, properties);
         context = qp.newConnection();
         context.setSpaceContext(space.getDirectProxy().getSecurityManager().acquireContext(remoteSpace));
+        logger.debug("Acquired context is " + context.getSpaceContext() );
     }
 
     public static GConnection getInstance(IJSpace space)

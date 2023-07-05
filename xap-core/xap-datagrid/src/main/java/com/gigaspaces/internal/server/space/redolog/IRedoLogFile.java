@@ -19,6 +19,7 @@ package com.gigaspaces.internal.server.space.redolog;
 import com.gigaspaces.cluster.replication.IRedoLogFileStatistics;
 import com.gigaspaces.internal.cluster.node.impl.packets.IReplicationOrderedPacket;
 import com.gigaspaces.internal.utils.collections.ReadOnlyIterator;
+import com.j_spaces.core.cluster.RedoLogSwapStorageType;
 import com.j_spaces.core.cluster.startup.CompactionResult;
 
 /**
@@ -115,5 +116,9 @@ public interface IRedoLogFile<T extends IReplicationOrderedPacket> extends IRedo
      */
     default int flushToStorage() {
         throw new UnsupportedOperationException();
+    }
+
+    default RedoLogSwapStorageType getSwapStorageType() {
+        return RedoLogSwapStorageType.BYTE_BUFFER;
     }
 }

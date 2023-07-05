@@ -34,6 +34,7 @@ import com.gigaspaces.internal.transport.*;
 import com.gigaspaces.lrmi.classloading.LRMIClassLoadersHolder;
 import com.gigaspaces.query.IdQuery;
 import com.gigaspaces.query.IdsQuery;
+import com.gigaspaces.utils.TransformUtils;
 import com.j_spaces.core.IGSEntry;
 import com.j_spaces.core.LeaseContext;
 import com.j_spaces.core.LeaseInitializer;
@@ -41,8 +42,6 @@ import com.j_spaces.core.client.*;
 import com.j_spaces.jdbc.builder.SQLQueryTemplatePacket;
 import com.j_spaces.kernel.SystemProperties;
 import net.jini.core.entry.UnusableEntryException;
-
-import java.math.BigDecimal;
 import java.util.Map;
 
 /**
@@ -427,9 +426,8 @@ public class SpaceProxyTypeManager implements ISpaceProxyTypeManager {
 
         Object routing = idQuery.getRouting();
         Object id = idQuery.getId();
-        if (id instanceof BigDecimal){
-            id = ((BigDecimal) id).stripTrailingZeros();
-        }
+        id = TransformUtils.stripTrailingZerosIfNeeded(id);
+
         int version = idQuery.getVersion();
 
         if (typeDesc.isRoutingSameAsId()) {

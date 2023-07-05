@@ -236,4 +236,14 @@ public class SecurityContext implements SmartExternalizable {
 
         return flags;
     }
+
+    @Override
+    public String toString() {
+        return "SecurityContext{" +
+                "userDetails=" + userDetails +
+                ", authenticationToken=" + authenticationToken +
+                ", auditDetails=" + auditDetails +
+                ", authentication=" + authentication +
+                '}';
+    }
 }

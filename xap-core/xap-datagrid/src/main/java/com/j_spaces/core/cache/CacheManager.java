@@ -2504,7 +2504,11 @@ public class CacheManager extends AbstractCacheManager
      * @return <code>true</code> if this entry is in pure cache; <code>false</code> otherwise.
      */
     public boolean isEntryInPureCache(String uid) {
-        return _entries.containsKey(uid);
+        IEntryCacheInfo entryCacheInfo = _entries.get(uid);
+        if (entryCacheInfo != null && _engine.isMvccEnabled()) {
+            return !entryCacheInfo.getEntryHolder(this).isHollowEntry();
+        }
+        return entryCacheInfo != null;
     }
 
 
@@ -3674,10 +3678,6 @@ public class CacheManager extends AbstractCacheManager
         _mvccCacheManagerHandler.handleDisconnectNewMvccEntryGenerationFromTransaction(context, entry, xtnEntry);
     }
 
-    public boolean isMvccEntryValidForWrite(String uid) {
-        return _mvccCacheManagerHandler.isMvccEntryValidForWriteOnly(uid);
-    }
-
     /**
      * INITIALLOAD INFO.
      */
@@ -3715,7 +3715,7 @@ public class CacheManager extends AbstractCacheManager
                 insertedToEvictionStrategy = false;
                 alreadyIn = false;
                 IEntryCacheInfo oldEntry;
-                if(isMVCCEnabled()){
+                if (isMVCCEnabled()) {
                     oldEntry = _mvccCacheManagerHandler.insertMvccEntryToCache((MVCCEntryCacheInfo) pEntry, _entries);
                 } else {
                      oldEntry = _entries.putIfAbsent(pEntry.getUID(), pEntry);
