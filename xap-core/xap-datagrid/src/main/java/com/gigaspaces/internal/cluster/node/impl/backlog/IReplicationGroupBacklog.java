@@ -33,6 +33,7 @@ import com.gigaspaces.internal.cluster.node.impl.processlog.IProcessLogHandshake
 import com.gigaspaces.internal.cluster.node.impl.processlog.IProcessResult;
 import com.gigaspaces.internal.version.PlatformLogicalVersion;
 import com.gigaspaces.metrics.MetricRegistrator;
+import com.j_spaces.core.cluster.RedoLogSwapStorageType;
 import org.slf4j.Logger;
 
 import java.util.List;
@@ -155,6 +156,8 @@ public interface IReplicationGroupBacklog extends IDynamicSourceGroupStateListen
      * @since 16.2
      */
     int flushRedoLogToStorage();
+
+    RedoLogSwapStorageType getSwapStorageType();
 
     void monitor(OperationWeightInfo info) throws RedoLogCapacityExceededException;
 
