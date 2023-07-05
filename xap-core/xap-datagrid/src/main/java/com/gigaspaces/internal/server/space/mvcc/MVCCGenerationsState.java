@@ -1,17 +1,20 @@
 package com.gigaspaces.internal.server.space.mvcc;
 
+import com.gigaspaces.internal.server.space.redolog.storage.bytebuffer.ISwapExternalizable;
 import com.gigaspaces.serialization.SmartExternalizable;
 import com.google.common.collect.ImmutableSet;
 
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.io.Serializable;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 
 @com.gigaspaces.api.InternalApi
-public class MVCCGenerationsState implements SmartExternalizable {
+public class MVCCGenerationsState implements SmartExternalizable, ISwapExternalizable, Serializable {
     private static final long serialVersionUID = 3194738361295624722L;
     private long nextGeneration;
     private long completedGeneration;
@@ -24,6 +27,10 @@ public class MVCCGenerationsState implements SmartExternalizable {
     }
 
     public MVCCGenerationsState() {
+    }
+
+    public static MVCCGenerationsState of(long committedGeneration) {
+        return new MVCCGenerationsState(committedGeneration, 0, Collections.emptySet());
     }
 
     public long getNextGeneration() {
@@ -77,6 +84,16 @@ public class MVCCGenerationsState implements SmartExternalizable {
         for (int i = 0; i < size; i++) {
             this.uncompletedGenerations.add(in.readLong());
         }
+    }
+
+    @Override
+    public void writeToSwap(ObjectOutput out) throws IOException {
+        writeExternal(out);
+    }
+
+    @Override
+    public void readFromSwap(ObjectInput in) throws IOException, ClassNotFoundException {
+        readExternal(in);
     }
 
     @Override

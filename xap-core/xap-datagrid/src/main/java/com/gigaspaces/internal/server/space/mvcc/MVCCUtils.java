@@ -22,16 +22,18 @@ public class MVCCUtils {
         String uid = SpaceUidFactory.createUidFromTypeAndId(typeDesc.getTypeDesc(), id);
 
         MVCCShellEntryCacheInfo mvccShellEntryCacheInfo = engine.getCacheManager().getMVCCShellEntryCacheInfoByUid(uid);
-        Iterator<MVCCEntryCacheInfo> mvccEntryCacheInfoIterator = mvccShellEntryCacheInfo.descIterator();
-        while(mvccEntryCacheInfoIterator.hasNext()){
-            MVCCEntryHolder next = mvccEntryCacheInfoIterator.next().getEntryHolder();
-            MVCCEntryMetaData metaData = new MVCCEntryMetaData();
-            metaData.setCommittedGeneration(next.getCommittedGeneration());
-            metaData.setOverrideGeneration(next.getOverrideGeneration());
-            metaData.setLogicallyDeleted(next.isLogicallyDeleted());
-            metaData.setOverridingAnother(next.isOverridingAnother());
-            metaData.setVersion(next.getVersionID());
-            metaDataList.add(metaData);
+        if (mvccShellEntryCacheInfo != null) { // When we abort write operation, backup space does not contain the shell.
+            Iterator<MVCCEntryCacheInfo> mvccEntryCacheInfoIterator = mvccShellEntryCacheInfo.descIterator();
+            while(mvccEntryCacheInfoIterator.hasNext()) {
+                MVCCEntryHolder next = mvccEntryCacheInfoIterator.next().getEntryHolder();
+                MVCCEntryMetaData metaData = new MVCCEntryMetaData();
+                metaData.setCommittedGeneration(next.getCommittedGeneration());
+                metaData.setOverrideGeneration(next.getOverrideGeneration());
+                metaData.setLogicallyDeleted(next.isLogicallyDeleted());
+                metaData.setOverridingAnother(next.isOverridingAnother());
+                metaData.setVersion(next.getVersionID());
+                metaDataList.add(metaData);
+            }
         }
         engine.getCacheManager().freeCacheContext(context);
         return metaDataList;
