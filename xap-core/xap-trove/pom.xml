@@ -7,7 +7,7 @@
     <parent>
         <groupId>org.gigaspaces</groupId>
         <artifactId>xap</artifactId>
-        <version>16.4.0-SNAPSHOT</version>
+        <version>16.4.0-PIC-2206-k8s-hosts-pods-wed-896</version>
         <relativePath>../../pom.xml</relativePath>
     </parent>
     <artifactId>xap-trove</artifactId>
