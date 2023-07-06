@@ -135,7 +135,7 @@ public class PlatformVersion {
     }
 
     public static String getProductDownloadUrl(String productType, String productVersion){
-        return "http://gigaspaces-releases-eu.s3.amazonaws.com/" + productType + "/" + extractPrefix(productVersion,"-") + "/" + getProductZipName(productType,productVersion);
+        return "https://gs-releases-us-east-1.s3.amazonaws.com/" + productType + "/" + extractPrefix(productVersion,"-") + "/" + getProductZipName(productType,productVersion);
     }
 
     private static String getProductZipName(String productType, String productVersion) {
