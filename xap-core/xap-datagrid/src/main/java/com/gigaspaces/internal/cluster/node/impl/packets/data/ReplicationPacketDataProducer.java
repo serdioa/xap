@@ -148,7 +148,7 @@ public class ReplicationPacketDataProducer
             ServerTransaction transaction, ArrayList<IEntryHolder> entries,
             ReplicationOutContext replicationOutContext, ReplicationMultipleOperationType operationType) {
         AbstractTransactionReplicationPacketData transactionPacket = createTransactionPacket(operationType, transaction, replicationOutContext.getOperationID(), replicationOutContext.isFromGateway());
-        if (!entries.isEmpty()) {
+        if (entries != null && !entries.isEmpty()) {
             setMvccCommittedGenerationIfNeeded(transactionPacket, entries.get(0));
         }
         //If this is a commit or abort we take the already existing prepared content from the mediator
