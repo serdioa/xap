@@ -4965,7 +4965,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
         XtnConflictCheckIndicators cres = checkTransactionConflict(context, entry, template, isShadow);
 
         if (cres == XtnConflictCheckIndicators.NO_CONFLICT && isMvccEnabled()) {
-            cres = _mvccSpaceEngineHandler.checkTransactionConflict((MVCCEntryHolder) entry, template);
+            cres = _mvccSpaceEngineHandler.checkTransactionConflict((MVCCEntryHolder) entry, template, context);
         }
 
         if (cres != XtnConflictCheckIndicators.NO_CONFLICT) {
