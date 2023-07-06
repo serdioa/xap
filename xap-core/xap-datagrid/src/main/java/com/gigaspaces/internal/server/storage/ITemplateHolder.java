@@ -25,7 +25,6 @@ import com.gigaspaces.internal.query.RegexCache;
 import com.gigaspaces.internal.query.explainplan.SingleExplainPlan;
 import com.gigaspaces.internal.server.space.*;
 import com.gigaspaces.internal.server.space.iterator.ServerIteratorInfo;
-import com.gigaspaces.internal.server.space.mvcc.MVCCGenerationsState;
 import com.gigaspaces.internal.transport.AbstractProjectionTemplate;
 import com.gigaspaces.internal.transport.IEntryPacket;
 import com.gigaspaces.lrmi.nio.IResponseContext;
@@ -286,11 +285,7 @@ public interface ITemplateHolder extends ISpaceItem, IEntryHolder {
         return LockSubjectType.TEMPLATE;
     }
 
-    void setGenerationsSate(MVCCGenerationsState mvccGenerationsState);
+    boolean isActiveRead(SpaceEngine engine, Context context);
 
-    MVCCGenerationsState getGenerationsState();
-
-    boolean isActiveRead(SpaceEngine engine);
-
-    boolean isHistoricalRead(SpaceEngine engine);
+    boolean isHistoricalRead(SpaceEngine engine, Context context);
 }

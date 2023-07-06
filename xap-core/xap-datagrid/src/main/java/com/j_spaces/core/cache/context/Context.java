@@ -1368,4 +1368,14 @@ public class Context {
         this.mvccGenerationsState = mvccGenerationsState;
     }
 
+    public void applyMvccGenerationsState(boolean mvccEnabled, XtnEntry xtnEntry, SpaceContext sc) {
+        if (mvccEnabled) {
+            this.mvccGenerationsState = xtnEntry != null
+                    ? xtnEntry.getMVCCGenerationsState()
+                    : sc != null
+                        ? sc.getMVCCGenerationsState()
+                        : null;
+        }
+    }
+
 }
