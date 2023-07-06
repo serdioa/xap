@@ -29,7 +29,6 @@ import com.gigaspaces.internal.server.space.metadata.SpaceTypeManager;
 import com.gigaspaces.transaction.TransactionUniqueId;
 import com.j_spaces.core.OperationID;
 import com.j_spaces.core.cluster.IReplicationFilterEntry;
-
 import net.jini.core.transaction.server.ServerTransaction;
 import net.jini.core.transaction.server.TransactionParticipantDataImpl;
 

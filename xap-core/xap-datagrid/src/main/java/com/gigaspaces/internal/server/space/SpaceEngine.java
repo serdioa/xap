@@ -1038,7 +1038,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
             throws TransactionException, UnusableEntryException, UnknownTypeException, RemoteException, InterruptedException {
         monitorMemoryUsage(false);
         //set default isolation level for MVCC
-        if (isMvccEnabled() && ReadModifiers.isDefaultReadModifier(operationModifiers) && spaceContext.getMVCCGenerationsState() != null) {
+        if (isMvccEnabled() && ReadModifiers.isDefaultReadModifier(operationModifiers) && spaceContext != null && spaceContext.getMVCCGenerationsState() != null) {
             operationModifiers = Modifiers.add(operationModifiers, ReadModifiers.READ_COMMITTED);
         }
         if (take)
@@ -1193,7 +1193,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
                              int operationModifiers)
             throws TransactionException, UnusableEntryException, UnknownTypeException, RemoteException, InterruptedException {
         //set default isolation level for MVCC
-        if (isMvccEnabled() && ReadModifiers.isDefaultReadModifier(operationModifiers) && sc.getMVCCGenerationsState() != null) {
+        if (isMvccEnabled() && ReadModifiers.isDefaultReadModifier(operationModifiers) && sc != null && sc.getMVCCGenerationsState() != null) {
             operationModifiers = Modifiers.add(operationModifiers, ReadModifiers.READ_COMMITTED);
         }
         if (Modifiers.contains(operationModifiers, Modifiers.EXPLAIN_PLAN)) {
@@ -1983,7 +1983,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
             throws TransactionException, UnusableEntryException, UnknownTypeException, RemoteException, InterruptedException {
         monitorMemoryUsage(false);
         //set default isolation level for MVCC
-        if (isMvccEnabled() && ReadModifiers.isDefaultReadModifier(operationModifiers) && sc.getMVCCGenerationsState() != null) {
+        if (isMvccEnabled() && ReadModifiers.isDefaultReadModifier(operationModifiers) && sc != null && sc.getMVCCGenerationsState() != null) {
             operationModifiers = Modifiers.add(operationModifiers, ReadModifiers.READ_COMMITTED);
         }
         if (Modifiers.contains(operationModifiers, Modifiers.EXPLAIN_PLAN)) {
@@ -2154,7 +2154,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
             throws UnusableEntryException, UnknownTypeException, TransactionException, RemoteException {
         monitorMemoryUsage(false);
         //set default isolation level for MVCC
-        if (isMvccEnabled() && ReadModifiers.isDefaultReadModifier(operationModifiers) && sc.getMVCCGenerationsState() != null) {
+        if (isMvccEnabled() && ReadModifiers.isDefaultReadModifier(operationModifiers) && sc != null && sc.getMVCCGenerationsState() != null) {
             operationModifiers = Modifiers.add(operationModifiers, CountModifiers.READ_COMMITTED.getCode());
         }
         if (Modifiers.contains(operationModifiers, Modifiers.EXPLAIN_PLAN)) {

@@ -103,7 +103,7 @@ public class Blueprint {
             merged.putAll(overrides);
         merged.putIfAbsent("gs.version", PlatformVersion.getInstance().getId());
         merged.putIfAbsent("gs.home", SystemLocations.singleton().home().toString());
-        merged.putIfAbsent("java.version", JavaUtils.getVersion());
+        merged.putIfAbsent("java.version", JavaUtils.getMajorJavaVersion());
         if (!merged.containsKey("project.package-path")) {
             String groupId = (String) merged.get("project.groupId");
             if (groupId != null)
