@@ -70,11 +70,13 @@ public abstract class AbstractOnePhaseTask implements IMVCCTask<AbstractMVCCProt
             logger.warn("Exception caught while executing task", e);
             logger.info("Aborting transaction {} with generation {}.",  transaction, getActiveGeneration());
             transaction.abort();
-            if (e instanceof MVCCRetryTaskException){
-                return handleRetryFailedTask((MVCCRetryTaskException) e);
+            if (taskRetries-- > 0) {
+                logger.info("Failed to complete task, retrying with interval of {} milliseconds.", retryIntervalMillis);
+                Thread.sleep(retryIntervalMillis);
+                return runTask();
             }
             return createFailedTaskResult(e);
-        } //TODO @sagiv should abort with any exception. and we should also take care of active generation set
+        }
     }
 
     @Override
