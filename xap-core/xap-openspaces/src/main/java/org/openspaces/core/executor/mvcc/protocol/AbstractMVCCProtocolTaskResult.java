@@ -14,6 +14,7 @@ public abstract class AbstractMVCCProtocolTaskResult implements IMVCCTaskResult 
     private final Set<Long> activeGenerations = new HashSet<>();
     private long embeddedTransactionId;
     private Throwable exception;
+    private long executionTime;
 
     public Set<Long> getActiveGenerations() {
         return activeGenerations;
@@ -37,5 +38,13 @@ public abstract class AbstractMVCCProtocolTaskResult implements IMVCCTaskResult 
 
     public void setException(Throwable exception) {
         this.exception = exception;
+    }
+
+    public long getExecutionTime() {
+        return executionTime;
+    }
+
+    public void setExecutionTime(long executionTime) {
+        this.executionTime = executionTime;
     }
 }
