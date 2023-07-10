@@ -18,10 +18,9 @@ package org.openspaces.core.config.annotation;
 import com.gigaspaces.internal.server.space.tiered_storage.TieredStorageConfig;
 import com.gigaspaces.start.ClasspathBuilder;
 import org.jini.rio.boot.ServiceClassLoader;
-import org.openspaces.core.space.AbstractSpaceFactoryBean;
-import org.openspaces.core.space.EmbeddedSpaceFactoryBean;
-import org.openspaces.core.space.EmbeddedSpaceFactoryBeanConfigurer;
-import org.openspaces.core.space.TieredStorageCachePolicy;
+import org.openspaces.core.space.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.env.Environment;
 import org.springframework.core.env.PropertyResolver;
@@ -33,6 +32,8 @@ import javax.annotation.Resource;
  * @since 15.0
  */
 public class EmbeddedSpaceBeansConfig extends AbstractSpaceBeansConfig {
+
+    private static final Logger logger = LoggerFactory.getLogger(EmbeddedSpaceBeansConfig.class);
 
     // TODO: Read from external config in $gs_home/config.
     private final CustomConfigurer[] customConfigurers = new CustomConfigurer[] {
@@ -61,6 +62,7 @@ public class EmbeddedSpaceBeansConfig extends AbstractSpaceBeansConfig {
 
     protected void configure(EmbeddedSpaceFactoryBean factoryBean) {
         factoryBean.setSpaceName(getSpaceName());
+        logger.info("[configure] is secured " + secured);
         if (secured)
             factoryBean.setSecured(secured);
         if (mirrored)
