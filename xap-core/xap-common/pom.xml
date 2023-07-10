@@ -8,7 +8,7 @@
     <parent>
         <artifactId>xap</artifactId>
         <groupId>org.gigaspaces</groupId>
-        <version>16.4.0-SNAPSHOT</version>
+        <version>16.4.0-PIC-2607-mon-917</version>
         <relativePath>../../pom.xml</relativePath>
     </parent>
     <artifactId>xap-common</artifactId>
