@@ -60,6 +60,7 @@ public class ClusterInfo implements Cloneable, Serializable {
 
     private String name;
 
+    @Deprecated
     private boolean dedicatedSecurity;
 
     /**
