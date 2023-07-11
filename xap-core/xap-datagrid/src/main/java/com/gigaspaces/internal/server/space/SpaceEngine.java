@@ -2508,7 +2508,8 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
         context.setOperationID(updated_entry.getOperationID());
         context.setWriteResult(null);
 
-        final XtnEntry txnEntry = multipleIdsContext != null ? multipleIdsContext.getXtnEntry() : initTransactionEntry(txn, sc, fromReplication);
+        final XtnEntry txnEntry = multipleIdsContext != null ? retrieveMultipleIdsTransactionEntry(multipleIdsContext, sc)
+                : initTransactionEntry(txn, sc, fromReplication);
 
         // create template UID
         String uid = null;
@@ -2649,8 +2650,16 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
         XtnEntry txnEntry = attachToXtn((ServerTransaction) txn, fromReplication);
         txnEntry.setFromReplication(fromReplication);
         attachFromGatewayStateToTransactionIfNeeded(sc, txnEntry);
-        if (isMvccEnabled() && txnEntry.getMVCCGenerationsState() == null && sc != null) {
-            txnEntry.setMVCCGenerationsState(sc.getMVCCGenerationsState());
+        if (isMvccEnabled()) {
+            txnEntry.applyMVCCGenerationStateFromContext(sc);
+        }
+        return txnEntry;
+    }
+
+    private XtnEntry retrieveMultipleIdsTransactionEntry(MultipleIdsContext multipleIdsContext, SpaceContext sc) {
+        XtnEntry txnEntry = multipleIdsContext.getXtnEntry();
+        if (isMvccEnabled() && txnEntry != null) {
+            txnEntry.applyMVCCGenerationStateFromContext(sc);
         }
         return txnEntry;
     }
@@ -3753,7 +3762,6 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
                 if (res != null)
                     return res;
             } else if (toScan != null && toScan.isIterator() && isMvccEnabled()) {
-                //TODO: @MVCC add missing implementation for readByIds
                 toScan = toScan.createCopyForAlternatingThread();
                 res = getMatchedEntryAndOperateSA_Scan(context,
                         template, makeWaitForInfo,
@@ -4361,13 +4369,16 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
             if(template.isServerIterator()){
                 template.getServerIteratorInfo().setScanEntriesIter(null);
             }
-        }
-
-        else
+        } else {
+            if (isMvccEnabled() && template.getID() != null) {
+                toScan = toScan.createCopyForAlternatingThread();
+            }
             getMatchedEntriesAndOperateSA_Scan(context,
                     template,
                     toScan,
                     makeWaitForInfo, entryTypeDesc);
+
+        }
     }
 
     public boolean skipBroadcastTable(Context context,
