@@ -51,6 +51,7 @@ public class MVCCSpaceEngineHandler {
                         if(entry.getWriteLockOwner() == xtnEntry) {
                             switch (writeLockOperation) {
                                 case SpaceOperations.TAKE:
+                                case SpaceOperations.TAKE_IE: //take operation replicated to backup as take_ie
                                 case SpaceOperations.UPDATE:
                                     entry.setOverrideGeneration(nextGeneration);
                                     entry.resetEntryXtnInfo();

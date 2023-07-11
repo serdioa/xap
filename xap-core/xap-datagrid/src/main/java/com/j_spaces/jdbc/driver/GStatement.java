@@ -169,9 +169,11 @@ public class GStatement implements Statement {
      * @see java.sql.Statement#getMoreResults()
      */
     public boolean getMoreResults() throws SQLException {
-        packet = packet.getNext();
         if (packet != null) {
-              return executePacket();
+            packet = packet.getNext();
+        }
+        if (packet != null) {
+            return executePacket();
         } else {
             updateCount = -1;
             return false;

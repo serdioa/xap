@@ -20,6 +20,7 @@ import com.gigaspaces.internal.metadata.SpaceTypeInfo;
 import com.gigaspaces.internal.metadata.SpaceTypeInfoRepository;
 
 import java.util.*;
+import java.util.stream.Stream;
 
 /**
  * Miscellaneous collection utility methods. Mainly for internal use within the framework.
@@ -35,6 +36,10 @@ public abstract class CollectionUtils {
      */
     public static boolean isEmpty(Collection<?> collection) {
         return (collection == null || collection.isEmpty());
+    }
+
+    public static <T> Stream<T> toStream(Collection<T> collection) {
+        return isEmpty(collection) ? Stream.empty() : collection.stream();
     }
 
     /**
