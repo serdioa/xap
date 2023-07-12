@@ -917,7 +917,7 @@ public class SpaceTypeDescriptorBuilder {
 
         if (_routingPropertyName == null) {
             if (_superTypeDescriptor != null)
-                routingProperty(_superTypeDescriptor.getRoutingPropertyName());
+                _routingPropertyName = _superTypeDescriptor.getRoutingPropertyName();
         }
         if (_routingPropertyName != null && !isFixedProperty(_routingPropertyName))
             addFixedProperty(_routingPropertyName, Object.class);
