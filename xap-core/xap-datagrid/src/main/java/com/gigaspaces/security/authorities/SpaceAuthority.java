@@ -500,5 +500,10 @@ public class SpaceAuthority implements InternalAuthority {
             }
             return false;
         }
+
+        @Override
+        public String toString() {
+            return "SpaceFilter " + spaceName ;
+        }
     }
 }
