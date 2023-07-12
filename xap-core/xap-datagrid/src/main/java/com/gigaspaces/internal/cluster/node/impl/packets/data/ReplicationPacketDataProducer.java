@@ -24,6 +24,7 @@ import com.gigaspaces.internal.cluster.node.impl.packets.data.operations.*;
 import com.gigaspaces.internal.cluster.node.impl.view.EntryPacketServerEntryAdapter;
 import com.gigaspaces.internal.metadata.ITypeDesc;
 import com.gigaspaces.internal.server.space.SpaceEngine;
+import com.gigaspaces.internal.server.space.mvcc.MVCCGenerationsState;
 import com.gigaspaces.internal.server.storage.ICustomTypeDescLoader;
 import com.gigaspaces.internal.server.storage.IEntryData;
 import com.gigaspaces.internal.server.storage.IEntryHolder;
@@ -145,7 +146,7 @@ public class ReplicationPacketDataProducer
             ServerTransaction transaction, ArrayList<IEntryHolder> entries,
             ReplicationOutContext replicationOutContext, ReplicationMultipleOperationType operationType) {
         AbstractTransactionReplicationPacketData transactionPacket = createTransactionPacket(operationType, transaction, replicationOutContext.getOperationID(), replicationOutContext.isFromGateway());
-
+        setMvccCommittedGenerationIfNeeded(transactionPacket, replicationOutContext.getMvccGenerationsState());
         //If this is a commit or abort we take the already existing prepared content from the mediator
         if (operationType == ReplicationMultipleOperationType.TRANSACTION_TWO_PHASE_COMMIT || operationType == ReplicationMultipleOperationType.TRANSACTION_TWO_PHASE_ABORT) {
             List<IReplicationTransactionalPacketEntryData> pendingTransactionData = _packetDataMediator.removePendingTransactionData(transaction);
@@ -298,7 +299,6 @@ public class ReplicationPacketDataProducer
                 operationID);
 
         return new WriteReplicationPacketData(entryPacket, fromGateway, entryHolder.getEntryData().getExpirationTime(), backupOnly);
-
     }
 
     private UpdateReplicationPacketData createUpdateReplicationPacket(
@@ -415,7 +415,6 @@ public class ReplicationPacketDataProducer
         IEntryPacket entryPacket = EntryPacketFactory.createFullPacketForReplication(entryHolder, operationID);
 
         return new RemoveReplicationPacketData(entryPacket, fromGateway, entryHolder.getEntryData(), true);
-
     }
 
     private RemoveReplicationPacketData createRemoveReplicationPacketForPersistency(
@@ -647,5 +646,11 @@ public class ReplicationPacketDataProducer
     @Override
     public boolean isPrimary() {
         return _spaceEngine.getSpaceImpl().isPrimary();
+    }
+
+    private void setMvccCommittedGenerationIfNeeded(AbstractTransactionReplicationPacketData data, MVCCGenerationsState mvccGenerationsState) {
+        if (_spaceEngine.isMvccEnabled()) {
+            data.setMvccCommittedGeneration(mvccGenerationsState);
+        }
     }
 }

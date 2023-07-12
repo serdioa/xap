@@ -24,23 +24,37 @@ import com.gigaspaces.internal.collections.ObjectLongMap;
 import com.j_spaces.core.exception.internal.ReplicationInternalSpaceException;
 
 
+import com.j_spaces.kernel.SystemProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 
 @com.gigaspaces.api.InternalApi
 public class SynchronizingData<T extends IReplicationPacketData<?>> {
-    private static final int _maxAfterIterationDoneStageLength = 100000;
+    private  final int _maxAfterIterationDoneStageLength;
 
     private final ObjectLongMap<String> _entriesUidMap = CollectionsFactory.getInstance().createObjectLongMap();
     private final Logger _logger;
     private final boolean _isDirectPersistencySync;
+
+    /*
+    By Default filter is enabled, the idea is that in recovery when going over the redolog after the copy stage
+    we will filter the redolog so we will not send again operations that were already sent in copy stage
+    on extreme condition this filtering cause missing operations in backup so this filtering can be avoided.
+     */
+    private final boolean _isFilterEnabled;
+
     private final ObjectLongMap<Object> _dataIdMap = CollectionsFactory.getInstance().createObjectLongMap();
     private long _keyWhenCopyStageCompleted = -1L;
 
     public SynchronizingData(Logger logger, boolean isDirectPersistencySync) {
         _logger = logger;
         _isDirectPersistencySync = isDirectPersistencySync;
+        _isFilterEnabled = SystemProperties.getBoolean(SystemProperties.SPACE_RECOVERY_FILTER_AFTER_COPY, SystemProperties.SPACE_RECOVERY_FILTER_AFTER_COPY_DEFAULT);
+        _maxAfterIterationDoneStageLength = Integer.getInteger(SystemProperties.SPACE_RECOVERY_MAX_OPERATIONS_AFTER_COPY, SystemProperties.SPACE_RECOVERY_MAX_OPERATIONS_AFTER_COPY_DEFAULT).intValue();
+        if (_logger.isDebugEnabled()) {
+            _logger.debug("maxAfterIterationDoneStageLength=" + _maxAfterIterationDoneStageLength + "  ,isDirectPersistency=" + _isDirectPersistencySync + " ,isFilteredEnabled=" +_isFilterEnabled);
+        }
     }
 
     /**
@@ -88,12 +102,16 @@ public class SynchronizingData<T extends IReplicationPacketData<?>> {
         if (!_entriesUidMap.containsKey(uid)) {
             if (_logger.isDebugEnabled()) {
                 _logger.debug("[SynchronizingData::filterEntryData] not in _entriesUidMap: uid=" + uid + " ,_keyWhenCopyStageCompleted=" + _keyWhenCopyStageCompleted +
-                        " ,packetKey=" + packetKey + " ,isDirectPersistency=" + _isDirectPersistencySync);
+                        " ,packetKey=" + packetKey + " ,isDirectPersistency=" + _isDirectPersistencySync + " ,isFilteredEnabled=" +_isFilterEnabled);
             }
+            //Don't filter any data from redo log if filter is not enabled
+            if (!_isFilterEnabled)
+                return  false;
             //don't filter any data from redo log (which is not in sync list) when doing direct persistency sync list recovery
             if (_isDirectPersistencySync) {
                 return false;
             }
+
             // If this operation is not filtered if not present in the replica,
             // it should be inserted to the uid map
             // (e.g, Write of entry which occurred after the replica iterator
@@ -115,7 +133,7 @@ public class SynchronizingData<T extends IReplicationPacketData<?>> {
         // newer events
         if (_logger.isDebugEnabled()) {
             _logger.debug("[SynchronizingData::filterEntryData] in _entriesUidMap: uid=" + uid + " ,_keyWhenCopyStageCompleted=" + _keyWhenCopyStageCompleted +
-                    " ,packetKey=" + packetKey + " ,isDirectPersistency=" + _isDirectPersistencySync);
+                    " ,packetKey=" + packetKey + " ,isDirectPersistency=" + _isDirectPersistencySync + " ,isFilteredEnabled=" +_isFilterEnabled);
         }
         return keyAtGenerationTime >= packetKey;
     }
@@ -126,6 +144,10 @@ public class SynchronizingData<T extends IReplicationPacketData<?>> {
     }
 
     public synchronized ReplicationChannelDataFilterResult filterData(Object dataId, long packetKey, ReplicationMultipleOperationType operationType) {
+        // Don't filter data if filter is disabled
+        if (!_isFilterEnabled)
+            return ReplicationChannelDataFilterResult.PASS;
+
         // Don't filter whole transaction packets in direct persistency sync recovery since in this case we don't drop the redo log.
         // Filtering single operations inside a transaction (multiple operations) will be done in filterEntryData method.
         // A transaction of X operations can be filtered into a transaction with X-Y operations if Y operations had redo key

@@ -24,12 +24,13 @@ import com.gigaspaces.internal.cluster.node.handlers.ITransactionInContext;
 import com.gigaspaces.internal.cluster.node.impl.backlog.sync.IMarker;
 import com.gigaspaces.internal.cluster.node.impl.packets.data.IReplicationTransactionalPacketEntryData;
 import com.gigaspaces.internal.cluster.node.impl.packets.data.ITransactionalExecutionCallback;
+import com.gigaspaces.internal.cluster.node.impl.packets.data.operations.AbstractTransactionReplicationPacketData;
 import com.gigaspaces.internal.server.space.SpaceEngine;
 import com.gigaspaces.internal.server.storage.IEntryData;
 import com.gigaspaces.internal.transaction.DummyTransactionManager;
 import com.gigaspaces.internal.transport.IEntryPacket;
 import com.j_spaces.core.OperationID;
-
+import com.j_spaces.core.XtnEntry;
 import net.jini.core.transaction.Transaction;
 import net.jini.core.transaction.UnknownTransactionException;
 import net.jini.core.transaction.server.ServerTransaction;
@@ -62,7 +63,10 @@ public class SpaceReplicationTransactionEventHandler implements IReplicationInTr
         List<IReplicationTransactionalPacketEntryData> packetsData = (List<IReplicationTransactionalPacketEntryData>) transactionContext;
         try {
             txn = _txnManager.create();
-            _spaceEngine.attachToXtn(txn, fromReplication);
+            XtnEntry xtnEntry = _spaceEngine.attachToXtn(txn, fromReplication);
+            if (_spaceEngine.isMvccEnabled()) {
+                xtnEntry.setMVCCGenerationsState(((AbstractTransactionReplicationPacketData) packetsData).getMvccCommittedGeneration());
+            }
             for (IReplicationTransactionalPacketEntryData packetEntryData : packetsData) {
                 packetEntryData.executeTransactional(context, this, txn, supportsTwoPhase);
             }

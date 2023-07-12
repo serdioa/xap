@@ -65,7 +65,7 @@ public class MVCCShellEntryCacheInfo extends MemoryBasedEntryCacheInfo {
         return allEntryGenerations.peekLast();
     }
 
-    public MVCCEntryHolder getLatestOrHollow() {
+    public MVCCEntryHolder getLatestCommittedOrHollow() {
         MVCCEntryCacheInfo latestGeneration = getLatestGenerationCacheInfo();
         if (latestGeneration != null) {
             return latestGeneration.getEntryHolder();
@@ -84,7 +84,7 @@ public class MVCCShellEntryCacheInfo extends MemoryBasedEntryCacheInfo {
         if (dirtyEntry != null) {
             return dirtyEntry.getEntryHolder();
         }
-        return getLatestOrHollow();
+        return getLatestCommittedOrHollow();
     }
 
     @Override

@@ -7,6 +7,7 @@ import com.gigaspaces.internal.server.space.redolog.storage.IRedoLogFileStorage;
 import com.gigaspaces.internal.server.space.redolog.storage.SqliteRedoLogFileStorage;
 import com.gigaspaces.internal.utils.collections.ReadOnlyIterator;
 import com.gigaspaces.start.SystemLocations;
+import com.j_spaces.core.cluster.RedoLogSwapStorageType;
 import com.j_spaces.core.cluster.ReplicationPolicy;
 import com.j_spaces.core.cluster.startup.CompactionResult;
 import com.j_spaces.core.cluster.startup.RedoLogCompactionUtil;
@@ -41,6 +42,11 @@ public class DBSwapRedoLogFile<T extends IReplicationOrderedPacket> implements I
         this._externalRedoLogStorage = new SqliteRedoLogFileStorage<T>(config);
         this._config = config;
         this._groupBacklog = groupBacklog;
+    }
+
+
+    public RedoLogSwapStorageType getSwapStorageType(){
+        return RedoLogSwapStorageType.SQLITE;
     }
 
     @Override

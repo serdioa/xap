@@ -22,6 +22,9 @@ import com.gigaspaces.internal.cluster.node.impl.packets.data.IReplicationPacket
 import com.gigaspaces.internal.cluster.node.impl.packets.data.IReplicationTransactionalPacketEntryData;
 import com.gigaspaces.internal.io.IOUtils;
 import com.gigaspaces.internal.server.space.metadata.SpaceTypeManager;
+import com.gigaspaces.internal.server.space.mvcc.MVCCGenerationsState;
+import com.gigaspaces.internal.version.PlatformLogicalVersion;
+import com.gigaspaces.lrmi.LRMIInvocationContext;
 import com.gigaspaces.transaction.TransactionUniqueId;
 import com.j_spaces.core.OperationID;
 import com.j_spaces.core.cluster.IReplicationFilterEntry;
@@ -54,9 +57,12 @@ public abstract class AbstractTransactionReplicationPacketData
     private static final short FLAGS_GATEWAY = 1;
     private static final short HAS_TRANSIENT_MEMBERS = 1 << 1;
     private static final short HAS_PERSISTENT_MEMBERS = 1 << 2;
+    private static final short HAS_COMMITTED_GENERATION = 1 << 3;
 
     private transient int _weight;
     private transient short _flags;
+    // for mvcc
+    private MVCCGenerationsState mvccGenerationsState = null;
 
     @SuppressWarnings("WeakerAccess")
     public AbstractTransactionReplicationPacketData() {
@@ -81,15 +87,26 @@ public abstract class AbstractTransactionReplicationPacketData
         return null;
     }
 
+    @Override
     public void readExternal(ObjectInput in) throws IOException,
             ClassNotFoundException {
         _flags = in.readShort();
         _metaData = IOUtils.readObject(in);
+        if (LRMIInvocationContext.getEndpointLogicalVersion().greaterOrEquals(PlatformLogicalVersion.v16_4_0)) {
+            if (hasMvccCommittedGeneration()) {
+                mvccGenerationsState = IOUtils.readObject(in);
+            }
+        }
     }
 
+    @Override
     public void writeExternal(ObjectOutput out) throws IOException {
         out.writeShort(_flags);
         IOUtils.writeObject(out, _metaData);
+        if (LRMIInvocationContext.getEndpointLogicalVersion().greaterOrEquals(PlatformLogicalVersion.v16_4_0)) {
+            if (hasMvccCommittedGeneration()) {
+                IOUtils.writeObject(out, mvccGenerationsState);            }
+        }
     }
 
 
@@ -115,6 +132,7 @@ public abstract class AbstractTransactionReplicationPacketData
         }
     }
 
+    @Override
     public void readFromSwap(ObjectInput in) throws IOException,
             ClassNotFoundException {
         _flags =  in.readShort();
@@ -125,15 +143,27 @@ public abstract class AbstractTransactionReplicationPacketData
             IReplicationTransactionalPacketEntryData entryData = IOUtils.readSwapExternalizableObject(in);
             add(entryData);
         }
+        if (LRMIInvocationContext.getEndpointLogicalVersion().greaterOrEquals(PlatformLogicalVersion.v16_4_0)) {
+            if (hasMvccCommittedGeneration()) {
+                mvccGenerationsState = IOUtils.readObject(in);
+            }
+        }
     }
 
+    @Override
     public void writeToSwap(ObjectOutput out) throws IOException {
         out.writeShort(_flags);
         IOUtils.writeNullableSwapExternalizableObject(out, _metaData);
         IOUtils.writeNullableSwapExternalizableObject(out, _transaction);
         out.writeInt(size());
-        for (IReplicationTransactionalPacketEntryData entryData : this)
+        for (IReplicationTransactionalPacketEntryData entryData : this) {
             IOUtils.writeSwapExternalizableObject(out, entryData);
+        }
+        if (LRMIInvocationContext.getEndpointLogicalVersion().greaterOrEquals(PlatformLogicalVersion.v16_4_0)) {
+            if (hasMvccCommittedGeneration()) {
+                IOUtils.writeObject(out, mvccGenerationsState);
+            }
+        }
     }
 
     @SuppressWarnings("MethodDoesntCallSuperMethod")
@@ -226,6 +256,14 @@ public abstract class AbstractTransactionReplicationPacketData
         return (_flags & HAS_PERSISTENT_MEMBERS) != 0;
     }
 
+    public void setMvccCommittedGenerationFlag() {
+        _flags |= HAS_COMMITTED_GENERATION;
+    }
+
+    public boolean hasMvccCommittedGeneration() {
+        return (_flags & HAS_COMMITTED_GENERATION) != 0;
+    }
+
     public static class FilterIterable
             implements Iterable<IReplicationFilterEntry>,
             Iterator<IReplicationFilterEntry> {
@@ -291,6 +329,15 @@ public abstract class AbstractTransactionReplicationPacketData
     @Override
     public int getWeight() {
         return _weight;
+    }
+
+    public void setMvccCommittedGeneration(MVCCGenerationsState mvccGenerationsState) {
+        this.mvccGenerationsState = mvccGenerationsState;
+        setMvccCommittedGenerationFlag();
+    }
+
+    public MVCCGenerationsState getMvccCommittedGeneration() {
+        return mvccGenerationsState;
     }
 
     @SuppressWarnings("SimplifiableIfStatement")

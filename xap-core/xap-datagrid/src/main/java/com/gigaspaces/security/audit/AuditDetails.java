@@ -63,6 +63,13 @@ public class AuditDetails implements SmartExternalizable {
         return host;
     }
 
+    @Override
+    public String toString() {
+        return "AuditDetails{" +
+                "host='" + host + '\'' +
+                '}';
+    }
+
     public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         host = in.readUTF();
     }

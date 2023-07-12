@@ -31,4 +31,11 @@ public class Token implements TokenUserDetails {
     public String getUsername() {
         return null;
     }
+
+    @Override
+    public String toString() {
+        return "Token{" +
+                "token='" + token + '\'' +
+                '}';
+    }
 }
