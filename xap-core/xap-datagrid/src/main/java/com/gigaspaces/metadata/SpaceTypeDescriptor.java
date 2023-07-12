@@ -211,4 +211,6 @@ public interface SpaceTypeDescriptor {
     boolean[] getPropertiesIndexTypes();
 
     TieredStorageTableConfig getTieredStorageTableConfig();
+
+    boolean hasRoutingAnnotation();
 }

@@ -917,7 +917,8 @@ public class SpaceTypeDescriptorBuilder {
 
         if (_routingPropertyName == null) {
             if (_superTypeDescriptor != null) {
-                routingProperty(_superTypeDescriptor.getRoutingPropertyName());
+                _routingPropertyName = _superTypeDescriptor.getRoutingPropertyName();
+                _hasRoutingAnnotation = _superTypeDescriptor.hasRoutingAnnotation();
             }
         }
 
