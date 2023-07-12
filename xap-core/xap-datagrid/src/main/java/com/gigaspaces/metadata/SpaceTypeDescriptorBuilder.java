@@ -522,6 +522,7 @@ public class SpaceTypeDescriptorBuilder {
 
         this._routingPropertyName = assertNotNull(routingPropertyName, "routingPropertyName");
         addIndexIfNotExists(routingPropertyName, assertNotNull(indexType, "indexType"));
+        _hasRoutingAnnotation = true;
         return this;
     }
 
@@ -918,7 +919,6 @@ public class SpaceTypeDescriptorBuilder {
             if (_superTypeDescriptor != null)
                 _routingPropertyName = _superTypeDescriptor.getRoutingPropertyName();
         }
-
         if (_routingPropertyName != null && !isFixedProperty(_routingPropertyName))
             addFixedProperty(_routingPropertyName, Object.class);
 
