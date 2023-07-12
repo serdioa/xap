@@ -1360,21 +1360,17 @@ public class Context {
         this.templateMaybeUnderTransaction = templateMaybeUnderTransaction;
     }
 
-    public MVCCGenerationsState getMvccGenerationsState() {
+    public MVCCGenerationsState getMVCCGenerationsState() {
         return mvccGenerationsState;
     }
 
-    public void setMvccGenerationsState(MVCCGenerationsState mvccGenerationsState) {
-        this.mvccGenerationsState = mvccGenerationsState;
-    }
-
-    public void applyMvccGenerationsState(boolean mvccEnabled, XtnEntry xtnEntry, SpaceContext sc) {
+    public void applyMVCCGenerationsState(boolean mvccEnabled, XtnEntry xtnEntry, SpaceContext sc) {
         if (mvccEnabled) {
-            this.mvccGenerationsState = xtnEntry == null || xtnEntry.getMVCCGenerationsState() == null
-                    ? sc != null
-                        ? sc.getMVCCGenerationsState()
-                        : null
-                    : xtnEntry.getMVCCGenerationsState();
+            this.mvccGenerationsState = Optional.ofNullable(xtnEntry)
+                    .map(XtnEntry::getMVCCGenerationsState)
+                    .orElseGet(() -> Optional.ofNullable(sc)
+                            .map(SpaceContext::getMVCCGenerationsState)
+                            .orElse(null));
         }
     }
 

@@ -856,7 +856,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
 
         final XtnEntry txnEntry = initTransactionEntry(txn, sc, fromReplication);
 
-        context.applyMvccGenerationsState(isMvccEnabled(), txnEntry, sc);
+        context.applyMVCCGenerationsState(isMvccEnabled(), txnEntry, sc);
 
         /**
          * build Entry Holder .
@@ -1327,7 +1327,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
         context.setReadByIdsInfo(readByIdsInfo);
         context.setPrefetchedNonBlobStoreEntries(prefetchedNonBlobStoreEntries);
         context.applyOperationContext(sc);
-        context.applyMvccGenerationsState(isMvccEnabled(), txnEntry, sc);
+        context.applyMVCCGenerationsState(isMvccEnabled(), txnEntry, sc);
 
         if(take && Modifiers.contains(operationModifiers,Modifiers.BACKUP_ONLY)){
             context.setBackupOnly();
@@ -2089,7 +2089,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
             context.setMainThread(true);
             context.setOperationID(template.getOperationID());
             context.applyOperationContext(sc);
-            context.applyMvccGenerationsState(isMvccEnabled(), txnEntry, sc);
+            context.applyMVCCGenerationsState(isMvccEnabled(), txnEntry, sc);
             if (take && txn == null && _cacheManager.isBlobStoreCachePolicy() && _cacheManager.useBlobStoreBulks()) {//can we exploit blob-store bulking ?
                 context.setBlobStoreBulkInfo(new BlobStoreBulkInfo(_cacheManager, true /*takeMultipleBulk*/));
             }
@@ -2547,7 +2547,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
 
         context.setMainThread(true);
         context.setOpResultByThread(false);
-        context.applyMvccGenerationsState(isMvccEnabled(), txnEntry, sc);
+        context.applyMVCCGenerationsState(isMvccEnabled(), txnEntry, sc);
 
         int versionID;
         //try to guess the versionID of this op;
@@ -2742,7 +2742,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
             context.setOperationID(template.getOperationID());
             tHolder.setReRegisterLeaseOnUpdate(lease != UPDATE_NO_LEASE);
             context.applyOperationContext(sc);
-            context.applyMvccGenerationsState(isMvccEnabled(), txnEntry, sc);
+            context.applyMVCCGenerationsState(isMvccEnabled(), txnEntry, sc);
 
             _coreProcessor.handleDirectChangeSA(context, tHolder, fromReplication, origin);
 
@@ -2835,7 +2835,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
             context.setOperationID(template.getOperationID());
             tHolder.setReRegisterLeaseOnUpdate(lease != UPDATE_NO_LEASE);
             context.applyOperationContext(sc);
-            context.applyMvccGenerationsState(isMvccEnabled(), txnEntry, sc);
+            context.applyMVCCGenerationsState(isMvccEnabled(), txnEntry, sc);
             if (txn == null && _cacheManager.isBlobStoreCachePolicy() && _cacheManager.useBlobStoreBulks()) {//can we exploit blob-store bulking ?
                 context.setBlobStoreBulkInfo(new BlobStoreBulkInfo(_cacheManager, false /*takeMultipleBulk*/));
             }
@@ -3174,7 +3174,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
             context.setOperationID(operationID);
             if (isMvccEnabled()){
                 SpaceContext spaceContext = _spaceImpl.getTaskProxy().getDirectProxy().getProxyRouter().getDefaultSpaceContext();
-                context.setMvccGenerationsState(spaceContext != null ? spaceContext.getMVCCGenerationsState() : null);
+                context.applyMVCCGenerationsState(isMvccEnabled(), null, spaceContext);
             }
             while (true) {
                 boolean relock = false;
@@ -3961,7 +3961,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
             if (template.isFifoGroupPoll())
                 context.setFifoGroupScanEncounteredXtnConflict(true);
             if (isMvccEnabled() && (!template.isReadOperation() || template.isExclusiveReadLockOperation())) {
-                throw new MVCCEntryModifyConflictException(context.getMvccGenerationsState(), (MVCCEntryHolder) entry, template.getTemplateOperation(), ex);
+                throw new MVCCEntryModifyConflictException(context.getMVCCGenerationsState(), (MVCCEntryHolder) entry, template.getTemplateOperation(), ex);
             }
             return null;
         } catch (TransactionNotActiveException ex) {
@@ -4044,7 +4044,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
             return null;
         } catch (TransactionConflictException tcx) {
             if (isMvccEnabled() && (!template.isReadOperation() || template.isExclusiveReadLockOperation())) {
-                throw new MVCCEntryModifyConflictException(context.getMvccGenerationsState(), (MVCCEntryHolder) entry, template.getTemplateOperation(), tcx);
+                throw new MVCCEntryModifyConflictException(context.getMVCCGenerationsState(), (MVCCEntryHolder) entry, template.getTemplateOperation(), tcx);
             }
             return null;
         } catch (NoMatchException | FifoException ex) { //cannot happen
@@ -4370,8 +4370,8 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
                 template.getServerIteratorInfo().setScanEntriesIter(null);
             }
         } else {
-            if (isMvccEnabled() && template.getID() != null) {
-                toScan = toScan.createCopyForAlternatingThread();
+            if (isMvccEnabled() && template.getID() != null) { // read by id -> scan iterates through the mvcc shell
+                toScan = toScan.createCopyForAlternatingThread(); // use shell iterator
             }
             getMatchedEntriesAndOperateSA_Scan(context,
                     template,
@@ -4674,10 +4674,10 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
                             mvccShellEntryCacheInfoByUid.getEntryHolder();
                 if (activeData != null && activeData != entry) {
                     if (!tmpl.isActiveRead(this, context)) {
-                        throw new MVCCEntryModifyConflictException(context.getMvccGenerationsState(), (MVCCEntryHolder) entry, tmpl.getTemplateOperation());
+                        throw new MVCCEntryModifyConflictException(context.getMVCCGenerationsState(), (MVCCEntryHolder) entry, tmpl.getTemplateOperation());
                     }
                     if (getLogger().isDebugEnabled()) {
-                        getLogger().debug("{}: need rematch for entry: {}, new entry: {}, genState: {}", Thread.currentThread().getName(), entry, activeData, context.getMvccGenerationsState());
+                        getLogger().debug("{}: need rematch for entry: {}, new entry: {}, genState: {}", Thread.currentThread().getName(), entry, activeData, context.getMVCCGenerationsState());
                     }
                     entry = activeData;
                     needRematch = true;
@@ -4763,10 +4763,10 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
                         mvccShellEntryCacheInfoByUid.getEntryHolder();
                 if (activeData != null && activeData != entry) {
                     if (!tmpl.isActiveRead(this, context)) {
-                        throw new MVCCEntryModifyConflictException(context.getMvccGenerationsState(), (MVCCEntryHolder) entry, tmpl.getTemplateOperation());
+                        throw new MVCCEntryModifyConflictException(context.getMVCCGenerationsState(), (MVCCEntryHolder) entry, tmpl.getTemplateOperation());
                     }
                     if (getLogger().isDebugEnabled()) {
-                        getLogger().debug("{}: need rematch for entry: {}, new entry: {}, genState: {}", Thread.currentThread().getName(), entry, activeData, context.getMvccGenerationsState());
+                        getLogger().debug("{}: need rematch for entry: {}, new entry: {}, genState: {}", Thread.currentThread().getName(), entry, activeData, context.getMVCCGenerationsState());
                     }
                     entry = activeData;
                     needRematch = true;

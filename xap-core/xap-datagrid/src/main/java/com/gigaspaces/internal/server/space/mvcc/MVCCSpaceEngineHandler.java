@@ -26,7 +26,7 @@ public class MVCCSpaceEngineHandler {
     }
 
     public void preCommitMvccEntries(Context context, XtnEntry xtnEntry) throws SAException {
-        MVCCGenerationsState mvccGenerationsState = context.getMvccGenerationsState();
+        MVCCGenerationsState mvccGenerationsState = context.getMVCCGenerationsState();
         if (mvccGenerationsState == null){
             mvccGenerationsState = xtnEntry.getMVCCGenerationsState();
         }
@@ -98,7 +98,7 @@ public class MVCCSpaceEngineHandler {
                     if (_spaceEngine.getLogger().isDebugEnabled()) {
                         _spaceEngine.getLogger().debug("Encountered a conflict while attempting to modify " + entry
                                 + ", this entry has already overridden by another generation."
-                                + " the current generation state is " + context.getMvccGenerationsState());
+                                + " the current generation state is " + context.getMVCCGenerationsState());
                     }
                     return SpaceEngine.XtnConflictCheckIndicators.XTN_CONFLICT;
                 }
@@ -108,7 +108,7 @@ public class MVCCSpaceEngineHandler {
                     if (_spaceEngine.getLogger().isDebugEnabled()) {
                         _spaceEngine.getLogger().debug("Encountered a conflict while attempting to operate(" + templateOperation + ") with " + entry
                                 + ", this entry is logically deleted."
-                                + " the current generation state is " + context.getMvccGenerationsState());
+                                + " the current generation state is " + context.getMVCCGenerationsState());
                     }
                     return SpaceEngine.XtnConflictCheckIndicators.ENTRY_DELETED;
                 }

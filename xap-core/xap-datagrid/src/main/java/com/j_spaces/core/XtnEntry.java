@@ -129,7 +129,7 @@ public class XtnEntry extends XtnInfo {
 
     public void applyMVCCGenerationStateFromContext(SpaceContext sc) {
         if (mvccGenerationsState == null && sc != null) {
-            setMVCCGenerationsState(sc.getMVCCGenerationsState());
+            this.mvccGenerationsState = sc.getMVCCGenerationsState();
         }
     }
 }
