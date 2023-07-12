@@ -792,9 +792,6 @@ public class SpaceTypeDescriptorBuilder {
             for (String idProperty : _idPropertiesNames)
                 validatePropertyExists(idProperty, fixedProperties);
             validatePropertyExists(_routingPropertyName, fixedProperties);
-//            if (_routingPropertyName != null) {
-//                _hasRoutingAnnotation = true;
-//            }
         }
 
         if(_broadcast)
@@ -920,9 +917,8 @@ public class SpaceTypeDescriptorBuilder {
 
         if (_routingPropertyName == null) {
             if (_superTypeDescriptor != null)
-                _routingPropertyName = _superTypeDescriptor.getRoutingPropertyName();
+                routingProperty(_superTypeDescriptor.getRoutingPropertyName());
         }
-
         if (_routingPropertyName != null && !isFixedProperty(_routingPropertyName))
             addFixedProperty(_routingPropertyName, Object.class);
 
