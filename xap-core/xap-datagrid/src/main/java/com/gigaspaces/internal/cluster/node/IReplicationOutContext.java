@@ -19,6 +19,7 @@ package com.gigaspaces.internal.cluster.node;
 import com.gigaspaces.internal.cluster.node.impl.backlog.sync.IMarker;
 import com.gigaspaces.internal.cluster.node.impl.directPersistency.IDirectPersistencyOpInfo;
 import com.gigaspaces.internal.cluster.node.impl.directPersistency.IDirectPersistencySyncHandler;
+import com.gigaspaces.internal.server.space.mvcc.MVCCGenerationsState;
 
 public interface IReplicationOutContext {
     int pendingSize();
@@ -48,4 +49,8 @@ public interface IReplicationOutContext {
     boolean isBlobstorePendingReplicationBulk();
 
     void blobstorePendingReplicationBulk();
+
+    MVCCGenerationsState getMvccGenerationsState();
+
+    void setMvccGenerationsState(MVCCGenerationsState mvccGenerationsState);
 }

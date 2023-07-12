@@ -425,6 +425,13 @@ public class XtnData {
             taken.removeByObject(entry);
     }
 
+    public void removeUpdatedEntry(IEntryCacheInfo entry) {
+        HashMap<String, Object> updatedEntries = getUpdatedEntries();
+        if (updatedEntries != null) {
+            updatedEntries.remove(entry.getUID());
+        }
+    }
+
     public IStoredList<TemplateCacheInfo> getNTemplates() {
         return _NTemplates;
     }

@@ -26,7 +26,6 @@ import com.gigaspaces.internal.cluster.node.impl.packets.data.IReplicationTransa
 import com.gigaspaces.internal.cluster.node.impl.packets.data.ITransactionalExecutionCallback;
 import com.gigaspaces.internal.cluster.node.impl.packets.data.operations.AbstractTransactionReplicationPacketData;
 import com.gigaspaces.internal.server.space.SpaceEngine;
-import com.gigaspaces.internal.server.space.mvcc.MVCCGenerationsState;
 import com.gigaspaces.internal.server.storage.IEntryData;
 import com.gigaspaces.internal.transaction.DummyTransactionManager;
 import com.gigaspaces.internal.transport.IEntryPacket;
@@ -66,7 +65,7 @@ public class SpaceReplicationTransactionEventHandler implements IReplicationInTr
             txn = _txnManager.create();
             XtnEntry xtnEntry = _spaceEngine.attachToXtn(txn, fromReplication);
             if (_spaceEngine.isMvccEnabled()) {
-                xtnEntry.setMVCCGenerationsState(MVCCGenerationsState.of(((AbstractTransactionReplicationPacketData) packetsData).getMvccCommittedGeneration()));
+                xtnEntry.setMVCCGenerationsState(((AbstractTransactionReplicationPacketData) packetsData).getMvccCommittedGeneration());
             }
             for (IReplicationTransactionalPacketEntryData packetEntryData : packetsData) {
                 packetEntryData.executeTransactional(context, this, txn, supportsTwoPhase);
