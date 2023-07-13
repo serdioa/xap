@@ -4006,8 +4006,9 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
                     template.getTemplateOperation() == SpaceOperations.UPDATE;
         }
 
+        boolean isMvccEmptyShell = isMvccEnabled() && entry != null && ((MVCCEntryHolder) entry).getCommittedGeneration() == -1 && entry.getEntryData() == null;
 
-        if (entry == null || (useSCN && (template.getSCN() > entry.getSCN()))) {
+        if (entry == null || (useSCN && (template.getSCN() > entry.getSCN())) || isMvccEmptyShell) {
             if (exceptionIfNoEntry)//update
                 returnEntryNotInSpaceError(context, template, null, makeWaitForInfo);
             return null;
