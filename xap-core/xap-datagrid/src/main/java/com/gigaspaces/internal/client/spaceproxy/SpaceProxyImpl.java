@@ -698,6 +698,7 @@ public class SpaceProxyImpl extends AbstractDirectSpaceProxy implements SameProx
             throws RemoteException {
         try {
             SpaceContext spaceContext = getProxyRouter().getDefaultSpaceContext();
+            _clientLogger.info("default spaceContext " + spaceContext);
             if (spaceRequest.supportsSecurity()) {
                 QuiesceToken token = spaceContext != null ? spaceContext.getQuiesceToken() : null;
                 spaceContext = getSecurityManager().acquireContext(targetSpace);
