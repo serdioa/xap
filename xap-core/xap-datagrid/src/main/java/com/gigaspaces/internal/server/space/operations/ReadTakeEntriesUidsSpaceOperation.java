@@ -21,6 +21,8 @@ import com.gigaspaces.internal.client.spaceproxy.operations.ReadTakeEntriesUidsS
 import com.gigaspaces.internal.server.space.SpaceImpl;
 import com.gigaspaces.internal.transport.IEntryPacket;
 import com.j_spaces.core.UidQueryPacket;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author idan
@@ -28,9 +30,13 @@ import com.j_spaces.core.UidQueryPacket;
  */
 @com.gigaspaces.api.InternalApi
 public class ReadTakeEntriesUidsSpaceOperation extends AbstractSpaceOperation<ReadTakeEntriesUidsSpaceOperationResult, ReadTakeEntriesUidsSpaceOperationRequest> {
+
+    private static final Logger logger = LoggerFactory.getLogger(ReadTakeEntriesUidsSpaceOperation.class);
+
     @Override
     public void execute(ReadTakeEntriesUidsSpaceOperationRequest request, ReadTakeEntriesUidsSpaceOperationResult result, SpaceImpl space, boolean oneway)
             throws Exception {
+        logger.info("request context is " + request.getSpaceContext());
         final IEntryPacket[] entries = space.readMultiple(request.getTemplate(),
                 request.getTransaction(),
                 false,
