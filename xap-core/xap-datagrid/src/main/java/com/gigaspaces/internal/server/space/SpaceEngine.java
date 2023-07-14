@@ -2071,6 +2071,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
                 tHolder.setForAfterOperationFilter(FilterOperationCodes.AFTER_TAKE_MULTIPLE, sc, _filterManager, null);
         } else  //  filters for read
         {
+            _logger.info("space context in space engine before read multiple is " + sc);
             if (_filterManager._isFilter[FilterOperationCodes.BEFORE_READ_MULTIPLE])
                 _filterManager.invokeFilters(FilterOperationCodes.BEFORE_READ_MULTIPLE, sc, tHolder);
             //set fields for after filter (if one will be enlisted)

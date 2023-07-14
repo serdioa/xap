@@ -24,6 +24,8 @@ import com.gigaspaces.internal.remoting.RemoteOperationsExecutor;
 import com.gigaspaces.internal.remoting.routing.AbstractRemoteOperationRouter;
 import com.gigaspaces.internal.remoting.routing.clustered.RemoteOperationsExecutorProxy;
 import com.gigaspaces.internal.utils.concurrent.ContextClassLoaderRunnable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.rmi.RemoteException;
 import java.util.List;
@@ -36,6 +38,9 @@ import java.util.concurrent.Executor;
  */
 @com.gigaspaces.api.InternalApi
 public class EmbeddedRemoteOperationRouter extends AbstractRemoteOperationRouter {
+
+    private static final Logger logger = LoggerFactory.getLogger(EmbeddedRemoteOperationRouter.class);
+
     protected final RemoteOperationsExecutorProxy _memberProxy;
     private final int _partitionId;
     private final String _partitionDesc;
@@ -70,6 +75,7 @@ public class EmbeddedRemoteOperationRouter extends AbstractRemoteOperationRouter
         if (!beforeOperationExecution(request))
             return;
 
+        logger.info("executeImpl request context is " + request.getSpaceContext());
         try {
             T result = null;
             logBeforeExecute(_memberProxy, request, oneway);
