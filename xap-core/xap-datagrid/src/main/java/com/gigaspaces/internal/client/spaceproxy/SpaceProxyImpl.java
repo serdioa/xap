@@ -418,8 +418,14 @@ public class SpaceProxyImpl extends AbstractDirectSpaceProxy implements SameProx
     }
 
     public void beforeSpaceAction(CommonProxyActionInfo action) {
-        if (action.txn == null && getProxySettings().isMvccEnabled() && action.requireTransactionForMVCC()) {
-            throw new UnsupportedOperationException("Operation " + action.getClass().getSimpleName() + " without transaction are not allowed when MVCC is enabled.");
+        if (action.txn == null && getProxySettings().isMvccEnabled()) {
+            if (action.requireTransactionForMVCC()) {
+                throw new UnsupportedOperationException("Operation " + action.getClass().getSimpleName() + " without transaction are not allowed when MVCC is enabled.");
+            } else if (!ReadModifiers.isReadCommitted(action.modifiers) && !ReadModifiers.isDefaultReadModifier(action.modifiers) // any not read committed or without modifier
+                    || (ReadModifiers.isDefaultReadModifier(action.modifiers)
+                            && (getProxyRouter().getDefaultSpaceContext() == null || getProxyRouter().getDefaultSpaceContext().getMVCCGenerationsState() == null))){ // active read without modifier
+                throw new UnsupportedOperationException("Read operation " + action.getClass().getSimpleName() + " without transaction and not read committed are not allowed when MVCC is enabled.");
+            }
         }
         action.txn = beforeSpaceAction(action.txn);
     }
