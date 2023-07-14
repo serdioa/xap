@@ -307,6 +307,7 @@ public class ClusterInfo implements Cloneable, Serializable {
         sb.append("numberOfBackups[").append(numberOfBackups).append("] ");
         sb.append("instanceId[").append(instanceId).append("] ");
         sb.append("backupId[").append(backupId).append("]");
+        sb.append("dedicatedSecurity[").append(dedicatedSecurity).append("]");
         return sb.toString();
     }
 }

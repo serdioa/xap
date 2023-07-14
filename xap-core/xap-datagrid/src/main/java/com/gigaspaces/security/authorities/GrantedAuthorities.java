@@ -100,6 +100,7 @@ public final class GrantedAuthorities implements Serializable {
         }
     }
 
+    // TODO : need provide separate method for spaceFilter?
     /**
      * Evaluates to <code>true</code> if has been granted the required privileges to access the
      * specified object. The data object parameter is used against one of the {@link
@@ -132,7 +133,11 @@ public final class GrantedAuthorities implements Serializable {
             }
 
             boolean accept = filter.accept(object);
-            if (filter instanceof NegateFilter) {
+            if (filter instanceof SpaceAuthority.SpaceFilter) {
+                // spacefilter are checked at SecurityFilter lvl
+                continue;
+            }
+            else if (filter instanceof NegateFilter) {
                 exclude = exclude == null ? Boolean.valueOf(accept) : exclude && accept;
             } else {
                 include = include == null ? Boolean.valueOf(accept) : include || accept;
