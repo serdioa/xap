@@ -48,9 +48,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class InternalSpaceFactory {
-
-    private static final Logger logger = LoggerFactory.getLogger(InternalSpaceFactory.class);
-
     private static final boolean enableExecutorInjection = true;
     private final SpaceProxyFactory factory = new SpaceProxyFactory();
     private ClusterInfo clusterInfo;
@@ -180,17 +177,12 @@ public class InternalSpaceFactory {
     }
 
     private void beforeCreateSpace(AbstractSpaceFactoryBean spaceFactoryBean, boolean isRemote) {
-        logger.info("spaceFactoryBean "+ spaceFactoryBean);
-        logger.info("clusterInfo " + clusterInfo);
-
         if (!isRemote && enableExecutorInjection) {
             FilterProvider filterProvider = new FilterProvider("InjectionExecutorFilter", new ExecutorSpaceFilter(spaceFactoryBean, clusterInfo));
             filterProvider.setOpCodes(FilterOperationCodes.BEFORE_EXECUTE);
             factory.addFilterProvider(filterProvider);
         }
 
-        // TODO : is secured ?
-//        spaceFactoryBean.getSecurityConfig().
         if (clusterInfo!=null && clusterInfo.isDedicatedSecurity()) {
             Pair<ISpaceFilter, int[]> securityFilterPair = loadSecurityFilter(spaceFactoryBean.getName());
 

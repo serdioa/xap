@@ -698,14 +698,12 @@ public class SpaceProxyImpl extends AbstractDirectSpaceProxy implements SameProx
             throws RemoteException {
         try {
             SpaceContext spaceContext = getProxyRouter().getDefaultSpaceContext();
-            _clientLogger.info("default spaceContext " + spaceContext);
             if (spaceRequest.supportsSecurity()) {
                 QuiesceToken token = spaceContext != null ? spaceContext.getQuiesceToken() : null;
                 spaceContext = getSecurityManager().acquireContext(targetSpace);
                 if (spaceContext != null)
                     spaceContext.setQuiesceToken(token);
             }
-            _clientLogger.info("Assign spaceContext to request " + spaceContext);
             spaceRequest.setSpaceContext(spaceContext);
 
             // for broadcast table operation we need to set SpaceContext inside SpaceRequestInfo before task is

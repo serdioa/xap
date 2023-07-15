@@ -54,8 +54,6 @@ import java.util.*;
  */
 public class UrlSpaceConfigurer implements SpaceConfigurer {
 
-    private static final Logger logger = LoggerFactory.getLogger(UrlSpaceConfigurer.class);
-
     private UrlSpaceFactoryBean urlSpaceFactoryBean;
 
     private IJSpace space;
@@ -289,7 +287,6 @@ public class UrlSpaceConfigurer implements SpaceConfigurer {
      * @see org.openspaces.core.space.UrlSpaceFactoryBean#setSecured(boolean)
      */
     public UrlSpaceConfigurer secured(boolean secured) {
-        logger.info("[secured] is " + secured);
         urlSpaceFactoryBean.setSecured(secured);
         return this;
     }

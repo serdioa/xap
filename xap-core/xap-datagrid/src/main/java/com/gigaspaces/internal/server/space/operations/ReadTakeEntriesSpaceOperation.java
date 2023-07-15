@@ -24,8 +24,6 @@ import com.gigaspaces.lrmi.nio.IResponseContext;
 import com.gigaspaces.lrmi.nio.ResponseContext;
 import com.j_spaces.core.AnswerHolder;
 import com.j_spaces.core.client.Modifiers;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * @author idan
@@ -33,9 +31,6 @@ import org.slf4j.LoggerFactory;
  */
 @com.gigaspaces.api.InternalApi
 public class ReadTakeEntriesSpaceOperation extends AbstractSpaceOperation<ReadTakeEntriesSpaceOperationResult, ReadTakeEntriesSpaceOperationRequest> {
-
-    private static final Logger logger = LoggerFactory.getLogger(ReadTakeEntriesSpaceOperation.class);
-
     @Override
     public void execute(ReadTakeEntriesSpaceOperationRequest request, ReadTakeEntriesSpaceOperationResult result, SpaceImpl space, boolean oneway)
             throws Exception {
@@ -45,8 +40,6 @@ public class ReadTakeEntriesSpaceOperation extends AbstractSpaceOperation<ReadTa
         IResponseContext respContext = ResponseContext.getResponseContext();
         if (respContext != null)
             respContext.setInvokedFromNewRouter(true);
-
-        logger.info("request context is " + request.getSpaceContext());
 
         AnswerHolder answerHolder = space.readMultiple(request.getTemplatePacket(),
                 request.getTransaction(), request.isTake(), request.getMaxResults(),

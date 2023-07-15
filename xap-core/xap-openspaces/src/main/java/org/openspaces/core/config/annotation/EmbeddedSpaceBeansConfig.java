@@ -33,8 +33,6 @@ import javax.annotation.Resource;
  */
 public class EmbeddedSpaceBeansConfig extends AbstractSpaceBeansConfig {
 
-    private static final Logger logger = LoggerFactory.getLogger(EmbeddedSpaceBeansConfig.class);
-
     // TODO: Read from external config in $gs_home/config.
     private final CustomConfigurer[] customConfigurers = new CustomConfigurer[] {
             new CustomConfigurer("space.mx.off-heap.enabled", "memoryxtend/off-heap", "com.gigaspaces.blobstore.offheap.config.OffHeapEmbeddedSpaceFactoryBeanConfigurer"),
@@ -62,7 +60,6 @@ public class EmbeddedSpaceBeansConfig extends AbstractSpaceBeansConfig {
 
     protected void configure(EmbeddedSpaceFactoryBean factoryBean) {
         factoryBean.setSpaceName(getSpaceName());
-        logger.info("[configure] is secured " + secured);
         if (secured)
             factoryBean.setSecured(secured);
         if (mirrored)
