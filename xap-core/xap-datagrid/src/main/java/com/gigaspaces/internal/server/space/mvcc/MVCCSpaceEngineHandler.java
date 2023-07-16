@@ -26,7 +26,7 @@ public class MVCCSpaceEngineHandler {
     }
 
     public void preCommitMvccEntries(Context context, XtnEntry xtnEntry) throws SAException {
-        MVCCGenerationsState mvccGenerationsState = context.getMVCCGenerationsState();
+        MVCCGenerationsState mvccGenerationsState = context.getMvccGenerationsState();
         if (mvccGenerationsState == null){
             mvccGenerationsState = xtnEntry.getMVCCGenerationsState();
         }
@@ -82,7 +82,7 @@ public class MVCCSpaceEngineHandler {
         }
     }
 
-    public SpaceEngine.XtnConflictCheckIndicators checkTransactionConflict(MVCCEntryHolder entry, ITemplateHolder template, Context context) {
+    public SpaceEngine.XtnConflictCheckIndicators checkTransactionConflict(MVCCEntryHolder entry, ITemplateHolder template) {
         int templateOperation = template.getTemplateOperation();
         switch (templateOperation) {
             case SpaceOperations.TAKE_IE:
@@ -98,7 +98,7 @@ public class MVCCSpaceEngineHandler {
                     if (_spaceEngine.getLogger().isDebugEnabled()) {
                         _spaceEngine.getLogger().debug("Encountered a conflict while attempting to modify " + entry
                                 + ", this entry has already overridden by another generation."
-                                + " the current generation state is " + context.getMVCCGenerationsState());
+                                + " the current generation state is " + template.getGenerationsState());
                     }
                     return SpaceEngine.XtnConflictCheckIndicators.XTN_CONFLICT;
                 }
@@ -108,7 +108,7 @@ public class MVCCSpaceEngineHandler {
                     if (_spaceEngine.getLogger().isDebugEnabled()) {
                         _spaceEngine.getLogger().debug("Encountered a conflict while attempting to operate(" + templateOperation + ") with " + entry
                                 + ", this entry is logically deleted."
-                                + " the current generation state is " + context.getMVCCGenerationsState());
+                                + " the current generation state is " + template.getGenerationsState());
                     }
                     return SpaceEngine.XtnConflictCheckIndicators.ENTRY_DELETED;
                 }

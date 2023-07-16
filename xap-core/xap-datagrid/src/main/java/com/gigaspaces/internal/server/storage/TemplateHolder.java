@@ -140,6 +140,7 @@ public class TemplateHolder extends AbstractSpaceItem implements ITemplateHolder
     private final boolean _allValuesIndexSqlQuery;
     private SingleExplainPlan _singleExplainPlan = null;
     private ServerIteratorInfo _serverIteratorInfo;
+    private MVCCGenerationsState mvccGenerationsState;
 
 
     public TemplateHolder(IServerTypeDesc typeDesc, ITemplatePacket packet, String uid,
@@ -214,6 +215,10 @@ public class TemplateHolder extends AbstractSpaceItem implements ITemplateHolder
                 plan.setRoot(ExplainPlanUtil.buildQueryTree(templatePacket.getCustomQuery()));
             }
             this._singleExplainPlan = plan;
+        }
+
+        if (_templateXtnOriginated != null) {
+            mvccGenerationsState = _templateXtnOriginated.getMVCCGenerationsState();
         }
     }
 
@@ -752,7 +757,7 @@ public class TemplateHolder extends AbstractSpaceItem implements ITemplateHolder
 
         if (cacheManager.isMVCCEnabled()
                 && (res != MatchResult.NONE || ((MVCCEntryHolder) entry).isLogicallyDeleted())) {
-            if (isMVCCEntryMatchedByGenerationsState((MVCCEntryHolder) entry, cacheManager, context)) {
+            if (isMVCCEntryMatchedByGenerationsState((MVCCEntryHolder) entry, cacheManager)) {
                 res = MatchResult.MASTER;
             } else {
                 res = MatchResult.NONE;
@@ -778,20 +783,20 @@ public class TemplateHolder extends AbstractSpaceItem implements ITemplateHolder
         return res;
     }
 
-    private boolean isMVCCEntryMatchedByGenerationsState(MVCCEntryHolder entryHolder, CacheManager cacheManager, Context context) {
-        final MVCCGenerationsState mvccGenerationsState = context.getMVCCGenerationsState();
+    private boolean isMVCCEntryMatchedByGenerationsState(MVCCEntryHolder entryHolder, CacheManager cacheManager) {
+        final MVCCGenerationsState mvccGenerationsState = getGenerationsState();
         final long completedGeneration = mvccGenerationsState == null ? -1 : mvccGenerationsState.getCompletedGeneration();
         final long overrideGeneration = entryHolder.getOverrideGeneration();
         final long committedGeneration = entryHolder.getCommittedGeneration();
         final boolean isDirtyEntry = committedGeneration == -1;
         final boolean isOverridenEntry = overrideGeneration != -1;
         final boolean isDirtyRead = cacheManager.getEngine().indicateDirtyRead(this);
-        if (isActiveRead(cacheManager.getEngine(), context)) { // active read
+        if (isActiveRead(cacheManager.getEngine())) { // active read
             return isDirtyRead || !isDirtyEntry; // after the lock retrieving latest not overriden entry to rematch
         }
         final boolean committedIsCompleted = !isDirtyEntry && (committedGeneration <= completedGeneration)
                 && (!mvccGenerationsState.isUncompletedGeneration(committedGeneration));
-        if (isHistoricalRead(cacheManager.getEngine(), context)) { // historical read
+        if (isHistoricalRead(cacheManager.getEngine())) { // historical read
             final boolean isOverridenEntryGenerationValidForHistoricalRead = !isOverridenEntry
                     || (overrideGeneration > completedGeneration)
                     || (overrideGeneration <= completedGeneration && mvccGenerationsState.isUncompletedGeneration(overrideGeneration));
@@ -1281,10 +1286,21 @@ public class TemplateHolder extends AbstractSpaceItem implements ITemplateHolder
         return _templateData;
     }
 
+
     @Override
-    public boolean isActiveRead(SpaceEngine engine, Context context) {
+    public void setGenerationsSate(MVCCGenerationsState mvccGenerationsState) {
+        this.mvccGenerationsState = mvccGenerationsState;
+    }
+
+    @Override
+    public MVCCGenerationsState getGenerationsState() {
+        return mvccGenerationsState;
+    }
+
+    @Override
+    public boolean isActiveRead(SpaceEngine engine) {
         if (engine.isMvccEnabled()) {
-            return isReadOperation() && context.getMVCCGenerationsState() == null;
+            return isReadOperation() && mvccGenerationsState == null;
         }
         return true;
     }
@@ -1294,7 +1310,7 @@ public class TemplateHolder extends AbstractSpaceItem implements ITemplateHolder
      * does operation allow to read old mvcc generations
      */
     @Override
-    public boolean isHistoricalRead(SpaceEngine engine, Context context) {
-        return isReadOperation() && !isExclusiveReadLockOperation() && !isActiveRead(engine, context);
+    public boolean isHistoricalRead(SpaceEngine engine) {
+        return isReadOperation() && !isExclusiveReadLockOperation() && !isActiveRead(engine);
     }
 }

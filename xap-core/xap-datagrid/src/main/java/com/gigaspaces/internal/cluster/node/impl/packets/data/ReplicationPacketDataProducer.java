@@ -146,7 +146,7 @@ public class ReplicationPacketDataProducer
             ServerTransaction transaction, ArrayList<IEntryHolder> entries,
             ReplicationOutContext replicationOutContext, ReplicationMultipleOperationType operationType) {
         AbstractTransactionReplicationPacketData transactionPacket = createTransactionPacket(operationType, transaction, replicationOutContext.getOperationID(), replicationOutContext.isFromGateway());
-        setMvccCommittedGenerationIfNeeded(transactionPacket, replicationOutContext.getMVCCGenerationsState());
+        setMvccCommittedGenerationIfNeeded(transactionPacket, replicationOutContext.getMvccGenerationsState());
         //If this is a commit or abort we take the already existing prepared content from the mediator
         if (operationType == ReplicationMultipleOperationType.TRANSACTION_TWO_PHASE_COMMIT || operationType == ReplicationMultipleOperationType.TRANSACTION_TWO_PHASE_ABORT) {
             List<IReplicationTransactionalPacketEntryData> pendingTransactionData = _packetDataMediator.removePendingTransactionData(transaction);

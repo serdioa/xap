@@ -310,12 +310,12 @@ public class ReplicationOutContext extends AbstractResource
     }
 
     @Override
-    public MVCCGenerationsState getMVCCGenerationsState() {
+    public MVCCGenerationsState getMvccGenerationsState() {
         return mvccGenerationsState;
     }
 
     @Override
-    public void setMVCCGenerationsState(MVCCGenerationsState mvccGenerationsState) {
+    public void setMvccGenerationsState(MVCCGenerationsState mvccGenerationsState) {
         this.mvccGenerationsState = mvccGenerationsState;
     }
 

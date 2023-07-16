@@ -50,7 +50,7 @@ public interface IReplicationOutContext {
 
     void blobstorePendingReplicationBulk();
 
-    MVCCGenerationsState getMVCCGenerationsState();
+    MVCCGenerationsState getMvccGenerationsState();
 
-    void setMVCCGenerationsState(MVCCGenerationsState mvccGenerationsState);
+    void setMvccGenerationsState(MVCCGenerationsState mvccGenerationsState);
 }

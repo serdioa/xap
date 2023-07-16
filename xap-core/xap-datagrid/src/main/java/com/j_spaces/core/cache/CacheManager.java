@@ -2652,7 +2652,7 @@ public class CacheManager extends AbstractCacheManager
                 if (isMVCCEnabled()) {
                     // in mvcc we use embedded transactions, therefore its always single participant and one-phase
                     // commit transaction.
-                    replContext.setMVCCGenerationsState(xtnEntry.getMVCCGenerationsState());
+                    replContext.setMvccGenerationsState(xtnEntry.getMVCCGenerationsState());
                 }
                 //If single participant we replicate this as a one phase commit transaction and add to replication backlog here
                 _replicationNode.outTransaction(replContext, xtn, pLocked);
