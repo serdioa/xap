@@ -252,6 +252,7 @@ public class Context {
 
     //mvcc
     private MVCCGenerationsState mvccGenerationsState;
+    private boolean mvccEntryUncompletedGeneration;
 
     public Context() {
     }
@@ -488,6 +489,7 @@ public class Context {
         _fromClustered = false;
         entryTieredState = null;
         templateTieredState = null;
+        mvccEntryUncompletedGeneration = false;
     }
 
     public void setOnMatchUid(String uid)
@@ -1374,4 +1376,11 @@ public class Context {
         }
     }
 
+    public boolean isMvccEntryUncompletedGeneration() {
+        return mvccEntryUncompletedGeneration;
+    }
+
+    public void setMvccEntryCommittedUncompletedGeneration(boolean mvccEntryUncompletedGeneration) {
+        this.mvccEntryUncompletedGeneration = mvccEntryUncompletedGeneration;
+    }
 }

@@ -3732,6 +3732,11 @@ public class CacheManager extends AbstractCacheManager
         _mvccCacheManagerHandler.handleDisconnectNewMvccEntryGenerationFromTransaction(context, entry, xtnEntry);
     }
 
+    public void removeMvccUncompletedCommittedEntry(MVCCShellEntryCacheInfo shellEntryCacheInfo, MVCCEntryHolder brokenEntry) throws EntryDeletedException {
+        _mvccCacheManagerHandler.removeMvccUncompletedCommittedEntry(shellEntryCacheInfo, brokenEntry);
+        throw new EntryDeletedException(brokenEntry.getUID());
+    }
+
     /**
      * INITIALLOAD INFO.
      */
@@ -4183,7 +4188,7 @@ public class CacheManager extends AbstractCacheManager
     public boolean removeEntryFromCache(IEntryHolder entryHolder, boolean initiatedByEvictionStrategy, boolean locked, IEntryCacheInfo pEntry, RecentDeleteCodes recentDeleteUsage) {
         boolean recentDeleteEntry = false;
         if (!locked) {
-            if (pEntry == null)
+            if  (pEntry == null)
                 throw new RuntimeException("removeEntryFromCache: invalid usage, unlocked && pEntry is null");
             recentDeleteEntry = pEntry.isRecentDelete();
             if (recentDeleteUsage == RecentDeleteCodes.REMOVE_DUMMY && !recentDeleteEntry)

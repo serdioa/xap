@@ -4031,7 +4031,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
         // match should be done against all fields even when uid is provided gs-4091
         if ((isMvccEnabled() || ((!template.isMatchByID() || template.isChangeQuery() /*fix for GS-13604*/) && !entry.isHollowEntry()))
                 && !_templateScanner.match(context, entry, template))
-            return null;
+            return null; //todo: not return null when handling corrupted uncompleted generation
 
         try {
             performTemplateOnEntrySA(context, template, entry,
@@ -4669,10 +4669,14 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
             // if modify operation(exclusive read or not read) -> throw an exception
             if (!needRematch && isMvccEnabled() && !tmpl.isHistoricalRead(this, context)) {
                 MVCCShellEntryCacheInfo mvccShellEntryCacheInfoByUid = _cacheManager.getMVCCShellEntryCacheInfoByUid(ent.getUID());
+                if (context.isMvccEntryUncompletedGeneration()){
+                    context.setMvccEntryCommittedUncompletedGeneration(false);
+                    _cacheManager.removeMvccUncompletedCommittedEntry(mvccShellEntryCacheInfoByUid, (MVCCEntryHolder) entry);
+                }
                 MVCCEntryHolder activeData = (tmpl.isReadCommittedRequested() && (tmpl.getXidOriginated() == null || tmpl.getXidOriginated() != entry.getWriteLockOwner())) ?
                             mvccShellEntryCacheInfoByUid.getLatestCommittedOrHollow() :
                             mvccShellEntryCacheInfoByUid.getEntryHolder();
-                if (activeData != null && activeData != entry) {
+                if (activeData != entry) {
                     if (!tmpl.isActiveRead(this, context)) {
                         throw new MVCCEntryModifyConflictException(context.getMVCCGenerationsState(), (MVCCEntryHolder) entry, tmpl.getTemplateOperation());
                     }
@@ -4761,7 +4765,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
                 MVCCEntryHolder activeData = (tmpl.isReadCommittedRequested() && (tmpl.getXidOriginated() == null || tmpl.getXidOriginated() != entry.getWriteLockOwner())) ?
                         mvccShellEntryCacheInfoByUid.getLatestCommittedOrHollow() :
                         mvccShellEntryCacheInfoByUid.getEntryHolder();
-                if (activeData != null && activeData != entry) {
+                if (activeData != entry) {
                     if (!tmpl.isActiveRead(this, context)) {
                         throw new MVCCEntryModifyConflictException(context.getMVCCGenerationsState(), (MVCCEntryHolder) entry, tmpl.getTemplateOperation());
                     }

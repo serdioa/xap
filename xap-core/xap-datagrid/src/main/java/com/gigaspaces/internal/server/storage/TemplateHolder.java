@@ -750,12 +750,16 @@ public class TemplateHolder extends AbstractSpaceItem implements ITemplateHolder
             }
         }
 
-        if (cacheManager.isMVCCEnabled()
-                && (res != MatchResult.NONE || ((MVCCEntryHolder) entry).isLogicallyDeleted())) {
-            if (isMVCCEntryMatchedByGenerationsState((MVCCEntryHolder) entry, cacheManager, context)) {
-                res = MatchResult.MASTER;
-            } else {
-                res = MatchResult.NONE;
+        if (cacheManager.isMVCCEnabled()) {
+            MVCCEntryHolder mvccEntryHolder = (MVCCEntryHolder) entry;
+            if (res != MatchResult.NONE || mvccEntryHolder.isLogicallyDeleted()
+                    || (context.getMVCCGenerationsState() != null
+                        && context.getMVCCGenerationsState().isUncompletedGeneration(mvccEntryHolder.getCommittedGeneration()))) {
+                if (isMVCCEntryMatchedByGenerationsState(mvccEntryHolder, cacheManager, context)) {
+                    res = MatchResult.MASTER;
+                } else {
+                    res = MatchResult.NONE;
+                }
             }
         }
 
@@ -794,7 +798,7 @@ public class TemplateHolder extends AbstractSpaceItem implements ITemplateHolder
         if (isHistoricalRead(cacheManager.getEngine(), context)) { // historical read
             final boolean isOverridenEntryGenerationValidForHistoricalRead = !isOverridenEntry
                     || (overrideGeneration > completedGeneration)
-                    || (overrideGeneration <= completedGeneration && mvccGenerationsState.isUncompletedGeneration(overrideGeneration));
+                    || (mvccGenerationsState.isUncompletedGeneration(overrideGeneration));
             if (isDirtyRead) { // section to verify that dirty entry can't be matched
                 final long latestCommittedGeneration = cacheManager.getMVCCShellEntryCacheInfoByUid(entryHolder.getUID())
                         .getLatestCommittedOrHollow().getCommittedGeneration(); // latest committed gen from shell by uid
@@ -807,13 +811,15 @@ public class TemplateHolder extends AbstractSpaceItem implements ITemplateHolder
             return isDirtyEntry || (committedIsCompleted && isOverridenEntryGenerationValidForHistoricalRead); // if dirty or completed with valid override version
 
         } else { //locking operations (take/update/exclusiveRead)
+            if (mvccGenerationsState.isUncompletedGeneration(committedGeneration)){
+                context.setMvccEntryCommittedUncompletedGeneration(true);
+                return true;
+            }
             if (isOverridenEntry
-                    && overrideGeneration > completedGeneration
-                    && !mvccGenerationsState.isUncompletedGeneration(overrideGeneration)) {
+                    && overrideGeneration > completedGeneration) {
                 throw new MVCCEntryModifyConflictException(mvccGenerationsState, entryHolder, getTemplateOperation()); // overriden can't be modified
             }
-            if ((committedGeneration > completedGeneration)
-                    && (!mvccGenerationsState.isUncompletedGeneration(committedGeneration))) {
+            if ((committedGeneration > completedGeneration)) {
                 throw new MVCCEntryModifyConflictException(mvccGenerationsState, entryHolder, getTemplateOperation()); // entry already younger than completedGen
             }
             return isDirtyEntry || (committedIsCompleted && !isOverridenEntry);

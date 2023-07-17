@@ -140,4 +140,13 @@ public class MVCCCacheManagerHandler {
         mvccShellEntryCacheInfo.setDirtyEntryCacheInfo(dirtyEntryCacheInfo);
         return dirtyEntryCacheInfo;
     }
+
+    public void removeMvccUncompletedCommittedEntry(MVCCShellEntryCacheInfo shellEntryCacheInfo, MVCCEntryHolder brokenEntry) {
+        MVCCEntryCacheInfo latestGenerationCacheInfo = shellEntryCacheInfo.getLatestGenerationCacheInfo();
+        assert latestGenerationCacheInfo.getEntryHolder() == brokenEntry;
+        if (!brokenEntry.isLogicallyDeleted()) {
+            cacheManager.removeEntryFromCache(brokenEntry, false, true, latestGenerationCacheInfo, CacheManager.RecentDeleteCodes.NONE);
+        }
+        shellEntryCacheInfo.removeBrokenGeneration(brokenEntry);
+    }
 }

@@ -112,6 +112,16 @@ public class MVCCShellEntryCacheInfo extends MemoryBasedEntryCacheInfo {
         return new MVCCShellIterator();
     }
 
+    public void removeBrokenGeneration(MVCCEntryHolder entryHolder) {
+        allEntryGenerations.removeLast();
+        MVCCEntryCacheInfo latestValidGenerationCacheInfo = getLatestGenerationCacheInfo();
+        MVCCEntryHolder latestValidGenerationEntryHolder = latestValidGenerationCacheInfo == null ? null : latestValidGenerationCacheInfo.getEntryHolder();
+        if (entryHolder.isOverridingAnother()){
+            assert latestValidGenerationEntryHolder.getOverrideGeneration() == entryHolder.getCommittedGeneration();
+            latestValidGenerationEntryHolder.setOverrideGeneration(-1);
+        }
+    }
+
     private class MVCCShellIterator implements IScanListIterator<MVCCEntryCacheInfo>, Iterator<MVCCEntryCacheInfo> {
         private MVCCEntryCacheInfo dirty = getDirtyEntryCacheInfo();
         private Iterator<MVCCEntryCacheInfo> descIterator = descIterator();
