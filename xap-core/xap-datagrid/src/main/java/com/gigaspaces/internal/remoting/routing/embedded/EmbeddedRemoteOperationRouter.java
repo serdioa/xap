@@ -36,7 +36,6 @@ import java.util.concurrent.Executor;
  */
 @com.gigaspaces.api.InternalApi
 public class EmbeddedRemoteOperationRouter extends AbstractRemoteOperationRouter {
-
     protected final RemoteOperationsExecutorProxy _memberProxy;
     private final int _partitionId;
     private final String _partitionDesc;

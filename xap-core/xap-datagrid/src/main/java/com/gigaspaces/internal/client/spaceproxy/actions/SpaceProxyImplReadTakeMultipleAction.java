@@ -33,8 +33,6 @@ import java.rmi.RemoteException;
  */
 @com.gigaspaces.api.InternalApi
 public class SpaceProxyImplReadTakeMultipleAction extends ReadTakeMultipleProxyAction<SpaceProxyImpl> {
-
-
     @SuppressWarnings("deprecation")
     @Override
     public Object[] readMultiple(SpaceProxyImpl spaceProxy, ReadTakeMultipleProxyActionInfo actionInfo)

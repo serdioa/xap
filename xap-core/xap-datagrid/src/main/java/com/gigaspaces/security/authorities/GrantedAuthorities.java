@@ -133,7 +133,7 @@ public final class GrantedAuthorities implements Serializable {
             }
 
             boolean accept = filter.accept(object);
-            if (filter instanceof SpaceAuthority.SpaceFilter) {
+            if (filter instanceof SpaceAuthority.SpacenameFilter) {
                 // spacefilter are checked at SecurityFilter lvl
                 continue;
             }
