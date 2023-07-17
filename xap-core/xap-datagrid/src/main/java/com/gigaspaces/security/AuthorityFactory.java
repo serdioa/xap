@@ -23,6 +23,7 @@ import com.gigaspaces.security.authorities.MonitorAuthority.MonitorPrivilege;
 import com.gigaspaces.security.authorities.RoleAuthority.RolePrivilege;
 import com.gigaspaces.security.authorities.SpaceAuthority.SpacePrivilege;
 import com.gigaspaces.security.authorities.SystemAuthority.SystemPrivilege;
+import com.gigaspaces.security.authorities.ServiceAuthority.ServicePrivilege;
 
 /**
  * A factory for creating an {@link Authority} instance back from its String representation returned
@@ -96,6 +97,8 @@ public final class AuthorityFactory {
             return GridAuthority.valueOf(authority);
         } else if (MonitorPrivilege.class.getSimpleName().equals(privilege)) {
             return MonitorAuthority.valueOf(authority);
+        } else if (ServiceAuthority.ServicePrivilege.class.getSimpleName().equals(privilege)) {
+            return ServiceAuthority.valueOf(authority);
         }
 
         throw new IllegalArgumentException("Unknown authority type; Could not create an Authority from: " + authority);
@@ -116,6 +119,8 @@ public final class AuthorityFactory {
             return new SpaceAuthority(((SpacePrivilege) privilege));
         } else if (privilege instanceof SystemPrivilege) {
             return new SystemAuthority((SystemPrivilege) privilege);
+        } else if (privilege instanceof ServicePrivilege) {
+            return new ServiceAuthority((ServicePrivilege) privilege);
         }
 
         throw new IllegalArgumentException("unknown privilege " + privilege);
