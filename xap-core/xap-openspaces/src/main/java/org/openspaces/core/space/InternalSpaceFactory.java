@@ -23,8 +23,6 @@ import com.gigaspaces.internal.lookup.SpaceUrlUtils;
 import com.gigaspaces.internal.sync.mirror.MirrorDistributedTxnConfig;
 import com.gigaspaces.query.sql.functions.SqlFunction;
 import com.gigaspaces.server.SpaceCustomComponent;
-import com.gigaspaces.start.ClasspathBuilder;
-import com.gigaspaces.start.XapModules;
 import com.gigaspaces.utils.Pair;
 import com.j_spaces.core.IJSpace;
 import com.j_spaces.core.client.FinderException;
@@ -37,13 +35,10 @@ import org.openspaces.core.config.SpaceSqlFunctionBean;
 import org.openspaces.core.space.filter.FilterProviderFactory;
 import org.openspaces.core.space.filter.replication.ReplicationFilterProviderFactory;
 import org.openspaces.core.transaction.DistributedTransactionProcessingConfigurationFactoryBean;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
 import java.net.MalformedURLException;
-import java.net.URLClassLoader;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -199,12 +194,9 @@ public class InternalSpaceFactory {
 
     private Pair<ISpaceFilter, int[]> loadSecurityFilter(String spaceName) {
         // SecurityFilter is in the xap-premium
-        try (URLClassLoader tempClassLoader = new URLClassLoader(
-                new ClasspathBuilder().appendJar(XapModules.SECURITY).toURLsArray(), Thread.currentThread().getContextClassLoader())) {
-
-            Class c = tempClassLoader.loadClass("com.gigaspaces.security.spring.SecurityFilter");
+        try {
+            Class c = Class.forName("com.gigaspaces.security.spring.SecurityFilter");
             ISpaceFilter securityFilter = (ISpaceFilter) c.newInstance();
-
             return new Pair(securityFilter, c.getMethod("getOpCodes").invoke(securityFilter));
         } catch (Exception e) {
             throw new CannotCreateSpaceException("Failed to create space " + spaceName + "", e);
