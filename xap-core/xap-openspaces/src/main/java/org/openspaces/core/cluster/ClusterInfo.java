@@ -60,8 +60,7 @@ public class ClusterInfo implements Cloneable, Serializable {
 
     private String name;
 
-    @Deprecated
-    private boolean dedicatedSecurity;
+    private boolean secured;
 
     /**
      * Constructs a new cluster info with null values on all the fields
@@ -94,7 +93,7 @@ public class ClusterInfo implements Cloneable, Serializable {
         this.numberOfBackups = builder.getNumberOfBackups();
         this.instanceId = builder.getInstanceId();
         this.backupId = builder.getBackupId();
-        this.dedicatedSecurity = builder.isDedicatedSecurity();
+        this.secured = builder.isSecured();
     }
 
     protected ClusterInfo(ClusterInfo other) {
@@ -104,11 +103,11 @@ public class ClusterInfo implements Cloneable, Serializable {
         this.numberOfBackups = other.getNumberOfBackups();
         this.instanceId = other.getInstanceId();
         this.backupId = other.getBackupId();
-        this.dedicatedSecurity = other.isDedicatedSecurity();
+        this.secured = other.isSecured();
     }
 
-    public boolean isDedicatedSecurity() {
-        return dedicatedSecurity;
+    public boolean isSecured() {
+        return secured;
     }
 
     /**
@@ -307,7 +306,7 @@ public class ClusterInfo implements Cloneable, Serializable {
         sb.append("numberOfBackups[").append(numberOfBackups).append("] ");
         sb.append("instanceId[").append(instanceId).append("] ");
         sb.append("backupId[").append(backupId).append("]");
-        sb.append("dedicatedSecurity[").append(dedicatedSecurity).append("]");
+        sb.append("secured[").append(secured).append("]");
         return sb.toString();
     }
 }

@@ -178,7 +178,7 @@ public class InternalSpaceFactory {
             factory.addFilterProvider(filterProvider);
         }
 
-        if (clusterInfo!=null && clusterInfo.isDedicatedSecurity()) {
+        if (clusterInfo!=null && clusterInfo.isSecured()) {
             Pair<ISpaceFilter, int[]> securityFilterPair = loadSecurityFilter(spaceFactoryBean.getName());
 
             FilterProvider filterProvider = new FilterProvider("SpaceSecurityFilter", securityFilterPair.getFirst());
