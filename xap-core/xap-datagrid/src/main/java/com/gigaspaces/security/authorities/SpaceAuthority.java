@@ -503,7 +503,7 @@ public class SpaceAuthority implements InternalAuthority {
 
         @Override
         public String toString() {
-            return "SpaceFilter " + spaceName ;
+            return "SpacenameFilter " + spaceName ;
         }
     }
 }
