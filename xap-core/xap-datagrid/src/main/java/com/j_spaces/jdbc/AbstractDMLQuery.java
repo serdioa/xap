@@ -266,8 +266,10 @@ public abstract class AbstractDMLQuery implements Query, Cloneable {
     }
 
     public void setPreparedValues(Object[] preparedValues) {
-        for (int i = 0; i < preparedValues.length; i++) {
-            preparedValues[i] = TransformUtils.stripTrailingZerosIfNeeded(preparedValues[i]);
+        if (preparedValues != null) {
+            for (int i = 0; i < preparedValues.length; i++) {
+                preparedValues[i] = TransformUtils.stripTrailingZerosIfNeeded(preparedValues[i]);
+            }
         }
         this.preparedValues = preparedValues;
     }
