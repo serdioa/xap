@@ -7,45 +7,21 @@ public class ServiceAuthority implements InternalAuthority {
      */
     public enum ServicePrivilege implements Privilege {
         /**
-         * create service
+         * create/configure/delete service
          */
-        CREATE,
+        CONFIGURE_SERVICE,
         /**
-         * edit / configure service
+         * deploy/undeploy service
          */
-        CONFIGURE,
-        /**
-         * dry-run query
-         */
-        DRY_RUN_QUERY,
-        /**
-         * deploy service
-         */
-        DEPLOY,
-        /**
-         * undeploy service
-         */
-        UNDEPLOY,
-        /**
-         * delete service
-         */
-        DELETE;
+        MANAGE_SERVICE;
 
         @Override
         public String toString() {
             switch (this) {
-                case CREATE:
-                    return "Create Service";
-                case CONFIGURE:
-                    return "Edit / Configure Service";
-                case DRY_RUN_QUERY:
-                    return "Dry-run Query";
-                case DEPLOY:
-                    return "Deploy Service";
-                case UNDEPLOY:
-                    return "Undeploy Service";
-                case DELETE:
-                    return "Delete Service";
+                case CONFIGURE_SERVICE:
+                    return "Create/Configure/Delete Service";
+                case MANAGE_SERVICE:
+                    return "Deploy/Undeploy Service";
                 default:
                     return super.toString();
             }
