@@ -29,6 +29,7 @@ import com.gigaspaces.internal.transport.ITemplatePacket;
 import com.gigaspaces.internal.utils.ObjectUtils;
 import com.gigaspaces.query.explainplan.ExplainPlan;
 import com.gigaspaces.security.service.SecurityInterceptor;
+import com.gigaspaces.utils.TransformUtils;
 import com.j_spaces.core.OperationID;
 import com.j_spaces.core.client.Modifiers;
 import com.j_spaces.core.client.ReadModifiers;
@@ -43,7 +44,6 @@ import com.j_spaces.jdbc.parser.ExpNode;
 import com.j_spaces.jdbc.parser.InnerQueryNode;
 import com.j_spaces.jdbc.parser.RowNumNode;
 import com.j_spaces.jdbc.query.QueryTableData;
-
 import net.jini.core.transaction.Transaction;
 
 import java.io.IOException;
@@ -52,12 +52,7 @@ import java.io.ObjectOutput;
 import java.sql.BatchUpdateException;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
-import java.util.TreeMap;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
@@ -271,6 +266,9 @@ public abstract class AbstractDMLQuery implements Query, Cloneable {
     }
 
     public void setPreparedValues(Object[] preparedValues) {
+        for (int i = 0; i < preparedValues.length; i++) {
+            preparedValues[i] = TransformUtils.stripTrailingZerosIfNeeded(preparedValues[i]);
+        }
         this.preparedValues = preparedValues;
     }
 
