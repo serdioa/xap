@@ -47,6 +47,11 @@ public class CompoundSpaceId implements SmartExternalizable {
     }
 
     public CompoundSpaceId(Object[] values) {
+        if (values != null){
+            for (int i = 0; i < values.length; i++) {
+                values[i] = TransformUtils.stripTrailingZerosIfNeeded(values[i]);
+            }
+        }
         this.values = values;
     }
 
@@ -67,7 +72,7 @@ public class CompoundSpaceId implements SmartExternalizable {
     }
 
     public void setValue(int index, Object value) {
-        values[index] = value;
+        values[index] = TransformUtils.stripTrailingZerosIfNeeded(value);
     }
 
     @Override
@@ -75,11 +80,11 @@ public class CompoundSpaceId implements SmartExternalizable {
         if (values.length == 0)
             return "";
         if (values.length == 1)
-            return TransformUtils.stripTrailingZerosIfNeeded(values[0]).toString();
+            return values[0].toString();
         StringBuilder sb = new StringBuilder();
-        sb.append(TransformUtils.stripTrailingZerosIfNeeded(values[0]));
+        sb.append(values[0]);
         for (int i = 1; i < values.length; i++)
-            sb.append(SEPARATOR).append(TransformUtils.stripTrailingZerosIfNeeded(values[i]));
+            sb.append(SEPARATOR).append(values[i]);
         return sb.toString();
     }
 
