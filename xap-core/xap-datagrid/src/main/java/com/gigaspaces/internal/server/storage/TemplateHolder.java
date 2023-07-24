@@ -753,6 +753,9 @@ public class TemplateHolder extends AbstractSpaceItem implements ITemplateHolder
         if (cacheManager.isMVCCEnabled()
                 && (res != MatchResult.NONE || ((MVCCEntryHolder) entry).isLogicallyDeleted())) {
             if (isMVCCEntryMatchedByGenerationsState((MVCCEntryHolder) entry, cacheManager, context)) {
+                if (masterEntryData == null) { //we set masterEntryData for match entry in context later.
+                    masterEntryData = entry.getTxnEntryData();
+                }
                 res = MatchResult.MASTER;
             } else {
                 res = MatchResult.NONE;
