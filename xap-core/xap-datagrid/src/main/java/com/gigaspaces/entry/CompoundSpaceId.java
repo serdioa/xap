@@ -3,6 +3,7 @@ package com.gigaspaces.entry;
 import com.gigaspaces.internal.io.IOUtils;
 import com.gigaspaces.internal.utils.GsEnv;
 import com.gigaspaces.serialization.SmartExternalizable;
+import com.gigaspaces.utils.TransformUtils;
 
 import java.io.IOException;
 import java.io.ObjectInput;
@@ -46,6 +47,11 @@ public class CompoundSpaceId implements SmartExternalizable {
     }
 
     public CompoundSpaceId(Object[] values) {
+        if (values != null){
+            for (int i = 0; i < values.length; i++) {
+                values[i] = TransformUtils.stripTrailingZerosIfNeeded(values[i]);
+            }
+        }
         this.values = values;
     }
 
@@ -66,7 +72,7 @@ public class CompoundSpaceId implements SmartExternalizable {
     }
 
     public void setValue(int index, Object value) {
-        values[index] = value;
+        values[index] = TransformUtils.stripTrailingZerosIfNeeded(value);
     }
 
     @Override
