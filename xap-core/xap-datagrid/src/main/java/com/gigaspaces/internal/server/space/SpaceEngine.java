@@ -647,7 +647,9 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
             }
 
             _dataEventManager.init(isReplicated(), getReplicationNode());
-            _mvccSpaceEngineHandler.initCleanupManager();
+            if (isMvccEnabled()) {
+                _mvccSpaceEngineHandler.initCleanupManager();
+            }
         } catch (Exception ex) {
             String msg = "Failed to init [" + _spaceName + "] space.";
 
