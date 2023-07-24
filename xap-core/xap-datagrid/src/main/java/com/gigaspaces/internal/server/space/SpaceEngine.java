@@ -4028,8 +4028,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
                     template.getTemplateOperation() == SpaceOperations.UPDATE;
         }
 
-
-        if (entry == null || (useSCN && (template.getSCN() > entry.getSCN()))) {
+        if (entry == null || (useSCN && (template.getSCN() > entry.getSCN())) || (isMvccEnabled() && entry.isHollowEntry())) {
             if (exceptionIfNoEntry)//update
                 returnEntryNotInSpaceError(context, template, null, makeWaitForInfo);
             return null;
@@ -5170,9 +5169,9 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
             // but only if the entry should not be deleted (this
             // occurs when the entry was written under the same Xtn as
             // the Take/TakeIE)
-            boolean isUpdateTakeMvcc = isMvccEnabled() && entry.getWriteLockOperation() == SpaceOperations.UPDATE;
-            if (entry.getXidOriginatedTransaction() == null ||
-                    !template.getXidOriginatedTransaction().equals(entry.getXidOriginatedTransaction()) || isUpdateTakeMvcc) {
+            if (entry.getXidOriginatedTransaction() == null
+                    || !template.getXidOriginatedTransaction().equals(entry.getXidOriginatedTransaction())
+                    || isMvccEnabled() && entry.getWriteLockOperation() == SpaceOperations.UPDATE) {
                 _cacheManager.associateEntryWithXtn(context, entry, template, template.getXidOriginated(), null);
             }
         }

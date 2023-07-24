@@ -184,8 +184,7 @@ public class ReplicationPacketDataProducer
                             singlePacket = createChangeReplicationPacket(entryHolder,
                                     replicationOutContext.getOperationIDs()[i],
                                     (Collection<SpaceEntryMutator>) updateInfo,
-                                    entryHolder.getShadow()
-                                            .getEntryData(),
+                                    entryHolder.getShadow().getEntryData(),
                                     replicationOutContext.isFromGateway());
                         } else {
                             boolean[] partialUpdateIndicators = (boolean[]) updateInfo;
