@@ -976,6 +976,7 @@ public interface Constants {
 
         // Time limit for holding entry version in the cache.
         String MVCC_HISTORICAL_ENTRY_LIFETIME = SPACE_CONFIG_PREFIX + MVCC_PREFIX + "historical_entry_lifetime";
+        // Time limit unit. Supported from nanoseconds to days (n, u, ms, s, m, h, d)
         String MVCC_HISTORICAL_ENTRY_LIFETIME_TIMEUNIT = SPACE_CONFIG_PREFIX + MVCC_PREFIX + "historical_entry_lifetime_timeunit";
         // Max allowed limit for historical entries number per UID. CAN NOT BE 0.
         // Data lifetime take precedence over this property.

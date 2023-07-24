@@ -331,8 +331,6 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
 
         _partitionId = _clusterInfo.getPartitionOfMember(_fullSpaceName);
 
-        _mvccCleanupManager = new MVCCCleanupManager(_spaceImpl);
-
         // ********** Finished initializing components which depend only on spaceImpl and configuration **********
 
         // Initialize Spaghetti components (TODO: de-Spaghetti components):
@@ -389,6 +387,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
         _templateScanner = new TemplateScanner(_typeManager, _cacheManager, _dataEventManager, this);
         _fifoGroupsHandler = new FifoGroupsHandler(this);
         _mvccSpaceEngineHandler = _spaceImpl.isMvccEnabled() ? new MVCCSpaceEngineHandler(this) : null;
+        _mvccCleanupManager = _spaceImpl.isMvccEnabled() ? new MVCCCleanupManager(_spaceImpl, this) : null;
         _duplicateOperationIDFilter = createDuplicateOperationIDFilter();
         _resultsSizeLimit = _configReader.getIntSpaceProperty(ENGINE_QUERY_RESULT_SIZE_LIMIT, ENGINE_QUERY_RESULT_SIZE_LIMIT_DEFAULT);
         _resultsSizeLimitMemoryCheckBatchSize = _configReader.getIntSpaceProperty(ENGINE_QUERY_RESULT_SIZE_LIMIT_MEMORY_CHECK_BATCH_SIZE, ENGINE_QUERY_RESULT_SIZE_LIMIT_MEMORY_CHECK_BATCH_SIZE_DEFAULT);

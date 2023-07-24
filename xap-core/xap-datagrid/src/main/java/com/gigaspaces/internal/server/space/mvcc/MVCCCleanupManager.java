@@ -3,6 +3,7 @@ package com.gigaspaces.internal.server.space.mvcc;
 import com.gigaspaces.internal.server.space.SpaceEngine;
 import com.gigaspaces.internal.server.space.SpaceImpl;
 import com.gigaspaces.internal.server.space.ZooKeeperMVCCHandler;
+import com.j_spaces.core.admin.SpaceConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -16,14 +17,16 @@ public class MVCCCleanupManager {
     private static final Logger _logger = LoggerFactory.getLogger(com.gigaspaces.logger.Constants.LOGGER_MVCC_CLEANUP);
 
     private final SpaceEngine _engine;
+    private final SpaceConfig _spaceConfig;
     private final ZooKeeperMVCCHandler _zookeeperMVCCHandler;
 
     private boolean _closed;
 
 
-    public MVCCCleanupManager(SpaceImpl spaceImpl) {
+    public MVCCCleanupManager(SpaceImpl spaceImpl, SpaceEngine engine) {
+        _engine = engine;
+        _spaceConfig = spaceImpl.getConfig();
         _zookeeperMVCCHandler = spaceImpl.getZookeeperMVCCHandler();
-        _engine = spaceImpl.getEngine();
     }
 
 
@@ -33,6 +36,7 @@ public class MVCCCleanupManager {
     public void init() {
         if (!_closed) {
             _logger.debug("MVCC cleaner daemon thread started");
+            _logger.debug("Cache manager: " + _engine.getCacheManager());
             //TODO: in PIC-2847 - init cleaner thread and start
         }
     }
