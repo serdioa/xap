@@ -969,9 +969,19 @@ public interface Constants {
     interface Mvcc {
         String MVCC_PREFIX = "mvcc.";
         String MVCC_ENABLED_PROP = MVCC_PREFIX + "enabled";
-        String MVCC_ENABLED_DEFAULT = "false";
         String FULL_MVCC_ENABLED_PROP = SPACE_CONFIG_PREFIX + MVCC_ENABLED_PROP;
+        String MVCC_ENABLED_DEFAULT = "false";
         String CACHE_MANAGER_MVCC_LOCKS_SIZE_PROP = "engine.mvcc.locks-size";
         String CACHE_MANAGER_MVCC_LOCKS_SIZE_DEFAULT = "10000";
+
+        // Time limit for holding entry version in the cache.
+        String MVCC_HISTORICAL_ENTRY_LIFETIME = SPACE_CONFIG_PREFIX + MVCC_PREFIX + "historical_entry_lifetime";
+        String MVCC_HISTORICAL_ENTRY_LIFETIME_TIMEUNIT = SPACE_CONFIG_PREFIX + MVCC_PREFIX + "historical_entry_lifetime_timeunit";
+        // Max allowed limit for historical entries number per UID. CAN NOT BE 0.
+        // Data lifetime take precedence over this property.
+        String MVCC_HISTORICAL_ENTRIES_LIMIT = SPACE_CONFIG_PREFIX + MVCC_PREFIX + "historical_entries_limit";
+        String MVCC_HISTORICAL_ENTRY_LIFETIME_DEFAULT = "10";
+        String MVCC_HISTORICAL_ENTRY_LIFETIME_TIMEUNIT_DEFAULT = "s"; //seconds
+        String MVCC_HISTORICAL_ENTRIES_LIMIT_DEFAULT = "5";
     }
 }
