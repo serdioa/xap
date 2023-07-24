@@ -81,6 +81,7 @@ import com.gigaspaces.internal.server.space.iterator.ServerIteratorInfo;
 import com.gigaspaces.internal.server.space.iterator.ServerIteratorRequestInfo;
 import com.gigaspaces.internal.server.space.iterator.ServerIteratorsManager;
 import com.gigaspaces.internal.server.space.metadata.SpaceTypeManager;
+import com.gigaspaces.internal.server.space.mvcc.MVCCCleanupManager;
 import com.gigaspaces.internal.server.space.mvcc.MVCCEntryModifyConflictException;
 import com.gigaspaces.internal.server.space.mvcc.MVCCSpaceEngineHandler;
 import com.gigaspaces.internal.server.space.operations.WriteEntriesResult;
@@ -212,6 +213,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
     private final SpaceUidFactory _uidFactory;
     private final IDirectSpaceProxy _directProxy;
     private final SpaceTypeManager _typeManager;
+    private final MVCCCleanupManager _mvccCleanupManager;
     // Uncategorized components
     private final SpaceReplicationManager _replicationManager;
     private final TransactionHandler _transactionHandler;
@@ -328,6 +330,8 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
         _typeManager = new SpaceTypeManager(typeDescFactory, _configReader);
 
         _partitionId = _clusterInfo.getPartitionOfMember(_fullSpaceName);
+
+        _mvccCleanupManager = new MVCCCleanupManager(_spaceImpl);
 
         // ********** Finished initializing components which depend only on spaceImpl and configuration **********
 
@@ -647,6 +651,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
             }
 
             _dataEventManager.init(isReplicated(), getReplicationNode());
+            _mvccCleanupManager.init();
         } catch (Exception ex) {
             String msg = "Failed to init [" + _spaceName + "] space.";
 
@@ -3714,6 +3719,8 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
         if(tieredStorageManager != null){
             tieredStorageManager.close();
         }
+        if (_mvccCleanupManager != null)
+            _mvccCleanupManager.close();
     }
 
     /**

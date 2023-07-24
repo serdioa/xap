@@ -285,6 +285,7 @@ public class SpaceImpl extends AbstractService implements IRemoteSpace, IInterna
     private ZookeeperClient zookeeperClient;
     private final ZookeeperLastPrimaryHandler zookeeperLastPrimaryHandler;
     private ZookeeperTopologyHandler zookeeperTopologyHandler;
+    private final ZooKeeperMVCCHandler zookeeperMVCCHandler;
 
     private final Map<Class<? extends SystemTask>, SpaceActionExecutor> executorMap = XapExtensions.getInstance().getActionExecutors();
     private BroadcastTableHandler _broadcastTableHandler;
@@ -362,6 +363,7 @@ public class SpaceImpl extends AbstractService implements IRemoteSpace, IInterna
 
         zookeeperLastPrimaryHandler = hasZk ? new ZookeeperLastPrimaryHandler(this, attributeStore, _logger) : null;
 
+        zookeeperMVCCHandler = hasZk ? new ZooKeeperMVCCHandler(attributeStore, _spaceName) : null;
 
         //init quiesce handler before startInternal to ensure no operations will arrive before handler is initialized
         this._quiesceHandler = new QuiesceHandler(this, getQuiesceStateChangedEvent(customProperties));
@@ -482,6 +484,10 @@ public class SpaceImpl extends AbstractService implements IRemoteSpace, IInterna
 
     public ZookeeperLastPrimaryHandler getZookeeperLastPrimaryHandler() {
         return zookeeperLastPrimaryHandler;
+    }
+
+    public ZooKeeperMVCCHandler getZookeeperMVCCHandler() {
+        return zookeeperMVCCHandler;
     }
 
     private void initClassLoadersManager(String enableTaskReloadingStr, String maxClassLoadersStr) {
