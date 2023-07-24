@@ -81,7 +81,6 @@ import com.gigaspaces.internal.server.space.iterator.ServerIteratorInfo;
 import com.gigaspaces.internal.server.space.iterator.ServerIteratorRequestInfo;
 import com.gigaspaces.internal.server.space.iterator.ServerIteratorsManager;
 import com.gigaspaces.internal.server.space.metadata.SpaceTypeManager;
-import com.gigaspaces.internal.server.space.mvcc.MVCCCleanupManager;
 import com.gigaspaces.internal.server.space.mvcc.MVCCEntryModifyConflictException;
 import com.gigaspaces.internal.server.space.mvcc.MVCCSpaceEngineHandler;
 import com.gigaspaces.internal.server.space.operations.WriteEntriesResult;
@@ -213,7 +212,6 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
     private final SpaceUidFactory _uidFactory;
     private final IDirectSpaceProxy _directProxy;
     private final SpaceTypeManager _typeManager;
-    private final MVCCCleanupManager _mvccCleanupManager;
     // Uncategorized components
     private final SpaceReplicationManager _replicationManager;
     private final TransactionHandler _transactionHandler;
@@ -387,7 +385,6 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
         _templateScanner = new TemplateScanner(_typeManager, _cacheManager, _dataEventManager, this);
         _fifoGroupsHandler = new FifoGroupsHandler(this);
         _mvccSpaceEngineHandler = _spaceImpl.isMvccEnabled() ? new MVCCSpaceEngineHandler(this) : null;
-        _mvccCleanupManager = _spaceImpl.isMvccEnabled() ? new MVCCCleanupManager(_spaceImpl, this) : null;
         _duplicateOperationIDFilter = createDuplicateOperationIDFilter();
         _resultsSizeLimit = _configReader.getIntSpaceProperty(ENGINE_QUERY_RESULT_SIZE_LIMIT, ENGINE_QUERY_RESULT_SIZE_LIMIT_DEFAULT);
         _resultsSizeLimitMemoryCheckBatchSize = _configReader.getIntSpaceProperty(ENGINE_QUERY_RESULT_SIZE_LIMIT_MEMORY_CHECK_BATCH_SIZE, ENGINE_QUERY_RESULT_SIZE_LIMIT_MEMORY_CHECK_BATCH_SIZE_DEFAULT);
@@ -650,7 +647,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
             }
 
             _dataEventManager.init(isReplicated(), getReplicationNode());
-            _mvccCleanupManager.init();
+            _mvccSpaceEngineHandler.initCleanupManager();
         } catch (Exception ex) {
             String msg = "Failed to init [" + _spaceName + "] space.";
 
@@ -3718,8 +3715,9 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
         if(tieredStorageManager != null){
             tieredStorageManager.close();
         }
-        if (_mvccCleanupManager != null)
-            _mvccCleanupManager.close();
+        if (isMvccEnabled()) {
+            _mvccSpaceEngineHandler.closeCleanupManager();
+        }
     }
 
     /**

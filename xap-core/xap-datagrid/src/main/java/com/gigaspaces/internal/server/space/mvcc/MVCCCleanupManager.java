@@ -16,17 +16,19 @@ public class MVCCCleanupManager {
 
     private static final Logger _logger = LoggerFactory.getLogger(com.gigaspaces.logger.Constants.LOGGER_MVCC_CLEANUP);
 
-    private final SpaceEngine _engine;
+    private final SpaceImpl _spaceImpl;
+    private SpaceEngine _engine;
     private final SpaceConfig _spaceConfig;
     private final ZooKeeperMVCCHandler _zookeeperMVCCHandler;
 
     private boolean _closed;
 
 
-    public MVCCCleanupManager(SpaceImpl spaceImpl, SpaceEngine engine) {
-        _engine = engine;
-        _spaceConfig = spaceImpl.getConfig();
-        _zookeeperMVCCHandler = spaceImpl.getZookeeperMVCCHandler();
+    public MVCCCleanupManager(SpaceImpl spaceImpl) {
+        _spaceImpl = spaceImpl;
+        _spaceConfig = _spaceImpl.getConfig();
+        _zookeeperMVCCHandler = (_spaceImpl.useZooKeeper() && _spaceImpl.isMvccEnabled())
+                ? new ZooKeeperMVCCHandler(_spaceImpl.getAttributeStore(), _spaceImpl.getName()) : null;
     }
 
 
@@ -35,8 +37,8 @@ public class MVCCCleanupManager {
     */
     public void init() {
         if (!_closed) {
+            _engine = _spaceImpl.getEngine();
             _logger.debug("MVCC cleaner daemon thread started");
-            _logger.debug("Cache manager: " + _engine.getCacheManager());
             //TODO: in PIC-2847 - init cleaner thread and start
         }
     }

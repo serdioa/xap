@@ -1423,8 +1423,7 @@ public class JSpaceAttributes
 
 
     public TimeUnit getMvccHistoricalEntryLifetimeTimeUnit() {
-        return StringUtils.parseTimeUnit(getProperty(MVCC_HISTORICAL_ENTRY_LIFETIME_TIMEUNIT, MVCC_HISTORICAL_ENTRY_LIFETIME_TIMEUNIT_DEFAULT),
-                StringUtils.parseTimeUnit(MVCC_HISTORICAL_ENTRY_LIFETIME_TIMEUNIT_DEFAULT, TimeUnit.SECONDS));
+        return StringUtils.parseTimeUnit(getProperty(MVCC_HISTORICAL_ENTRY_LIFETIME_TIMEUNIT, MVCC_HISTORICAL_ENTRY_LIFETIME_TIMEUNIT_DEFAULT));
     }
 
     /**
@@ -1434,7 +1433,7 @@ public class JSpaceAttributes
      * @param entryLifetimeTimeUnit - can not be null
      * */
     public void setMvccHistoricalEntryLifetimeTimeUnit(String entryLifetimeTimeUnit) {
-        StringUtils.parseTimeUnit(entryLifetimeTimeUnit, StringUtils.parseTimeUnit(MVCC_HISTORICAL_ENTRY_LIFETIME_TIMEUNIT_DEFAULT, TimeUnit.SECONDS));
+        StringUtils.parseTimeUnit(entryLifetimeTimeUnit);
         this.setProperty(MVCC_HISTORICAL_ENTRY_LIFETIME_TIMEUNIT, entryLifetimeTimeUnit);
     }
 
