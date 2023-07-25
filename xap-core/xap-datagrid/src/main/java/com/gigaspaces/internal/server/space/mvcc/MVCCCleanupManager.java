@@ -52,7 +52,7 @@ public class MVCCCleanupManager {
     }
 
     /**
-     * Closes the MVCC Cleanup Manager (gracefully die cleaner daemon thread)
+     * Closes the MVCC Cleanup Manager (gracefully terminate cleaner daemon thread)
      */
     public final void close() {
         _closed = true;
