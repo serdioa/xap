@@ -41,7 +41,6 @@ import java.rmi.UnmarshalException;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Properties;
-import java.util.concurrent.TimeUnit;
 
 import static com.j_spaces.core.Constants.CacheManager.*;
 import static com.j_spaces.core.Constants.Cluster.*;
@@ -56,7 +55,7 @@ import static com.j_spaces.core.Constants.LookupManager.FULL_LOOKUP_IS_PRIVATE_P
 import static com.j_spaces.core.Constants.LookupManager.LOOKUP_IS_PRIVATE_DEFAULT;
 import static com.j_spaces.core.Constants.Mirror.FULL_MIRROR_SERVICE_ENABLED_PROP;
 import static com.j_spaces.core.Constants.Mirror.MIRROR_SERVICE_ENABLED_DEFAULT;
-import static com.j_spaces.core.Constants.Mvcc.*;
+import static com.j_spaces.core.Constants.Mvcc.FULL_MVCC_ENABLED_PROP;
 import static com.j_spaces.core.Constants.Mvcc.MVCC_ENABLED_DEFAULT;
 import static com.j_spaces.core.Constants.QueryProcessorInfo.*;
 import static com.j_spaces.core.Constants.RemoteCode.*;
@@ -1412,39 +1411,6 @@ public class JSpaceAttributes
     public void setMvccEnabled(boolean isMvccEnabled) {
         this.setProperty(FULL_MVCC_ENABLED_PROP, String.valueOf(isMvccEnabled));
     }
-
-    public int getMvccHistoricalEntryLifetime() {
-        return Integer.parseInt(getProperty(MVCC_HISTORICAL_ENTRY_LIFETIME, MVCC_HISTORICAL_ENTRY_LIFETIME_DEFAULT));
-    }
-
-    public void setMvccHistoricalEntryLifetime(int entryLifetime) {
-        this.setProperty(MVCC_HISTORICAL_ENTRY_LIFETIME, String.valueOf(entryLifetime));
-    }
-
-
-    public TimeUnit getMvccHistoricalEntryLifetimeTimeUnit() {
-        return StringUtils.parseTimeUnit(getProperty(MVCC_HISTORICAL_ENTRY_LIFETIME_TIMEUNIT, MVCC_HISTORICAL_ENTRY_LIFETIME_TIMEUNIT_DEFAULT));
-    }
-
-    /**
-     * Validate that timeUnit is in supported format and set
-     * if timeunit is not valid -> throw IllegalArgumentException
-     *
-     * @param entryLifetimeTimeUnit - can not be null
-     * */
-    public void setMvccHistoricalEntryLifetimeTimeUnit(String entryLifetimeTimeUnit) {
-        StringUtils.parseTimeUnit(entryLifetimeTimeUnit);
-        this.setProperty(MVCC_HISTORICAL_ENTRY_LIFETIME_TIMEUNIT, entryLifetimeTimeUnit);
-    }
-
-    public int getMvccHistoricalEntriesLimit() {
-        return Integer.parseInt(getProperty(MVCC_HISTORICAL_ENTRIES_LIMIT, MVCC_HISTORICAL_ENTRIES_LIMIT_DEFAULT));
-    }
-
-    public void setMvccHistoricalEntriesLimit(int historicalEntriesLimit) {
-        this.setProperty(MVCC_HISTORICAL_ENTRIES_LIMIT, String.valueOf(historicalEntriesLimit));
-    }
-
 
     /**
      * Clears all properties held, including defaults, custom properties, and dcache properties.

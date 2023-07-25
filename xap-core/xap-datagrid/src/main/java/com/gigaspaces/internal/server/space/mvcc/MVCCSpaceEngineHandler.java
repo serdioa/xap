@@ -19,12 +19,10 @@ public class MVCCSpaceEngineHandler {
 
     private final SpaceEngine _spaceEngine;
     private final CacheManager _cacheManager;
-    private final MVCCCleanupManager _mvccCleanupManager;
 
     public MVCCSpaceEngineHandler(SpaceEngine spaceEngine) {
         _spaceEngine = spaceEngine;
         _cacheManager = spaceEngine.getCacheManager();
-        _mvccCleanupManager = new MVCCCleanupManager(_spaceEngine.getSpaceImpl());
     }
 
     public void preCommitMvccEntries(Context context, XtnEntry xtnEntry) throws SAException {
@@ -119,13 +117,5 @@ public class MVCCSpaceEngineHandler {
         return SpaceEngine.XtnConflictCheckIndicators.NO_CONFLICT;
     }
 
-    public void initCleanupManager() {
-        _mvccCleanupManager.init();
-    }
-
-    public void closeCleanupManager() {
-        if (_mvccCleanupManager != null)
-            _mvccCleanupManager.close();
-    }
 
 }

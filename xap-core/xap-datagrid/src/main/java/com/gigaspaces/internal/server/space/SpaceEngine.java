@@ -647,9 +647,6 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
             }
 
             _dataEventManager.init(isReplicated(), getReplicationNode());
-            if (isMvccEnabled()) {
-                _mvccSpaceEngineHandler.initCleanupManager();
-            }
         } catch (Exception ex) {
             String msg = "Failed to init [" + _spaceName + "] space.";
 
@@ -3716,9 +3713,6 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
 
         if(tieredStorageManager != null){
             tieredStorageManager.close();
-        }
-        if (isMvccEnabled()) {
-            _mvccSpaceEngineHandler.closeCleanupManager();
         }
     }
 
