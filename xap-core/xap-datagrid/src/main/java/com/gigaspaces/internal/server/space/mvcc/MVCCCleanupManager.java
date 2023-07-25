@@ -70,6 +70,7 @@ public class MVCCCleanupManager {
 
         private boolean _shouldDie;
         private long _nextCleanupDelayInterval;
+        // TODO: use to calculate _nextCleanupDelayInterval (PIC-2850)
         private long _lastCleanupExecutionInterval;
         private long _lastCleanupExecutionTimestamp;
 
@@ -82,7 +83,6 @@ public class MVCCCleanupManager {
         @Override
         public void run() {
             try {
-                _lastCleanupExecutionTimestamp = System.currentTimeMillis();
                 while (!isInterrupted() && !_shouldDie) {
                     try {
                         fallAsleep();
