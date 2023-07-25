@@ -57,7 +57,7 @@ public class MVCCCleanupManager {
     public final void close() {
         _closed = true;
         if (_mvccCleanerDaemon != null) {
-            _mvccCleanerDaemon.clean();
+            _mvccCleanerDaemon.terminate();
         }
     }
 
@@ -68,7 +68,7 @@ public class MVCCCleanupManager {
         private final long MAX_CLEANUP_DELAY_INTERVAL_MILLIS = TimeUnit.MINUTES.toMillis(1);
         private final long INITIAL_CLEANUP_INTERVAL_MILLIS = TimeUnit.SECONDS.toMillis(1);
 
-        private boolean _shouldDie;
+        private boolean _shouldTerminate;
         private long _nextCleanupDelayInterval;
         // TODO: use to calculate _nextCleanupDelayInterval (PIC-2850)
         private long _lastCleanupExecutionInterval;
@@ -83,7 +83,7 @@ public class MVCCCleanupManager {
         @Override
         public void run() {
             try {
-                while (!isInterrupted() && !_shouldDie) {
+                while (!_shouldTerminate) {
                     try {
                         fallAsleep();
                         cleanExpiredEntriesGenerations();
@@ -97,26 +97,17 @@ public class MVCCCleanupManager {
             }
         }
 
-        private void fallAsleep() {
-            try {
-                if (_shouldDie) {
-                    return;
-                }
-                if (_logger.isDebugEnabled())
-                    _logger.debug("fallAsleep - going to wait cleanupDelay=" + _nextCleanupDelayInterval);
-                synchronized (this) {
-                    wait(_nextCleanupDelayInterval);
-                }
-            } catch (InterruptedException ex) {
-                if (_logger.isDebugEnabled())
-                    _logger.debug(this.getName() + " interrupted.", ex);
-                _shouldDie = true;
-                interrupt();
+        private synchronized void fallAsleep() throws InterruptedException {
+            if (_shouldTerminate) {
+                return;
             }
+            if (_logger.isDebugEnabled())
+                _logger.debug("fallAsleep - going to wait cleanupDelay=" + _nextCleanupDelayInterval);
+            wait(_nextCleanupDelayInterval);
         }
 
         private void cleanExpiredEntriesGenerations() {
-            if (_shouldDie) {
+            if (_shouldTerminate) {
                 return;
             }
             MVCCGenerationsState genState = _zookeeperMVCCHandler.getGenerationsState();
@@ -127,19 +118,14 @@ public class MVCCCleanupManager {
 
         }
 
-        public void clean() {
+        public void terminate() {
             if (!isAlive())
                 return;
 
             synchronized (this) {
-                _shouldDie = true;
+                _shouldTerminate = true;
                 // if daemon is waiting between cleanups -> wake it up
                 notify();
-            }
-            // wait until cleanup thread become terminated
-            try {
-                join();
-            } catch (InterruptedException e) {
             }
         }
     }
