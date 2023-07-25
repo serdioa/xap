@@ -20,10 +20,10 @@ public class MVCCCleanupManager {
     private static final Logger _logger = LoggerFactory.getLogger(com.gigaspaces.logger.Constants.LOGGER_MVCC_CLEANUP);
 
     private final SpaceImpl _spaceImpl;
-    private SpaceEngine _engine;
     private final SpaceConfig _spaceConfig;
     private final ZooKeeperMVCCInternalHandler _zookeeperMVCCHandler;
 
+    private MVCCGenerationCleaner _mvccCleanerDaemon;
     private boolean _closed;
 
 
@@ -45,9 +45,9 @@ public class MVCCCleanupManager {
     */
     public void init() {
         if (!_closed) {
-            _engine = _spaceImpl.getEngine();
-            _logger.debug("MVCC cleaner daemon thread started");
-            //TODO: in PIC-2847 - init cleaner thread and start
+            _mvccCleanerDaemon = new MVCCGenerationCleaner(MVCCGenerationCleaner.class.getSimpleName() + "-" + _spaceImpl.getName());
+            _mvccCleanerDaemon.start();
+            _logger.debug("MVCC cleaner daemon " + _mvccCleanerDaemon.getName() +  " started");
         }
     }
 
@@ -56,15 +56,18 @@ public class MVCCCleanupManager {
      */
     public final void close() {
         _closed = true;
-        // TODO: in PIC-2847 - gracefully terminate cleaner thread
-        _logger.debug("MVCC cleaner daemon thread terminated");
+        if (_mvccCleanerDaemon != null) {
+            _mvccCleanerDaemon.clean();
+        }
     }
 
     private final class MVCCGenerationCleaner extends GSThread {
 
+        // TODO: use consts as defaults to impl adaptive clean timeout logic (PIC-2850)
         private final long MIN_CLEANUP_DELAY_INTERVAL_MILLIS = TimeUnit.SECONDS.toMillis(1);
         private final long MAX_CLEANUP_DELAY_INTERVAL_MILLIS = TimeUnit.MINUTES.toMillis(1);
         private final long INITIAL_CLEANUP_INTERVAL_MILLIS = TimeUnit.SECONDS.toMillis(1);
+
         private boolean _shouldDie;
         private long _nextCleanupDelayInterval;
         private long _lastCleanupExecutionInterval;
@@ -74,7 +77,6 @@ public class MVCCCleanupManager {
             super(name);
             this.setDaemon(true);
             _nextCleanupDelayInterval = MIN_CLEANUP_DELAY_INTERVAL_MILLIS;
-            _lastCleanupExecutionInterval = INITIAL_CLEANUP_INTERVAL_MILLIS;
         }
 
         @Override
@@ -84,44 +86,61 @@ public class MVCCCleanupManager {
                 while (!isInterrupted() && !_shouldDie) {
                     try {
                         fallAsleep();
-                        MVCCGenerationsState genState = _zookeeperMVCCHandler.getGenerationsState();
-                        if (_logger.isDebugEnabled()) {
-                            _logger.debug("MVCC cleanup started with last generation: " + genState);
-                        }
+                        cleanExpiredEntriesGenerations();
                     } catch (Exception ex) {
-                        _logger.error(this.getName() + " - caught Exception", e);
+                        _logger.error(this.getName() + " - caught Exception", ex);
                     }
                 }
             } finally {
                 if (_logger.isDebugEnabled())
-                    _logger.debug(this.getName() + " terminated.");
+                    _logger.debug("MVCC cleaner " + this.getName() + " terminated.");
             }
         }
 
         private void fallAsleep() {
             try {
-                if (!_shouldDie) {
-                    long cleanupDelay = System.currentTimeMillis() - _lastCleanupExecutionTimestamp;
-                    if (cleanupDelay < MIN_CLEANUP_DELAY_INTERVAL_MILLIS) {
-                        cleanupDelay = MIN_CLEANUP_DELAY_INTERVAL_MILLIS;
-                    } else if (cleanupDelay > MAX_CLEANUP_DELAY_INTERVAL_MILLIS) {
-                        cleanupDelay = MAX_CLEANUP_DELAY_INTERVAL_MILLIS;
-                    }
-                    if (_logger.isDebugEnabled())
-                        _logger.debug("fallAsleep - going to wait cleanupDelay=" + cleanupDelay);
-                    Thread.sleep(cleanupDelay);
+                if (_shouldDie) {
+                    return;
+                }
+                if (_logger.isDebugEnabled())
+                    _logger.debug("fallAsleep - going to wait cleanupDelay=" + _nextCleanupDelayInterval);
+                synchronized (this) {
+                    wait(_nextCleanupDelayInterval);
                 }
             } catch (InterruptedException ex) {
                 if (_logger.isDebugEnabled())
                     _logger.debug(this.getName() + " interrupted.", ex);
-
                 _shouldDie = true;
                 interrupt();
             }
         }
 
+        private void cleanExpiredEntriesGenerations() {
+            if (_shouldDie) {
+                return;
+            }
+            MVCCGenerationsState genState = _zookeeperMVCCHandler.getGenerationsState();
+            if (_logger.isDebugEnabled()) {
+                _logger.debug("MVCC cleanup started with last generation: " + genState);
+            }
+            // TODO: implement cleanup logic (PIC-2849)
+
+        }
+
         public void clean() {
-            _shouldDie = true;
+            if (!isAlive())
+                return;
+
+            synchronized (this) {
+                _shouldDie = true;
+                // if daemon is waiting between cleanups -> wake it up
+                notify();
+            }
+            // wait until cleanup thread become terminated
+            try {
+                join();
+            } catch (InterruptedException e) {
+            }
         }
     }
 
