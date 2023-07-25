@@ -2,7 +2,7 @@ package com.gigaspaces.internal.server.space.mvcc;
 
 import com.gigaspaces.internal.server.space.SpaceEngine;
 import com.gigaspaces.internal.server.space.SpaceImpl;
-import com.gigaspaces.internal.server.space.ZooKeeperMVCCHandler;
+import com.gigaspaces.internal.server.space.ZooKeeperMVCCInternalHandler;
 import com.j_spaces.core.admin.SpaceConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,16 +19,21 @@ public class MVCCCleanupManager {
     private final SpaceImpl _spaceImpl;
     private SpaceEngine _engine;
     private final SpaceConfig _spaceConfig;
-    private final ZooKeeperMVCCHandler _zookeeperMVCCHandler;
+    private final ZooKeeperMVCCInternalHandler _zookeeperMVCCHandler;
 
     private boolean _closed;
 
 
     public MVCCCleanupManager(SpaceImpl spaceImpl) {
+        validateZkAvailability(spaceImpl);
         _spaceImpl = spaceImpl;
         _spaceConfig = _spaceImpl.getConfig();
-        _zookeeperMVCCHandler = (_spaceImpl.useZooKeeper() && _spaceImpl.isMvccEnabled())
-                ? new ZooKeeperMVCCHandler(_spaceImpl.getAttributeStore(), _spaceImpl.getName()) : null;
+        _zookeeperMVCCHandler = new ZooKeeperMVCCInternalHandler(_spaceImpl.getAttributeStore(), _spaceImpl.getName());
+    }
+
+    private void validateZkAvailability(SpaceImpl spaceImpl) {
+        if (!spaceImpl.useZooKeeper())
+            throw new MVCCZooKeeperHandlerCreationException("Zookeeper is not available.");
     }
 
 
