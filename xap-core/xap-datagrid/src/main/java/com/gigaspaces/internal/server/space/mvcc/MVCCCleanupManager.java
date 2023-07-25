@@ -59,6 +59,7 @@ public class MVCCCleanupManager {
         if (_mvccCleanerDaemon != null) {
             _mvccCleanerDaemon.terminate();
         }
+        _logger.debug("MVCC cleanup manager closed");
     }
 
     private final class MVCCGenerationCleaner extends GSThread {
