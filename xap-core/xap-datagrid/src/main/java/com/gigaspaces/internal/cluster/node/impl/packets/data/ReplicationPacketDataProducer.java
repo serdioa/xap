@@ -146,7 +146,7 @@ public class ReplicationPacketDataProducer
             ServerTransaction transaction, ArrayList<IEntryHolder> entries,
             ReplicationOutContext replicationOutContext, ReplicationMultipleOperationType operationType) {
         AbstractTransactionReplicationPacketData transactionPacket = createTransactionPacket(operationType, transaction, replicationOutContext.getOperationID(), replicationOutContext.isFromGateway());
-        setMvccCommittedGenerationIfNeeded(transactionPacket, replicationOutContext.getMvccGenerationsState());
+        setMvccCommittedGenerationIfNeeded(transactionPacket, replicationOutContext.getMVCCGenerationsState());
         //If this is a commit or abort we take the already existing prepared content from the mediator
         if (operationType == ReplicationMultipleOperationType.TRANSACTION_TWO_PHASE_COMMIT || operationType == ReplicationMultipleOperationType.TRANSACTION_TWO_PHASE_ABORT) {
             List<IReplicationTransactionalPacketEntryData> pendingTransactionData = _packetDataMediator.removePendingTransactionData(transaction);
@@ -184,8 +184,7 @@ public class ReplicationPacketDataProducer
                             singlePacket = createChangeReplicationPacket(entryHolder,
                                     replicationOutContext.getOperationIDs()[i],
                                     (Collection<SpaceEntryMutator>) updateInfo,
-                                    entryHolder.getShadow()
-                                            .getEntryData(),
+                                    entryHolder.getShadow().getEntryData(),
                                     replicationOutContext.isFromGateway());
                         } else {
                             boolean[] partialUpdateIndicators = (boolean[]) updateInfo;

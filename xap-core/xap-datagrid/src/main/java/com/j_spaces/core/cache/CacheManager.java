@@ -2341,7 +2341,7 @@ public class CacheManager extends AbstractCacheManager
 
 
         if (!pXtn.isLockedEntry(pEntry)) {
-            if (!isMVCCEnabled() || !pXtn.getMvccNewGenerationsEntries().containsKey(pEntry.getUID())) {
+            if (!isMVCCEnabled() || pXtn.getMvccNewGenerationsEntries(pEntry.getUID()) == null) {
                 lockEntry(pXtn, pEntry, context.getOperationID());
             }
         } else {
@@ -2406,7 +2406,7 @@ public class CacheManager extends AbstractCacheManager
 
                 if (isMVCCEnabled()) {
                     MVCCEntryCacheInfo logicallyDeletedEntry = _mvccCacheManagerHandler.createLogicallyDeletedMvccEntryPendingGeneration(xtnEntry, (MVCCEntryCacheInfo) pEntry, template.getTemplateOperation());
-                    pXtn.addMvccNewGenerationsEntries(logicallyDeletedEntry);
+                    pXtn.addMvccNewGenerationsEntry(logicallyDeletedEntry);
                  }
 
                 break;
@@ -2503,6 +2503,14 @@ public class CacheManager extends AbstractCacheManager
         return !master.isBlobStoreEntry() ? EntryHolderFactory.createShadowEntryHolder(master, pmaster.getBackRefs(), backrefIndexPos, pmaster.getLeaseManagerListRef(), pmaster.getLeaseManagerPosition())
                 : EntryHolderFactory.createShadowEntryHolder(master, pmaster.getBackRefs(), backrefIndexPos, null, pmaster.getLeaseManagerPosition());
 
+    }
+
+    /**
+     * create a shadow entry from an active entry for replication when MVCC is enabled
+     */
+    private ShadowEntryHolder createMVCCShadowEntryForActiveEntry(IEntryCacheInfo activeEntry) {
+        IEntryHolder master = activeEntry.getEntryHolder(this);
+        return createShadowEntry(activeEntry, _typeDataMap.get(master.getServerTypeDesc()));
     }
 
 
@@ -2652,7 +2660,7 @@ public class CacheManager extends AbstractCacheManager
                 if (isMVCCEnabled()) {
                     // in mvcc we use embedded transactions, therefore its always single participant and one-phase
                     // commit transaction.
-                    replContext.setMvccGenerationsState(xtnEntry.getMVCCGenerationsState());
+                    replContext.setMVCCGenerationsState(xtnEntry.getMVCCGenerationsState());
                 }
                 //If single participant we replicate this as a one phase commit transaction and add to replication backlog here
                 _replicationNode.outTransaction(replContext, xtn, pLocked);
@@ -2735,6 +2743,12 @@ public class CacheManager extends AbstractCacheManager
                 // Since this is a transaction, we save the entry's previous version for handling
                 // version conflicts in replication targets in a case where entry's version was increased
                 // by more than +1 due to several update operations within the same transaction.
+                if (isMVCCEnabled() && entryHolder.getWriteLockOperation() == SpaceOperations.UPDATE) {
+                    ShadowEntryHolder activeEntry = createMVCCShadowEntryForActiveEntry(pEntry);
+                    IEntryHolder newEntryGeneration = pXtn.getMvccNewGenerationsEntries(entryHolder.getUID()).getEntryHolder();
+                    pLocked.add(new ReplicationEntryHolder(newEntryGeneration, activeEntry,  xtnEntry));
+                    continue;
+                }
                 pLocked.add(new ReplicationEntryHolder(pEntry.getEntryHolder(this), xtnEntry));
             }
         }
@@ -2779,7 +2793,7 @@ public class CacheManager extends AbstractCacheManager
                         pe.getEntryHolder(this).setUID(eh.getUID());
                         pXtn.getNeedNotifyEntries(true).add(pe);
                         pe = isMVCCEnabled()
-                                ? EntryCacheInfoFactory.createMvccEntryCacheInfo(pXtn.getMvccNewGenerationsEntries().get(eh.getUID()).getEntryHolder().createCopy())
+                                ? EntryCacheInfoFactory.createMvccEntryCacheInfo(pXtn.getMvccNewGenerationsEntries(eh.getUID()).getEntryHolder().createCopy())
                                 : EntryCacheInfoFactory.createEntryCacheInfo(eh.createCopy());
 
                         pe.getEntryHolder(this).setWriteLockOperation(SpaceOperations.WRITE, false /*createSnapshot*/);
@@ -3842,7 +3856,7 @@ public class CacheManager extends AbstractCacheManager
             if (newEntry && pEntry.getEntryHolder(this).getXidOriginated() != null) {
                 XtnData pXtn = pEntry.getEntryHolder(this).getXidOriginated().getXtnData();
                 if(isMVCCEnabled() && pEntry.getEntryHolder(this).getWriteLockOperation() != SpaceOperations.WRITE){
-                    pXtn.addMvccNewGenerationsEntries((MVCCEntryCacheInfo) pEntry);
+                    pXtn.addMvccNewGenerationsEntry((MVCCEntryCacheInfo) pEntry);
                 } else {
                     pXtn.getNewEntries(true/*createIfNull*/).add(pEntry);
                     lockEntry(pXtn, pEntry, context.getOperationID());
