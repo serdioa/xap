@@ -107,6 +107,10 @@ public class MVCCShellEntryCacheInfo extends MemoryBasedEntryCacheInfo {
         return true;
     }
 
+    public int getTotalCommittedGenertions() {
+        return allEntryGenerations.size();
+    }
+
     @Override
     public IScanListIterator<MVCCEntryCacheInfo> createCopyForAlternatingThread() {
         return new MVCCShellIterator();

@@ -1,14 +1,22 @@
 package com.gigaspaces.internal.server.space.mvcc;
 
-import com.gigaspaces.internal.server.space.SpaceEngine;
+import com.gigaspaces.internal.server.metadata.IServerTypeDesc;
 import com.gigaspaces.internal.server.space.SpaceImpl;
 import com.gigaspaces.internal.server.space.ZooKeeperMVCCInternalHandler;
 import com.gigaspaces.internal.utils.concurrent.GSThread;
 import com.j_spaces.core.admin.SpaceConfig;
+import com.j_spaces.core.cache.CacheManager;
+import com.j_spaces.core.cache.TypeData;
+import com.j_spaces.core.cache.mvcc.MVCCEntryCacheInfo;
+import com.j_spaces.core.cache.mvcc.MVCCEntryHolder;
+import com.j_spaces.core.cache.mvcc.MVCCShellEntryCacheInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Iterator;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * @author Davyd Savitskyi
@@ -23,6 +31,7 @@ public class MVCCCleanupManager {
     private final SpaceConfig _spaceConfig;
     private final ZooKeeperMVCCInternalHandler _zookeeperMVCCHandler;
 
+    private CacheManager _cacheManager;
     private MVCCGenerationCleaner _mvccCleanerDaemon;
     private boolean _closed;
 
@@ -45,6 +54,7 @@ public class MVCCCleanupManager {
     */
     public void init() {
         if (!_closed) {
+            _cacheManager = _spaceImpl.getEngine().getCacheManager();
             _mvccCleanerDaemon = new MVCCGenerationCleaner(MVCCGenerationCleaner.class.getSimpleName() + "-" + _spaceImpl.getName());
             _mvccCleanerDaemon.start();
             _logger.debug("MVCC cleaner daemon " + _mvccCleanerDaemon.getName() +  " started");
@@ -69,8 +79,11 @@ public class MVCCCleanupManager {
         private final long MAX_CLEANUP_DELAY_INTERVAL_MILLIS = TimeUnit.MINUTES.toMillis(1);
         private final long INITIAL_CLEANUP_INTERVAL_MILLIS = TimeUnit.SECONDS.toMillis(1);
 
+        private final long _lifetimeLimitMillis;
+        private final int _historicalEntriesLimit;
+        private final long _nextCleanupDelayInterval;
         private boolean _shouldTerminate;
-        private long _nextCleanupDelayInterval;
+
         // TODO: use to calculate _nextCleanupDelayInterval (PIC-2850)
         private long _lastCleanupExecutionInterval;
         private long _lastCleanupExecutionTimestamp;
@@ -79,6 +92,8 @@ public class MVCCCleanupManager {
             super(name);
             this.setDaemon(true);
             _nextCleanupDelayInterval = MIN_CLEANUP_DELAY_INTERVAL_MILLIS;
+            _lifetimeLimitMillis = _spaceConfig.getMvccHistoricalEntryLifetimeTimeUnit().toMillis(_spaceConfig.getMvccHistoricalEntryLifetime());
+            _historicalEntriesLimit = _spaceConfig.getMvccHistoricalEntriesLimit();
         }
 
         @Override
@@ -111,12 +126,83 @@ public class MVCCCleanupManager {
             if (_shouldTerminate) {
                 return;
             }
-            MVCCGenerationsState genState = _zookeeperMVCCHandler.getGenerationsState();
+            MVCCGenerationsState generationState = _zookeeperMVCCHandler.getGenerationsState();
             if (_logger.isDebugEnabled()) {
-                _logger.debug("MVCC cleanup started with last generation: " + genState);
+                _logger.debug("MVCC cleanup started with last generation: " + generationState);
             }
-            // TODO: implement cleanup logic (PIC-2849)
+            if (generationState == null || generationState.getCompletedGeneration() == -1) {
+                return;
+            }
+            Map<String, IServerTypeDesc> typesTable = _cacheManager.getTypeManager().getSafeTypeTable();
 
+            for (IServerTypeDesc typeDesc : typesTable.values()) {
+                TypeData typeData = _cacheManager.getTypeData(typeDesc);
+                if (typeData == null || typeData.getIdField() == null) {
+                    return;
+                }
+                Map<Object, MVCCShellEntryCacheInfo> idEntriesMap =  typeData.getIdField().getUniqueEntriesStore();
+                for (MVCCShellEntryCacheInfo historicalEntryData : idEntriesMap.values()) {
+                    Iterator<MVCCEntryCacheInfo> toScan = historicalEntryData.descIterator();
+                    AtomicBoolean cleanWithoutMatch = new AtomicBoolean(false);
+                    int skippedEntries = 0;
+                    while(toScan.hasNext()) {
+                        if (!removeNextOnMatch(toScan, cleanWithoutMatch, generationState, skippedEntries)) {
+                            skippedEntries++;
+                        }
+                    }
+                    removeUidShellPairIfEmpty(historicalEntryData);
+                }
+            }
+
+        }
+
+        private boolean removeNextOnMatch(Iterator<MVCCEntryCacheInfo> toScan, AtomicBoolean cleanWithoutMatch, MVCCGenerationsState generationState, int skippedEntries) {
+            MVCCEntryHolder entry = toScan.next().getEntryHolder();
+            if (matchToRemove(entry, cleanWithoutMatch, generationState, skippedEntries)) {
+                synchronized (entry) {
+                    if (matchToRemove(entry, cleanWithoutMatch, generationState, skippedEntries)) {
+                        toScan.remove();
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
+        private boolean matchToRemove(MVCCEntryHolder entry, AtomicBoolean cleanWithoutMatch, MVCCGenerationsState generationState, int skippedEntries) {
+            if (cleanWithoutMatch.get() || entry.isHollowEntry()) {
+                return true;
+            } else if (isLifetimeLimitExceeded(entry)) {
+                if (!generationState.isUncompletedGeneration(entry.getCommittedGeneration())) { // if not completed
+                    return true;
+                    // TODO: remove from zk uncompletedSet (PIC-2851)
+                } else if (entry.getOverrideGeneration() != -1) { // if not active data
+                    cleanWithoutMatch.set(true);
+                    return true;
+                }
+            } else if (skippedEntries > _historicalEntriesLimit) {
+                cleanWithoutMatch.set(true);
+                return true;
+            }
+            return false;
+        }
+
+        private boolean isLifetimeLimitExceeded(MVCCEntryHolder entry) {
+            return System.currentTimeMillis() - entry.getSCN() > _lifetimeLimitMillis;
+        }
+
+        private void removeUidShellPairIfEmpty(MVCCShellEntryCacheInfo entryHistoryCache) {
+            if (isEmptyCache(entryHistoryCache)) {
+                synchronized (entryHistoryCache.getEntryHolder()) {
+                    if (isEmptyCache(entryHistoryCache)) {
+                        _cacheManager.removeEntryFromCache(entryHistoryCache.getEntryHolder(), false, true, entryHistoryCache, CacheManager.RecentDeleteCodes.NONE);
+                    }
+                }
+            }
+        }
+
+        private boolean isEmptyCache(MVCCShellEntryCacheInfo entryHistoryCache) {
+            return entryHistoryCache.getTotalCommittedGenertions() == 0 && entryHistoryCache.getDirtyEntryCacheInfo() == null;
         }
 
         public void terminate() {

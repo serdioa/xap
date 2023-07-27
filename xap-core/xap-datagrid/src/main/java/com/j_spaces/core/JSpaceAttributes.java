@@ -1413,8 +1413,8 @@ public class JSpaceAttributes
         this.setProperty(FULL_MVCC_ENABLED_PROP, String.valueOf(isMvccEnabled));
     }
 
-    public int getMvccHistoricalEntryLifetime() {
-        return Integer.parseInt(getProperty(MVCC_HISTORICAL_ENTRY_LIFETIME, MVCC_HISTORICAL_ENTRY_LIFETIME_DEFAULT));
+    public long getMvccHistoricalEntryLifetime() {
+        return Long.parseLong(getProperty(MVCC_HISTORICAL_ENTRY_LIFETIME, MVCC_HISTORICAL_ENTRY_LIFETIME_DEFAULT));
     }
 
     public void setMvccHistoricalEntryLifetime(int entryLifetime) {
@@ -1441,7 +1441,14 @@ public class JSpaceAttributes
         return Integer.parseInt(getProperty(MVCC_HISTORICAL_ENTRIES_LIMIT, MVCC_HISTORICAL_ENTRIES_LIMIT_DEFAULT));
     }
 
+    /**
+     * Validate that limit is not less than 1
+     * - It is the minimal allowed limit(keep in history at least latest generation)<br>
+     * If limit is not valid -> throw IllegalArgumentException
+     */
     public void setMvccHistoricalEntriesLimit(int historicalEntriesLimit) {
+        if (historicalEntriesLimit < 1)
+            throw new IllegalArgumentException("Property " + MVCC_HISTORICAL_ENTRIES_LIMIT + " is not valid. Use number >= 1");
         this.setProperty(MVCC_HISTORICAL_ENTRIES_LIMIT, String.valueOf(historicalEntriesLimit));
     }
 
