@@ -46,7 +46,6 @@ public class SecurityServiceInfo {
         if (logger.isDebugEnabled()) {
             logger.debug("path to security properties " + securityPropertyFile);
         }
-        logger.info("path to security properties " + securityPropertyFile);
         try (InputStream input = new FileInputStream((SystemLocations.singleton().homeFwdSlash() + "/" + securityPropertyFile))) {
             Properties prop = new Properties();
             prop.load(input);
