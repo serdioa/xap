@@ -111,6 +111,16 @@ public class SecurityConfig {
                 (StringUtils.hasText(password) && !"${security.password}".equals(password));
     }
 
+    @Override
+    public String toString() {
+        return "SecurityConfig{" +
+                "username='" + username + '\'' +
+                ", password='" + password + '\'' +
+                ", token='" + token + '\'' +
+                ", credentialsProvider=" + credentialsProvider +
+                '}';
+    }
+
     public static SecurityConfig fromMarshalledProperties(Properties properties) {
         CredentialsProvider credentials = CredentialsProviderHelper.extractMarshalledCredentials(properties, false);
         return credentials == null ? null : new SecurityConfig(credentials);

@@ -35,6 +35,8 @@ public class SpaceProxyPool {
     final private Condition conditionWaitingForCapacity = lock.newCondition();
     final private SpaceProxyPoolFactory spaceProxyPoolFactory;
 
+    // TODO : need update SecurityContext if security changes are appeared into pool
+
     public SpaceProxyPool(SpaceProxyPoolFactory spaceProxyPoolFactory) {
         capacity = GsEnv.propertyInt(SystemProperties.PROXY_POOL_CAPACITY).get(CAPACITY_DEFAULT);
         expirationTime = GsEnv.propertyInt(SystemProperties.PROXY_POOL_EXPIRATION_TIME).get(EXPIRATION_DEFAULT);
