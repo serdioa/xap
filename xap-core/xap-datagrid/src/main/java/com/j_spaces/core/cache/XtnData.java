@@ -425,6 +425,13 @@ public class XtnData {
             taken.removeByObject(entry);
     }
 
+    public void removeUpdatedEntry(IEntryCacheInfo entry) {
+        HashMap<String, Object> updatedEntries = getUpdatedEntries();
+        if (updatedEntries != null) {
+            updatedEntries.remove(entry.getUID());
+        }
+    }
+
     public IStoredList<TemplateCacheInfo> getNTemplates() {
         return _NTemplates;
     }
@@ -457,15 +464,15 @@ public class XtnData {
     }
 
 
-    public Map<String, MVCCEntryCacheInfo> getMvccNewGenerationsEntries() {
-        return _mvccNewGenerationsEntries;
+    public MVCCEntryCacheInfo getMvccNewGenerationsEntries(String uid) {
+        return _mvccNewGenerationsEntries.get(uid);
     }
 
-    public void addMvccNewGenerationsEntries(MVCCEntryCacheInfo mvccEntryCacheInfo) {
+    public void addMvccNewGenerationsEntry(MVCCEntryCacheInfo mvccEntryCacheInfo) {
         _mvccNewGenerationsEntries.put(mvccEntryCacheInfo.getUID(), mvccEntryCacheInfo);
     }
 
-    public MVCCEntryCacheInfo removeMvccNewGenerationsEntries(String uid) {
+    public MVCCEntryCacheInfo removeMvccNewGenerationsEntry(String uid) {
         return _mvccNewGenerationsEntries.remove(uid);
     }
 
@@ -473,7 +480,7 @@ public class XtnData {
         return _mvccWriteActiveLogicallyDeletedEntries.get(uid);
     }
 
-    public void addWriteActiveLogicallyDeletedEntries(MVCCEntryCacheInfo mvccEntryCacheInfo) {
+    public void addWriteActiveLogicallyDeletedEntry(MVCCEntryCacheInfo mvccEntryCacheInfo) {
         _mvccWriteActiveLogicallyDeletedEntries.put(mvccEntryCacheInfo.getUID(), mvccEntryCacheInfo);
     }
 

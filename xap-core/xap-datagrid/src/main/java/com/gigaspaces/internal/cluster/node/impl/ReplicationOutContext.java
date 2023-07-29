@@ -22,15 +22,12 @@ import com.gigaspaces.internal.cluster.node.impl.backlog.sync.IMarker;
 import com.gigaspaces.internal.cluster.node.impl.directPersistency.IDirectPersistencyOpInfo;
 import com.gigaspaces.internal.cluster.node.impl.directPersistency.IDirectPersistencySyncHandler;
 import com.gigaspaces.internal.cluster.node.impl.groups.IReplicationGroupOutContext;
+import com.gigaspaces.internal.server.space.mvcc.MVCCGenerationsState;
 import com.gigaspaces.internal.server.storage.IEntryData;
 import com.gigaspaces.internal.utils.threadlocal.AbstractResource;
 import com.j_spaces.core.OperationID;
 
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 
 @com.gigaspaces.api.InternalApi
@@ -60,6 +57,8 @@ public class ReplicationOutContext extends AbstractResource
     private int _blobstoreReplicationBulkId;
     private boolean _blobstorePendingReplicationBulk; // indicates a blobstore bulk is flushed and waiting for replication
     private boolean _backupOnly;
+    //for mvcc
+    private MVCCGenerationsState mvccGenerationsState;
 
     public IReplicationGroupOutContext getGroupContext(String groupName) {
         if (isSingleGroupParticipant()) {
@@ -91,6 +90,7 @@ public class ReplicationOutContext extends AbstractResource
         _blobstoreReplicationBulkId = 0;
         _blobstorePendingReplicationBulk = false;
         _backupOnly = false;
+        mvccGenerationsState = null;
     }
 
     public void setGroupContext(IReplicationGroupOutContext groupContext) {
@@ -310,6 +310,16 @@ public class ReplicationOutContext extends AbstractResource
     }
 
     @Override
+    public MVCCGenerationsState getMVCCGenerationsState() {
+        return mvccGenerationsState;
+    }
+
+    @Override
+    public void setMVCCGenerationsState(MVCCGenerationsState mvccGenerationsState) {
+        this.mvccGenerationsState = mvccGenerationsState;
+    }
+
+    @Override
     public String toString() {
         if (isEmpty())
             return "[empty]";
@@ -318,5 +328,4 @@ public class ReplicationOutContext extends AbstractResource
 
         return _groupsContext.toString();
     }
-
 }

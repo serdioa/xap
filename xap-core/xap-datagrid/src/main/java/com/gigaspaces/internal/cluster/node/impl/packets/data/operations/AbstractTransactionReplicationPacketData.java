@@ -22,6 +22,7 @@ import com.gigaspaces.internal.cluster.node.impl.packets.data.IReplicationPacket
 import com.gigaspaces.internal.cluster.node.impl.packets.data.IReplicationTransactionalPacketEntryData;
 import com.gigaspaces.internal.io.IOUtils;
 import com.gigaspaces.internal.server.space.metadata.SpaceTypeManager;
+import com.gigaspaces.internal.server.space.mvcc.MVCCGenerationsState;
 import com.gigaspaces.internal.version.PlatformLogicalVersion;
 import com.gigaspaces.lrmi.LRMIInvocationContext;
 import com.gigaspaces.transaction.TransactionUniqueId;
@@ -61,7 +62,7 @@ public abstract class AbstractTransactionReplicationPacketData
     private transient int _weight;
     private transient short _flags;
     // for mvcc
-    private long mvccCommittedGeneration = -1;
+    private MVCCGenerationsState mvccGenerationsState = null;
 
     @SuppressWarnings("WeakerAccess")
     public AbstractTransactionReplicationPacketData() {
@@ -93,7 +94,7 @@ public abstract class AbstractTransactionReplicationPacketData
         _metaData = IOUtils.readObject(in);
         if (LRMIInvocationContext.getEndpointLogicalVersion().greaterOrEquals(PlatformLogicalVersion.v16_4_0)) {
             if (hasMvccCommittedGeneration()) {
-                mvccCommittedGeneration = in.readLong();
+                mvccGenerationsState = IOUtils.readObject(in);
             }
         }
     }
@@ -104,8 +105,7 @@ public abstract class AbstractTransactionReplicationPacketData
         IOUtils.writeObject(out, _metaData);
         if (LRMIInvocationContext.getEndpointLogicalVersion().greaterOrEquals(PlatformLogicalVersion.v16_4_0)) {
             if (hasMvccCommittedGeneration()) {
-                out.writeLong(mvccCommittedGeneration);
-            }
+                IOUtils.writeObject(out, mvccGenerationsState);            }
         }
     }
 
@@ -145,7 +145,7 @@ public abstract class AbstractTransactionReplicationPacketData
         }
         if (LRMIInvocationContext.getEndpointLogicalVersion().greaterOrEquals(PlatformLogicalVersion.v16_4_0)) {
             if (hasMvccCommittedGeneration()) {
-                mvccCommittedGeneration = in.readLong();
+                mvccGenerationsState = IOUtils.readObject(in);
             }
         }
     }
@@ -161,7 +161,7 @@ public abstract class AbstractTransactionReplicationPacketData
         }
         if (LRMIInvocationContext.getEndpointLogicalVersion().greaterOrEquals(PlatformLogicalVersion.v16_4_0)) {
             if (hasMvccCommittedGeneration()) {
-                out.writeLong(mvccCommittedGeneration);
+                IOUtils.writeObject(out, mvccGenerationsState);
             }
         }
     }
@@ -331,13 +331,13 @@ public abstract class AbstractTransactionReplicationPacketData
         return _weight;
     }
 
-    public void setMvccCommittedGeneration(long mvccCommittedGeneration) {
-        this.mvccCommittedGeneration = mvccCommittedGeneration;
+    public void setMvccCommittedGeneration(MVCCGenerationsState mvccGenerationsState) {
+        this.mvccGenerationsState = mvccGenerationsState;
         setMvccCommittedGenerationFlag();
     }
 
-    public long getMvccCommittedGeneration() {
-        return mvccCommittedGeneration;
+    public MVCCGenerationsState getMvccCommittedGeneration() {
+        return mvccGenerationsState;
     }
 
     @SuppressWarnings("SimplifiableIfStatement")

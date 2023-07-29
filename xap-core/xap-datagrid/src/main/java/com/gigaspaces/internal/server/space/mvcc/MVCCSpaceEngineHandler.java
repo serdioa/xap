@@ -19,14 +19,16 @@ public class MVCCSpaceEngineHandler {
 
     private final SpaceEngine _spaceEngine;
     private final CacheManager _cacheManager;
+    private final MVCCCleanupManager _mvccCleanupManager;
 
     public MVCCSpaceEngineHandler(SpaceEngine spaceEngine) {
         _spaceEngine = spaceEngine;
         _cacheManager = spaceEngine.getCacheManager();
+        _mvccCleanupManager = new MVCCCleanupManager(_spaceEngine.getSpaceImpl());
     }
 
     public void preCommitMvccEntries(Context context, XtnEntry xtnEntry) throws SAException {
-        MVCCGenerationsState mvccGenerationsState = context.getMvccGenerationsState();
+        MVCCGenerationsState mvccGenerationsState = context.getMVCCGenerationsState();
         if (mvccGenerationsState == null){
             mvccGenerationsState = xtnEntry.getMVCCGenerationsState();
         }
@@ -51,6 +53,7 @@ public class MVCCSpaceEngineHandler {
                         if(entry.getWriteLockOwner() == xtnEntry) {
                             switch (writeLockOperation) {
                                 case SpaceOperations.TAKE:
+                                case SpaceOperations.TAKE_IE: //take operation replicated to backup as take_ie
                                 case SpaceOperations.UPDATE:
                                     entry.setOverrideGeneration(nextGeneration);
                                     entry.resetEntryXtnInfo();
@@ -81,7 +84,7 @@ public class MVCCSpaceEngineHandler {
         }
     }
 
-    public SpaceEngine.XtnConflictCheckIndicators checkTransactionConflict(MVCCEntryHolder entry, ITemplateHolder template) {
+    public SpaceEngine.XtnConflictCheckIndicators checkTransactionConflict(MVCCEntryHolder entry, ITemplateHolder template, Context context) {
         int templateOperation = template.getTemplateOperation();
         switch (templateOperation) {
             case SpaceOperations.TAKE_IE:
@@ -97,7 +100,7 @@ public class MVCCSpaceEngineHandler {
                     if (_spaceEngine.getLogger().isDebugEnabled()) {
                         _spaceEngine.getLogger().debug("Encountered a conflict while attempting to modify " + entry
                                 + ", this entry has already overridden by another generation."
-                                + " the current generation state is " + template.getGenerationsState());
+                                + " the current generation state is " + context.getMVCCGenerationsState());
                     }
                     return SpaceEngine.XtnConflictCheckIndicators.XTN_CONFLICT;
                 }
@@ -107,7 +110,7 @@ public class MVCCSpaceEngineHandler {
                     if (_spaceEngine.getLogger().isDebugEnabled()) {
                         _spaceEngine.getLogger().debug("Encountered a conflict while attempting to operate(" + templateOperation + ") with " + entry
                                 + ", this entry is logically deleted."
-                                + " the current generation state is " + template.getGenerationsState());
+                                + " the current generation state is " + context.getMVCCGenerationsState());
                     }
                     return SpaceEngine.XtnConflictCheckIndicators.ENTRY_DELETED;
                 }
@@ -116,5 +119,13 @@ public class MVCCSpaceEngineHandler {
         return SpaceEngine.XtnConflictCheckIndicators.NO_CONFLICT;
     }
 
+    public void initCleanupManager() {
+        _mvccCleanupManager.init();
+    }
+
+    public void closeCleanupManager() {
+        if (_mvccCleanupManager != null)
+            _mvccCleanupManager.close();
+    }
 
 }

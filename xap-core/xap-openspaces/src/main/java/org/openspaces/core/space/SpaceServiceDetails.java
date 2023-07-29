@@ -160,4 +160,16 @@ public class SpaceServiceDetails extends PlainServiceDetails {
     public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         super.readExternal(in);
     }
+
+    @Override
+    public String toString() {
+        return "SpaceServiceDetails{" +
+                "id='" + id + '\'' +
+                ", serviceType='" + serviceType + '\'' +
+                ", serviceSubType='" + serviceSubType + '\'' +
+                ", description='" + description + '\'' +
+                ", longDescription='" + longDescription + '\'' +
+                ", attributes=" + attributes +
+                '}';
+    }
 }
