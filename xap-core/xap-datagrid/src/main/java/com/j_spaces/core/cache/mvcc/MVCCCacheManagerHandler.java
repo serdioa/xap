@@ -38,7 +38,7 @@ public class MVCCCacheManagerHandler {
                     XtnEntry xtnEntry = newEntryToWrite.getXidOriginated();
                     XtnData pXtn = xtnEntry.getXtnData();
                     latestGenerationCacheInfo.getEntryHolder().setWriteLockOwnerAndOperation(newEntryToWrite.getWriteLockOwner(), newEntryToWrite.getWriteLockOperation());
-                    pXtn.addWriteActiveLogicallyDeletedEntries(latestGenerationCacheInfo);
+                    pXtn.addWriteActiveLogicallyDeletedEntry(latestGenerationCacheInfo);
                 } else if (isLatestCommittedExist) { //it already exists and not logically deleted.
                     return existingShell;
                 }
@@ -86,7 +86,7 @@ public class MVCCCacheManagerHandler {
     }
 
     public void handleDisconnectNewMvccEntryGenerationFromTransaction(Context context, MVCCEntryHolder entry, XtnEntry xtnEntry) throws SAException {
-        MVCCEntryCacheInfo newMvccGenerationCacheInfo = xtnEntry.getXtnData().getMvccNewGenerationsEntries().get(entry.getUID());
+        MVCCEntryCacheInfo newMvccGenerationCacheInfo = xtnEntry.getXtnData().getMvccNewGenerationsEntries(entry.getUID());
         int writeLockOperation = newMvccGenerationCacheInfo != null
                 ? newMvccGenerationCacheInfo.getEntryHolder().getWriteLockOperation() : SpaceOperations.NOOP;
         if (writeLockOperation != SpaceOperations.WRITE && writeLockOperation != SpaceOperations.UPDATE && writeLockOperation != SpaceOperations.TAKE) {

@@ -12,7 +12,7 @@ public class ClusterInfoBuilder {
     private Integer numberOfInstances;
     private Integer numberOfBackups;
     private DynamicPartitionInfo dynamicPartitionInfo;
-    private boolean dedicatedSecurity;
+    private boolean secured;
 
     public ClusterInfoBuilder() {
     }
@@ -26,7 +26,7 @@ public class ClusterInfoBuilder {
         this.numberOfInstances = clusterInfo.getNumberOfInstances();
         this.numberOfBackups = clusterInfo.getNumberOfBackups();
         this.dynamicPartitionInfo = clusterInfo.getDynamicPartitionInfo();
-        this.dedicatedSecurity = clusterInfo.isDedicatedSecurity();
+        this.secured = clusterInfo.isSecured();
     }
 
     public ClusterInfo build() {
@@ -107,12 +107,12 @@ public class ClusterInfoBuilder {
         return dynamicPartitionInfo;
     }
 
-    public boolean isDedicatedSecurity() {
-        return dedicatedSecurity;
+    public boolean isSecured() {
+        return secured;
     }
 
-    public ClusterInfoBuilder dedicatedSecurity(boolean dedicatedSecurity) {
-        this.dedicatedSecurity = dedicatedSecurity;
+    public ClusterInfoBuilder secured(boolean secured) {
+        this.secured = secured;
         return this;
     }
 }

@@ -94,6 +94,7 @@ public interface Constants {
     final public static String LOGGER_LOOKUPMANAGER = "com.gigaspaces.core.lookupmanager";
     final public static String LOGGER_MEMORYMANAGER = "com.gigaspaces.memory-manager";
     final public static String LOGGER_OFFHEAP_MEMORYMANAGER = "com.gigaspaces.offheap.memory-manager";
+    final public static String LOGGER_MVCC_CLEANUP = "com.gigaspaces.mvcc.cleanup-manager";
     final public static String LOGGER_NOTIFY = "com.gigaspaces.core.notify";
     final public static String LOGGER_FIFO = "com.gigaspaces.core.fifo";
     final public static String LOGGER_BROADCAST_TABLE = "com.gigaspaces.broadcast_table";
