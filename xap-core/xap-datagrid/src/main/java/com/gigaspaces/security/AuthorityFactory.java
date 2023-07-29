@@ -19,9 +19,16 @@ package com.gigaspaces.security;
 
 import com.gigaspaces.security.authorities.*;
 import com.gigaspaces.security.authorities.GridAuthority.GridPrivilege;
+import com.gigaspaces.security.authorities.MonitorAuthority;
 import com.gigaspaces.security.authorities.MonitorAuthority.MonitorPrivilege;
+import com.gigaspaces.security.authorities.PipelineAuthority;
+import com.gigaspaces.security.authorities.PipelineAuthority.PipelinePrivilege;
+import com.gigaspaces.security.authorities.Privilege;
+import com.gigaspaces.security.authorities.RoleAuthority;
 import com.gigaspaces.security.authorities.RoleAuthority.RolePrivilege;
+import com.gigaspaces.security.authorities.SpaceAuthority;
 import com.gigaspaces.security.authorities.SpaceAuthority.SpacePrivilege;
+import com.gigaspaces.security.authorities.SystemAuthority;
 import com.gigaspaces.security.authorities.SystemAuthority.SystemPrivilege;
 import com.gigaspaces.security.authorities.ServiceAuthority.ServicePrivilege;
 
@@ -97,6 +104,8 @@ public final class AuthorityFactory {
             return GridAuthority.valueOf(authority);
         } else if (MonitorPrivilege.class.getSimpleName().equals(privilege)) {
             return MonitorAuthority.valueOf(authority);
+        } else if (PipelineAuthority.PipelinePrivilege.class.getSimpleName().equals(privilege)) {
+            return PipelineAuthority.valueOf(authority);
         } else if (ServiceAuthority.ServicePrivilege.class.getSimpleName().equals(privilege)) {
             return ServiceAuthority.valueOf(authority);
         }
@@ -119,6 +128,8 @@ public final class AuthorityFactory {
             return new SpaceAuthority(((SpacePrivilege) privilege));
         } else if (privilege instanceof SystemPrivilege) {
             return new SystemAuthority((SystemPrivilege) privilege);
+        } else if (privilege instanceof PipelinePrivilege) {
+            return new PipelineAuthority((PipelinePrivilege) privilege);
         } else if (privilege instanceof ServicePrivilege) {
             return new ServiceAuthority((ServicePrivilege) privilege);
         }
