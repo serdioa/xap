@@ -9,7 +9,8 @@ public class ServiceAuthority implements InternalAuthority {
         /**
          * create/configure/delete service
          */
-        CONFIGURE_SERVICE,
+        //todo activate in scope UI part will add validation
+        //CONFIGURE_SERVICE,
         /**
          * deploy/undeploy service
          */
@@ -18,8 +19,8 @@ public class ServiceAuthority implements InternalAuthority {
         @Override
         public String toString() {
             switch (this) {
-                case CONFIGURE_SERVICE:
-                    return "Create/Configure/Delete Service";
+                /*case CONFIGURE_SERVICE:
+                    return "Create/Configure/Delete Service";*/
                 case MANAGE_SERVICE:
                     return "Deploy/Undeploy Service";
                 default:
