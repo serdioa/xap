@@ -104,9 +104,9 @@ public final class AuthorityFactory {
             return GridAuthority.valueOf(authority);
         } else if (MonitorPrivilege.class.getSimpleName().equals(privilege)) {
             return MonitorAuthority.valueOf(authority);
-        } else if (PipelineAuthority.class.getSimpleName().equals(privilege)) {
+        } else if (PipelineAuthority.PipelinePrivilege.class.getSimpleName().equals(privilege)) {
             return PipelineAuthority.valueOf(authority);
-        } else if (ServiceAuthority.class.getSimpleName().equals(privilege)) {
+        } else if (ServiceAuthority.ServicePrivilege.class.getSimpleName().equals(privilege)) {
             return ServiceAuthority.valueOf(authority);
         }
 
