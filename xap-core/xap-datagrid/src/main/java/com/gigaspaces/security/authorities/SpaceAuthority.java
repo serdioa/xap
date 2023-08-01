@@ -482,6 +482,8 @@ public class SpaceAuthority implements InternalAuthority {
 
     public static class SpacenameFilter implements Filter<String> {
 
+        private static final long serialVersionUID = 1L;
+
         private String spaceName;
 
         public SpacenameFilter(String spaceName) {
