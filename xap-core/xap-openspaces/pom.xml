@@ -6,7 +6,7 @@
     <parent>
         <artifactId>xap</artifactId>
         <groupId>org.gigaspaces</groupId>
-        <version>16.4.0-SNAPSHOT</version>
+        <version>16.4.0-FIX-pipeline-privileges-deserialization-wed-985</version>
         <relativePath>../../pom.xml</relativePath>
     </parent>
 
