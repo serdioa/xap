@@ -975,14 +975,20 @@ public interface Constants {
         String CACHE_MANAGER_MVCC_LOCKS_SIZE_DEFAULT = "10000";
 
         // Time limit for holding entry version in the cache.
-        String MVCC_HISTORICAL_ENTRY_LIFETIME = SPACE_CONFIG_PREFIX + MVCC_PREFIX + "historical_entry_lifetime";
+        String MVCC_HISTORICAL_ENTRY_LIFETIME = MVCC_PREFIX + "historical_entry_lifetime";
+        String FULL_MVCC_HISTORICAL_ENTRY_LIFETIME = SPACE_CONFIG_PREFIX + MVCC_HISTORICAL_ENTRY_LIFETIME;
         // Time limit unit. Supported from nanoseconds to days (n, u, ms, s, m, h, d)
-        String MVCC_HISTORICAL_ENTRY_LIFETIME_TIMEUNIT = SPACE_CONFIG_PREFIX + MVCC_PREFIX + "historical_entry_lifetime_timeunit";
+        String MVCC_HISTORICAL_ENTRY_LIFETIME_TIMEUNIT = MVCC_PREFIX + "historical_entry_lifetime_timeunit";
+        String FULL_MVCC_HISTORICAL_ENTRY_LIFETIME_TIMEUNIT = SPACE_CONFIG_PREFIX + MVCC_HISTORICAL_ENTRY_LIFETIME_TIMEUNIT;
         // Max allowed limit for historical entries number per UID. CAN NOT BE 0.
         // Data lifetime take precedence over this property.
-        String MVCC_HISTORICAL_ENTRIES_LIMIT = SPACE_CONFIG_PREFIX + MVCC_PREFIX + "historical_entries_limit";
+        String MVCC_HISTORICAL_ENTRIES_LIMIT = MVCC_PREFIX + "historical_entries_limit";
+        String FULL_MVCC_HISTORICAL_ENTRIES_LIMIT = SPACE_CONFIG_PREFIX + MVCC_HISTORICAL_ENTRIES_LIMIT;
+        String MVCC_FIXED_CLEANUP_DELAY_MILLIS = MVCC_PREFIX + "fixed_cleanup_delay_millis";
+        String FULL_MVCC_FIXED_CLEANUP_DELAY_MILLIS = SPACE_CONFIG_PREFIX + MVCC_FIXED_CLEANUP_DELAY_MILLIS;
         String MVCC_HISTORICAL_ENTRY_LIFETIME_DEFAULT = "10";
         String MVCC_HISTORICAL_ENTRY_LIFETIME_TIMEUNIT_DEFAULT = "s"; //seconds
         String MVCC_HISTORICAL_ENTRIES_LIMIT_DEFAULT = "5";
+        String MVCC_FIXED_CLEANUP_DELAY_MILLIS_DEFAULT = "0";
     }
 }

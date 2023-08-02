@@ -3311,6 +3311,7 @@ public class SpaceImpl extends AbstractService implements IRemoteSpace, IInterna
             spaceConfig.setMvccHistoricalEntryLifetime(configReader.getIntSpaceProperty(Mvcc.MVCC_HISTORICAL_ENTRY_LIFETIME, Mvcc.MVCC_HISTORICAL_ENTRY_LIFETIME_DEFAULT));
             spaceConfig.setMvccHistoricalEntryLifetimeTimeUnit(configReader.getSpaceProperty(Mvcc.MVCC_HISTORICAL_ENTRY_LIFETIME_TIMEUNIT, Mvcc.MVCC_HISTORICAL_ENTRY_LIFETIME_TIMEUNIT_DEFAULT));
             spaceConfig.setMvccHistoricalEntriesLimit(configReader.getIntSpaceProperty(Mvcc.MVCC_HISTORICAL_ENTRIES_LIMIT, Mvcc.MVCC_HISTORICAL_ENTRIES_LIMIT_DEFAULT));
+            spaceConfig.setMvccFixedCleanupDelayMillis(configReader.getIntSpaceProperty(Mvcc.MVCC_FIXED_CLEANUP_DELAY_MILLIS, Mvcc.MVCC_FIXED_CLEANUP_DELAY_MILLIS_DEFAULT));
         }
         // build filter information
         int filterCounter = 0;

@@ -1414,16 +1414,16 @@ public class JSpaceAttributes
     }
 
     public long getMvccHistoricalEntryLifetime() {
-        return Long.parseLong(getProperty(MVCC_HISTORICAL_ENTRY_LIFETIME, MVCC_HISTORICAL_ENTRY_LIFETIME_DEFAULT));
+        return Long.parseLong(getProperty(FULL_MVCC_HISTORICAL_ENTRY_LIFETIME, MVCC_HISTORICAL_ENTRY_LIFETIME_DEFAULT));
     }
 
     public void setMvccHistoricalEntryLifetime(int entryLifetime) {
-        this.setProperty(MVCC_HISTORICAL_ENTRY_LIFETIME, String.valueOf(entryLifetime));
+        this.setProperty(FULL_MVCC_HISTORICAL_ENTRY_LIFETIME, String.valueOf(entryLifetime));
     }
 
 
     public TimeUnit getMvccHistoricalEntryLifetimeTimeUnit() {
-        return StringUtils.parseTimeUnit(getProperty(MVCC_HISTORICAL_ENTRY_LIFETIME_TIMEUNIT, MVCC_HISTORICAL_ENTRY_LIFETIME_TIMEUNIT_DEFAULT));
+        return StringUtils.parseTimeUnit(getProperty(FULL_MVCC_HISTORICAL_ENTRY_LIFETIME_TIMEUNIT, MVCC_HISTORICAL_ENTRY_LIFETIME_TIMEUNIT_DEFAULT));
     }
 
     /**
@@ -1434,11 +1434,11 @@ public class JSpaceAttributes
      * */
     public void setMvccHistoricalEntryLifetimeTimeUnit(String entryLifetimeTimeUnit) {
         StringUtils.parseTimeUnit(entryLifetimeTimeUnit);
-        this.setProperty(MVCC_HISTORICAL_ENTRY_LIFETIME_TIMEUNIT, entryLifetimeTimeUnit);
+        this.setProperty(FULL_MVCC_HISTORICAL_ENTRY_LIFETIME_TIMEUNIT, entryLifetimeTimeUnit);
     }
 
     public int getMvccHistoricalEntriesLimit() {
-        return Integer.parseInt(getProperty(MVCC_HISTORICAL_ENTRIES_LIMIT, MVCC_HISTORICAL_ENTRIES_LIMIT_DEFAULT));
+        return Integer.parseInt(getProperty(FULL_MVCC_HISTORICAL_ENTRIES_LIMIT, MVCC_HISTORICAL_ENTRIES_LIMIT_DEFAULT));
     }
 
     /**
@@ -1449,8 +1449,18 @@ public class JSpaceAttributes
     public void setMvccHistoricalEntriesLimit(int historicalEntriesLimit) {
         if (historicalEntriesLimit < 1)
             throw new IllegalArgumentException("Property " + MVCC_HISTORICAL_ENTRIES_LIMIT + " is not valid. Use number >= 1");
-        this.setProperty(MVCC_HISTORICAL_ENTRIES_LIMIT, String.valueOf(historicalEntriesLimit));
+        this.setProperty(FULL_MVCC_HISTORICAL_ENTRIES_LIMIT, String.valueOf(historicalEntriesLimit));
     }
+
+    public long getMvccFixedCleanupDelayMillis() {
+        return Long.parseLong(getProperty(FULL_MVCC_FIXED_CLEANUP_DELAY_MILLIS, MVCC_FIXED_CLEANUP_DELAY_MILLIS_DEFAULT));
+    }
+
+    public void setMvccFixedCleanupDelayMillis(int fixedCleanupDelayMillis) {
+        this.setProperty(FULL_MVCC_FIXED_CLEANUP_DELAY_MILLIS, String.valueOf(fixedCleanupDelayMillis));
+    }
+
+
 
 
     /**
