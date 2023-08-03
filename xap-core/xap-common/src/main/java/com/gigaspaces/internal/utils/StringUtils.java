@@ -647,6 +647,10 @@ public abstract class StringUtils {
 
     public static TimeUnit parseTimeUnit(String s, TimeUnit defaultValue) {
         if (s == null) return defaultValue;
+        return parseTimeUnit(s);
+    }
+
+    public static TimeUnit parseTimeUnit(String s) {
         if (s.equalsIgnoreCase("n")) return TimeUnit.NANOSECONDS;
         if (s.equalsIgnoreCase("u")) return TimeUnit.MICROSECONDS;
         if (s.equalsIgnoreCase("ms")) return TimeUnit.MILLISECONDS;

@@ -47,6 +47,14 @@ public class ReplicationEntryHolder extends EntryHolder {
         _originalEntry = entryHolder;
     }
 
+    //For Update replication in mvcc
+    public ReplicationEntryHolder(IEntryHolder newEntryGeneration, ShadowEntryHolder activeEntry, XtnEntry xtnEntry) {
+        super(newEntryGeneration);
+        super.setWriteLockOwnerAndOperation(xtnEntry, newEntryGeneration.getWriteLockOperation());
+        _previousEntry = activeEntry;
+        _originalEntry = newEntryGeneration;
+    }
+
     @Override
     public boolean hasShadow() {
         return _previousEntry != null;

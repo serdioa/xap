@@ -647,6 +647,9 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
             }
 
             _dataEventManager.init(isReplicated(), getReplicationNode());
+            if (isMvccEnabled()) {
+                _mvccSpaceEngineHandler.initCleanupManager();
+            }
         } catch (Exception ex) {
             String msg = "Failed to init [" + _spaceName + "] space.";
 
@@ -3714,6 +3717,9 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
         if(tieredStorageManager != null){
             tieredStorageManager.close();
         }
+        if (isMvccEnabled()) {
+            _mvccSpaceEngineHandler.closeCleanupManager();
+        }
     }
 
     /**
@@ -4021,8 +4027,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
                     template.getTemplateOperation() == SpaceOperations.UPDATE;
         }
 
-
-        if (entry == null || (useSCN && (template.getSCN() > entry.getSCN()))) {
+        if (entry == null || (useSCN && (template.getSCN() > entry.getSCN())) || (isMvccEnabled() && entry.isHollowEntry())) {
             if (exceptionIfNoEntry)//update
                 returnEntryNotInSpaceError(context, template, null, makeWaitForInfo);
             return null;
@@ -4669,12 +4674,21 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
             // if modify operation(exclusive read or not read) -> throw an exception
             if (!needRematch && isMvccEnabled() && !tmpl.isHistoricalRead(this, context)) {
                 MVCCShellEntryCacheInfo mvccShellEntryCacheInfoByUid = _cacheManager.getMVCCShellEntryCacheInfoByUid(ent.getUID());
-                MVCCEntryHolder activeData = (tmpl.isReadCommittedRequested() && (tmpl.getXidOriginated() == null || tmpl.getXidOriginated() != entry.getWriteLockOwner())) ?
+                XtnEntry templateTransaction = tmpl.getXidOriginated() == null ? null : tmpl.getXidOriginated();
+                MVCCEntryHolder activeData = (tmpl.isReadCommittedRequested() && (templateTransaction == null || templateTransaction != entry.getWriteLockOwner())) ?
                             mvccShellEntryCacheInfoByUid.getLatestCommittedOrHollow() :
                             mvccShellEntryCacheInfoByUid.getEntryHolder();
                 if (activeData != null && activeData != entry) {
                     if (!tmpl.isActiveRead(this, context)) {
-                        throw new MVCCEntryModifyConflictException(context.getMVCCGenerationsState(), (MVCCEntryHolder) entry, tmpl.getTemplateOperation());
+                        if ((entry.getWriteLockOperation() == SpaceOperations.TAKE
+                                || entry.getWriteLockOperation() == SpaceOperations.TAKE_IE)
+                            && (activeData.getWriteLockOperation() == SpaceOperations.TAKE
+                                || activeData.getWriteLockOperation() == SpaceOperations.TAKE_IE)
+                            && templateTransaction == entry.getWriteLockOwner()
+                            && templateTransaction == activeData.getWriteLockOwner()) {
+                            throw ENTRY_DELETED_EXCEPTION; // entry deleted by own transaction.
+                        }
+                        throw new MVCCEntryModifyConflictException(context.getMVCCGenerationsState(), (MVCCEntryHolder) entry, activeData, tmpl.getTemplateOperation());
                     }
                     if (getLogger().isDebugEnabled()) {
                         getLogger().debug("{}: need rematch for entry: {}, new entry: {}, genState: {}", Thread.currentThread().getName(), entry, activeData, context.getMVCCGenerationsState());
@@ -4763,7 +4777,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
                         mvccShellEntryCacheInfoByUid.getEntryHolder();
                 if (activeData != null && activeData != entry) {
                     if (!tmpl.isActiveRead(this, context)) {
-                        throw new MVCCEntryModifyConflictException(context.getMVCCGenerationsState(), (MVCCEntryHolder) entry, tmpl.getTemplateOperation());
+                        throw new MVCCEntryModifyConflictException(context.getMVCCGenerationsState(), (MVCCEntryHolder) entry, activeData, tmpl.getTemplateOperation());
                     }
                     if (getLogger().isDebugEnabled()) {
                         getLogger().debug("{}: need rematch for entry: {}, new entry: {}, genState: {}", Thread.currentThread().getName(), entry, activeData, context.getMVCCGenerationsState());
@@ -5163,9 +5177,9 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
             // but only if the entry should not be deleted (this
             // occurs when the entry was written under the same Xtn as
             // the Take/TakeIE)
-            boolean isUpdateTakeMvcc = isMvccEnabled() && entry.getWriteLockOperation() == SpaceOperations.UPDATE;
-            if (entry.getXidOriginatedTransaction() == null ||
-                    !template.getXidOriginatedTransaction().equals(entry.getXidOriginatedTransaction()) || isUpdateTakeMvcc) {
+            if (entry.getXidOriginatedTransaction() == null
+                    || !template.getXidOriginatedTransaction().equals(entry.getXidOriginatedTransaction())
+                    || isMvccEnabled() && entry.getWriteLockOperation() == SpaceOperations.UPDATE) {
                 _cacheManager.associateEntryWithXtn(context, entry, template, template.getXidOriginated(), null);
             }
         }

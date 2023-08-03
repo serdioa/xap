@@ -164,6 +164,8 @@ public class SpaceAuthority implements InternalAuthority {
                 filter = new NegateClassFilter(filterParams);
             } else if (filterClass.equals(RegexFilter.class.getSimpleName())) {
                 filter = new RegexFilter(filterParams);
+            } else if (filterClass.equals(SpacenameFilter.class.getSimpleName())) {
+                filter = new SpacenameFilter(filterParams);
             } else {
                 throw new IllegalArgumentException("Unknown authority representation.");
             }
@@ -475,6 +477,35 @@ public class SpaceAuthority implements InternalAuthority {
          */
         private static boolean isPattern(String expression) {
             return (expression.indexOf('*') != -1 || expression.indexOf('?') != -1);
+        }
+    }
+
+    public static class SpacenameFilter implements Filter<String> {
+
+        private static final long serialVersionUID = 1L;
+
+        private String spaceName;
+
+        public SpacenameFilter(String spaceName) {
+            this.spaceName = spaceName;
+        }
+
+        @Override
+        public String getExpression() {
+            return spaceName;
+        }
+
+        @Override
+        public boolean accept(String other) {
+            if (spaceName.equals(other)) {
+                return true;
+            }
+            return false;
+        }
+
+        @Override
+        public String toString() {
+            return "SpacenameFilter " + spaceName ;
         }
     }
 }

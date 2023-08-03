@@ -23,7 +23,6 @@ import com.gigaspaces.internal.client.spaceproxy.actioninfo.ReadTakeMultipleProx
 import com.gigaspaces.internal.client.spaceproxy.operations.ReadTakeEntriesSpaceOperationRequest;
 import com.gigaspaces.internal.transport.IEntryPacket;
 import com.j_spaces.core.client.ReadModifiers;
-
 import net.jini.core.entry.UnusableEntryException;
 import net.jini.core.transaction.TransactionException;
 
