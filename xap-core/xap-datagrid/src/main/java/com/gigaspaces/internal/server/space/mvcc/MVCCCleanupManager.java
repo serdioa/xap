@@ -131,7 +131,7 @@ public class MVCCCleanupManager {
             if (_logger.isDebugEnabled()) {
                 _logger.debug("MVCC cleanup started with last generation: " + generationState);
             }
-            if (generationState == null || generationState.getCompletedGeneration() == -1) {
+            if (generationState == null) {
                 return;
             }
             Map<String, IServerTypeDesc> typesTable = _cacheManager.getTypeManager().getSafeTypeTable();
@@ -178,7 +178,7 @@ public class MVCCCleanupManager {
         }
 
         private boolean matchToRemove(MVCCEntryHolder entry, AtomicBoolean cleanWithoutMatch, MVCCGenerationsState generationState, int skippedEntries) {
-            if (cleanWithoutMatch.get() || entry.isHollowEntry()) {
+            if (cleanWithoutMatch.get()) {
                 return true;
             } else if (isLifetimeLimitExceeded(entry)) {
                 if (generationState.isUncompletedGeneration(entry.getCommittedGeneration())) { // if not completed
@@ -188,7 +188,7 @@ public class MVCCCleanupManager {
                     cleanWithoutMatch.set(true);
                     return true;
                 }
-            } else if (skippedEntries > _historicalEntriesLimit) {
+            } else if (skippedEntries == _historicalEntriesLimit) {
                 cleanWithoutMatch.set(true);
                 return true;
             }
@@ -207,6 +207,9 @@ public class MVCCCleanupManager {
                 synchronized (entryHistoryCache.getEntryHolder()) {
                     if (isEmptyShell(entryHistoryCache)) {
                         _cacheManager.removeEntryFromCache(entryHistoryCache.getEntryHolder(), false, true, entryHistoryCache, CacheManager.RecentDeleteCodes.NONE);
+                        if (_logger.isDebugEnabled()) {
+                            _logger.debug("EntryShell {} was cleaned", entryHistoryCache.getUID());
+                        }
                     }
                 }
             }

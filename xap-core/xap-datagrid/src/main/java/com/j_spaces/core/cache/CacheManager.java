@@ -4249,8 +4249,13 @@ public class CacheManager extends AbstractCacheManager
                 } else {
                     pEntry =  _entries.remove(entryHolder.getUID());
                 }
-            else
-                _entries.remove(entryHolder.getUID(), pEntry);
+            else {
+                boolean removed = _entries.remove(entryHolder.getUID(), pEntry);
+                if (isMVCCEnabled() && removed) {
+                    // arrive here to clean empty shell
+                    return true;
+                }
+            }
         }
         if (pEntry == null && locked)
             throw new RuntimeException("removeEntryFromCache: locked && pEntry not found");
