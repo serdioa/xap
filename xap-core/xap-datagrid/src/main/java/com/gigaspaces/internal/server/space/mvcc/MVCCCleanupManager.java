@@ -10,6 +10,7 @@ import com.j_spaces.core.cache.TypeData;
 import com.j_spaces.core.cache.mvcc.MVCCEntryCacheInfo;
 import com.j_spaces.core.cache.mvcc.MVCCEntryHolder;
 import com.j_spaces.core.cache.mvcc.MVCCShellEntryCacheInfo;
+import com.j_spaces.kernel.locks.ILockObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -161,7 +162,8 @@ public class MVCCCleanupManager {
             MVCCEntryCacheInfo pEntry = toScan.next();
             MVCCEntryHolder entry = pEntry.getEntryHolder();
             if (matchToRemove(entry, cleanWithoutMatch, generationState, skippedEntries)) {
-                synchronized (entry) {
+                ILockObject entryLock = _cacheManager.getLockManager().getLockObject(entry);
+                synchronized (entryLock) {
                     if (matchToRemove(entry, cleanWithoutMatch, generationState, skippedEntries)) {
                         toScan.remove();
                         if (!entry.isLogicallyDeleted()) {
@@ -184,7 +186,7 @@ public class MVCCCleanupManager {
                 if (generationState.isUncompletedGeneration(entry.getCommittedGeneration())) { // if not completed
                     return true;
                     // TODO: remove from zk uncompletedSet (PIC-2851)
-                } else if (entry.getOverrideGeneration() != -1) { // if not active data
+                } else if (entry.getOverrideGeneration() != -1 || entry.isLogicallyDeleted()) { // if not active data
                     cleanWithoutMatch.set(true);
                     return true;
                 }
@@ -204,9 +206,11 @@ public class MVCCCleanupManager {
 
         private void removeUidShellPairIfEmpty(MVCCShellEntryCacheInfo entryHistoryCache) {
             if (isEmptyShell(entryHistoryCache)) {
-                synchronized (entryHistoryCache.getEntryHolder()) {
+                MVCCEntryHolder hollowEntry = entryHistoryCache.getEntryHolder();
+                ILockObject entryLock = _cacheManager.getLockManager().getLockObject(hollowEntry);
+                synchronized (entryLock) {
                     if (isEmptyShell(entryHistoryCache)) {
-                        _cacheManager.removeEntryFromCache(entryHistoryCache.getEntryHolder(), false, true, entryHistoryCache, CacheManager.RecentDeleteCodes.NONE);
+                        _cacheManager.removeEntryFromCache(hollowEntry, false, true, entryHistoryCache, CacheManager.RecentDeleteCodes.NONE);
                         if (_logger.isDebugEnabled()) {
                             _logger.debug("EntryShell {} was cleaned", entryHistoryCache.getUID());
                         }

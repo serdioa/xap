@@ -4253,6 +4253,10 @@ public class CacheManager extends AbstractCacheManager
                 boolean removed = _entries.remove(entryHolder.getUID(), pEntry);
                 if (isMVCCEnabled() && removed) {
                     // arrive here to clean empty shell
+                    TypeData typeData = _typeDataMap.get(entryHolder.getServerTypeDesc());
+//                    if (typeData.hasIndexes()) {
+//                        typeData.getIdField().getUniqueEntriesStore().remove(pEntry);
+//                    }
                     return true;
                 }
             }
