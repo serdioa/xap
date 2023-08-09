@@ -1,7 +1,10 @@
 package com.j_spaces.core.cache.mvcc;
 
+import com.gigaspaces.internal.metadata.ITypeDesc;
+import com.gigaspaces.internal.metadata.TypeDescriptorUtils;
 import com.gigaspaces.internal.server.metadata.IServerTypeDesc;
 import com.gigaspaces.internal.server.storage.EntryHolderFactory;
+import com.gigaspaces.internal.server.storage.IEntryData;
 import com.gigaspaces.internal.server.storage.IEntryHolder;
 import com.j_spaces.core.cache.CacheManager;
 import com.j_spaces.core.cache.IEntryCacheInfo;
@@ -19,6 +22,7 @@ public class MVCCShellEntryCacheInfo extends MemoryBasedEntryCacheInfo {
     private volatile MVCCEntryCacheInfo dirtyEntry;
     private final IServerTypeDesc serverTypeDesc;
     private final String uid;
+    private final Object id;
 
 
     public MVCCShellEntryCacheInfo(IEntryHolder entryHolder, MVCCEntryCacheInfo pEntry) {
@@ -26,6 +30,23 @@ public class MVCCShellEntryCacheInfo extends MemoryBasedEntryCacheInfo {
         dirtyEntry = pEntry;
         serverTypeDesc = entryHolder.getServerTypeDesc();
         uid = entryHolder.getUID();
+        id = calculateShellId(entryHolder.getEntryData());
+    }
+
+    public Object calculateShellId(IEntryData entryData) {
+        ITypeDesc typeDesc = entryData.getEntryTypeDesc().getTypeDesc();
+        if (typeDesc.isAutoGenerateId())
+            return getUID();
+
+        int[] identifierPropertiesId = typeDesc.getIdentifierPropertiesId();
+        if (identifierPropertiesId.length == 0)
+            return null;
+
+        return TypeDescriptorUtils.toSpaceId(identifierPropertiesId, entryData::getFixedPropertyValue);
+    }
+
+    public Object getShellId() {
+        return id;
     }
 
     public Iterator<MVCCEntryCacheInfo> ascIterator() {

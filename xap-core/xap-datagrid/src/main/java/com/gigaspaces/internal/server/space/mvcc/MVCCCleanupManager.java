@@ -17,7 +17,6 @@ import org.slf4j.LoggerFactory;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * @author Davyd Savitskyi
@@ -51,14 +50,14 @@ public class MVCCCleanupManager {
 
 
     /**
-    * If not closed -> init MVCC cleaner daemon thread and start it.<br>
-    */
+     * If not closed -> init MVCC cleaner daemon thread and start it.<br>
+     */
     public void init() {
         if (!_closed) {
             _cacheManager = _spaceImpl.getEngine().getCacheManager();
             _mvccCleanerDaemon = new MVCCGenerationCleaner(MVCCGenerationCleaner.class.getSimpleName() + "-" + _spaceImpl.getName());
             _mvccCleanerDaemon.start();
-            _logger.debug("MVCC cleaner daemon " + _mvccCleanerDaemon.getName() +  " started");
+            _logger.debug("MVCC cleaner daemon " + _mvccCleanerDaemon.getName() + " started");
         }
     }
 
@@ -142,14 +141,23 @@ public class MVCCCleanupManager {
                 if (typeData == null || typeData.getIdField() == null) {
                     continue;
                 }
-                Map<Object, MVCCShellEntryCacheInfo> idEntriesMap =  typeData.getIdField().getUniqueEntriesStore();
+                Map<Object, MVCCShellEntryCacheInfo> idEntriesMap = typeData.getIdField().getUniqueEntriesStore();
                 for (MVCCShellEntryCacheInfo historicalEntryData : idEntriesMap.values()) {
-                    Iterator<MVCCEntryCacheInfo> toScan = historicalEntryData.descIterator();
-                    AtomicBoolean cleanWithoutMatch = new AtomicBoolean(false);
-                    int skippedEntries = 0;
-                    while(toScan.hasNext()) {
-                        if (!removeNextOnMatch(toScan, cleanWithoutMatch, generationState, skippedEntries)) {
-                            skippedEntries++;
+                    Iterator<MVCCEntryCacheInfo> toScan;
+                    int totalCommittedGens;
+                    ILockObject entryLock = _cacheManager.getLockManager().getLockObject(historicalEntryData.getEntryHolder());
+                    try {
+                        synchronized (entryLock) {
+                            toScan = historicalEntryData.ascIterator();
+                            totalCommittedGens = historicalEntryData.getTotalCommittedGenertions();
+                        }
+                    } finally {
+                        _cacheManager.getLockManager().freeLockObject(entryLock);
+                    }
+                    int deletedEntries = 0;
+                    while (toScan.hasNext()) {
+                        if (removeNextOnMatch(toScan, generationState, deletedEntries, totalCommittedGens)) {
+                            deletedEntries++;
                         }
                     }
                     removeUidShellPairIfEmpty(historicalEntryData);
@@ -158,44 +166,41 @@ public class MVCCCleanupManager {
 
         }
 
-        private boolean removeNextOnMatch(Iterator<MVCCEntryCacheInfo> toScan, AtomicBoolean cleanWithoutMatch, MVCCGenerationsState generationState, int skippedEntries) {
+        private boolean removeNextOnMatch(Iterator<MVCCEntryCacheInfo> toScan, MVCCGenerationsState generationState, int deletedEntries, int totalCommittedGens) {
             MVCCEntryCacheInfo pEntry = toScan.next();
             MVCCEntryHolder entry = pEntry.getEntryHolder();
-            if (matchToRemove(entry, cleanWithoutMatch, generationState, skippedEntries)) {
+            if (matchToRemove(entry, generationState, deletedEntries, totalCommittedGens)) {
                 ILockObject entryLock = _cacheManager.getLockManager().getLockObject(entry);
-                synchronized (entryLock) {
-                    if (matchToRemove(entry, cleanWithoutMatch, generationState, skippedEntries)) {
-                        toScan.remove();
-                        if (!entry.isLogicallyDeleted()) {
-                            _cacheManager.removeEntryFromCache(entry, false, true, pEntry, CacheManager.RecentDeleteCodes.NONE);
+                try {
+                    synchronized (entryLock) {
+                        if (matchToRemove(entry, generationState, deletedEntries, totalCommittedGens)) {
+                            toScan.remove();
+                            if (!entry.isLogicallyDeleted()) {
+                                _cacheManager.removeEntryFromCache(entry, false, true, pEntry, CacheManager.RecentDeleteCodes.NONE);
+                            }
+                            if (_logger.isDebugEnabled()) {
+                                _logger.debug("Entry {} was cleaned", entry);
+                            }
+                            return true;
                         }
-                        if (_logger.isDebugEnabled()) {
-                            _logger.debug("Entry {} was cleaned", entry);
-                        }
-                        return true;
                     }
+                } finally {
+                    _cacheManager.getLockManager().freeLockObject(entryLock);
                 }
+            }
+            if (_logger.isDebugEnabled()) {
+                _logger.debug("Entry {} wasn't cleaned", entry);
             }
             return false;
         }
 
-        private boolean matchToRemove(MVCCEntryHolder entry, AtomicBoolean cleanWithoutMatch, MVCCGenerationsState generationState, int skippedEntries) {
-            if (cleanWithoutMatch.get()) {
-                return true;
-            } else if (isLifetimeLimitExceeded(entry)) {
-                if (generationState.isUncompletedGeneration(entry.getCommittedGeneration())) { // if not completed
-                    return true;
-                    // TODO: remove from zk uncompletedSet (PIC-2851)
-                } else if (entry.getOverrideGeneration() != -1 || entry.isLogicallyDeleted()) { // if not active data
-                    cleanWithoutMatch.set(true);
+        private boolean matchToRemove(MVCCEntryHolder entry, MVCCGenerationsState generationState, int deletedEntries, int totalCommittedGens) {
+            if (isLifetimeLimitExceeded(entry)) {
+                if (generationState.isUncompletedGeneration(entry.getCommittedGeneration()) || entry.getOverrideGeneration() != -1 || entry.isLogicallyDeleted()) {
                     return true;
                 }
-            } else if (skippedEntries == _historicalEntriesLimit) {
-                cleanWithoutMatch.set(true);
+            } else if (totalCommittedGens - deletedEntries > _historicalEntriesLimit) {
                 return true;
-            }
-            if (_logger.isDebugEnabled()) {
-                _logger.debug("Entry {} wasn't cleaned", entry);
             }
             return false;
         }
@@ -208,13 +213,17 @@ public class MVCCCleanupManager {
             if (isEmptyShell(entryHistoryCache)) {
                 MVCCEntryHolder hollowEntry = entryHistoryCache.getEntryHolder();
                 ILockObject entryLock = _cacheManager.getLockManager().getLockObject(hollowEntry);
-                synchronized (entryLock) {
-                    if (isEmptyShell(entryHistoryCache)) {
-                        _cacheManager.removeEntryFromCache(hollowEntry, false, true, entryHistoryCache, CacheManager.RecentDeleteCodes.NONE);
-                        if (_logger.isDebugEnabled()) {
-                            _logger.debug("EntryShell {} was cleaned", entryHistoryCache.getUID());
+                try {
+                    synchronized (entryLock) {
+                        if (isEmptyShell(entryHistoryCache)) {
+                            _cacheManager.removeEntryFromCache(hollowEntry, false, true, entryHistoryCache, CacheManager.RecentDeleteCodes.NONE);
+                            if (_logger.isDebugEnabled()) {
+                                _logger.debug("EntryShell {} was cleaned", entryHistoryCache.getUID());
+                            }
                         }
                     }
+                } finally {
+                    _cacheManager.getLockManager().freeLockObject(entryLock);
                 }
             }
         }

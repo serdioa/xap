@@ -4254,9 +4254,7 @@ public class CacheManager extends AbstractCacheManager
                 if (isMVCCEnabled() && removed) {
                     // arrive here to clean empty shell
                     TypeData typeData = _typeDataMap.get(entryHolder.getServerTypeDesc());
-//                    if (typeData.hasIndexes()) {
-//                        typeData.getIdField().getUniqueEntriesStore().remove(pEntry);
-//                    }
+                    typeData.getIdField().getUniqueEntriesStore().remove(((MVCCShellEntryCacheInfo)pEntry).getShellId(), pEntry);
                     return true;
                 }
             }
