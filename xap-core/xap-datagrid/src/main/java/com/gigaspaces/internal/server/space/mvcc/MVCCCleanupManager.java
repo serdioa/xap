@@ -4,6 +4,7 @@ import com.gigaspaces.internal.server.metadata.IServerTypeDesc;
 import com.gigaspaces.internal.server.space.SpaceImpl;
 import com.gigaspaces.internal.server.space.ZooKeeperMVCCInternalHandler;
 import com.gigaspaces.internal.utils.concurrent.GSThread;
+import com.gigaspaces.time.SystemTime;
 import com.j_spaces.core.admin.SpaceConfig;
 import com.j_spaces.core.cache.CacheManager;
 import com.j_spaces.core.cache.TypeData;
@@ -57,7 +58,7 @@ public class MVCCCleanupManager {
             _cacheManager = _spaceImpl.getEngine().getCacheManager();
             _mvccCleanerDaemon = new MVCCGenerationCleaner(MVCCGenerationCleaner.class.getSimpleName() + "-" + _spaceImpl.getName());
             _mvccCleanerDaemon.start();
-            _logger.debug("MVCC cleaner daemon " + _mvccCleanerDaemon.getName() + " started");
+            _logger.debug("MVCC cleaner daemon {} started at partition: [{}]", _mvccCleanerDaemon.getName(), _spaceImpl.getPartitionId());
         }
     }
 
@@ -91,9 +92,15 @@ public class MVCCCleanupManager {
         public MVCCGenerationCleaner(String name) {
             super(name);
             this.setDaemon(true);
-            _nextCleanupDelayInterval = _spaceConfig.getMvccFixedCleanupDelayMillis() != 0 ? _spaceConfig.getMvccFixedCleanupDelayMillis() : MIN_CLEANUP_DELAY_INTERVAL_MILLIS;
+            boolean dynamicDelayEnabled = _spaceConfig.getMvccFixedCleanupDelayMillis() == 0;
+            _nextCleanupDelayInterval = dynamicDelayEnabled ? MIN_CLEANUP_DELAY_INTERVAL_MILLIS : _spaceConfig.getMvccFixedCleanupDelayMillis();
             _lifetimeLimitMillis = _spaceConfig.getMvccHistoricalEntryLifetimeTimeUnit().toMillis(_spaceConfig.getMvccHistoricalEntryLifetime());
             _historicalEntriesLimit = _spaceConfig.getMvccHistoricalEntriesLimit();
+            _logger.info("MVCC cleaner daemon {} initialized at partition [{}] with configs:\n" +
+                            (dynamicDelayEnabled ? " Dynamic" : " Fixed") + " delay with initial value: {}ms\n" +
+                            " Lifetime limit for entry: {}ms\n" +
+                            " Max number in history per id: {}"
+                    , getName(), _spaceImpl.getPartitionId(), _nextCleanupDelayInterval, _lifetimeLimitMillis, _historicalEntriesLimit);
         }
 
         @Override
@@ -103,14 +110,13 @@ public class MVCCCleanupManager {
                     try {
                         fallAsleep();
                         cleanExpiredEntriesGenerations();
-                        _logger.debug("MVCC cleanup finished");
                     } catch (Exception ex) {
-                        _logger.error(this.getName() + " - caught Exception", ex);
+                        _logger.error(getName() + " - caught Exception", ex);
                     }
                 }
             } finally {
                 if (_logger.isDebugEnabled())
-                    _logger.debug("MVCC cleaner " + this.getName() + " terminated.");
+                    _logger.info("MVCC cleaner daemon {} terminated at partition: [{}]", getName(), _spaceImpl.getPartitionId());
             }
         }
 
@@ -124,14 +130,19 @@ public class MVCCCleanupManager {
         }
 
         private void cleanExpiredEntriesGenerations() {
+            long startTime = SystemTime.timeMillis();
+            long totalDeletedVersions = 0;
+            long totalVersionsInPartition = 0;
             if (_shouldTerminate) {
+                logAfterCleanupIteration(startTime, 0, 0);
                 return;
             }
             MVCCGenerationsState generationState = _zookeeperMVCCHandler.getGenerationsState();
             if (_logger.isDebugEnabled()) {
-                _logger.debug("MVCC cleanup started with last generation: " + generationState);
+                _logger.debug("Last generation: " + generationState);
             }
             if (generationState == null) {
+                logAfterCleanupIteration(startTime, 0, 0);
                 return;
             }
             Map<String, IServerTypeDesc> typesTable = _cacheManager.getTypeManager().getSafeTypeTable();
@@ -154,16 +165,23 @@ public class MVCCCleanupManager {
                     } finally {
                         _cacheManager.getLockManager().freeLockObject(entryLock);
                     }
-                    int deletedEntries = 0;
+                    int deletedEntriesPerUid = 0;
                     while (toScan.hasNext()) {
-                        if (removeNextOnMatch(toScan, generationState, deletedEntries, totalCommittedGens)) {
-                            deletedEntries++;
+                        if (removeNextOnMatch(toScan, generationState, deletedEntriesPerUid, totalCommittedGens)) {
+                            deletedEntriesPerUid++;
                         }
                     }
                     removeUidShellPairIfEmpty(historicalEntryData);
+                    totalVersionsInPartition+=totalCommittedGens;
+                    totalDeletedVersions+=deletedEntriesPerUid;
                 }
             }
+            logAfterCleanupIteration(startTime, totalDeletedVersions, totalVersionsInPartition);
+        }
 
+        private void logAfterCleanupIteration(long startTimeMillis, long totalDeletedVersion, long totalVersions) {
+            _logger.info("MVCC cleanup at partition[{}] finished in {}ms. Total deleted: {}/{} entries versions.",
+                    _spaceImpl.getPartitionId(), System.currentTimeMillis() - startTimeMillis, totalDeletedVersion, totalVersions);
         }
 
         private boolean removeNextOnMatch(Iterator<MVCCEntryCacheInfo> toScan, MVCCGenerationsState generationState, int deletedEntries, int totalCommittedGens) {
