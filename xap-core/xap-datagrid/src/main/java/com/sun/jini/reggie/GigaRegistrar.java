@@ -17,7 +17,6 @@ package com.sun.jini.reggie;
 
 import com.gigaspaces.admin.ManagerClusterInfo;
 import com.gigaspaces.admin.cli.RuntimeInfo;
-import com.gigaspaces.internal.backport.java.util.concurrent.FastConcurrentSkipListMap;
 import com.gigaspaces.internal.client.spaceproxy.SpaceProxyImpl;
 import com.gigaspaces.internal.jmx.JMXUtilities;
 import com.gigaspaces.internal.jvm.JVMDetails;
@@ -42,11 +41,7 @@ import com.gigaspaces.lrmi.nio.info.NIOInfoHelper;
 import com.gigaspaces.lrmi.nio.info.NIOInfoProvider;
 import com.gigaspaces.lrmi.nio.info.NIOStatistics;
 import com.gigaspaces.management.entry.JMXConnection;
-import com.gigaspaces.metrics.Gauge;
-import com.gigaspaces.metrics.LongCounter;
-import com.gigaspaces.metrics.MetricManager;
-import com.gigaspaces.metrics.MetricRegistrator;
-import com.gigaspaces.metrics.MetricUtils;
+import com.gigaspaces.metrics.*;
 import com.gigaspaces.start.SystemInfo;
 import com.gigaspaces.time.SystemTime;
 import com.j_spaces.core.service.Service;
@@ -56,14 +51,7 @@ import com.j_spaces.kernel.threadpool.DynamicExecutors;
 import com.j_spaces.kernel.threadpool.DynamicThreadPoolExecutor;
 import com.sun.jini.config.Config;
 import com.sun.jini.constants.ThrowableConstants;
-import com.sun.jini.discovery.ClientSubjectChecker;
-import com.sun.jini.discovery.Discovery;
-import com.sun.jini.discovery.DiscoveryConstraints;
-import com.sun.jini.discovery.DiscoveryProtocolException;
-import com.sun.jini.discovery.EncodeIterator;
-import com.sun.jini.discovery.MulticastAnnouncement;
-import com.sun.jini.discovery.MulticastRequest;
-import com.sun.jini.discovery.UnicastResponse;
+import com.sun.jini.discovery.*;
 import com.sun.jini.lookup.entry.BasicServiceType;
 import com.sun.jini.proxy.MarshalledWrapper;
 import com.sun.jini.start.LifeCycle;
@@ -72,7 +60,6 @@ import com.sun.jini.thread.ReadersWriter;
 import com.sun.jini.thread.ReadersWriter.ConcurrentLockException;
 import com.sun.jini.thread.ReadyState;
 import com.sun.jini.thread.TaskManager;
-
 import net.jini.config.Configuration;
 import net.jini.config.ConfigurationException;
 import net.jini.config.ConfigurationProvider;
@@ -86,12 +73,7 @@ import net.jini.core.entry.Entry;
 import net.jini.core.event.RemoteEventListener;
 import net.jini.core.lease.Lease;
 import net.jini.core.lease.UnknownLeaseException;
-import net.jini.core.lookup.RegistrarEventRegistration;
-import net.jini.core.lookup.ServiceDetails;
-import net.jini.core.lookup.ServiceID;
-import net.jini.core.lookup.ServiceItem;
-import net.jini.core.lookup.ServiceRegistrar;
-import net.jini.core.lookup.ServiceRegistration;
+import net.jini.core.lookup.*;
 import net.jini.discovery.*;
 import net.jini.discovery.dynamic.DynamicLookupLocatorDiscovery;
 import net.jini.export.Exporter;
@@ -109,27 +91,16 @@ import net.jini.security.BasicProxyPreparer;
 import net.jini.security.ProxyPreparer;
 import net.jini.security.TrustVerifier;
 import net.jini.security.proxytrust.ServerProxyTrust;
-
 import org.jini.rio.boot.BootUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import java.io.DataInputStream;
-import java.io.IOException;
-import java.io.InterruptedIOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.io.PrintWriter;
-import java.io.Serializable;
+import javax.security.auth.Subject;
+import javax.security.auth.login.LoginContext;
+import javax.security.auth.login.LoginException;
+import java.io.*;
 import java.lang.reflect.Array;
-import java.net.DatagramPacket;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.net.MulticastSocket;
-import java.net.NetworkInterface;
-import java.net.ServerSocket;
-import java.net.Socket;
-import java.net.SocketException;
-import java.net.SocketTimeoutException;
-import java.net.UnknownHostException;
+import java.net.*;
 import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
 import java.rmi.MarshalException;
@@ -138,30 +109,11 @@ import java.rmi.NoSuchObjectException;
 import java.rmi.RemoteException;
 import java.security.PrivilegedActionException;
 import java.security.PrivilegedExceptionAction;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.NoSuchElementException;
-import java.util.Random;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentNavigableMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.RejectedExecutionException;
+import java.util.*;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import javax.security.auth.Subject;
-import javax.security.auth.login.LoginContext;
-import javax.security.auth.login.LoginException;
 
 /**
  * Base server-side implementation of a lookup service, subclassed by TransientRegistrarImpl and
@@ -267,8 +219,7 @@ public class GigaRegistrar implements Registrar, ProxyAccessor, ServerProxyTrust
      * Identity map from SvcReg to SvcReg, ordered by lease expiration. Every service is in this
      * map.
      */
-    private final ConcurrentNavigableMap<SvcRegExpirationKey, SvcReg> serviceByTime =
-            new FastConcurrentSkipListMap<SvcRegExpirationKey, SvcReg>();
+    private final ConcurrentNavigableMap<SvcRegExpirationKey, SvcReg> serviceByTime = new ConcurrentSkipListMap<>();
 
     private final Gauge<Integer> serviceByTimeGauge = MetricUtils.sizeGauge(serviceByTime);
     /**
@@ -313,7 +264,7 @@ public class GigaRegistrar implements Registrar, ProxyAccessor, ServerProxyTrust
      * Identity map from EventReg to EventReg, ordered by lease expiration. Every event registration
      * is in this map.
      */
-    private final ConcurrentNavigableMap eventByTime = new FastConcurrentSkipListMap();
+    private final ConcurrentNavigableMap<EventRegKeyExpiration, EventReg> eventByTime = new ConcurrentSkipListMap<>();
     @SuppressWarnings("unchecked")
     private final Gauge<Integer> eventByTimeGauge = MetricUtils.sizeGauge(eventByTime);
     /**

@@ -20,15 +20,15 @@ package com.gigaspaces.events.fifo;
 import com.gigaspaces.events.NotifyInfo;
 import com.gigaspaces.events.batching.BatchRemoteEvent;
 import com.gigaspaces.events.batching.BatchRemoteEventListener;
-import com.gigaspaces.internal.backport.java.util.concurrent.FastConcurrentSkipListMap;
 import com.gigaspaces.internal.utils.concurrent.RunnableContextClassLoaderDecorator;
 import com.j_spaces.core.client.EntryArrivedRemoteEvent;
 import com.j_spaces.kernel.SizeConcurrentHashMap;
-
 import net.jini.core.event.RemoteEvent;
 import net.jini.core.event.RemoteEventListener;
 import net.jini.core.event.UnknownEventException;
 import net.jini.id.Uuid;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.rmi.RemoteException;
 import java.util.ArrayList;
@@ -36,13 +36,11 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.LockSupport;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * BlockedOrderedQueue is a concurrent ordered queue that can deliver unordered events to a client
@@ -74,8 +72,8 @@ public class BlockedOrderedQueue {
                 new SizeConcurrentHashMap<Long, RemoteEvent>();
 
         // Maps the event sequence number to the Thread that delivered the event
-        public final FastConcurrentSkipListMap<Long, Thread> orderedThreadEventsMap =
-                new FastConcurrentSkipListMap<Long, Thread>();
+        public final ConcurrentSkipListMap<Long, Thread> orderedThreadEventsMap =
+                new ConcurrentSkipListMap<Long, Thread>();
 
         public final AtomicLong nextInProducerOrder;
         public final AtomicLong nextInConsumerOrder;

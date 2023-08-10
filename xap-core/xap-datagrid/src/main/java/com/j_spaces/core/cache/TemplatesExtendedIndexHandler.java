@@ -17,7 +17,6 @@
 
 package com.j_spaces.core.cache;
 
-import com.gigaspaces.internal.backport.java.util.concurrent.FastConcurrentSkipListMap;
 import com.gigaspaces.internal.server.storage.IEntryHolder;
 import com.j_spaces.core.client.TemplateMatchCodes;
 import com.j_spaces.kernel.IObjectInfo;
@@ -25,6 +24,7 @@ import com.j_spaces.kernel.IStoredList;
 import com.j_spaces.kernel.StoredListFactory;
 
 import java.util.NavigableMap;
+import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -37,14 +37,14 @@ import java.util.concurrent.atomic.AtomicInteger;
 @com.gigaspaces.api.InternalApi
 public class TemplatesExtendedIndexHandler<K>
         implements IExtendedIndex<K, TemplateCacheInfo> {
-    private final FastConcurrentSkipListMap<K, IStoredList<TemplateCacheInfo>> _orderedStore;
+    private final ConcurrentSkipListMap<K, IStoredList<TemplateCacheInfo>> _orderedStore;
     private final TypeDataIndex _index;
     private final AtomicInteger _size;
 
     private static final boolean _FORCE_ORDERED_SCAN = true;
 
     public TemplatesExtendedIndexHandler(TypeDataIndex index) {
-        _orderedStore = new FastConcurrentSkipListMap<K, IStoredList<TemplateCacheInfo>>();
+        _orderedStore = new ConcurrentSkipListMap<K, IStoredList<TemplateCacheInfo>>();
         _index = index;
         _size = new AtomicInteger(0);
     }
@@ -246,10 +246,10 @@ public class TemplatesExtendedIndexHandler<K>
             mapToScan = startPos != null ? baseMap.tailMap(startPos, startinclusive) : baseMap;
         else
             mapToScan = startPos != null ? baseMap.subMap(startPos, startinclusive, endPos, endPosInclusive) : baseMap.headMap(endPos, endPosInclusive);
-        return new ExtendedIndexIterator<TemplateCacheInfo>(mapToScan, _index,originalStart,originalStartCondition, originalEnd,originalEndCondition);
+        return new ExtendedIndexIterator<TemplateCacheInfo>(mapToScan, _index, originalStart, originalStartCondition, originalEnd, originalEndCondition);
     }
 
-    public FastConcurrentSkipListMap<K, IStoredList<TemplateCacheInfo>> getOrderedStore() {
+    public ConcurrentSkipListMap<K, IStoredList<TemplateCacheInfo>> getOrderedStore() {
         return _orderedStore;
     }
 }

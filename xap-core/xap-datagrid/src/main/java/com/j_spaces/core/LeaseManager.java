@@ -23,7 +23,6 @@
  */
 package com.j_spaces.core;
 
-import com.gigaspaces.internal.backport.java.util.concurrent.FastConcurrentSkipListMap;
 import com.gigaspaces.internal.lease.LeaseUtils;
 import com.gigaspaces.internal.server.metadata.IServerTypeDesc;
 import com.gigaspaces.internal.server.space.SpaceConfigReader;
@@ -72,6 +71,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static com.j_spaces.core.Constants.Engine.UPDATE_NO_LEASE;
@@ -111,7 +111,7 @@ public class LeaseManager {
     private final TransactionHandler _transactionHandler;
     private final com.j_spaces.core.cache.CacheManager _cacheManager;
     private final boolean _dontReapUnderXtnLeases;
-    private final FastConcurrentSkipListMap<Long, Cell> _expirationList;
+    private final ConcurrentSkipListMap<Long, Cell> _expirationList;
     private final AtomicLong _operationID;
     private final long _clientID;
     private final boolean _slaveLeaseManagerModeConfiguredForEntries;
@@ -137,7 +137,7 @@ public class LeaseManager {
         _typeManager = engine.getTypeManager();
         _transactionHandler = engine.getTransactionHandler();
         _cacheManager = engine.getCacheManager();
-        _expirationList = new FastConcurrentSkipListMap<Long, Cell>();
+        _expirationList = new ConcurrentSkipListMap<Long, Cell>();
         _dontReapUnderXtnLeases = true;
         _operationID = new AtomicLong();
         _clientID = new SecureRandom().nextLong();

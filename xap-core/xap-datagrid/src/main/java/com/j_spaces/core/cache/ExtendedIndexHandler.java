@@ -17,7 +17,6 @@
 
 package com.j_spaces.core.cache;
 
-import com.gigaspaces.internal.backport.java.util.concurrent.FastConcurrentSkipListMap;
 import com.gigaspaces.internal.server.storage.IEntryHolder;
 import com.j_spaces.core.client.DuplicateIndexValueException;
 import com.j_spaces.core.client.TemplateMatchCodes;
@@ -31,6 +30,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.NavigableMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ConcurrentSkipListMap;
 
 /**
  * Handles data manipulation of space extended index
@@ -43,8 +43,8 @@ import java.util.concurrent.ConcurrentMap;
 public class ExtendedIndexHandler<K>
         implements IExtendedEntriesIndex<K, IEntryCacheInfo> {
     private static final Logger _logger = LoggerFactory.getLogger(com.gigaspaces.logger.Constants.LOGGER_CACHE);
-    private final FastConcurrentSkipListMap<Object, IStoredList<IEntryCacheInfo>> _orderedStore;
-    private final FastConcurrentSkipListMap<Object, IEntryCacheInfo> _uniqueOrderedStore;
+    private final ConcurrentSkipListMap<Object, IStoredList<IEntryCacheInfo>> _orderedStore;
+    private final ConcurrentSkipListMap<Object, IEntryCacheInfo> _uniqueOrderedStore;
     private final TypeDataIndex _index;
     private final RecentExtendedIndexUpdates _recentExtendedIndexUpdates;
 
@@ -52,8 +52,8 @@ public class ExtendedIndexHandler<K>
 
     public ExtendedIndexHandler(TypeDataIndex index) {
         _index = index;
-        _orderedStore = new FastConcurrentSkipListMap<>();
-        _uniqueOrderedStore = _index.isUniqueIndex() ? (FastConcurrentSkipListMap<Object, IEntryCacheInfo>) ((FastConcurrentSkipListMap) _orderedStore) : null;
+        _orderedStore = new ConcurrentSkipListMap<>();
+        _uniqueOrderedStore = _index.isUniqueIndex() ? (ConcurrentSkipListMap<Object, IEntryCacheInfo>) ((ConcurrentSkipListMap) _orderedStore) : null;
         if (index.getCacheManager().getEngine().getLeaseManager().isSupportsRecentExtendedUpdates())
             _recentExtendedIndexUpdates = new RecentExtendedIndexUpdates(index.getCacheManager());
         else
@@ -62,7 +62,7 @@ public class ExtendedIndexHandler<K>
 
 
     @Override
-    public FastConcurrentSkipListMap<Object, IStoredList<IEntryCacheInfo>> getOrderedStore() {
+    public ConcurrentSkipListMap<Object, IStoredList<IEntryCacheInfo>> getOrderedStore() {
         return _orderedStore;
     }
 
