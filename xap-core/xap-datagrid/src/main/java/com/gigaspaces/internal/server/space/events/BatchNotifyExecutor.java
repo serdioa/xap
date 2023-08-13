@@ -18,25 +18,23 @@ package com.gigaspaces.internal.server.space.events;
 
 import com.gigaspaces.events.batching.BatchRemoteEvent;
 import com.gigaspaces.events.batching.BatchRemoteEventListener;
-import com.gigaspaces.internal.backport.java.util.concurrent.FastConcurrentSkipListMap;
 import com.gigaspaces.internal.server.storage.NotifyTemplateHolder;
 import com.gigaspaces.internal.utils.concurrent.GSThread;
 import com.gigaspaces.logger.Constants;
 import com.gigaspaces.time.SystemTime;
 import com.j_spaces.kernel.WorkingGroup;
-
 import net.jini.core.event.RemoteEvent;
 import net.jini.core.event.RemoteEventListener;
 import net.jini.core.event.UnknownEventException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.rmi.RemoteException;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * The main service that notify events in batches.
@@ -58,7 +56,7 @@ public class BatchNotifyExecutor {
     private static final int STATUS_EMPTY = 2;  //not enough entries to satisfy batch
 
     private final BatchNotifyThread _notifyThread;
-    private final FastConcurrentSkipListMap<TimeKey, NotifyTemplateHolder> _pendingTemplates;
+    private final ConcurrentSkipListMap<TimeKey, NotifyTemplateHolder> _pendingTemplates;
     private WorkingGroup<RemoteEventBusPacket> _notifyWorkingGroup;
     //for debugging
     private final AtomicInteger _estimatedNumberOfTimeKeys;
@@ -66,7 +64,7 @@ public class BatchNotifyExecutor {
 
     public BatchNotifyExecutor(String fullSpaceName, WorkingGroup<RemoteEventBusPacket> notifyWorkingGroup) {
         _estimatedNumberOfTimeKeys = new AtomicInteger();
-        this._pendingTemplates = new FastConcurrentSkipListMap<BatchNotifyExecutor.TimeKey, NotifyTemplateHolder>();
+        this._pendingTemplates = new ConcurrentSkipListMap<BatchNotifyExecutor.TimeKey, NotifyTemplateHolder>();
         this._notifyWorkingGroup = notifyWorkingGroup;
         this._notifyThread = new BatchNotifyThread(fullSpaceName, this);
         this._notifyThread.start();

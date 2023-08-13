@@ -17,13 +17,13 @@
 //
 package com.j_spaces.core.cache.blobStore.sadapter;
 
-import com.gigaspaces.internal.backport.java.util.concurrent.FastConcurrentSkipListMap;
 import com.gigaspaces.internal.server.storage.EntryDataType;
 import com.gigaspaces.internal.server.storage.IEntryHolder;
 import com.j_spaces.core.FifoEntriesComparator;
 import com.j_spaces.core.cache.TypeData;
 
 import java.util.Iterator;
+import java.util.concurrent.ConcurrentSkipListMap;
 
 /**
  * off-heap initial-load of fifo/f-g classes we need to sort by fifo order and before that throw out
@@ -38,13 +38,13 @@ public class BlobStoreFifoInitialLoader implements Iterator<IEntryHolder> {
     private final boolean _splittedEntries = true;
 
     private boolean _finished;
-    private final FastConcurrentSkipListMap<IEntryHolder, IEntryHolder> _orderedList;
+    private final ConcurrentSkipListMap<IEntryHolder, IEntryHolder> _orderedList;
     private Iterator<IEntryHolder> _iter;
     private boolean _firstCalled;
 
 
     public BlobStoreFifoInitialLoader() {
-        _orderedList = new FastConcurrentSkipListMap<IEntryHolder, IEntryHolder>(new FifoEntriesComparator());
+        _orderedList = new ConcurrentSkipListMap<IEntryHolder, IEntryHolder>(new FifoEntriesComparator());
     }
 
     public void add(IEntryHolder eh, TypeData typeData) {

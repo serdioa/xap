@@ -16,7 +16,6 @@
 
 package com.gigaspaces.internal.server.space;
 
-import com.gigaspaces.internal.backport.java.util.concurrent.FastConcurrentSkipListMap;
 import com.gigaspaces.internal.server.storage.ITemplateHolder;
 import com.gigaspaces.internal.utils.concurrent.GSThread;
 import com.gigaspaces.lrmi.nio.IResponseContext;
@@ -34,6 +33,7 @@ import org.slf4j.LoggerFactory;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.concurrent.ConcurrentSkipListMap;
 
 /**
  * a time based service that is responsible of sending back an empty response back to the client
@@ -52,13 +52,13 @@ public class TemplateExpirationManager implements IConsumerObject<Object> {
     private static final int bucketTimeSpan = 10;
 
     private final CacheManager _cacheManager;
-    private final FastConcurrentSkipListMap<TemplateKey, ITemplateHolder> _expirationList;
+    private final ConcurrentSkipListMap<TemplateKey, ITemplateHolder> _expirationList;
     private final WorkingGroup<Object> _threadPool;
     private final Timer _timer;
 
     public TemplateExpirationManager(CacheManager cacheManager) {
         _cacheManager = cacheManager;
-        _expirationList = new FastConcurrentSkipListMap<TemplateKey, ITemplateHolder>();
+        _expirationList = new ConcurrentSkipListMap<TemplateKey, ITemplateHolder>();
         _threadPool = new WorkingGroup<Object>(this,
                 Thread.NORM_PRIORITY, "TemplateExpirationManager",
                 minPoolSize, maxPoolSize, timeout);
