@@ -22,29 +22,12 @@ import com.j_spaces.jdbc.ResponsePacket;
 import com.j_spaces.jdbc.SQLUtil;
 import com.j_spaces.jdbc.batching.BatchResponsePacket;
 
-import java.io.Externalizable;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
-import java.io.Reader;
+import java.io.*;
 import java.math.BigDecimal;
 import java.net.URL;
-import java.sql.Array;
 import java.sql.Blob;
 import java.sql.Clob;
-import java.sql.Date;
-import java.sql.NClob;
-import java.sql.ParameterMetaData;
-import java.sql.PreparedStatement;
-import java.sql.Ref;
-import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
-import java.sql.RowId;
-import java.sql.SQLException;
-import java.sql.SQLXML;
-import java.sql.Time;
-import java.sql.Timestamp;
+import java.sql.*;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
@@ -126,18 +109,14 @@ public class GPreparedStatement extends GStatement implements PreparedStatement 
     /* (non-Javadoc)
      * @see java.sql.PreparedStatement#execute()
      */
+    @Override
     public boolean execute() throws SQLException {
         checkValues();
 
-        ResponsePacket response = connection.sendPreparedStatement(sql, _preparedValuesCollection.getCurrentValues());
+        packet = connection.sendPreparedStatement(sql, _preparedValuesCollection.getCurrentValues());
+
         //after the statement was sent and checked, we can return the result
-        if (response.getResultEntry() != null) {
-            buildResultSet(response);
-            return true;
-        } else {
-            updateCount = response.getIntResult();
-            return false;
-        }
+        return executePacket();
     }
 
     /* (non-Javadoc)

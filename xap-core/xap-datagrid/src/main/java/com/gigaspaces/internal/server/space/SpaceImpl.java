@@ -88,7 +88,6 @@ import com.gigaspaces.internal.server.space.quiesce.QuiesceHandler;
 import com.gigaspaces.internal.server.space.quiesce.WaitForDrainUtils;
 import com.gigaspaces.internal.server.space.recovery.RecoveryManager;
 import com.gigaspaces.internal.server.space.recovery.direct_persistency.ConsistencyFile;
-import com.gigaspaces.internal.server.space.recovery.direct_persistency.DirectPersistencyRecoveryException;
 import com.gigaspaces.internal.server.space.recovery.direct_persistency.DirectPersistencyRecoveryHelper;
 import com.gigaspaces.internal.server.space.recovery.direct_persistency.StorageConsistencyModes;
 import com.gigaspaces.internal.server.space.recovery.strategy.SpaceRecoverStrategy;
@@ -196,7 +195,6 @@ import org.w3c.dom.*;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import java.io.*;
-import java.lang.reflect.Constructor;
 import java.net.InetSocketAddress;
 import java.net.MalformedURLException;
 import java.rmi.RemoteException;
@@ -206,8 +204,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 import static com.j_spaces.core.Constants.CacheManager.*;
-import static com.j_spaces.core.Constants.DirectPersistency.ZOOKEEPER.ATTRIBUET_STORE_HANDLER_CLASS_NAME;
-import static com.j_spaces.core.Constants.DirectPersistency.ZOOKEEPER.ZOOKEEPER_CLIENT_CLASS_NAME;
 import static com.j_spaces.core.Constants.LeaderSelector.LEADER_SELECTOR_HANDLER_CLASS_NAME;
 import static com.j_spaces.core.Constants.LeaderSelector.ZK_PARTICIPANT_NAME_SEPARATOR;
 import static com.j_spaces.core.Constants.LeaseManager.*;
@@ -313,8 +309,8 @@ public class SpaceImpl extends AbstractService implements IRemoteSpace, IInterna
         this._configReader = new SpaceConfigReader(_spaceMemberName);
 
         boolean hasZk = useZooKeeper();
-        this.zkConfig = hasZk ? createZKCollocatedClientConfig() : null;
-        this.attributeStore = hasZk ? createZooKeeperAttributeStore() : null;
+        this.zkConfig = hasZk ? ZooKeeperUtil.createZKCollocatedClientConfig(_spaceMemberName) : null;
+        this.attributeStore = hasZk ? ZooKeeperUtil.createZooKeeperAttributeStore(zkConfig, _logger, _spaceName) : null;
         this._puName = customProperties.getProperty("clusterInfo.name");
         this._scalable = !isMirror() && Boolean.parseBoolean(customProperties.getProperty("clusterInfo.supportsDynamicRepartitioning"));
         this.hasInstanceLevelSla = Boolean.parseBoolean(customProperties.getProperty("clusterInfo.hasInstanceLevelSla"));
@@ -378,44 +374,10 @@ public class SpaceImpl extends AbstractService implements IRemoteSpace, IInterna
         xnioServer = XNioSettings.ENABLED ? XNioServer.create(this) : null;
     }
 
-    private ZKCollocatedClientConfig createZKCollocatedClientConfig() {
-        Properties props = JProperties.getSpaceProperties(_configReader.getFullSpaceName());
-        return new ZKCollocatedClientConfig(props);
-    }
-
     public ZKCollocatedClientConfig getZkConfig() {
         return zkConfig;
     }
 
-    private AttributeStore createZooKeeperAttributeStore() {
-        try {
-            //noinspection unchecked
-            Constructor constructor = ClassLoaderHelper.loadLocalClass(ATTRIBUET_STORE_HANDLER_CLASS_NAME)
-                    .getConstructor(ZKCollocatedClientConfig.class);
-            return (AttributeStore) constructor.newInstance(zkConfig);
-
-        } catch (Exception e) {
-            if (_logger.isErrorEnabled())
-                _logger.error("Failed to create attribute store ",e);
-            throw new DirectPersistencyRecoveryException("Failed to start [" + _spaceName
-                    + "] Failed to create attribute store.");
-        }
-    }
-
-    private ZookeeperClient createZooKeeperClient() {
-        try {
-            //noinspection unchecked
-            Constructor constructor = ClassLoaderHelper.loadLocalClass(ZOOKEEPER_CLIENT_CLASS_NAME)
-                    .getConstructor(ZKCollocatedClientConfig.class);
-            return (ZookeeperClient) constructor.newInstance(zkConfig);
-
-        } catch (Exception e) {
-            if (_logger.isErrorEnabled())
-                _logger.error("Failed to create zookeeper client",e);
-            throw new DirectPersistencyRecoveryException("Failed to start [" + (_spaceName)
-                    + "] Failed to create zookeeper client.");
-        }
-    }
 
     private HttpServer initWebServerIfNeeded() throws CreateException {
         if (isPrivate())
@@ -3428,7 +3390,7 @@ public class SpaceImpl extends AbstractService implements IRemoteSpace, IInterna
             }
 
             if (zookeeperTopologyHandler != null && _clusterInfo.isChunksRouting()) {
-                zookeeperClient = createZooKeeperClient();
+                zookeeperClient = ZooKeeperUtil.createZooKeeperClient(zkConfig, _logger, _spaceName);
                 zookeeperTopologyHandler.addListener(zookeeperClient, _spaceConfig, getPartitionIdOneBased());
             }
             if (isLookupServiceEnabled) {

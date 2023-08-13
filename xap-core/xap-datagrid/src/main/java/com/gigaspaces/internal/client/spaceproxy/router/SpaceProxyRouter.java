@@ -348,7 +348,7 @@ public class SpaceProxyRouter {
     /**
      * @since  16.3.0
      */
-    public void setGenerationsState(MVCCGenerationsState generationsState) {
+    public void setMVCCGenerationsState(MVCCGenerationsState generationsState) {
         if (this._defaultSpaceContext == null) {
             this._defaultSpaceContext  = new SpaceContext();
         }

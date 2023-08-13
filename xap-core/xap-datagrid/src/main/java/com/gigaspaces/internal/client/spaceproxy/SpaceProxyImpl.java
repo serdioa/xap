@@ -768,10 +768,6 @@ public class SpaceProxyImpl extends AbstractDirectSpaceProxy implements SameProx
         getProxyRouter().setQuiesceToken(token);
     }
 
-    @Override
-    public void setMVCCGenerationsState(MVCCGenerationsState generationsState) {
-        getProxyRouter().setGenerationsState(generationsState);
-    }
 
     @Override
     public ISpaceQuery prepareTemplate(Object template) {
@@ -803,7 +799,10 @@ public class SpaceProxyImpl extends AbstractDirectSpaceProxy implements SameProx
         if (this.isSecured())
             copy.getSecurityManager().initialize(this.getSecurityManager().getCredentialsProvider());
         return copy;
-
     }
 
+    @Override
+    public void setMVCCGenerationsState(MVCCGenerationsState generationsState) {
+        getProxyRouter().setMVCCGenerationsState(generationsState);
+    }
 }
