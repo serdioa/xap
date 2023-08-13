@@ -18,6 +18,7 @@
 package com.j_spaces.core.cache;
 
 import com.gigaspaces.internal.server.storage.IEntryHolder;
+import com.gigaspaces.internal.utils.collections.CheckedConcurrentSkipListMap;
 import com.j_spaces.core.client.DuplicateIndexValueException;
 import com.j_spaces.core.client.TemplateMatchCodes;
 import com.j_spaces.kernel.IObjectInfo;
@@ -52,7 +53,7 @@ public class ExtendedIndexHandler<K>
 
     public ExtendedIndexHandler(TypeDataIndex index) {
         _index = index;
-        _orderedStore = new ConcurrentSkipListMap<>();
+        _orderedStore = new CheckedConcurrentSkipListMap<>();
         _uniqueOrderedStore = _index.isUniqueIndex() ? (ConcurrentSkipListMap<Object, IEntryCacheInfo>) ((ConcurrentSkipListMap) _orderedStore) : null;
         if (index.getCacheManager().getEngine().getLeaseManager().isSupportsRecentExtendedUpdates())
             _recentExtendedIndexUpdates = new RecentExtendedIndexUpdates(index.getCacheManager());
