@@ -56,7 +56,7 @@ public class ZooKeeperMVCCInternalHandler extends ZooKeeperMVCCHandler {
     public void removeMVCCGenerationState(){
         try (SharedReentrantReadWriteLock lock = attributeStore.getSharedReentrantReadWriteLockProvider()
                 .acquireWriteLock(mvccPath, DEFAULT_LOCK_TIMEOUT_IN_SECONDS, TimeUnit.SECONDS)) {
-            attributeStore.setObject(mvccGenerationsStatePath, null);
+            attributeStore.remove(mvccGenerationsStatePath);
         } catch (IOException | InterruptedException | TimeoutException  e) {
             throw new MVCCGenerationStateException("Failed to initialize zookeeper attributeStore for mvcc", e);
         }
