@@ -10,7 +10,6 @@ import net.jini.core.transaction.server.TransactionManager;
 import org.openspaces.core.GigaSpace;
 import org.openspaces.core.executor.TaskGigaSpace;
 import org.openspaces.core.executor.mvcc.IMVCCTask;
-import org.openspaces.core.executor.mvcc.exception.MVCCRetryTaskException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,7 +29,7 @@ public abstract class AbstractOnePhaseTask implements IMVCCTask<AbstractMVCCProt
     private IDirectSpaceProxy directSpaceProxy;
     private final MVCCGenerationsState generationsState;
     private int taskRetries;
-    private final long retryIntervalMillis;
+    private long retryIntervalMillis;
 
     protected AbstractOnePhaseTask(MVCCGenerationsState generationsState, int taskRetries, long retryIntervalMillis) {
         this.generationsState = generationsState;
@@ -38,7 +37,7 @@ public abstract class AbstractOnePhaseTask implements IMVCCTask<AbstractMVCCProt
         this.retryIntervalMillis = retryIntervalMillis;
     }
 
-    private Transaction createEmbeddedTransaction(IDirectSpaceProxy directSpaceProxy) throws LeaseDeniedException, RemoteException {
+    private Transaction createEmbeddedTransaction() throws LeaseDeniedException, RemoteException {
         final SpaceImpl spaceImpl = directSpaceProxy.getSpaceImplIfEmbedded();
         final TransactionManager embeddedTransactionManager = spaceImpl.getContainer().getEmbeddedTransactionManager();
         return TransactionFactory.create(embeddedTransactionManager, DEFAULT_TRANSACTION_LEASE).transaction;
@@ -59,7 +58,7 @@ public abstract class AbstractOnePhaseTask implements IMVCCTask<AbstractMVCCProt
 
     private AbstractMVCCProtocolTaskResult runTask() throws Exception {
         setDirectProxyWithMvccGeneration();
-        final Transaction transaction = createEmbeddedTransaction(directSpaceProxy);
+        final Transaction transaction = createEmbeddedTransaction();
         try {
             AbstractMVCCProtocolTaskResult result = executeTask(directSpaceProxy, transaction);
             result.addActiveGeneration(getActiveGeneration());
@@ -73,6 +72,7 @@ public abstract class AbstractOnePhaseTask implements IMVCCTask<AbstractMVCCProt
             if (taskRetries-- > 0) {
                 logger.info("Failed to complete task, retrying with interval of {} milliseconds.", retryIntervalMillis);
                 Thread.sleep(retryIntervalMillis);
+                retryIntervalMillis = retryIntervalMillis * 2;
                 return runTask();
             }
             return createFailedTaskResult(e);
@@ -91,15 +91,9 @@ public abstract class AbstractOnePhaseTask implements IMVCCTask<AbstractMVCCProt
     protected abstract AbstractMVCCProtocolTaskResult executeTask(IDirectSpaceProxy proxy, Transaction transaction)
             throws Exception;
 
-    protected AbstractMVCCProtocolTaskResult handleRetryFailedTask(MVCCRetryTaskException e) throws Exception {
-        if (taskRetries-- > 0) {
-            logger.info("Failed to complete task, retrying with interval of {} milliseconds.", retryIntervalMillis);
-            Thread.sleep(retryIntervalMillis);
-            return runTask();
-        }
-        return createFailedTaskResult(e.getCause());
-    }
-
     protected abstract AbstractMVCCProtocolTaskResult createFailedTaskResult(Throwable e);
 
+    public IDirectSpaceProxy getDirectSpaceProxy() {
+        return directSpaceProxy;
+    }
 }
