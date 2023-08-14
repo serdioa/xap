@@ -3862,14 +3862,15 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
         if (toScan == null)
             return null;
 
-        if (!toScan.isIterator())
+        if (!toScan.isIterator()) {
             return
                     getMatchedEntryAndOperateSA_Entry(context,
                             template, makeWaitForInfo,
                             true /*needmatch*/, -1 /*indexPos*/, null, leaseFilter,
                             useSCN, toScan.next());
-        else if (isMvccEnabled() && toScan instanceof MVCCShellEntryCacheInfo)
+        } else if (isMvccEnabled() && toScan instanceof MVCCShellEntryCacheInfo) {
             toScan = toScan.createCopyForAlternatingThread();
+        }
 
         return
                 getMatchedEntryAndOperateSA_Scan(context,

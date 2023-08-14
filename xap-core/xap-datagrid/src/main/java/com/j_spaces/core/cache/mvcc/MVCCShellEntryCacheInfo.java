@@ -45,7 +45,7 @@ public class MVCCShellEntryCacheInfo extends MemoryBasedEntryCacheInfo {
         return TypeDescriptorUtils.toSpaceId(identifierPropertiesId, entryData::getFixedPropertyValue);
     }
 
-    public Object getShellId() {
+    public Object getEntryID() {
         return id;
     }
 
@@ -130,6 +130,10 @@ public class MVCCShellEntryCacheInfo extends MemoryBasedEntryCacheInfo {
 
     public int getTotalCommittedGenertions() {
         return allEntryGenerations.size();
+    }
+
+    public boolean isEmptyShell() {
+        return getTotalCommittedGenertions() == 0 && getDirtyEntryCacheInfo() == null;
     }
 
     @Override

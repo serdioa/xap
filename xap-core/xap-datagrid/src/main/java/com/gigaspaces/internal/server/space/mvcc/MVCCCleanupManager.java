@@ -134,7 +134,6 @@ public class MVCCCleanupManager {
             long totalDeletedVersions = 0;
             long totalVersionsInPartition = 0;
             if (_shouldTerminate) {
-                logAfterCleanupIteration(startTime, 0, 0);
                 return;
             }
             MVCCGenerationsState generationState = _zookeeperMVCCHandler.getGenerationsState();
@@ -142,7 +141,6 @@ public class MVCCCleanupManager {
                 _logger.debug("Last generation: " + generationState);
             }
             if (generationState == null) {
-                logAfterCleanupIteration(startTime, 0, 0);
                 return;
             }
             Map<String, IServerTypeDesc> typesTable = _cacheManager.getTypeManager().getSafeTypeTable();
@@ -153,14 +151,14 @@ public class MVCCCleanupManager {
                     continue;
                 }
                 Map<Object, MVCCShellEntryCacheInfo> idEntriesMap = typeData.getIdField().getUniqueEntriesStore();
-                for (MVCCShellEntryCacheInfo historicalEntryData : idEntriesMap.values()) {
+                for (MVCCShellEntryCacheInfo shellEntryCacheInfo : idEntriesMap.values()) {
                     Iterator<MVCCEntryCacheInfo> toScan;
                     int totalCommittedGens;
-                    ILockObject entryLock = _cacheManager.getLockManager().getLockObject(historicalEntryData.getEntryHolder());
+                    ILockObject entryLock = _cacheManager.getLockManager().getLockObject(shellEntryCacheInfo.getEntryHolder());
                     try {
                         synchronized (entryLock) {
-                            toScan = historicalEntryData.ascIterator();
-                            totalCommittedGens = historicalEntryData.getTotalCommittedGenertions();
+                            toScan = shellEntryCacheInfo.ascIterator();
+                            totalCommittedGens = shellEntryCacheInfo.getTotalCommittedGenertions();
                         }
                     } finally {
                         _cacheManager.getLockManager().freeLockObject(entryLock);
@@ -171,7 +169,7 @@ public class MVCCCleanupManager {
                             deletedEntriesPerUid++;
                         }
                     }
-                    removeUidShellPairIfEmpty(historicalEntryData);
+                    removeUidShellPairIfEmpty(shellEntryCacheInfo);
                     totalVersionsInPartition+=totalCommittedGens;
                     totalDeletedVersions+=deletedEntriesPerUid;
                 }
@@ -227,16 +225,16 @@ public class MVCCCleanupManager {
             return System.currentTimeMillis() - entry.getSCN() > _lifetimeLimitMillis;
         }
 
-        private void removeUidShellPairIfEmpty(MVCCShellEntryCacheInfo entryHistoryCache) {
-            if (isEmptyShell(entryHistoryCache)) {
-                MVCCEntryHolder hollowEntry = entryHistoryCache.getEntryHolder();
+        private void removeUidShellPairIfEmpty(MVCCShellEntryCacheInfo shellEntryCacheInfo) {
+            if (shellEntryCacheInfo.isEmptyShell()) {
+                MVCCEntryHolder hollowEntry = shellEntryCacheInfo.getEntryHolder();
                 ILockObject entryLock = _cacheManager.getLockManager().getLockObject(hollowEntry);
                 try {
                     synchronized (entryLock) {
-                        if (isEmptyShell(entryHistoryCache)) {
-                            _cacheManager.removeEntryFromCache(hollowEntry, false, true, entryHistoryCache, CacheManager.RecentDeleteCodes.NONE);
+                        if (shellEntryCacheInfo.isEmptyShell()) {
+                            _cacheManager.removeEntryFromCache(hollowEntry, false, true, shellEntryCacheInfo, CacheManager.RecentDeleteCodes.NONE);
                             if (_logger.isDebugEnabled()) {
-                                _logger.debug("EntryShell {} was cleaned", entryHistoryCache.getUID());
+                                _logger.debug("EntryShell {} was cleaned", shellEntryCacheInfo.getUID());
                             }
                         }
                     }
@@ -244,10 +242,6 @@ public class MVCCCleanupManager {
                     _cacheManager.getLockManager().freeLockObject(entryLock);
                 }
             }
-        }
-
-        private boolean isEmptyShell(MVCCShellEntryCacheInfo entryHistoryCache) {
-            return entryHistoryCache.getTotalCommittedGenertions() == 0 && entryHistoryCache.getDirtyEntryCacheInfo() == null;
         }
 
         public void terminate() {
