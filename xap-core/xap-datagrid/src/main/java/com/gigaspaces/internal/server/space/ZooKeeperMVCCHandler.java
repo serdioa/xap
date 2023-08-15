@@ -2,8 +2,8 @@ package com.gigaspaces.internal.server.space;
 
 import com.gigaspaces.attribute_store.AttributeStore;
 import com.gigaspaces.attribute_store.SharedReentrantReadWriteLock;
+import com.gigaspaces.internal.server.space.mvcc.MVCCGenerationStateException;
 import com.gigaspaces.internal.server.space.mvcc.MVCCGenerationsState;
-import com.gigaspaces.internal.server.space.mvcc.MVCCSGenerationStateException;
 
 import java.io.IOException;
 import java.util.Set;
@@ -25,7 +25,7 @@ public class ZooKeeperMVCCHandler extends AbstractZooKeeperMVCCHandler{
                 .acquireReadLock(mvccPath, DEFAULT_LOCK_TIMEOUT_IN_SECONDS, TimeUnit.SECONDS)) {
             return attributeStore.getObject(mvccGenerationsStatePath);
         } catch (IOException | InterruptedException | TimeoutException e) {
-            throw new MVCCSGenerationStateException("Failed to getGenerationsState", e);
+            throw new MVCCGenerationStateException("Failed to getGenerationsState", e);
         }
     }
 
@@ -40,7 +40,7 @@ public class ZooKeeperMVCCHandler extends AbstractZooKeeperMVCCHandler{
             attributeStore.setObject(mvccGenerationsStatePath, generationsState);
             return generationsState;
         } catch (IOException | InterruptedException | TimeoutException e) {
-            throw new MVCCSGenerationStateException("Failed to getNextGenerationsState", e);
+            throw new MVCCGenerationStateException("Failed to getNextGenerationsState", e);
         }
     }
 
@@ -56,7 +56,7 @@ public class ZooKeeperMVCCHandler extends AbstractZooKeeperMVCCHandler{
             attributeStore.setObject(mvccGenerationsStatePath, generationsState);
             return generationsState;
         } catch (IOException | InterruptedException | TimeoutException e) {
-            throw new MVCCSGenerationStateException("Failed to completeGeneration", e);
+            throw new MVCCGenerationStateException("Failed to completeGeneration", e);
         }
     }
 

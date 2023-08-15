@@ -16,7 +16,6 @@
 
 package com.gigaspaces.internal.server.space.eviction;
 
-import com.gigaspaces.internal.backport.java.util.concurrent.FastConcurrentSkipListMap;
 import com.gigaspaces.internal.utils.concurrent.GSThread;
 import com.gigaspaces.server.eviction.EvictableServerEntry;
 import com.gigaspaces.server.eviction.SpaceEvictionManager;
@@ -28,11 +27,11 @@ import com.j_spaces.kernel.IObjectInfo;
 import com.j_spaces.kernel.IStoredList;
 import com.j_spaces.kernel.IStoredListIterator;
 import com.j_spaces.kernel.StoredListFactory;
-
-import java.util.Iterator;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.Iterator;
+import java.util.concurrent.ConcurrentSkipListMap;
 
 /**
  * abstract class- infra' for time-based eviction strategy
@@ -56,7 +55,7 @@ public abstract class TimeBasedSpaceEvictionStrategy extends SpaceEvictionStrate
     private final long _harvestShortLivedInterval;
 
     //key = expiration due time //val = Cell of entries to reap
-    private final FastConcurrentSkipListMap<Long, Cell> _expirationList;
+    private final ConcurrentSkipListMap<Long, Cell> _expirationList;
     //list of entries reread from EDS & temporary inserted to the space
     private final IStoredList<EvictableServerEntry> _shortLived;
     private TimeBasedEvictionReaper _reaper;
@@ -67,7 +66,7 @@ public abstract class TimeBasedSpaceEvictionStrategy extends SpaceEvictionStrate
         _inCacheReinsertedTimeInterval = Math.max(inCacheReinsertedTimeInterval, SHORT_LIVED_ENTRY_INTERVAL_LIMIT);
         _harvestMainInterval = harvestMainInterval;
         _harvestShortLivedInterval = harvestShortLivedInterval;
-        _expirationList = new FastConcurrentSkipListMap<Long, Cell>();
+        _expirationList = new ConcurrentSkipListMap<Long, Cell>();
         _shortLived = StoredListFactory.createConcurrentList(true/* fifo*/);
     }
 

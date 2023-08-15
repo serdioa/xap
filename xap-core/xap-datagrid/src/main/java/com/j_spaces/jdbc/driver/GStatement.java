@@ -312,7 +312,7 @@ public class GStatement implements Statement {
     /* on DML/DDL operations result is null and intResult is not set.
      * we build result set when SELECT operation is executed, and true is returned.
      */
-    private boolean executePacket() {
+    protected boolean executePacket() {
         if (packet.getResultEntry() != null && packet.getIntResult() == -1) {
             buildResultSet(packet);
             return true;

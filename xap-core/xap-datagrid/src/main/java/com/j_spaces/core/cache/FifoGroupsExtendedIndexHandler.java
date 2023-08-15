@@ -16,7 +16,6 @@
 
 package com.j_spaces.core.cache;
 
-import com.gigaspaces.internal.backport.java.util.concurrent.FastConcurrentSkipListMap;
 import com.gigaspaces.internal.server.storage.IEntryHolder;
 import com.gigaspaces.metadata.index.ISpaceIndex;
 import com.j_spaces.core.cache.fifoGroup.ExtendedCompoundIndexFifoGroupsIterator;
@@ -27,6 +26,7 @@ import com.j_spaces.kernel.IStoredList;
 
 import java.util.NavigableMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ConcurrentSkipListMap;
 
 /**
  * Handles extended index of fifo groups scans
@@ -40,7 +40,7 @@ public class FifoGroupsExtendedIndexHandler<K>
         implements IExtendedEntriesIndex<K, IEntryCacheInfo> {
     private final IExtendedIndex<K, IEntryCacheInfo> _base;
 
-    private final FastConcurrentSkipListMap<Object, IStoredList<IEntryCacheInfo>> _orderedStore;
+    private final ConcurrentSkipListMap<Object, IStoredList<IEntryCacheInfo>> _orderedStore;
     private final TypeDataIndex _index;
     private final RecentExtendedIndexUpdates _recentExtendedIndexUpdates;
 
@@ -183,7 +183,7 @@ public class FifoGroupsExtendedIndexHandler<K>
     }
 
     @Override
-    public FastConcurrentSkipListMap<Object, IStoredList<IEntryCacheInfo>> getOrderedStore() {
+    public ConcurrentSkipListMap<Object, IStoredList<IEntryCacheInfo>> getOrderedStore() {
         throw new UnsupportedOperationException();
     }
 

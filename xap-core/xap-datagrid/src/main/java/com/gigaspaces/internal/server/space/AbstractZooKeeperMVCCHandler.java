@@ -2,8 +2,8 @@ package com.gigaspaces.internal.server.space;
 
 import com.gigaspaces.attribute_store.AttributeStore;
 import com.gigaspaces.attribute_store.SharedReentrantReadWriteLock;
+import com.gigaspaces.internal.server.space.mvcc.MVCCGenerationStateException;
 import com.gigaspaces.internal.server.space.mvcc.MVCCGenerationsState;
-import com.gigaspaces.internal.server.space.mvcc.MVCCSGenerationStateException;
 import com.gigaspaces.internal.zookeeper.ZNodePathFactory;
 
 import java.io.IOException;
@@ -32,10 +32,16 @@ public abstract class AbstractZooKeeperMVCCHandler {
     public void initMVCCGenerationsState() {
         try (SharedReentrantReadWriteLock lock = attributeStore.getSharedReentrantReadWriteLockProvider()
                 .acquireWriteLock(mvccPath, DEFAULT_LOCK_TIMEOUT_IN_SECONDS, TimeUnit.SECONDS)) {
-            final MVCCGenerationsState generationsState = new MVCCGenerationsState(1, -1, new HashSet<>());
-            attributeStore.setObject(mvccGenerationsStatePath, generationsState);
+            if (attributeStore.getObject(mvccGenerationsStatePath) == null) {
+                final MVCCGenerationsState generationsState = new MVCCGenerationsState(1, -1, new HashSet<>());
+                attributeStore.setObject(mvccGenerationsStatePath, generationsState);
+            }
         } catch (IOException | InterruptedException | TimeoutException  e) {
-            throw new MVCCSGenerationStateException("Failed to initialize zookeeper attributeStore for mvcc", e);
+            throw new MVCCGenerationStateException("Failed to initialize zookeeper attributeStore for mvcc", e);
         }
+    }
+
+    public void close() throws IOException {
+        attributeStore.close();
     }
 }

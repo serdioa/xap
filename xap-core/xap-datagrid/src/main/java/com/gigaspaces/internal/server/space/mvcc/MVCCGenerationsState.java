@@ -29,8 +29,8 @@ public class MVCCGenerationsState implements SmartExternalizable, ISwapExternali
     public MVCCGenerationsState() {
     }
 
-    public static MVCCGenerationsState of(long committedGeneration) {
-        return new MVCCGenerationsState(committedGeneration, 0, Collections.emptySet());
+    public static MVCCGenerationsState empty() {
+        return new MVCCGenerationsState(-1L, -1L, Collections.emptySet());
     }
 
     public long getNextGeneration() {

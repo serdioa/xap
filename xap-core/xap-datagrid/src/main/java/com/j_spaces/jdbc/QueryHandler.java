@@ -326,7 +326,7 @@ public class QueryHandler {
      *                        proxy
      */
     ISpaceProxy getSpace(boolean useRegularSpace) {
-        return (useRegularSpace == false && _spaceCluster != null) ? _spaceCluster
+        return (!useRegularSpace && _spaceCluster != null) ? _spaceCluster
                 : _spaceRegular;
     }
 
