@@ -38,6 +38,7 @@ import com.gigaspaces.internal.client.spaceproxy.transaction.SpaceProxyTransacti
 import com.gigaspaces.internal.cluster.ClusterTopology;
 import com.gigaspaces.internal.cluster.SpaceClusterInfo;
 import com.gigaspaces.internal.metadata.ITypeDesc;
+import com.gigaspaces.internal.remoting.routing.partitioned.PartitionedClusterUtils;
 import com.gigaspaces.internal.server.space.IClusterInfoChangedListener;
 import com.gigaspaces.internal.server.space.IRemoteSpace;
 import com.gigaspaces.internal.server.space.SpaceImpl;
@@ -593,6 +594,11 @@ public class SpaceProxyImpl extends AbstractDirectSpaceProxy implements SameProx
             modifiers |= Modifiers.NO_WRITE_LEASE;
 
         return modifiers;
+    }
+
+    @Override
+    public int getPartitionId(Object routingValue) {
+        return PartitionedClusterUtils.getPartitionId(routingValue,getSpaceClusterInfo());
     }
 
     @Override
