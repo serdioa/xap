@@ -1,7 +1,6 @@
 package com.gigaspaces.internal.server.space.repartitioning;
 
 import com.gigaspaces.internal.cluster.ClusterTopology;
-import com.gigaspaces.internal.cluster.SpaceClusterInfo;
 import com.gigaspaces.internal.metadata.TypeDescriptorUtils;
 import com.gigaspaces.internal.remoting.routing.partitioned.PartitionedClusterUtils;
 import com.gigaspaces.metadata.SpaceTypeDescriptor;
@@ -43,9 +42,7 @@ public class DeleteChunksProducer extends SpaceEntriesAggregator<DeleteChunksRes
         if(typeDescriptor.isBroadcast())
             return;
         Object routingValue = context.getPathValue(typeDescriptor.getRoutingPropertyName());
-        SpaceClusterInfo spaceClusterInfo = new SpaceClusterInfo();
-        spaceClusterInfo.setTopology(newMap);
-        int newPartitionId = PartitionedClusterUtils.getPartitionId(routingValue, spaceClusterInfo) + 1;
+        int newPartitionId = PartitionedClusterUtils.getPartitionId(routingValue, newMap) + 1;
         if (newPartitionId != context.getPartitionId() + 1) {
             Object idValue = TypeDescriptorUtils.toSpaceId(context.getTypeDescriptor().getIdPropertiesNames(), context::getPathValue);
             String type = typeDescriptor.getTypeName();
