@@ -9,6 +9,7 @@ import com.j_spaces.core.cache.context.Context;
 import com.j_spaces.core.cache.mvcc.MVCCEntryCacheInfo;
 import com.j_spaces.core.cache.mvcc.MVCCEntryHolder;
 import com.j_spaces.core.cache.mvcc.MVCCShellEntryCacheInfo;
+import com.j_spaces.kernel.JSpaceUtilities;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -24,6 +25,7 @@ public class MVCCUtils {
         MVCCShellEntryCacheInfo mvccShellEntryCacheInfo = engine.getCacheManager().getMVCCShellEntryCacheInfoByUid(uid);
         if (mvccShellEntryCacheInfo != null) { // When we abort write operation, backup space does not contain the shell.
             Iterator<MVCCEntryCacheInfo> mvccEntryCacheInfoIterator = mvccShellEntryCacheInfo.descIterator();
+            JSpaceUtilities.DEBUG_LOGGER.info("MVCCShellEntryCacheInfo iterator size: " + mvccShellEntryCacheInfo.getTotalCommittedGenertions());
             while(mvccEntryCacheInfoIterator.hasNext()) {
                 MVCCEntryHolder next = mvccEntryCacheInfoIterator.next().getEntryHolder();
                 MVCCEntryMetaData metaData = new MVCCEntryMetaData();
@@ -35,6 +37,7 @@ public class MVCCUtils {
                 metaDataList.add(metaData);
             }
         } else {
+            JSpaceUtilities.DEBUG_LOGGER.info("MVCCShellEntryCacheInfo iterator size: null");
             return null; // shell does not exists
         }
         engine.getCacheManager().freeCacheContext(context);
