@@ -58,7 +58,7 @@ public class ZooKeeperMVCCInternalHandler extends ZooKeeperMVCCHandler {
                 .acquireWriteLock(mvccPath, DEFAULT_LOCK_TIMEOUT_IN_SECONDS, TimeUnit.SECONDS)) {
             attributeStore.remove(mvccGenerationsStatePath);
         } catch (IOException | InterruptedException | TimeoutException  e) {
-            throw new MVCCGenerationStateException("Failed to initialize zookeeper attributeStore for mvcc", e);
+            throw new MVCCGenerationStateException("Failed to remove mvcc generation state from zookeeper attributeStore", e);
         }
     }
 }
