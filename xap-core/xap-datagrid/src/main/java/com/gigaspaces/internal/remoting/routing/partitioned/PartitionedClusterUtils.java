@@ -30,7 +30,7 @@ import com.j_spaces.kernel.SystemProperties;
 @com.gigaspaces.api.InternalApi
 public class PartitionedClusterUtils {
     public static final int NO_PARTITION = -1;
-    private static final boolean PRECISE_LONG_ROUTING = !Boolean.getBoolean("com.gs.disable-precise-long-routing");
+    public static final boolean PRECISE_LONG_ROUTING = !Boolean.getBoolean("com.gs.disable-precise-long-routing");
 
     public static final String DYNAMIC_PARTITIONING_PROPERTY = "pu.dynamic-partitioning";
     private static final boolean DYNAMIC_PARTITIONING_DEFAULT = GsEnv.propertyBoolean("com.gs.pu.dynamic-partitioning").get(false);
@@ -72,7 +72,7 @@ public class PartitionedClusterUtils {
         return value == Integer.MIN_VALUE ? Integer.MAX_VALUE : Math.abs(value);
     }
 
-    private static long safeAbs(long value) {
+    public static long safeAbs(long value) {
         return value == Long.MIN_VALUE ? Long.MAX_VALUE : Math.abs(value);
     }
 

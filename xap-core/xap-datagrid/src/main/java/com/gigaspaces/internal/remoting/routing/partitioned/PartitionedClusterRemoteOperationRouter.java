@@ -29,7 +29,6 @@ import com.gigaspaces.internal.remoting.routing.clustered.RemoteOperationsExecut
 import com.gigaspaces.internal.remoting.routing.clustered.RemoteOperationsExecutorsCluster;
 import com.gigaspaces.internal.utils.concurrent.CyclicAtomicInteger;
 import com.gigaspaces.utils.TransformUtils;
-import com.j_spaces.kernel.SystemProperties;
 import org.slf4j.Logger;
 
 import java.util.ArrayList;
@@ -72,6 +71,10 @@ public class PartitionedClusterRemoteOperationRouter extends AbstractRemoteOpera
 
         if (_logger.isDebugEnabled())
             _logger.debug("Initialized partitioned cluster router - number of partitions = " + partitions.length);
+    }
+
+    public RemoteOperationsExecutorsCluster getPartitionedCluster() {
+        return _partitionedCluster;
     }
 
     public int getNumOfPartitions() {
@@ -213,7 +216,7 @@ public class PartitionedClusterRemoteOperationRouter extends AbstractRemoteOpera
     private <T extends RemoteOperationResult> void executeSingle(RemoteOperationRequest<T> request, boolean oneway)
             throws InterruptedException {
         Object routingValue = getPartiotionedClusterRoutingValue(request);
-        int partitionId = PartitionedClusterUtils.getPartitionId(routingValue, _clusterInfo);
+        int partitionId = _partitionedCluster.getSpaceProxy().getPartitionId(routingValue);
         if (partitionId == PartitionedClusterUtils.NO_PARTITION) {
             request.setRemoteOperationExecutionError(new RemoteOperationRouterException("Cannot execute operation on partitioned cluster without routing value"));
             return;
@@ -232,7 +235,7 @@ public class PartitionedClusterRemoteOperationRouter extends AbstractRemoteOpera
     private <T extends RemoteOperationResult> void executeSingleAsync(RemoteOperationRequest<T> request, RemoteOperationFutureListener<T> listener) {
         Object routingValue = request.getPartitionedClusterRoutingValue(this);
         routingValue = TransformUtils.stripTrailingZerosIfNeeded(routingValue);
-        int partitionId = PartitionedClusterUtils.getPartitionId(routingValue, _clusterInfo);
+        int partitionId = _partitionedCluster.getSpaceProxy().getPartitionId(routingValue);
         if (partitionId == PartitionedClusterUtils.NO_PARTITION) {
             request.setRemoteOperationExecutionError(new RemoteOperationRouterException("Cannot execute operation on partitioned cluster without routing value"));
             if (listener != null)

@@ -50,6 +50,7 @@ import com.gigaspaces.lrmi.LRMIRuntime;
 import com.gigaspaces.metadata.SpaceMetadataException;
 import com.gigaspaces.query.ISpaceQuery;
 import com.gigaspaces.security.directory.CredentialsProvider;
+import com.gigaspaces.utils.TransformUtils;
 import com.j_spaces.core.*;
 import com.j_spaces.core.admin.ContainerConfig;
 import com.j_spaces.core.admin.IInternalRemoteJSpaceAdmin;
@@ -80,6 +81,8 @@ import java.security.SecureRandom;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+
+import static com.gigaspaces.internal.remoting.routing.partitioned.PartitionedClusterUtils.*;
 
 /**
  * Provides the functionality of clustered proxy.
@@ -174,6 +177,19 @@ public class SpaceProxyImpl extends AbstractDirectSpaceProxy implements SameProx
     @Override
     public SpaceProxyDataEventsManager getDataEventsManager() {
         return _dataEventsManager;
+    }
+
+    @Override
+    public int getPartitionId(Object routingValue) {
+        if (routingValue == null)
+            return NO_PARTITION;
+        routingValue = TransformUtils.stripTrailingZerosIfNeeded(routingValue);
+        int numberOfPartitions = getSpaceClusterInfo().getNumberOfPartitions() != 0 ? getSpaceClusterInfo().getNumberOfPartitions() : 1;
+        if (routingValue instanceof Long && PRECISE_LONG_ROUTING) {
+
+            return getSpaceClusterInfo().isChunksRouting() ? getSpaceClusterInfo().getPartitionId((safeAbs((Long) routingValue))) : (int) (safeAbs((Long) routingValue) % numberOfPartitions);
+        }
+        return getSpaceClusterInfo().isChunksRouting() ? getSpaceClusterInfo().getPartitionId(safeAbs(routingValue.hashCode())) : safeAbs(routingValue.hashCode()) % numberOfPartitions;
     }
 
     @Override

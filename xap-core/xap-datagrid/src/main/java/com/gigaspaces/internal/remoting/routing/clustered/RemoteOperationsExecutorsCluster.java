@@ -227,6 +227,7 @@ public class RemoteOperationsExecutorsCluster {
             throw new ClosedResourceException("Proxy is closed");
     }
 
+
     public void refreshConnectedMembers() {
         ArrayList<RemoteOperationsExecutorProxy> connectedMembers = new ArrayList<RemoteOperationsExecutorProxy>();
         synchronized (_lock) {
@@ -243,6 +244,10 @@ public class RemoteOperationsExecutorsCluster {
                 disconnect(proxy);
             }
         }
+    }
+
+    public SpaceProxyImpl getSpaceProxy() {
+        return _spaceProxy;
     }
 
     public void refreshDisconnectedMembers() {

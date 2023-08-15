@@ -183,7 +183,7 @@ public class ReplicationNotificationClientEndpoint {
     }
 
     private int getPartitionId() {
-        return PartitionedClusterUtils.getPartitionId((_templatePacket).getRoutingFieldValue(), _remoteSpace.getSpaceClusterInfo());
+        return _remoteSpace.getPartitionId((_templatePacket).getRoutingFieldValue());
     }
 
     public void close() {

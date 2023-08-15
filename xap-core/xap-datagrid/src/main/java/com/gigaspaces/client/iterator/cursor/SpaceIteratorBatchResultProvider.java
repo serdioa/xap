@@ -67,7 +67,7 @@ public class SpaceIteratorBatchResultProvider implements Serializable {
                 Object routingValue = _queryPacket.getTemplateRoutingValue();
                 if(_logger.isDebugEnabled())
                     _logger.debug("Initializing space iterator batch task with routing " + routingValue);
-                triggerSinglePartitionBatchTask(PartitionedClusterUtils.getPartitionId(routingValue, _clusterInfo), 0);
+                triggerSinglePartitionBatchTask(_spaceProxy.getPartitionId(routingValue), 0);
                 return;
             }
             if(_logger.isDebugEnabled())

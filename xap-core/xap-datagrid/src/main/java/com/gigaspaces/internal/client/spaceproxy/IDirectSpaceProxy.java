@@ -148,4 +148,6 @@ public interface IDirectSpaceProxy extends ISpaceProxy {
      * @since 14.0.0
      */
     void demote(long maxSuspendTime, TimeUnit timeUnit, CredentialsProvider credentialsProvider) throws DemoteFailedException, RemoteException;
+
+    int getPartitionId(Object routingValue);
 }
