@@ -11,6 +11,7 @@ import com.j_spaces.core.cache.TypeData;
 import com.j_spaces.core.cache.mvcc.MVCCEntryCacheInfo;
 import com.j_spaces.core.cache.mvcc.MVCCEntryHolder;
 import com.j_spaces.core.cache.mvcc.MVCCShellEntryCacheInfo;
+import com.j_spaces.kernel.JSpaceUtilities;
 import com.j_spaces.kernel.locks.ILockObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,6 +19,7 @@ import org.slf4j.LoggerFactory;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * @author Davyd Savitskyi
@@ -164,11 +166,11 @@ public class MVCCCleanupManager {
                         _cacheManager.getLockManager().freeLockObject(entryLock);
                     }
                     int deletedEntriesPerUid = 0;
+                    AtomicBoolean isOverridingAnother = new AtomicBoolean(true);
                     while (toScan.hasNext()) {
-                        if (!removeNextOnMatch(toScan, generationState, deletedEntriesPerUid, totalCommittedGens)) {
-                            break;
+                        if (removeNextOnMatch(toScan, shellEntryCacheInfo, generationState, deletedEntriesPerUid, totalCommittedGens, isOverridingAnother)) {
+                            deletedEntriesPerUid++;
                         }
-                        deletedEntriesPerUid++;
                     }
                     removeUidShellPairIfEmpty(shellEntryCacheInfo);
                     totalVersionsInPartition+=totalCommittedGens;
@@ -183,7 +185,8 @@ public class MVCCCleanupManager {
                     _spaceImpl.getPartitionId(), System.currentTimeMillis() - startTimeMillis, totalDeletedVersion, totalVersions);
         }
 
-        private boolean removeNextOnMatch(Iterator<MVCCEntryCacheInfo> toScan, MVCCGenerationsState generationState, int deletedEntries, int totalCommittedGens) {
+        private boolean removeNextOnMatch(Iterator<MVCCEntryCacheInfo> toScan, MVCCShellEntryCacheInfo shellEntryCacheInfo,
+                                          MVCCGenerationsState generationState, int deletedEntries, int totalCommittedGens, AtomicBoolean isOverridingAnother) {
             MVCCEntryCacheInfo pEntry = toScan.next();
             MVCCEntryHolder entry = pEntry.getEntryHolder();
             if (matchToRemove(entry, generationState, deletedEntries, totalCommittedGens)) {
@@ -194,12 +197,31 @@ public class MVCCCleanupManager {
                             toScan.remove();
                             if (!entry.isLogicallyDeleted()) {
                                 _cacheManager.removeEntryFromCache(entry, false, true, pEntry, CacheManager.RecentDeleteCodes.NONE);
+                                MVCCEntryHolder activeData = shellEntryCacheInfo.getLatestCommittedOrHollow();
+                                if (!activeData.isHollowEntry() && activeData.getOverrideGeneration() == entry.getCommittedGeneration()) {
+                                    // arrive here after removing uncompleted entry to make previous completed as active (set overr=-1)
+                                    activeData.setOverrideGeneration(-1);
+                                }
+                            }
+                            if (toScan.hasNext()) {
+                                // each next entry already not overriding current as current was removed
+                                isOverridingAnother.set(false);
                             }
                             if (_logger.isDebugEnabled()) {
                                 _logger.debug("Entry {} was cleaned", entry);
                             }
                             return true;
                         }
+                    }
+                } finally {
+                    _cacheManager.getLockManager().freeLockObject(entryLock);
+                }
+            } else if (!isOverridingAnother.get()) {
+                ILockObject entryLock = _cacheManager.getLockManager().getLockObject(entry);
+                try {
+                    synchronized (entryLock) {
+                        entry.setOverridingAnother(false);
+                        isOverridingAnother.set(true);
                     }
                 } finally {
                     _cacheManager.getLockManager().freeLockObject(entryLock);
@@ -219,15 +241,15 @@ public class MVCCCleanupManager {
                     return true;
                 }
             } else if (totalCommittedGens - deletedEntries > _historicalEntriesLimit) {
-                return true;
+                if ((entry.getOverrideGeneration() != -1 && !generationState.isUncompletedGeneration(entry.getOverrideGeneration()))) { // not active data and override gen not uncompleted
+                    return true;
+                }
             }
             return false;
         }
-        // gen2 - old
-        // gen3 - uncompl - old
 
         private boolean isLifetimeLimitExceeded(MVCCEntryHolder entry) {
-            return System.currentTimeMillis() - entry.getSCN() > _lifetimeLimitMillis;
+            return SystemTime.timeMillis() - entry.getSCN() > _lifetimeLimitMillis;
         }
 
         private void removeUidShellPairIfEmpty(MVCCShellEntryCacheInfo shellEntryCacheInfo) {

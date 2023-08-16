@@ -3,6 +3,7 @@ package com.j_spaces.core.cache.mvcc;
 import com.gigaspaces.internal.server.metadata.IServerTypeDesc;
 import com.gigaspaces.internal.server.storage.*;
 import com.gigaspaces.internal.utils.Textualizer;
+import com.gigaspaces.time.SystemTime;
 import com.j_spaces.core.Constants;
 import com.j_spaces.core.server.transaction.EntryXtnInfo;
 import com.j_spaces.kernel.locks.IMVCCLockObject;
@@ -38,7 +39,7 @@ public class MVCCEntryHolder extends EntryHolder implements IMVCCLockObject {
                 0 /*versionID*/,
                 Long.MAX_VALUE, /* expirationTime */
                 entryXtnInfo);
-        MVCCEntryHolder dummy = new MVCCEntryHolder(this.getServerTypeDesc(), this.getUID(), System.currentTimeMillis(),
+        MVCCEntryHolder dummy = new MVCCEntryHolder(this.getServerTypeDesc(), this.getUID(), SystemTime.timeMillis(),
                 this.isTransient(), ed);
         dummy.setLogicallyDeleted(true);
         return dummy;
