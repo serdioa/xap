@@ -38,7 +38,7 @@ public class MVCCEntryHolder extends EntryHolder implements IMVCCLockObject {
                 0 /*versionID*/,
                 Long.MAX_VALUE, /* expirationTime */
                 entryXtnInfo);
-        MVCCEntryHolder dummy = new MVCCEntryHolder(this.getServerTypeDesc(), this.getUID(), this.getSCN(),
+        MVCCEntryHolder dummy = new MVCCEntryHolder(this.getServerTypeDesc(), this.getUID(), System.currentTimeMillis(),
                 this.isTransient(), ed);
         dummy.setLogicallyDeleted(true);
         return dummy;
