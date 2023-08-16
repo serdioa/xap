@@ -30,22 +30,11 @@ public class MVCCShellEntryCacheInfo extends MemoryBasedEntryCacheInfo {
         dirtyEntry = pEntry;
         serverTypeDesc = entryHolder.getServerTypeDesc();
         uid = entryHolder.getUID();
-        id = calculateShellId(entryHolder.getEntryData());
+        id = entryHolder.getEntryId();
     }
 
-    public Object calculateShellId(IEntryData entryData) {
-        ITypeDesc typeDesc = entryData.getEntryTypeDesc().getTypeDesc();
-        if (typeDesc.isAutoGenerateId())
-            return getUID();
 
-        int[] identifierPropertiesId = typeDesc.getIdentifierPropertiesId();
-        if (identifierPropertiesId.length == 0)
-            return null;
-
-        return TypeDescriptorUtils.toSpaceId(identifierPropertiesId, entryData::getFixedPropertyValue);
-    }
-
-    public Object getEntryID() {
+    public Object getShellID() {
         return id;
     }
 

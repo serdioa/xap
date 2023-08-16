@@ -165,9 +165,10 @@ public class MVCCCleanupManager {
                     }
                     int deletedEntriesPerUid = 0;
                     while (toScan.hasNext()) {
-                        if (removeNextOnMatch(toScan, generationState, deletedEntriesPerUid, totalCommittedGens)) {
-                            deletedEntriesPerUid++;
+                        if (!removeNextOnMatch(toScan, generationState, deletedEntriesPerUid, totalCommittedGens)) {
+                            break;
                         }
+                        deletedEntriesPerUid++;
                     }
                     removeUidShellPairIfEmpty(shellEntryCacheInfo);
                     totalVersionsInPartition+=totalCommittedGens;
@@ -212,7 +213,9 @@ public class MVCCCleanupManager {
 
         private boolean matchToRemove(MVCCEntryHolder entry, MVCCGenerationsState generationState, int deletedEntries, int totalCommittedGens) {
             if (isLifetimeLimitExceeded(entry)) {
-                if (generationState.isUncompletedGeneration(entry.getCommittedGeneration()) || entry.getOverrideGeneration() != -1 || entry.isLogicallyDeleted()) {
+                if (generationState.isUncompletedGeneration(entry.getCommittedGeneration()) // committed uncompleted
+                        || (entry.getOverrideGeneration() != -1 && !generationState.isUncompletedGeneration(entry.getOverrideGeneration())) // not active data and override gen not uncompleted
+                        || entry.isLogicallyDeleted()) { // active completed logically deleted
                     return true;
                 }
             } else if (totalCommittedGens - deletedEntries > _historicalEntriesLimit) {
@@ -220,6 +223,8 @@ public class MVCCCleanupManager {
             }
             return false;
         }
+        // gen2 - old
+        // gen3 - uncompl - old
 
         private boolean isLifetimeLimitExceeded(MVCCEntryHolder entry) {
             return System.currentTimeMillis() - entry.getSCN() > _lifetimeLimitMillis;
