@@ -57,17 +57,6 @@ public class PartitionedClusterUtils {
         return clusterInfo.isChunksRouting() ? clusterInfo.getPartitionId(safeAbs(routingValue.hashCode())) : safeAbs(routingValue.hashCode()) % numberOfPartitions;
     }
 
-    public static int getPartitionId(Object routingValue, ClusterTopology topology) {
-        if (routingValue == null)
-            return NO_PARTITION;
-        routingValue = TransformUtils.stripTrailingZerosIfNeeded(routingValue);
-
-        if (routingValue instanceof Long && PRECISE_LONG_ROUTING) {
-            return  topology.getPartitionId((safeAbs((Long) routingValue)));
-        }
-        return topology.getPartitionId(safeAbs(routingValue.hashCode()));
-    }
-
     public static int safeAbs(int value) {
         return value == Integer.MIN_VALUE ? Integer.MAX_VALUE : Math.abs(value);
     }
