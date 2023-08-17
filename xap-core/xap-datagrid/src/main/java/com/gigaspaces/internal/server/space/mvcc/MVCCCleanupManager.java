@@ -11,7 +11,6 @@ import com.j_spaces.core.cache.TypeData;
 import com.j_spaces.core.cache.mvcc.MVCCEntryCacheInfo;
 import com.j_spaces.core.cache.mvcc.MVCCEntryHolder;
 import com.j_spaces.core.cache.mvcc.MVCCShellEntryCacheInfo;
-import com.j_spaces.kernel.JSpaceUtilities;
 import com.j_spaces.kernel.locks.ILockObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -204,7 +203,7 @@ public class MVCCCleanupManager {
                                 }
                             }
                             if (toScan.hasNext()) {
-                                // each next entry already not overriding current as current was removed
+                                // each next entry already not overriding current as it was removed
                                 isOverridingAnother.set(false);
                             }
                             if (_logger.isDebugEnabled()) {
