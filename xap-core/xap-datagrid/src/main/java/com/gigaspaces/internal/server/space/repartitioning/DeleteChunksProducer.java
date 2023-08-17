@@ -1,6 +1,7 @@
 package com.gigaspaces.internal.server.space.repartitioning;
 
 import com.gigaspaces.internal.cluster.ClusterTopology;
+import com.gigaspaces.internal.cluster.SpaceClusterInfo;
 import com.gigaspaces.internal.metadata.TypeDescriptorUtils;
 import com.gigaspaces.internal.remoting.routing.partitioned.PartitionedClusterUtils;
 import com.gigaspaces.metadata.SpaceTypeDescriptor;
@@ -19,16 +20,17 @@ public class DeleteChunksProducer extends SpaceEntriesAggregator<DeleteChunksRes
 
     public static Logger logger = LoggerFactory.getLogger("org.openspaces.admin.internal.pu.scale_horizontal.ScaleManager");
     private static final long serialVersionUID = -3415904901778930639L;
-    private ClusterTopology newMap;
     private Map<String, List<Object>> batchMap;
     private BlockingQueue<Batch> queue;
+
+    private final SpaceClusterInfo spaceClusterInfo=new SpaceClusterInfo();
     private int batchSize;
 
     DeleteChunksProducer(ClusterTopology newMap, BlockingQueue<Batch> queue, int batchSize) {
-        this.newMap = newMap;
         this.batchSize = batchSize;
         this.queue = queue;
         this.batchMap = new HashMap<>();
+        this.spaceClusterInfo.setTopology(newMap);
     }
 
     @Override
@@ -42,7 +44,7 @@ public class DeleteChunksProducer extends SpaceEntriesAggregator<DeleteChunksRes
         if(typeDescriptor.isBroadcast())
             return;
         Object routingValue = context.getPathValue(typeDescriptor.getRoutingPropertyName());
-        int newPartitionId = PartitionedClusterUtils.getPartitionId(routingValue, newMap) + 1;
+        int newPartitionId = PartitionedClusterUtils.getPartitionId(routingValue, spaceClusterInfo) + 1;
         if (newPartitionId != context.getPartitionId() + 1) {
             Object idValue = TypeDescriptorUtils.toSpaceId(context.getTypeDescriptor().getIdPropertiesNames(), context::getPathValue);
             String type = typeDescriptor.getTypeName();

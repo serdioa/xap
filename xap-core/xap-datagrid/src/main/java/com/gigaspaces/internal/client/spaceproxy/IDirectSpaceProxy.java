@@ -132,7 +132,7 @@ public interface IDirectSpaceProxy extends ISpaceProxy {
     void setQuiesceToken(QuiesceToken token);
 
     /**
-     * @since  16.3.0
+     * @since 16.3.0
      */
     void setMVCCGenerationsState(MVCCGenerationsState generationsState);
 
@@ -148,4 +148,9 @@ public interface IDirectSpaceProxy extends ISpaceProxy {
      * @since 14.0.0
      */
     void demote(long maxSuspendTime, TimeUnit timeUnit, CredentialsProvider credentialsProvider) throws DemoteFailedException, RemoteException;
+    /**
+     * @since 16.4.0
+     */
+    int getPartitionId(Object routingValue);
+
 }
