@@ -18,16 +18,14 @@ public class CopyChunksProducer extends SpaceEntriesAggregator<CopyChunksRespons
     private static final long serialVersionUID = 2759306184206709756L;
     public static Logger logger = LoggerFactory.getLogger(CopyChunksProducer.class);
     private final static Integer BROADCAST_KEY = -1;
-    private ClusterTopology newMap;
     private Map<Integer, List<IEntryPacket>> batchMap;
     private BlockingQueue<Batch> queue;
-    private final SpaceClusterInfo spaceClusterInfo=new SpaceClusterInfo();
+    private final SpaceClusterInfo spaceClusterInfo = new SpaceClusterInfo();
     private int batchSize;
     private ScaleType scaleType;
     private Set<Integer> newPartitionIds;
 
     CopyChunksProducer(ClusterTopology newMap, BlockingQueue<Batch> queue, int batchSize, ScaleType scaleType, Set<Integer> newPartitionIds) {
-        this.newMap = newMap;
         this.batchSize = batchSize;
         this.queue = queue;
         this.newPartitionIds = newPartitionIds;

@@ -268,6 +268,4 @@ public interface ISpaceProxy extends IJSpace, ActionMaker, SecuredService, IDotn
 
     AggregationResult aggregate(Object template, AggregationSet aggregationSet, Transaction txn, int readModifiers) throws RemoteException, TransactionException, InterruptedException;
 
-    int getPartitionId(Object routingValue);
-
 }
