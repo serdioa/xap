@@ -34,6 +34,8 @@ public class MVCCUtils {
                 metaData.setVersion(next.getVersionID());
                 metaDataList.add(metaData);
             }
+        } else {
+            return null; // shell does not exists
         }
         engine.getCacheManager().freeCacheContext(context);
         return metaDataList;

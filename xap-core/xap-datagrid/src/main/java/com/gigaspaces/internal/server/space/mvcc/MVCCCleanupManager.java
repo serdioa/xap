@@ -1,14 +1,24 @@
 package com.gigaspaces.internal.server.space.mvcc;
 
-import com.gigaspaces.internal.server.space.SpaceEngine;
+import com.gigaspaces.internal.server.metadata.IServerTypeDesc;
 import com.gigaspaces.internal.server.space.SpaceImpl;
 import com.gigaspaces.internal.server.space.ZooKeeperMVCCInternalHandler;
 import com.gigaspaces.internal.utils.concurrent.GSThread;
+import com.gigaspaces.time.SystemTime;
 import com.j_spaces.core.admin.SpaceConfig;
+import com.j_spaces.core.cache.CacheManager;
+import com.j_spaces.core.cache.TypeData;
+import com.j_spaces.core.cache.mvcc.MVCCEntryCacheInfo;
+import com.j_spaces.core.cache.mvcc.MVCCEntryHolder;
+import com.j_spaces.core.cache.mvcc.MVCCShellEntryCacheInfo;
+import com.j_spaces.kernel.locks.ILockObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Iterator;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * @author Davyd Savitskyi
@@ -23,6 +33,7 @@ public class MVCCCleanupManager {
     private final SpaceConfig _spaceConfig;
     private final ZooKeeperMVCCInternalHandler _zookeeperMVCCHandler;
 
+    private CacheManager _cacheManager;
     private MVCCGenerationCleaner _mvccCleanerDaemon;
     private boolean _closed;
 
@@ -41,13 +52,14 @@ public class MVCCCleanupManager {
 
 
     /**
-    * If not closed -> init MVCC cleaner daemon thread and start it.<br>
-    */
+     * If not closed -> init MVCC cleaner daemon thread and start it.<br>
+     */
     public void init() {
         if (!_closed) {
+            _cacheManager = _spaceImpl.getEngine().getCacheManager();
             _mvccCleanerDaemon = new MVCCGenerationCleaner(MVCCGenerationCleaner.class.getSimpleName() + "-" + _spaceImpl.getName());
             _mvccCleanerDaemon.start();
-            _logger.debug("MVCC cleaner daemon " + _mvccCleanerDaemon.getName() +  " started");
+            _logger.debug("MVCC cleaner daemon {} started at partition: [{}]", _mvccCleanerDaemon.getName(), _spaceImpl.getPartitionId());
         }
     }
 
@@ -69,8 +81,11 @@ public class MVCCCleanupManager {
         private final long MAX_CLEANUP_DELAY_INTERVAL_MILLIS = TimeUnit.MINUTES.toMillis(1);
         private final long INITIAL_CLEANUP_INTERVAL_MILLIS = TimeUnit.SECONDS.toMillis(1);
 
+        private final long _lifetimeLimitMillis;
+        private final int _historicalEntriesLimit;
+        private final long _nextCleanupDelayInterval;
         private boolean _shouldTerminate;
-        private long _nextCleanupDelayInterval;
+
         // TODO: use to calculate _nextCleanupDelayInterval (PIC-2850)
         private long _lastCleanupExecutionInterval;
         private long _lastCleanupExecutionTimestamp;
@@ -78,7 +93,15 @@ public class MVCCCleanupManager {
         public MVCCGenerationCleaner(String name) {
             super(name);
             this.setDaemon(true);
-            _nextCleanupDelayInterval = MIN_CLEANUP_DELAY_INTERVAL_MILLIS;
+            boolean dynamicDelayEnabled = _spaceConfig.getMvccFixedCleanupDelayMillis() == 0;
+            _nextCleanupDelayInterval = dynamicDelayEnabled ? MIN_CLEANUP_DELAY_INTERVAL_MILLIS : _spaceConfig.getMvccFixedCleanupDelayMillis();
+            _lifetimeLimitMillis = _spaceConfig.getMvccHistoricalEntryLifetimeTimeUnit().toMillis(_spaceConfig.getMvccHistoricalEntryLifetime());
+            _historicalEntriesLimit = _spaceConfig.getMvccHistoricalEntriesLimit();
+            _logger.info("MVCC cleaner daemon {} initialized at partition [{}] with configs:\n" +
+                            (dynamicDelayEnabled ? " Dynamic" : " Fixed") + " delay with initial value: {}ms\n" +
+                            " Lifetime limit for entry: {}ms\n" +
+                            " Max number in history per id: {}"
+                    , getName(), _spaceImpl.getPartitionId(), _nextCleanupDelayInterval, _lifetimeLimitMillis, _historicalEntriesLimit);
         }
 
         @Override
@@ -89,12 +112,12 @@ public class MVCCCleanupManager {
                         fallAsleep();
                         cleanExpiredEntriesGenerations();
                     } catch (Exception ex) {
-                        _logger.error(this.getName() + " - caught Exception", ex);
+                        _logger.error(getName() + " - caught Exception", ex);
                     }
                 }
             } finally {
                 if (_logger.isDebugEnabled())
-                    _logger.debug("MVCC cleaner " + this.getName() + " terminated.");
+                    _logger.info("MVCC cleaner daemon {} terminated at partition: [{}]", getName(), _spaceImpl.getPartitionId());
             }
         }
 
@@ -108,15 +131,143 @@ public class MVCCCleanupManager {
         }
 
         private void cleanExpiredEntriesGenerations() {
+            long startTime = SystemTime.timeMillis();
+            long totalDeletedVersions = 0;
+            long totalVersionsInPartition = 0;
             if (_shouldTerminate) {
                 return;
             }
-            MVCCGenerationsState genState = _zookeeperMVCCHandler.getGenerationsState();
+            MVCCGenerationsState generationState = _zookeeperMVCCHandler.getGenerationsState();
             if (_logger.isDebugEnabled()) {
-                _logger.debug("MVCC cleanup started with last generation: " + genState);
+                _logger.debug("Last generation: " + generationState);
             }
-            // TODO: implement cleanup logic (PIC-2849)
+            if (generationState == null) {
+                return;
+            }
+            Map<String, IServerTypeDesc> typesTable = _cacheManager.getTypeManager().getSafeTypeTable();
 
+            for (IServerTypeDesc typeDesc : typesTable.values()) {
+                TypeData typeData = _cacheManager.getTypeData(typeDesc);
+                if (typeData == null || typeData.getIdField() == null) {
+                    continue;
+                }
+                Map<Object, MVCCShellEntryCacheInfo> idEntriesMap = typeData.getIdField().getUniqueEntriesStore();
+                for (MVCCShellEntryCacheInfo shellEntryCacheInfo : idEntriesMap.values()) {
+                    Iterator<MVCCEntryCacheInfo> toScan;
+                    int totalCommittedGens;
+                    ILockObject entryLock = _cacheManager.getLockManager().getLockObject(shellEntryCacheInfo.getEntryHolder());
+                    try {
+                        synchronized (entryLock) {
+                            toScan = shellEntryCacheInfo.ascIterator();
+                            totalCommittedGens = shellEntryCacheInfo.getTotalCommittedGenertions();
+                        }
+                    } finally {
+                        _cacheManager.getLockManager().freeLockObject(entryLock);
+                    }
+                    int deletedEntriesPerUid = 0;
+                    AtomicBoolean isOverridingAnother = new AtomicBoolean(true);
+                    while (toScan.hasNext()) {
+                        if (removeNextOnMatch(toScan, shellEntryCacheInfo, generationState, deletedEntriesPerUid, totalCommittedGens, isOverridingAnother)) {
+                            deletedEntriesPerUid++;
+                        }
+                    }
+                    removeUidShellPairIfEmpty(shellEntryCacheInfo);
+                    totalVersionsInPartition+=totalCommittedGens;
+                    totalDeletedVersions+=deletedEntriesPerUid;
+                }
+            }
+            logAfterCleanupIteration(startTime, totalDeletedVersions, totalVersionsInPartition);
+        }
+
+        private void logAfterCleanupIteration(long startTimeMillis, long totalDeletedVersion, long totalVersions) {
+            _logger.info("MVCC cleanup at partition[{}] finished in {}ms. Total deleted: {}/{} entries versions.",
+                    _spaceImpl.getPartitionId(), System.currentTimeMillis() - startTimeMillis, totalDeletedVersion, totalVersions);
+        }
+
+        private boolean removeNextOnMatch(Iterator<MVCCEntryCacheInfo> toScan, MVCCShellEntryCacheInfo shellEntryCacheInfo,
+                                          MVCCGenerationsState generationState, int deletedEntries, int totalCommittedGens, AtomicBoolean isOverridingAnother) {
+            MVCCEntryCacheInfo pEntry = toScan.next();
+            MVCCEntryHolder entry = pEntry.getEntryHolder();
+            if (matchToRemove(entry, generationState, deletedEntries, totalCommittedGens)) {
+                ILockObject entryLock = _cacheManager.getLockManager().getLockObject(entry);
+                try {
+                    synchronized (entryLock) {
+                        if (matchToRemove(entry, generationState, deletedEntries, totalCommittedGens)) {
+                            toScan.remove();
+                            if (!entry.isLogicallyDeleted()) {
+                                _cacheManager.removeEntryFromCache(entry, false, true, pEntry, CacheManager.RecentDeleteCodes.NONE);
+                                MVCCEntryHolder activeData = shellEntryCacheInfo.getLatestCommittedOrHollow();
+                                if (!activeData.isHollowEntry() && activeData.getOverrideGeneration() == entry.getCommittedGeneration()) {
+                                    // arrive here after removing uncompleted entry to make previous completed as active (set overr=-1)
+                                    activeData.setOverrideGeneration(-1);
+                                }
+                            }
+                            if (toScan.hasNext()) {
+                                // each next entry already not overriding current as it was removed
+                                isOverridingAnother.set(false);
+                            }
+                            if (_logger.isDebugEnabled()) {
+                                _logger.debug("Entry {} was cleaned", entry);
+                            }
+                            return true;
+                        }
+                    }
+                } finally {
+                    _cacheManager.getLockManager().freeLockObject(entryLock);
+                }
+            } else if (!isOverridingAnother.get()) {
+                ILockObject entryLock = _cacheManager.getLockManager().getLockObject(entry);
+                try {
+                    synchronized (entryLock) {
+                        entry.setOverridingAnother(false);
+                        isOverridingAnother.set(true);
+                    }
+                } finally {
+                    _cacheManager.getLockManager().freeLockObject(entryLock);
+                }
+            }
+            if (_logger.isDebugEnabled()) {
+                _logger.debug("Entry {} wasn't cleaned", entry);
+            }
+            return false;
+        }
+
+        private boolean matchToRemove(MVCCEntryHolder entry, MVCCGenerationsState generationState, int deletedEntries, int totalCommittedGens) {
+            if (isLifetimeLimitExceeded(entry)) {
+                if (generationState.isUncompletedGeneration(entry.getCommittedGeneration()) // committed uncompleted
+                        || (entry.getOverrideGeneration() != -1 && !generationState.isUncompletedGeneration(entry.getOverrideGeneration())) // not active data and override gen not uncompleted
+                        || entry.isLogicallyDeleted()) { // active completed logically deleted
+                    return true;
+                }
+            } else if (totalCommittedGens - deletedEntries > _historicalEntriesLimit) {
+                if ((entry.getOverrideGeneration() != -1 && !generationState.isUncompletedGeneration(entry.getOverrideGeneration()))) { // not active data and override gen not uncompleted
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        private boolean isLifetimeLimitExceeded(MVCCEntryHolder entry) {
+            return SystemTime.timeMillis() - entry.getSCN() > _lifetimeLimitMillis;
+        }
+
+        private void removeUidShellPairIfEmpty(MVCCShellEntryCacheInfo shellEntryCacheInfo) {
+            if (shellEntryCacheInfo.isEmptyShell()) {
+                MVCCEntryHolder hollowEntry = shellEntryCacheInfo.getEntryHolder();
+                ILockObject entryLock = _cacheManager.getLockManager().getLockObject(hollowEntry);
+                try {
+                    synchronized (entryLock) {
+                        if (shellEntryCacheInfo.isEmptyShell()) {
+                            _cacheManager.removeEntryFromCache(hollowEntry, false, true, shellEntryCacheInfo, CacheManager.RecentDeleteCodes.NONE);
+                            if (_logger.isDebugEnabled()) {
+                                _logger.debug("EntryShell {} was cleaned", shellEntryCacheInfo.getUID());
+                            }
+                        }
+                    }
+                } finally {
+                    _cacheManager.getLockManager().freeLockObject(entryLock);
+                }
+            }
         }
 
         public void terminate() {

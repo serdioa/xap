@@ -1,7 +1,10 @@
 package com.j_spaces.core.cache.mvcc;
 
+import com.gigaspaces.internal.metadata.ITypeDesc;
+import com.gigaspaces.internal.metadata.TypeDescriptorUtils;
 import com.gigaspaces.internal.server.metadata.IServerTypeDesc;
 import com.gigaspaces.internal.server.storage.EntryHolderFactory;
+import com.gigaspaces.internal.server.storage.IEntryData;
 import com.gigaspaces.internal.server.storage.IEntryHolder;
 import com.j_spaces.core.cache.CacheManager;
 import com.j_spaces.core.cache.IEntryCacheInfo;
@@ -19,6 +22,7 @@ public class MVCCShellEntryCacheInfo extends MemoryBasedEntryCacheInfo {
     private volatile MVCCEntryCacheInfo dirtyEntry;
     private final IServerTypeDesc serverTypeDesc;
     private final String uid;
+    private final Object id;
 
 
     public MVCCShellEntryCacheInfo(IEntryHolder entryHolder, MVCCEntryCacheInfo pEntry) {
@@ -26,6 +30,12 @@ public class MVCCShellEntryCacheInfo extends MemoryBasedEntryCacheInfo {
         dirtyEntry = pEntry;
         serverTypeDesc = entryHolder.getServerTypeDesc();
         uid = entryHolder.getUID();
+        id = entryHolder.getEntryId();
+    }
+
+
+    public Object getShellID() {
+        return id;
     }
 
     public Iterator<MVCCEntryCacheInfo> ascIterator() {
@@ -105,6 +115,14 @@ public class MVCCShellEntryCacheInfo extends MemoryBasedEntryCacheInfo {
     @Override
     public boolean isIterator() {
         return true;
+    }
+
+    public int getTotalCommittedGenertions() {
+        return allEntryGenerations.size();
+    }
+
+    public boolean isEmptyShell() {
+        return getTotalCommittedGenertions() == 0 && getDirtyEntryCacheInfo() == null;
     }
 
     @Override

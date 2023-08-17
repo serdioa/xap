@@ -4249,8 +4249,16 @@ public class CacheManager extends AbstractCacheManager
                 } else {
                     pEntry =  _entries.remove(entryHolder.getUID());
                 }
-            else
-                _entries.remove(entryHolder.getUID(), pEntry);
+            else {
+                boolean removed = _entries.remove(entryHolder.getUID(), pEntry);
+                if (isMVCCEnabled() && removed) {
+                    TypeData typeData = _typeDataMap.get(entryHolder.getServerTypeDesc());
+                    typeData.getIdField().getUniqueEntriesStore().remove(((MVCCShellEntryCacheInfo)pEntry).getShellID(), pEntry);
+                    // mvcc shell was removed - it doesn't have any related lease, txn or indexes
+                    // don't need to continue the remove flow
+                    return true;
+                }
+            }
         }
         if (pEntry == null && locked)
             throw new RuntimeException("removeEntryFromCache: locked && pEntry not found");

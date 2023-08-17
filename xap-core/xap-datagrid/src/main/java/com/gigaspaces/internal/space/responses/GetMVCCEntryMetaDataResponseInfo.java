@@ -25,8 +25,10 @@ public class GetMVCCEntryMetaDataResponseInfo extends AbstractSpaceResponseInfo{
     }
 
     public void addEntryMetaData(Object id, List<MVCCEntryMetaData> entryMetaData) {
-        List<MVCCEntryMetaData> mvccEntryMetaData = entriesMetaData.computeIfAbsent(id, (key) -> new ArrayList<>());
-        mvccEntryMetaData.addAll(entryMetaData);
+        if (entryMetaData != null) {
+            List<MVCCEntryMetaData> mvccEntryMetaData = entriesMetaData.computeIfAbsent(id, (key) -> new ArrayList<>());
+            mvccEntryMetaData.addAll(entryMetaData);
+        }
     }
 
     public MVCCEntryMetaData getDirtyMetaDataById(Object id) {
