@@ -2,8 +2,8 @@ package com.gigaspaces.internal.server.space;
 
 import com.gigaspaces.attribute_store.AttributeStore;
 import com.gigaspaces.attribute_store.SharedReentrantReadWriteLock;
-import com.gigaspaces.internal.server.space.mvcc.MVCCGenerationStateException;
 import com.gigaspaces.internal.server.space.mvcc.MVCCGenerationsState;
+import com.gigaspaces.internal.server.space.mvcc.exception.MVCCGenerationStateException;
 
 import java.io.IOException;
 import java.util.Set;

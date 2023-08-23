@@ -53,4 +53,8 @@ public interface IReplicationOutContext {
     MVCCGenerationsState getMVCCGenerationsState();
 
     void setMVCCGenerationsState(MVCCGenerationsState mvccGenerationsState);
+
+    boolean isMvccRevertGenerationTxn();
+
+    void setMvccRevertGenerationTxn(boolean isMvccRevertGenerationTxn);
 }

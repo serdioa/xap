@@ -65,7 +65,9 @@ public class SpaceReplicationTransactionEventHandler implements IReplicationInTr
             txn = _txnManager.create();
             XtnEntry xtnEntry = _spaceEngine.attachToXtn(txn, fromReplication);
             if (_spaceEngine.isMvccEnabled()) {
-                xtnEntry.setMVCCGenerationsState(((AbstractTransactionReplicationPacketData) packetsData).getMvccCommittedGeneration());
+                AbstractTransactionReplicationPacketData castedATRPD = (AbstractTransactionReplicationPacketData) packetsData;
+                xtnEntry.setMVCCGenerationsState(castedATRPD.getMvccCommittedGeneration());
+                xtnEntry.setMvccRevertGenerationTxn(castedATRPD.isMvccRevertGeneration());
             }
             for (IReplicationTransactionalPacketEntryData packetEntryData : packetsData) {
                 packetEntryData.executeTransactional(context, this, txn, supportsTwoPhase);

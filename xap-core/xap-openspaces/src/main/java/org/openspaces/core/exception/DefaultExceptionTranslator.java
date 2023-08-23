@@ -28,6 +28,7 @@ import org.openspaces.core.EntryAlreadyInSpaceException;
 import org.openspaces.core.EntryNotInSpaceException;
 import org.openspaces.core.*;
 import org.openspaces.core.executor.mvcc.exception.MVCCEntryModifyConflictException;
+import org.openspaces.core.executor.mvcc.exception.MVCCRevertGenerationException;
 import org.springframework.dao.DataAccessException;
 
 import java.rmi.RemoteException;
@@ -232,8 +233,11 @@ public class DefaultExceptionTranslator implements ExceptionTranslator {
         }
 
         //mvcc transaction exceptions
-        if (e instanceof com.gigaspaces.internal.server.space.mvcc.MVCCEntryModifyConflictException) {
+        if (e instanceof com.gigaspaces.internal.server.space.mvcc.exception.MVCCEntryModifyConflictException) {
             return new MVCCEntryModifyConflictException(e);
+        }
+        if (e instanceof com.gigaspaces.internal.server.space.mvcc.exception.MVCCRevertGenerationException) {
+            return new MVCCRevertGenerationException(e);
         }
         return null;
     }

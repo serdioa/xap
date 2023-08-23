@@ -29,7 +29,6 @@ import com.gigaspaces.metadata.SpaceMetadataException;
 import com.gigaspaces.metadata.SpacePropertyDescriptor;
 import com.gigaspaces.utils.TransformUtils;
 import com.j_spaces.core.IGSEntry;
-import com.j_spaces.kernel.SystemProperties;
 import net.jini.space.InternalSpaceException;
 
 import java.io.IOException;
@@ -114,7 +113,7 @@ public abstract class AbstractTypeIntrospector<T> implements ITypeIntrospector<T
             long timeToLive,
             boolean isTransient) {
         final T res = newInstance();
-        if (values != null)
+        if (values != null && values.length != 0)
             setValues(res, values);
         setDynamicProperties(res, dynamicProperties);
         setEntryInfo(res, uid, version, timeToLive);

@@ -28,7 +28,7 @@ import com.gigaspaces.internal.server.space.FifoSearch;
 import com.gigaspaces.internal.server.space.SpaceEngine;
 import com.gigaspaces.internal.server.space.events.NotifyContextsHolder;
 import com.gigaspaces.internal.server.space.events.UpdateNotifyContextHolder;
-import com.gigaspaces.internal.server.space.mvcc.MVCCEntryModifyConflictException;
+import com.gigaspaces.internal.server.space.mvcc.exception.MVCCGenerationConflictRuntimeException;
 import com.gigaspaces.internal.server.space.operations.WriteEntryResult;
 import com.gigaspaces.internal.server.storage.IEntryHolder;
 import com.gigaspaces.internal.server.storage.ITemplateHolder;
@@ -49,6 +49,7 @@ import com.j_spaces.core.cache.context.Context;
 import com.j_spaces.core.cache.context.TieredState;
 import com.j_spaces.core.cache.mvcc.MVCCEntryCacheInfo;
 import com.j_spaces.core.cache.mvcc.MVCCEntryHolder;
+import com.j_spaces.core.cache.mvcc.MVCCShellEntryCacheInfo;
 import com.j_spaces.core.client.*;
 import com.j_spaces.core.cluster.ReplicationOperationType;
 import com.j_spaces.core.fifo.FifoBackgroundDispatcher;
@@ -518,7 +519,7 @@ public class Processor implements IConsumerObject<BusPacket<Processor>> {
 
         } catch (Exception ex) {
             LogLevel level = LogLevel.SEVERE;
-            if (ex instanceof MVCCEntryModifyConflictException) {
+            if (ex instanceof MVCCGenerationConflictRuntimeException) {
                 level = LogLevel.DEBUG;
             }
             if (level.isEnabled(_logger)) {
@@ -817,7 +818,7 @@ public class Processor implements IConsumerObject<BusPacket<Processor>> {
             }
         } catch (Exception ex) {
             LogLevel level = LogLevel.SEVERE;
-            if (ex instanceof ProtectiveModeException || ex instanceof MVCCEntryModifyConflictException)
+            if (ex instanceof ProtectiveModeException || ex instanceof MVCCGenerationConflictRuntimeException)
                 level = LogLevel.DEBUG;
             else if (ex instanceof ChangeInternalException) {
                 ex = ((ChangeInternalException) ex).getInternalException();
@@ -1038,7 +1039,7 @@ public class Processor implements IConsumerObject<BusPacket<Processor>> {
             }
         } catch (Exception ex) {
             LogLevel level = LogLevel.SEVERE;
-            if (ex instanceof ProtectiveModeException || ex instanceof MVCCEntryModifyConflictException)
+            if (ex instanceof ProtectiveModeException || ex instanceof MVCCGenerationConflictRuntimeException)
                 level = LogLevel.DEBUG;
             else if (ex instanceof ChangeInternalException) {
                 ex = ((ChangeInternalException) ex).getInternalException();
@@ -1790,10 +1791,23 @@ public class Processor implements IConsumerObject<BusPacket<Processor>> {
                                             entry.getWriteLockOperation() == SpaceOperations.TAKE_IE)) {
                                 IServerTypeDesc tte = _engine.getTypeManager().getServerTypeDesc(entry.getClassName());
                                 context.setOperationID(pXtn.getOperationID(entry.getUID()));
-                                _engine.removeEntrySA(context, entry, tte, xtnEntry.isFromReplication() /*fromReplication*/,
-                                        true /*origin*/, SpaceEngine.EntryRemoveReasonCodes.TAKE,
-                                        true/* disable replication */, false /* disable processor call */,
-                                        true /*disableSADelete*/);
+                                if (_engine.isMvccEnabled()) { // we get here only when using revert task, and revert transaction
+                                    MVCCShellEntryCacheInfo mvccShellEntryCacheInfoByUid = _cacheManager.getMVCCShellEntryCacheInfoByUid(entry.getUID());
+                                    if (!((MVCCEntryHolder) entry).isLogicallyDeleted()) {
+                                        IEntryCacheInfo entryCacheInfo = _cacheManager.getMVCCEntryCacheInfoByEntryHolder(((MVCCEntryHolder) entry));
+                                        _cacheManager.removeEntryFromCache(entry, false, true, entryCacheInfo, CacheManager.RecentDeleteCodes.NONE);
+                                    }
+                                    mvccShellEntryCacheInfoByUid.removeUncompletedEntryFromQueue(((MVCCEntryHolder) entry), xtnEntry.getMVCCGenerationsState());
+                                    MVCCEntryHolder latestCommittedOrHollow = mvccShellEntryCacheInfoByUid.getLatestCommittedOrHollow();
+                                    if (!latestCommittedOrHollow.isHollowEntry()) {
+                                        latestCommittedOrHollow.setOverrideGeneration(-1);
+                                    }
+                                } else {
+                                    _engine.removeEntrySA(context, entry, tte, xtnEntry.isFromReplication() /*fromReplication*/,
+                                            true /*origin*/, SpaceEngine.EntryRemoveReasonCodes.TAKE,
+                                            true/* disable replication */, false /* disable processor call */,
+                                            true /*disableSADelete*/);
+                                }
                             }
                         } /* synchronized(entryLock) */
                         continue;
@@ -2368,7 +2382,7 @@ public class Processor implements IConsumerObject<BusPacket<Processor>> {
             }
         } catch (Exception ex) {
             LogLevel level = LogLevel.SEVERE;
-            if (ex instanceof ProtectiveModeException || ex instanceof MVCCEntryModifyConflictException)
+            if (ex instanceof ProtectiveModeException || ex instanceof MVCCGenerationConflictRuntimeException)
                 level = LogLevel.DEBUG;
             else if (ex instanceof ChangeInternalException) {
                 ex = ((ChangeInternalException) ex).getInternalException();
@@ -2625,7 +2639,7 @@ public class Processor implements IConsumerObject<BusPacket<Processor>> {
             }
         } catch (Exception ex) {
             LogLevel level = LogLevel.SEVERE;
-            if (ex instanceof ProtectiveModeException || ex instanceof MVCCEntryModifyConflictException)
+            if (ex instanceof ProtectiveModeException || ex instanceof MVCCGenerationConflictRuntimeException)
                 level = LogLevel.DEBUG;
             else if (ex instanceof ChangeInternalException) {
                 ex = ((ChangeInternalException) ex).getInternalException();

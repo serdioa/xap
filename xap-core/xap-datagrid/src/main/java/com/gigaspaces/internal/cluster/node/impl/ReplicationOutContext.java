@@ -59,6 +59,7 @@ public class ReplicationOutContext extends AbstractResource
     private boolean _backupOnly;
     //for mvcc
     private MVCCGenerationsState mvccGenerationsState;
+    private boolean isMvccRevertGenerationTxn;
 
     public IReplicationGroupOutContext getGroupContext(String groupName) {
         if (isSingleGroupParticipant()) {
@@ -91,6 +92,7 @@ public class ReplicationOutContext extends AbstractResource
         _blobstorePendingReplicationBulk = false;
         _backupOnly = false;
         mvccGenerationsState = null;
+        isMvccRevertGenerationTxn = false;
     }
 
     public void setGroupContext(IReplicationGroupOutContext groupContext) {
@@ -317,6 +319,16 @@ public class ReplicationOutContext extends AbstractResource
     @Override
     public void setMVCCGenerationsState(MVCCGenerationsState mvccGenerationsState) {
         this.mvccGenerationsState = mvccGenerationsState;
+    }
+
+    @Override
+    public boolean isMvccRevertGenerationTxn() {
+        return isMvccRevertGenerationTxn;
+    }
+
+    @Override
+    public void setMvccRevertGenerationTxn(boolean isMvccRevertGenerationTxn) {
+        this.isMvccRevertGenerationTxn = isMvccRevertGenerationTxn;
     }
 
     @Override

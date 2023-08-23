@@ -17,6 +17,7 @@
 package com.j_spaces.core.client;
 
 import com.gigaspaces.annotation.pojo.SpaceFifoGroupingProperty;
+import com.gigaspaces.api.InternalApi;
 import com.gigaspaces.client.ReadMultipleException;
 import com.gigaspaces.client.TakeMultipleException;
 import com.gigaspaces.document.SpaceDocument;
@@ -110,10 +111,10 @@ public class Modifiers {
     public static final int EXCLUSIVE_READ_LOCK = 1 << 9;
 
     /**
-     * An indication whether the desired operation received from <code>java.io.Externalizable</code>
-     * operations. Operations: Any
+     * Revert generation for MVCC space
      **/
-    public static final int RESERVED_EXTERNALIZABLE_TRANSPORT = 1 << 10;
+    @InternalApi
+    public static final int MVCC_REVERT_GENERATION = 1 << 10;
 
     /**
      * An internal usage to get indication whether the desired operation represents FIFO.

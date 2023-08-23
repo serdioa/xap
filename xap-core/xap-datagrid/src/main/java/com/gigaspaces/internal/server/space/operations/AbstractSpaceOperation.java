@@ -19,7 +19,7 @@ package com.gigaspaces.internal.server.space.operations;
 import com.gigaspaces.internal.remoting.RemoteOperationRequest;
 import com.gigaspaces.internal.remoting.RemoteOperationResult;
 import com.gigaspaces.internal.server.space.SpaceImpl;
-import com.gigaspaces.internal.server.space.mvcc.MVCCNotCompatibleWithClientException;
+import com.gigaspaces.internal.server.space.mvcc.exception.MVCCNotCompatibleWithClientException;
 import com.gigaspaces.internal.version.PlatformLogicalVersion;
 import com.gigaspaces.lrmi.LRMIInvocationContext;
 

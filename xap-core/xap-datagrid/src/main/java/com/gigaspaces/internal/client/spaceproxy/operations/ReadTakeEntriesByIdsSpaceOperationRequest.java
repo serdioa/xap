@@ -16,13 +16,10 @@
 
 package com.gigaspaces.internal.client.spaceproxy.operations;
 
+import com.gigaspaces.client.ReadTakeByIdResult;
 import com.gigaspaces.client.ReadTakeByIdsException;
 import com.gigaspaces.internal.io.IOUtils;
-import com.gigaspaces.internal.remoting.routing.partitioned.PartitionedClusterExecutionType;
-import com.gigaspaces.internal.remoting.routing.partitioned.PartitionedClusterRemoteOperationRouter;
-import com.gigaspaces.internal.remoting.routing.partitioned.ScatterGatherOperationFutureListener;
-import com.gigaspaces.internal.remoting.routing.partitioned.ScatterGatherPartitionInfo;
-import com.gigaspaces.internal.remoting.routing.partitioned.ScatterGatherRemoteOperationRequest;
+import com.gigaspaces.internal.remoting.routing.partitioned.*;
 import com.gigaspaces.internal.server.space.operations.SpaceOperationsCodes;
 import com.gigaspaces.internal.transport.IEntryPacket;
 import com.gigaspaces.internal.utils.Textualizer;
@@ -31,7 +28,6 @@ import com.j_spaces.core.IdsMultiRoutingQueryPacket;
 import com.j_spaces.core.IdsQueryPacket;
 import com.j_spaces.core.client.Modifiers;
 import com.j_spaces.core.client.ReadModifiers;
-
 import net.jini.core.entry.UnusableEntryException;
 import net.jini.core.transaction.Transaction;
 import net.jini.core.transaction.TransactionException;
@@ -317,6 +313,15 @@ public class ReadTakeEntriesByIdsSpaceOperationRequest extends SpaceScatterGathe
                     return true;
             }
         }
+        Exception executionException = getRemoteOperationResult().getExecutionException();
+        if (executionException instanceof ReadTakeByIdsException) {
+            for (ReadTakeByIdResult result : ((ReadTakeByIdsException) executionException).getResults()) {
+                if (result.getObject() != null) {
+                    return true;
+                }
+            }
+        }
+
         return false;
     }
 

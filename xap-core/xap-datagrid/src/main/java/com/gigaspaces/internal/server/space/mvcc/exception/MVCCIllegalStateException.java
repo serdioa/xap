@@ -1,10 +1,10 @@
-package com.gigaspaces.internal.server.space.mvcc;
+package com.gigaspaces.internal.server.space.mvcc.exception;
 
 /**
  * @author Tomer Shapira
  * @since 16.4
  */
-public class MVCCIllegalStateException extends IllegalStateException{
+public class MVCCIllegalStateException extends IllegalStateException {
     private static final long serialVersionUID = -8900584441059692872L;
 
     public MVCCIllegalStateException() {

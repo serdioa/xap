@@ -1,4 +1,4 @@
-package com.gigaspaces.internal.server.space.mvcc;
+package com.gigaspaces.internal.server.space.mvcc.exception;
 
 /**
  * @author Davyd Savitskyi

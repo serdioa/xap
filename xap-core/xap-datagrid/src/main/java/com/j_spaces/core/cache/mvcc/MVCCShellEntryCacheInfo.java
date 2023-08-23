@@ -1,10 +1,8 @@
 package com.j_spaces.core.cache.mvcc;
 
-import com.gigaspaces.internal.metadata.ITypeDesc;
-import com.gigaspaces.internal.metadata.TypeDescriptorUtils;
 import com.gigaspaces.internal.server.metadata.IServerTypeDesc;
+import com.gigaspaces.internal.server.space.mvcc.MVCCGenerationsState;
 import com.gigaspaces.internal.server.storage.EntryHolderFactory;
-import com.gigaspaces.internal.server.storage.IEntryData;
 import com.gigaspaces.internal.server.storage.IEntryHolder;
 import com.j_spaces.core.cache.CacheManager;
 import com.j_spaces.core.cache.IEntryCacheInfo;
@@ -81,6 +79,19 @@ public class MVCCShellEntryCacheInfo extends MemoryBasedEntryCacheInfo {
             return latestGeneration.getEntryHolder();
         }
         return EntryHolderFactory.createMvccShellHollowEntry(serverTypeDesc, uid);
+    }
+
+    // Used under lock when running revert task. Should use it with the uncompleted entry only.
+    public boolean removeUncompletedEntryFromQueue(MVCCEntryHolder revertedEntry, MVCCGenerationsState generationsState) {
+        Iterator<MVCCEntryCacheInfo> mvccEntryCacheInfoIterator = descIterator();
+        while (mvccEntryCacheInfoIterator.hasNext()) {
+            MVCCEntryHolder entryHolder = mvccEntryCacheInfoIterator.next().getEntryHolder();
+            if (entryHolder.equals(revertedEntry) && generationsState.isUncompletedGeneration(entryHolder.getCommittedGeneration())) {
+                mvccEntryCacheInfoIterator.remove();
+                return true;
+            }
+        }
+        return false;
     }
 
     @Override

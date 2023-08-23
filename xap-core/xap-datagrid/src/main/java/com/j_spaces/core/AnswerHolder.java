@@ -21,13 +21,12 @@ import com.gigaspaces.client.protective.ProtectiveModeException;
 import com.gigaspaces.events.GSEventRegistration;
 import com.gigaspaces.internal.query.explainplan.SingleExplainPlan;
 import com.gigaspaces.internal.server.metadata.IServerTypeDesc;
-import com.gigaspaces.internal.server.space.mvcc.MVCCEntryModifyConflictException;
+import com.gigaspaces.internal.server.space.mvcc.exception.MVCCGenerationConflictRuntimeException;
 import com.gigaspaces.internal.server.space.operations.WriteEntriesResult;
 import com.gigaspaces.internal.transport.IEntryPacket;
 import com.j_spaces.core.client.EntryNotInSpaceException;
 import com.j_spaces.core.client.EntryVersionConflictException;
 import com.j_spaces.kernel.JSpaceUtilities;
-
 import net.jini.core.transaction.TransactionException;
 import net.jini.space.InternalSpaceException;
 
@@ -133,8 +132,8 @@ public class AnswerHolder {
                 throw (IllegalArgumentException) exception;
             if (exception instanceof QuiesceException)
                 throw (QuiesceException)exception;
-            if (exception instanceof MVCCEntryModifyConflictException)
-                throw (MVCCEntryModifyConflictException)exception;
+            if (exception instanceof MVCCGenerationConflictRuntimeException)
+                throw (MVCCGenerationConflictRuntimeException)exception;
 
             JSpaceUtilities.throwEngineInternalSpaceException(exception.toString(), exception);
         }

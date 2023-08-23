@@ -2404,7 +2404,7 @@ public class CacheManager extends AbstractCacheManager
                 }
                 pXtn.addToTakenEntriesIfNotInside(pEntry);
 
-                if (isMVCCEnabled()) {
+                if (isMVCCEnabled() && !template.isRevertGenerationRequested()) {
                     MVCCEntryCacheInfo logicallyDeletedEntry = _mvccCacheManagerHandler.createLogicallyDeletedMvccEntryPendingGeneration(xtnEntry, (MVCCEntryCacheInfo) pEntry, template.getTemplateOperation());
                     pXtn.addMvccNewGenerationsEntry(logicallyDeletedEntry);
                  }
@@ -2661,6 +2661,7 @@ public class CacheManager extends AbstractCacheManager
                     // in mvcc we use embedded transactions, therefore its always single participant and one-phase
                     // commit transaction.
                     replContext.setMVCCGenerationsState(xtnEntry.getMVCCGenerationsState());
+                    replContext.setMvccRevertGenerationTxn(xtnEntry.isMvccRevertGenerationTxn());
                 }
                 //If single participant we replicate this as a one phase commit transaction and add to replication backlog here
                 _replicationNode.outTransaction(replContext, xtn, pLocked);
@@ -3026,7 +3027,7 @@ public class CacheManager extends AbstractCacheManager
      */
     public Object findTemplatesByIndex(Context context, IServerTypeDesc typeDesc, IEntryHolder entry, MatchTarget matchTarget) {
         TypeData typeData = _typeDataMap.get(typeDesc);
-        if (typeData == null)
+        if (typeData == null || (isMVCCEnabled() && ((MVCCEntryHolder) entry).isLogicallyDeleted()))
             return null;
 
         return findTemplatesByIndex(context, typeData, entry, matchTarget);

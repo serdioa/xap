@@ -18,6 +18,7 @@
 package com.j_spaces.core.client;
 
 import com.gigaspaces.annotation.pojo.SpaceFifoGroupingProperty;
+import com.gigaspaces.api.InternalApi;
 import com.gigaspaces.client.TakeMultipleException;
 
 /**
@@ -75,6 +76,9 @@ public class TakeModifiers {
      */
     public static final int MEMORY_ONLY_SEARCH = Modifiers.MEMORY_ONLY_SEARCH;
 
+    @InternalApi
+    public static final int MVCC_REVERT_GENERATION = Modifiers.MVCC_REVERT_GENERATION;
+
     /**
      * Checks if the EVICT_ONLY bit was set for this modifier.
      *
@@ -128,5 +132,9 @@ public class TakeModifiers {
      */
     public static boolean isMemoryOnlySearch(int mod) {
         return Modifiers.contains(mod, MEMORY_ONLY_SEARCH);
+    }
+
+    public static boolean isRevertGeneration(int mod) {
+        return Modifiers.contains(mod, MVCC_REVERT_GENERATION);
     }
 }

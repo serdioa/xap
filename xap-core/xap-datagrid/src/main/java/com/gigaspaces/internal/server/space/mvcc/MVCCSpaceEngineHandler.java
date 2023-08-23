@@ -106,7 +106,7 @@ public class MVCCSpaceEngineHandler {
                 }
             case SpaceOperations.READ:
             case SpaceOperations.READ_IE:
-                if (entry.isLogicallyDeleted()) {
+                if (entry.isLogicallyDeleted() && !template.isRevertGenerationRequested()) {
                     if (_spaceEngine.getLogger().isDebugEnabled()) {
                         _spaceEngine.getLogger().debug("Encountered a conflict while attempting to operate(" + templateOperation + ") with " + entry
                                 + ", this entry is logically deleted."

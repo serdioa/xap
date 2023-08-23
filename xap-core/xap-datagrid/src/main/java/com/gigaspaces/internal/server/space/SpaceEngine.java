@@ -81,8 +81,8 @@ import com.gigaspaces.internal.server.space.iterator.ServerIteratorInfo;
 import com.gigaspaces.internal.server.space.iterator.ServerIteratorRequestInfo;
 import com.gigaspaces.internal.server.space.iterator.ServerIteratorsManager;
 import com.gigaspaces.internal.server.space.metadata.SpaceTypeManager;
-import com.gigaspaces.internal.server.space.mvcc.MVCCEntryModifyConflictException;
 import com.gigaspaces.internal.server.space.mvcc.MVCCSpaceEngineHandler;
+import com.gigaspaces.internal.server.space.mvcc.exception.MVCCEntryModifyConflictException;
 import com.gigaspaces.internal.server.space.operations.WriteEntriesResult;
 import com.gigaspaces.internal.server.space.operations.WriteEntryResult;
 import com.gigaspaces.internal.server.space.recovery.direct_persistency.StorageConsistencyModes;
@@ -1292,6 +1292,15 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
             templateOperation = take ? SpaceOperations.TAKE_IE : SpaceOperations.READ_IE;
         else
             templateOperation = take ? SpaceOperations.TAKE : SpaceOperations.READ;
+
+
+        if (take && isMvccEnabled() && txnEntry != null) { // set revert txn operation in MVCC
+            if (fromReplication && txnEntry.isMvccRevertGenerationTxn()) { // we arrive here by replication
+                operationModifiers = Modifiers.add(operationModifiers, TakeModifiers.MVCC_REVERT_GENERATION);
+            } else {
+                txnEntry.setMvccRevertGenerationTxn(TakeModifiers.isRevertGeneration(operationModifiers));
+            }
+        }
 
         final long startTime = SystemTime.timeMillis();
         ITemplateHolder tHolder = TemplateHolderFactory.createTemplateHolder(typeDesc, template,
@@ -3282,7 +3291,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
                     _fifoGroupsHandler.prepareForFifoGroupsAfterXtnScans(context, xtnEntry);
                 }
 
-                if(isMvccEnabled() && xtnEntry.m_SingleParticipant){
+                if(isMvccEnabled() && xtnEntry.m_SingleParticipant && !xtnEntry.isMvccRevertGenerationTxn()){
                     _mvccSpaceEngineHandler.preCommitMvccEntries(context, xtnEntry);
                 }
 
@@ -3299,7 +3308,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
                 if (xtnEntry.m_SingleParticipant && xtnEntry.getXtnData().anyFifoGroupOperations())
                     _cacheManager.handleFifoGroupsCacheOnXtnEnd(context, xtnEntry);
                 //for 1PC- handle taken entries under xtn
-                if (xtnEntry.m_SingleParticipant && !isMvccEnabled()) {
+                if (xtnEntry.m_SingleParticipant && (!isMvccEnabled() || xtnEntry.isMvccRevertGenerationTxn())) {
                     _coreProcessor.handleCommittedTakenEntries(context, xtnEntry);
                 }
 

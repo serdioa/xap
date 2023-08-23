@@ -35,6 +35,7 @@ public class XtnEntry extends XtnInfo {
     private final transient FifoBackgroundRequest.AllowFifoNotificationsForNonFifoType _allowFifoNotificationsForNonFifoType;
     private final transient boolean _createdOnNonBackup;
     private transient MVCCGenerationsState mvccGenerationsState;
+    private transient boolean isMvccRevertGenerationTxn;
     /**
      * Constructs a new Xtn Entry.
      */
@@ -131,5 +132,13 @@ public class XtnEntry extends XtnInfo {
         if (mvccGenerationsState == null && sc != null) {
             this.mvccGenerationsState = sc.getMVCCGenerationsState();
         }
+    }
+
+    public boolean isMvccRevertGenerationTxn() {
+        return isMvccRevertGenerationTxn;
+    }
+
+    public void setMvccRevertGenerationTxn(boolean isMvccRevertGenerationTxn) {
+        this.isMvccRevertGenerationTxn = isMvccRevertGenerationTxn;
     }
 }

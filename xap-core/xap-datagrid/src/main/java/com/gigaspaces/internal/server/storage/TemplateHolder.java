@@ -27,8 +27,9 @@ import com.gigaspaces.internal.query.explainplan.SingleExplainPlan;
 import com.gigaspaces.internal.server.metadata.IServerTypeDesc;
 import com.gigaspaces.internal.server.space.*;
 import com.gigaspaces.internal.server.space.iterator.ServerIteratorInfo;
-import com.gigaspaces.internal.server.space.mvcc.MVCCEntryModifyConflictException;
 import com.gigaspaces.internal.server.space.mvcc.MVCCGenerationsState;
+import com.gigaspaces.internal.server.space.mvcc.exception.MVCCEntryModifyConflictException;
+import com.gigaspaces.internal.server.space.mvcc.exception.MVCCRevertGenerationException;
 import com.gigaspaces.internal.transport.AbstractProjectionTemplate;
 import com.gigaspaces.internal.transport.IEntryPacket;
 import com.gigaspaces.internal.transport.ITemplatePacket;
@@ -474,6 +475,10 @@ public class TemplateHolder extends AbstractSpaceItem implements ITemplateHolder
         return TakeModifiers.isEvictOnly(_operationModifiers) && isTakeOperation();
     }
 
+    public boolean isRevertGenerationRequested() {
+        return TakeModifiers.isRevertGeneration(_operationModifiers);
+    }
+
     public boolean isReadCommittedRequested() {
         return isReadOperation() && ReadModifiers.isReadCommitted(_operationModifiers) &&
                 !isExclusiveReadLockOperation();
@@ -810,6 +815,13 @@ public class TemplateHolder extends AbstractSpaceItem implements ITemplateHolder
             return isDirtyEntry || (committedIsCompleted && isOverridenEntryGenerationValidForHistoricalRead); // if dirty or completed with valid override version
 
         } else { //locking operations (take/update/exclusiveRead)
+            if (isRevertGenerationRequested()) {
+                if (mvccGenerationsState.isUncompletedGeneration(committedGeneration)) {
+                    return true;
+                }
+                throw new MVCCRevertGenerationException("Cant revert entry generation ["+entryHolder+"], under " +
+                        "generation state [" + mvccGenerationsState + "]");
+            }
             if (isOverridenEntry
                     && overrideGeneration > completedGeneration
                     && !mvccGenerationsState.isUncompletedGeneration(overrideGeneration)) {

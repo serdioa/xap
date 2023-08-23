@@ -3,6 +3,7 @@ package com.gigaspaces.internal.server.space.mvcc;
 import com.gigaspaces.internal.server.space.redolog.storage.bytebuffer.ISwapExternalizable;
 import com.gigaspaces.serialization.SmartExternalizable;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Sets;
 
 import java.io.IOException;
 import java.io.ObjectInput;
@@ -31,6 +32,10 @@ public class MVCCGenerationsState implements SmartExternalizable, ISwapExternali
 
     public static MVCCGenerationsState empty() {
         return new MVCCGenerationsState(-1L, -1L, Collections.emptySet());
+    }
+
+    public static MVCCGenerationsState revertGenerationState(long generationToRevert) {
+        return new MVCCGenerationsState(-1L, -1L, Sets.newHashSet(generationToRevert));
     }
 
     public long getNextGeneration() {

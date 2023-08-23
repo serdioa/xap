@@ -58,6 +58,7 @@ public abstract class AbstractTransactionReplicationPacketData
     private static final short HAS_TRANSIENT_MEMBERS = 1 << 1;
     private static final short HAS_PERSISTENT_MEMBERS = 1 << 2;
     private static final short HAS_COMMITTED_GENERATION = 1 << 3;
+    private static final short HAS_INDICATE_REVERT_GENERATION = 1 << 4;
 
     private transient int _weight;
     private transient short _flags;
@@ -262,6 +263,14 @@ public abstract class AbstractTransactionReplicationPacketData
 
     public boolean hasMvccCommittedGeneration() {
         return (_flags & HAS_COMMITTED_GENERATION) != 0;
+    }
+
+    public void setMvccRevertGenerationFlag() {
+        _flags |= HAS_INDICATE_REVERT_GENERATION;
+    }
+
+    public boolean isMvccRevertGeneration() {
+        return (_flags & HAS_INDICATE_REVERT_GENERATION) != 0;
     }
 
     public static class FilterIterable

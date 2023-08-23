@@ -288,4 +288,6 @@ public interface ITemplateHolder extends ISpaceItem, IEntryHolder {
     boolean isActiveRead(SpaceEngine engine, Context context);
 
     boolean isHistoricalRead(SpaceEngine engine, Context context);
+
+    boolean isRevertGenerationRequested();
 }

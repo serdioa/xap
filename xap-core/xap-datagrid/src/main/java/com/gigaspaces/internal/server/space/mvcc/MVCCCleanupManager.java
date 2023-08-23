@@ -3,6 +3,7 @@ package com.gigaspaces.internal.server.space.mvcc;
 import com.gigaspaces.internal.server.metadata.IServerTypeDesc;
 import com.gigaspaces.internal.server.space.SpaceImpl;
 import com.gigaspaces.internal.server.space.ZooKeeperMVCCInternalHandler;
+import com.gigaspaces.internal.server.space.mvcc.exception.MVCCZooKeeperHandlerCreationException;
 import com.gigaspaces.internal.utils.concurrent.GSThread;
 import com.gigaspaces.time.SystemTime;
 import com.j_spaces.core.admin.SpaceConfig;
