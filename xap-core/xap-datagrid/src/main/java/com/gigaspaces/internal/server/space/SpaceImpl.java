@@ -2877,8 +2877,10 @@ public class SpaceImpl extends AbstractService implements IRemoteSpace, IInterna
                 // Set the transaction as operated upon so it wont be cleaned
                 xtnEntry.setOperatedUpon();
             }
-            if (isSecuredSpace())
-                prevContext = spaceProxy.getSecurityManager().setThreadSpaceContext(_securityInterceptor.trustContext(sc));
+            if (isSecuredSpace()) {
+                _logger.info("Change space context to trust context...");
+                prevContext = spaceProxy.getSecurityManager().setThreadSpaceContext(_securityInterceptor.trustContext(sc)); // TODO : wrong context ?
+            }
             Object result = task.execute(spaceProxy, tx);
             if (!isSystemTask && _engine.getFilterManager()._isFilter[FilterOperationCodes.AFTER_EXECUTE])
                 _engine.invokeFilters(sc, FilterOperationCodes.AFTER_EXECUTE, result);
