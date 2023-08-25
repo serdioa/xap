@@ -110,6 +110,9 @@ public class SpaceProxySecurityManager implements IProxySecurityManager {
     @Override
     public SpaceContext acquireContext(IRemoteSpace rj) throws RemoteException {
 
+        log.info("Acquire context for rome space " + rj.getName()
+                + " with UUID " + rj.getSpaceUuid() + " with uniq ID " + rj.getUniqueID());
+
         SpaceContext threadSpaceContext = getThreadSpaceContext();
         if (threadSpaceContext != null) {
             log.info("acquired threadSpaceContext " + threadSpaceContext);
