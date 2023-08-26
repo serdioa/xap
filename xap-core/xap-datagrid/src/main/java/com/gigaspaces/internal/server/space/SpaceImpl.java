@@ -2885,9 +2885,9 @@ public class SpaceImpl extends AbstractService implements IRemoteSpace, IInterna
             if (isSecuredSpace()) {
                 _logger.info("Change space context " + sc);
 
-//                SpaceContext trustContext = _securityInterceptor.trustContext(sc);
+                SpaceContext trustContext = _securityInterceptor.trustContext(sc);
 
-//                _logger.info("To trusted context " + trustContext);
+                _logger.info("To trusted context " + trustContext);
 
 //                prevContext = spaceProxy.getSecurityManager().setThreadSpaceContext(trustContext); // TODO : wrong context ?
                 prevContext = spaceProxy.getSecurityManager().setThreadSpaceContext(sc); // TODO : wrong context ?
