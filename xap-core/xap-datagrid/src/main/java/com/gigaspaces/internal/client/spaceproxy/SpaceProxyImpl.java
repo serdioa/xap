@@ -712,11 +712,11 @@ public class SpaceProxyImpl extends AbstractDirectSpaceProxy implements SameProx
             SpaceContext spaceContext = getProxyRouter().getDefaultSpaceContext();
             if (spaceRequest.supportsSecurity()) {
                 QuiesceToken token = spaceContext != null ? spaceContext.getQuiesceToken() : null;
-                _clientLogger.info("targetSpace " + targetSpace.getName()
+                _clientLogger.debug("targetSpace " + targetSpace.getName()
                         + " with UUID " + targetSpace.getSpaceUuid() + " with uniq ID " + targetSpace.getUniqueID());
-                _clientLogger.info("spaceContext " + spaceContext);
+                _clientLogger.debug("spaceContext " + spaceContext);
                 spaceContext = getSecurityManager().acquireContext(targetSpace);
-                _clientLogger.info("spaceContext after acquire " + spaceContext);
+                _clientLogger.debug("spaceContext after acquire " + spaceContext);
                 if (spaceContext != null)
                     spaceContext.setQuiesceToken(token);
             }
