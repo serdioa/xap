@@ -55,7 +55,7 @@ public class SecurityContext implements SmartExternalizable {
     /*
      * Construct a Secret key to be used for encoding the user details passed on the first
      * authentication request.
-     * 
+     *
      * Note: AesContentEncoder is not concurrent. A call to doFinal(..) resets the Cipher object to
      * the state it was in when initialized via a call to init(..). Therefore, do not make it static
      * or you will get stream corruption and bad padding exceptions.
@@ -95,6 +95,7 @@ public class SecurityContext implements SmartExternalizable {
      * @param securityContext a token for this session.
      */
     public SecurityContext(SecurityContext securityContext) {
+        this.userDetails = securityContext.getUserDetails();
         this.authenticationToken = securityContext.getAuthenticationToken();
         this.auditDetails = securityContext.getAuditDetails();
     }
