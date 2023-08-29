@@ -31,6 +31,8 @@ import com.j_spaces.jdbc.parser.OrNode;
 import com.j_spaces.jdbc.query.IQueryResultSet;
 
 import net.jini.core.transaction.Transaction;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.sql.SQLException;
 
@@ -42,6 +44,9 @@ import java.sql.SQLException;
  */
 @com.gigaspaces.api.InternalApi
 public class QueryExecutor extends AbstractQueryExecutor {
+
+    private static final Logger log = LoggerFactory.getLogger(QueryExecutor.class);
+
     private static final long serialVersionUID = 1L;
 
     // Required for Externalizable
@@ -212,8 +217,9 @@ public class QueryExecutor extends AbstractQueryExecutor {
         protected IQueryResultSet<IEntryPacket> execute() throws Exception {
             // if the space is secured, attach context to current thread
             SpaceContext prevContext = null;
-            if (_spaceContext != null)
+            if (_spaceContext != null) {
                 prevContext = _space.getDirectProxy().getSecurityManager().setThreadSpaceContext(_spaceContext);
+            }
 
             IQueryResultSet<IEntryPacket> result;
             try {

@@ -2877,8 +2877,9 @@ public class SpaceImpl extends AbstractService implements IRemoteSpace, IInterna
                 // Set the transaction as operated upon so it wont be cleaned
                 xtnEntry.setOperatedUpon();
             }
-            if (isSecuredSpace())
+            if (isSecuredSpace()) {
                 prevContext = spaceProxy.getSecurityManager().setThreadSpaceContext(_securityInterceptor.trustContext(sc));
+            }
             Object result = task.execute(spaceProxy, tx);
             if (!isSystemTask && _engine.getFilterManager()._isFilter[FilterOperationCodes.AFTER_EXECUTE])
                 _engine.invokeFilters(sc, FilterOperationCodes.AFTER_EXECUTE, result);
@@ -2888,8 +2889,10 @@ public class SpaceImpl extends AbstractService implements IRemoteSpace, IInterna
         } catch (Exception e) {
             throw new ExecutionException(e);
         } finally {
-            if (isSecuredSpace())
+            if (isSecuredSpace()) {
                 spaceProxy.getSecurityManager().setThreadSpaceContext(prevContext);
+            }
+
 
             // Unload the task class.
             // See org.openspaces.core.executor.internal.InternalSpaceTaskWrapper#readTaskInNewClassLoader(ObjectInput in).
