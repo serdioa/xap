@@ -218,7 +218,6 @@ public class QueryExecutor extends AbstractQueryExecutor {
             // if the space is secured, attach context to current thread
             SpaceContext prevContext = null;
             if (_spaceContext != null) {
-                log.info("Change thread space conetext from query executor!");
                 prevContext = _space.getDirectProxy().getSecurityManager().setThreadSpaceContext(_spaceContext);
             }
 

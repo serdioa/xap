@@ -2858,9 +2858,6 @@ public class SpaceImpl extends AbstractService implements IRemoteSpace, IInterna
             SpaceActionExecutor executor = getActionExecutor(systemTask);
             supportsBackup = executor.supportsBackup();
             privilege = executor.getPrivilege();
-            _logger.info("system task used context " + sc);
-        } else {
-            _logger.info("none system task used context " + sc);
         }
 
         beforeTypeOperation(!supportsBackup, sc, privilege, typeName);
@@ -2869,8 +2866,6 @@ public class SpaceImpl extends AbstractService implements IRemoteSpace, IInterna
 
         if (!isSystemTask)
             _engine.invokeFilters(sc, FilterOperationCodes.BEFORE_EXECUTE, task);
-
-        _logger.info("after invoking filters");
 
         IDirectSpaceProxy spaceProxy = getTaskProxy().getDirectProxy();
         SpaceContext prevContext = null;
@@ -2883,14 +2878,7 @@ public class SpaceImpl extends AbstractService implements IRemoteSpace, IInterna
                 xtnEntry.setOperatedUpon();
             }
             if (isSecuredSpace()) {
-                _logger.info("Change space context " + sc);
-
-                SpaceContext trustContext = _securityInterceptor.trustContext(sc);
-
-                _logger.info("To trusted context " + trustContext);
-
-                prevContext = spaceProxy.getSecurityManager().setThreadSpaceContext(trustContext); // TODO : wrong context ?
-//                prevContext = spaceProxy.getSecurityManager().setThreadSpaceContext(sc); // TODO : wrong context ?
+                prevContext = spaceProxy.getSecurityManager().setThreadSpaceContext(_securityInterceptor.trustContext(sc));
             }
             Object result = task.execute(spaceProxy, tx);
             if (!isSystemTask && _engine.getFilterManager()._isFilter[FilterOperationCodes.AFTER_EXECUTE])
@@ -2902,7 +2890,6 @@ public class SpaceImpl extends AbstractService implements IRemoteSpace, IInterna
             throw new ExecutionException(e);
         } finally {
             if (isSecuredSpace()) {
-                _logger.info("Change security context from final of SpaceImpl");
                 spaceProxy.getSecurityManager().setThreadSpaceContext(prevContext);
             }
 

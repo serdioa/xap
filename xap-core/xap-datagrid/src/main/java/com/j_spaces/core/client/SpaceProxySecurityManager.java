@@ -102,7 +102,6 @@ public class SpaceProxySecurityManager implements IProxySecurityManager {
         SecurityContext securityContext = rj.login(new SecurityContext(credentialsProvider));
 
         cache.clear();
-        log.info("cached " + securityContext );
         cacheIt(rj, createSpaceContext(securityContext));
         return securityContext;
     }
@@ -110,25 +109,19 @@ public class SpaceProxySecurityManager implements IProxySecurityManager {
     @Override
     public SpaceContext acquireContext(IRemoteSpace rj) throws RemoteException {
 
-        log.info("Acquire context for rome space " + rj.getName()
-                + " with UUID " + rj.getSpaceUuid() + " with uniq ID " + rj.getUniqueID());
-
         SpaceContext threadSpaceContext = getThreadSpaceContext();
         if (threadSpaceContext != null) {
-            log.info("acquired threadSpaceContext " + threadSpaceContext);
             return threadSpaceContext;
         }
 
         SpaceContext cachedSpaceContext = cache.get(rj.getSpaceUuid());
         if (cachedSpaceContext != null) {
-            log.info("acquired cachedSpaceContext " + cachedSpaceContext);
             return cachedSpaceContext;
         }
 
         final SpaceContext spaceContext = acquireContext(rj, this.credentialsProvider);
         cachedSpaceContext = cacheIt(rj, spaceContext);
 
-        log.info("acquired cachedSpaceContext " + cachedSpaceContext);
         return cachedSpaceContext;
     }
 
@@ -150,7 +143,6 @@ public class SpaceProxySecurityManager implements IProxySecurityManager {
 
         final SecurityContext securityContext = rs.login(new SecurityContext(cp));
         final SpaceContext spaceContext = createSpaceContext(securityContext);
-        log.info("acquired context " + securityContext);
         return spaceContext;
     }
 
@@ -183,7 +175,6 @@ public class SpaceProxySecurityManager implements IProxySecurityManager {
             Map<Uuid, SpaceContext> map = threadContextCache.get();
             result = map == null ? null : map.get(proxy.getReferentUuid());
         }
-        log.info("acquired result " + result);
         return result;
     }
 
@@ -209,7 +200,6 @@ public class SpaceProxySecurityManager implements IProxySecurityManager {
             } else
                 prev = null;
         }
-        log.info("change thread space context from " + prev +" , to " + sc);
         return prev;
     }
 }

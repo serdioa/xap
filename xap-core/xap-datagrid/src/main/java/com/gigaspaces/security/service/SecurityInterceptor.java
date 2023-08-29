@@ -293,12 +293,8 @@ public class SecurityInterceptor {
      * context.
      */
     public SpaceContext trustContext(SpaceContext spaceContext) {
-        logger.info("spaceContext is " + spaceContext);
         SecurityContext trustedContext = trustInterceptor.trust(SpaceContextHelper.getSecurityContext(spaceContext));
-        logger.info("trustedContext is " + trustedContext);
-        SpaceContext spaceContextCopy = spaceContext.createCopy(trustedContext);
-        logger.info("spaceContextCopy is " + spaceContextCopy);
-        return spaceContextCopy;
+        return spaceContext.createCopy(trustedContext);
     }
 
     /**
