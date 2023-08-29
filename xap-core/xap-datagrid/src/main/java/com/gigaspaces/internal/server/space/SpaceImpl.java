@@ -667,8 +667,18 @@ public class SpaceImpl extends AbstractService implements IRemoteSpace, IInterna
         beforeOperation(isCheckForStandBy, true /*checkQuiesceMode*/, sc);
 
         // check Type Access Privileges:
-        if (_securityInterceptor != null && privilege != SpacePrivilege.NOT_SET)
-            _securityInterceptor.intercept(SpaceContextHelper.getSecurityContext(sc), privilege, className);
+        if (_securityInterceptor != null && privilege != SpacePrivilege.NOT_SET) {
+            _securityInterceptor.intercept(SpaceContextHelper.getSecurityContext(sc), privilege, className); // TODO : CREATE / ALTER ARE Calling here?
+        }
+
+        if (privilege == SpacePrivilege.CREATE ) {
+            _engine.getFilterManager().invokeFilters(FilterOperationCodes.BEFORE_CREATE, sc, className); // TODO : call filter for create/alter
+        }
+
+        if (privilege == SpacePrivilege.ALTER ) {
+            _engine.getFilterManager().invokeFilters(FilterOperationCodes.BEFORE_ALTER, sc, className); // TODO : call filter for create/alter
+        }
+
     }
 
     public void beginPacketOperation(boolean isCheckForStandBy, SpaceContext sc, Privilege privilege, ITransportPacket packet)
