@@ -78,28 +78,32 @@ public class MVCCCleanupManager {
     private final class MVCCGenerationCleaner extends GSThread {
 
         // TODO: use consts as defaults to impl adaptive clean timeout logic (PIC-2850)
-        private final long MIN_CLEANUP_DELAY_INTERVAL_MILLIS = TimeUnit.SECONDS.toMillis(1);
-        private final long MAX_CLEANUP_DELAY_INTERVAL_MILLIS = TimeUnit.MINUTES.toMillis(1);
-        private final long INITIAL_CLEANUP_INTERVAL_MILLIS = TimeUnit.SECONDS.toMillis(1);
+        private final long MIN_CLEANUP_DELAY_INTERVAL_MILLIS = TimeUnit.MILLISECONDS.toMillis(100);
+        private final long MAX_CLEANUP_DELAY_INTERVAL_MILLIS = TimeUnit.SECONDS.toMillis(10);
+        private final long INITIAL_CLEANUP_DELAY_INTERVAL_MILLIS = TimeUnit.MILLISECONDS.toMillis(10);
+        private final long INITIAL_CLEANUP_INTERVAL_MILLIS = TimeUnit.MILLISECONDS.toMillis(10);
 
         private final long _lifetimeLimitMillis;
         private final int _historicalEntriesLimit;
-        private final long _nextCleanupDelayInterval;
+        private final boolean _dynamicDelayEnabled;
         private boolean _shouldTerminate;
-
-        // TODO: use to calculate _nextCleanupDelayInterval (PIC-2850)
+        private long _nextCleanupDelayInterval;
         private long _lastCleanupExecutionInterval;
-        private long _lastCleanupExecutionTimestamp;
+        private long _currentCleanupExecutionInterval;
 
         public MVCCGenerationCleaner(String name) {
             super(name);
             this.setDaemon(true);
-            boolean dynamicDelayEnabled = _spaceConfig.getMvccFixedCleanupDelayMillis() == 0;
-            _nextCleanupDelayInterval = dynamicDelayEnabled ? MIN_CLEANUP_DELAY_INTERVAL_MILLIS : _spaceConfig.getMvccFixedCleanupDelayMillis();
+            _dynamicDelayEnabled = _spaceConfig.getMvccFixedCleanupDelayMillis() == 0;
+            _nextCleanupDelayInterval = _dynamicDelayEnabled ? INITIAL_CLEANUP_DELAY_INTERVAL_MILLIS : _spaceConfig.getMvccFixedCleanupDelayMillis();
+            if (_dynamicDelayEnabled) {
+                _currentCleanupExecutionInterval = INITIAL_CLEANUP_INTERVAL_MILLIS;
+                _lastCleanupExecutionInterval = _currentCleanupExecutionInterval;
+            }
             _lifetimeLimitMillis = _spaceConfig.getMvccHistoricalEntryLifetimeTimeUnit().toMillis(_spaceConfig.getMvccHistoricalEntryLifetime());
             _historicalEntriesLimit = _spaceConfig.getMvccHistoricalEntriesLimit();
             _logger.info("MVCC cleaner daemon {} initialized at partition [{}] with configs:\n" +
-                            (dynamicDelayEnabled ? " Dynamic" : " Fixed") + " delay with initial value: {}ms\n" +
+                            (_dynamicDelayEnabled ? " Dynamic" : " Fixed") + " delay with initial value: {}ms\n" +
                             " Lifetime limit for entry: {}ms\n" +
                             " Max number in history per id: {}"
                     , getName(), _spaceImpl.getPartitionId(), _nextCleanupDelayInterval, _lifetimeLimitMillis, _historicalEntriesLimit);
@@ -126,9 +130,24 @@ public class MVCCCleanupManager {
             if (_shouldTerminate) {
                 return;
             }
+            if (_dynamicDelayEnabled) {
+                calculateNextCleanupDelay();
+            }
             if (_logger.isDebugEnabled())
                 _logger.debug("fallAsleep - going to wait cleanupDelay=" + _nextCleanupDelayInterval);
             wait(_nextCleanupDelayInterval);
+        }
+
+        private void calculateNextCleanupDelay() {
+            long nextCleanupDelay = (_nextCleanupDelayInterval * _lastCleanupExecutionInterval) / _currentCleanupExecutionInterval;
+            if (_logger.isDebugEnabled())
+                _logger.debug("nextCleanupDelay = {}*{}/{} = {}", _nextCleanupDelayInterval, _lastCleanupExecutionInterval, _currentCleanupExecutionInterval, nextCleanupDelay);
+            _nextCleanupDelayInterval = nextCleanupDelay > MAX_CLEANUP_DELAY_INTERVAL_MILLIS
+                    ? MAX_CLEANUP_DELAY_INTERVAL_MILLIS
+                    : (nextCleanupDelay < MIN_CLEANUP_DELAY_INTERVAL_MILLIS
+                        ? MIN_CLEANUP_DELAY_INTERVAL_MILLIS
+                        : nextCleanupDelay);
+            _lastCleanupExecutionInterval = _currentCleanupExecutionInterval;
         }
 
         private void cleanExpiredEntriesGenerations() {
@@ -177,12 +196,13 @@ public class MVCCCleanupManager {
                     totalDeletedVersions+=deletedEntriesPerUid;
                 }
             }
-            logAfterCleanupIteration(startTime, totalDeletedVersions, totalVersionsInPartition);
+            _currentCleanupExecutionInterval = System.currentTimeMillis() - startTime;
+            logAfterCleanupIteration(totalDeletedVersions, totalVersionsInPartition);
         }
 
-        private void logAfterCleanupIteration(long startTimeMillis, long totalDeletedVersion, long totalVersions) {
+        private void logAfterCleanupIteration(long totalDeletedVersion, long totalVersions) {
             _logger.info("MVCC cleanup at partition[{}] finished in {}ms. Total deleted: {}/{} entries versions.",
-                    _spaceImpl.getPartitionId(), System.currentTimeMillis() - startTimeMillis, totalDeletedVersion, totalVersions);
+                    _spaceImpl.getPartitionId(), _currentCleanupExecutionInterval, totalDeletedVersion, totalVersions);
         }
 
         private boolean removeNextOnMatch(Iterator<MVCCEntryCacheInfo> toScan, MVCCShellEntryCacheInfo shellEntryCacheInfo,
@@ -241,7 +261,9 @@ public class MVCCCleanupManager {
                     return true;
                 }
             } else if (totalCommittedGens - deletedEntries > _historicalEntriesLimit) {
-                if ((entry.getOverrideGeneration() != -1 && !generationState.isUncompletedGeneration(entry.getOverrideGeneration()))) { // not active data and override gen not uncompleted
+                if ((entry.getOverrideGeneration() != -1
+                        && !generationState.isUncompletedGeneration(entry.getCommittedGeneration())
+                        && !generationState.isUncompletedGeneration(entry.getOverrideGeneration()))) { // not active data and override gen not uncompleted
                     return true;
                 }
             }
