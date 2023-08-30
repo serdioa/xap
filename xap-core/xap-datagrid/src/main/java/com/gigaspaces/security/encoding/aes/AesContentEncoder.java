@@ -21,8 +21,11 @@ import com.gigaspaces.internal.utils.ByteUtils;
 import com.gigaspaces.security.encoding.ContentEncoder;
 import com.gigaspaces.security.encoding.EncodingException;
 import com.gigaspaces.security.encoding.KeyFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.crypto.SecretKey;
+import java.util.Arrays;
 
 /**
  * A {@link ContentEncoder} using AES as the cryptographic algorithm.
@@ -65,7 +68,13 @@ public class AesContentEncoder extends AesEncrypter implements ContentEncoder {
     public Object decode(byte[] bytes) throws EncodingException {
         try {
             byte[] decrypted = dcipher.doFinal(bytes);
+            Logger logger = LoggerFactory.getLogger(AesContentEncoder.class);
+            logger.info("> decrypted bytes: ");
+            logger.info(Arrays.toString(decrypted));
+            logger.info("> ByteUtils.bytesToObject(decrypted)");
             Object obj = ByteUtils.bytesToObject(decrypted);
+            logger.info("> ByteUtils.bytesToObject complete!");
+            logger.info("> Return object: " + obj.getClass().getSimpleName());
             return obj;
         } catch (Exception e) {
             throw new EncodingException("Failed to decode byte array.", e);
