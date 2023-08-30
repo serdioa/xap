@@ -707,7 +707,7 @@ public class SpaceImpl extends AbstractService implements IRemoteSpace, IInterna
 
         String className = Arrays.stream(packets)
                 .map(pck -> pck.getTypeName())
-                .filter( str -> str!= null )
+                .filter( str -> str!= null && !str.trim().isEmpty() )
                 .findFirst().get();
 
         if (privilege == SpacePrivilege.CREATE ) {
