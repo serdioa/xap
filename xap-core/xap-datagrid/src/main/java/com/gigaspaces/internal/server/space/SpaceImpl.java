@@ -668,11 +668,11 @@ public class SpaceImpl extends AbstractService implements IRemoteSpace, IInterna
 
         // check Type Access Privileges:
         if (_securityInterceptor != null && privilege != SpacePrivilege.NOT_SET) {
-            _securityInterceptor.intercept(SpaceContextHelper.getSecurityContext(sc), privilege, className); // TODO : CREATE / ALTER ARE Calling here?
+            _securityInterceptor.intercept(SpaceContextHelper.getSecurityContext(sc), privilege, className);
         }
 
         if (privilege == SpacePrivilege.ALTER ) {
-            _engine.getFilterManager().invokeFilters(FilterOperationCodes.BEFORE_ALTER, sc, className); // TODO : call filter for create/alter
+            _engine.getFilterManager().invokeFilters(FilterOperationCodes.BEFORE_ALTER, sc, className);
         }
 
     }
@@ -687,7 +687,7 @@ public class SpaceImpl extends AbstractService implements IRemoteSpace, IInterna
                     packet != null ? packet.getTypeName() : null);
 
         if (privilege == SpacePrivilege.CREATE ) {
-            _engine.getFilterManager().invokeFilters(FilterOperationCodes.BEFORE_CREATE, sc, packet.getTypeName()); // TODO : call filter for create/alter
+            _engine.getFilterManager().invokeFilters(FilterOperationCodes.BEFORE_CREATE, sc, packet.getTypeName());
         }
 
         //_operationsCoordinator.beginConcurrentOperation();
@@ -711,7 +711,7 @@ public class SpaceImpl extends AbstractService implements IRemoteSpace, IInterna
                 .findFirst().get();
 
         if (privilege == SpacePrivilege.CREATE ) {
-            _engine.getFilterManager().invokeFilters(FilterOperationCodes.BEFORE_CREATE, sc, className); // TODO : call filter for create/alter
+            _engine.getFilterManager().invokeFilters(FilterOperationCodes.BEFORE_CREATE, sc, className);
         }
 
         //_operationsCoordinator.beginConcurrentOperation();
