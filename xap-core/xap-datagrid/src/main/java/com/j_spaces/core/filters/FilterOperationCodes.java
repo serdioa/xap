@@ -157,6 +157,10 @@ public class FilterOperationCodes {
      */
     public final static int AFTER_CHANGE = 25;
 
+    public final static int BEFORE_ALTER = 26;
+
+    public final static int BEFORE_CREATE = 27;
+
     // the following operation codes can be used ONLY in  non-security
     // filters !!!! (no SpaceContext is available on call to the filter)
     /**

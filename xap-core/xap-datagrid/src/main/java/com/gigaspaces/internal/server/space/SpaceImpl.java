@@ -667,8 +667,14 @@ public class SpaceImpl extends AbstractService implements IRemoteSpace, IInterna
         beforeOperation(isCheckForStandBy, true /*checkQuiesceMode*/, sc);
 
         // check Type Access Privileges:
-        if (_securityInterceptor != null && privilege != SpacePrivilege.NOT_SET)
+        if (_securityInterceptor != null && privilege != SpacePrivilege.NOT_SET) {
             _securityInterceptor.intercept(SpaceContextHelper.getSecurityContext(sc), privilege, className);
+        }
+
+        if (privilege == SpacePrivilege.ALTER ) {
+            _engine.getFilterManager().invokeFilters(FilterOperationCodes.BEFORE_ALTER, sc, className);
+        }
+
     }
 
     public void beginPacketOperation(boolean isCheckForStandBy, SpaceContext sc, Privilege privilege, ITransportPacket packet)
@@ -679,6 +685,10 @@ public class SpaceImpl extends AbstractService implements IRemoteSpace, IInterna
         if (_securityInterceptor != null)
             _securityInterceptor.intercept(SpaceContextHelper.getSecurityContext(sc), privilege,
                     packet != null ? packet.getTypeName() : null);
+
+        if (privilege == SpacePrivilege.CREATE ) {
+            _engine.getFilterManager().invokeFilters(FilterOperationCodes.BEFORE_CREATE, sc, packet.getTypeName());
+        }
 
         //_operationsCoordinator.beginConcurrentOperation();
     }
@@ -693,6 +703,15 @@ public class SpaceImpl extends AbstractService implements IRemoteSpace, IInterna
             for (ITransportPacket packet : packets)
                 _securityInterceptor.intercept(securityContext, privilege,
                         packet != null ? packet.getTypeName() : null);
+        }
+
+        String className = Arrays.stream(packets)
+                .map(pck -> pck.getTypeName())
+                .filter( str -> str!= null && !str.trim().isEmpty() )
+                .findFirst().get();
+
+        if (privilege == SpacePrivilege.CREATE ) {
+            _engine.getFilterManager().invokeFilters(FilterOperationCodes.BEFORE_CREATE, sc, className);
         }
 
         //_operationsCoordinator.beginConcurrentOperation();
