@@ -25,6 +25,8 @@ import com.gigaspaces.security.service.SecurityContext;
 import com.j_spaces.core.SpaceContext;
 
 import net.jini.id.Uuid;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.rmi.RemoteException;
 import java.util.HashMap;
@@ -40,6 +42,8 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 @com.gigaspaces.api.InternalApi
 public class SpaceProxySecurityManager implements IProxySecurityManager {
+
+    private static Logger log = LoggerFactory.getLogger(SpaceProxySecurityManager.class);
 
     private final IDirectSpaceProxy proxy;
     private volatile CredentialsProvider credentialsProvider;
