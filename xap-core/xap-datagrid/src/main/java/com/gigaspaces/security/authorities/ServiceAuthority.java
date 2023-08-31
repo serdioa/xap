@@ -68,7 +68,7 @@ public class ServiceAuthority implements InternalAuthority {
         if (split.length > Constants.FILTER_POS) {
             String filterServiceId = split[Constants.FILTER_POS];
             String serviceId = authority.substring(authority.indexOf(split[Constants.FILTER_PARAMS_POS]));
-            if (filterServiceId.equals(SpaceAuthority.SpacenameFilter.class.getSimpleName())) {
+            if (filterServiceId.equals(ServiceFilter.class.getSimpleName())) {
                 filter = new ServiceAuthority.ServiceFilter(serviceId);
             } else {
                 throw new IllegalArgumentException("Unknown authority representation.");
