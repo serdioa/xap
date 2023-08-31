@@ -50,6 +50,7 @@ import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Optional;
+import java.util.Properties;
 
 import static com.j_spaces.core.multiple.write.IWriteResult.ResultType.ERROR;
 
@@ -181,7 +182,9 @@ public class QueryHandler {
         try {
             Class<?> clazz = Class.forName("com.gigaspaces.jdbc.QueryHandler");
             Object newQueryHandler = clazz.newInstance();
-            response = (ResponsePacket) clazz.getDeclaredMethod("handle", String.class, IJSpace.class, Object[].class).invoke(newQueryHandler, request.getStatement(), space, preparedValues);
+            response = (ResponsePacket) clazz
+                    .getDeclaredMethod("handle", String.class, IJSpace.class, Object[].class, Properties.class)
+                    .invoke(newQueryHandler, request.getStatement(), space, preparedValues, _config.getLocalProps());
         } catch (InvocationTargetException e) {
             if (_logger.isDebugEnabled()) {
                 //if debug is enabled, show exception with full trace

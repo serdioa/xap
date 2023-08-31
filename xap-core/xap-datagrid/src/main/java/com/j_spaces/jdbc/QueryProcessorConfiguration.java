@@ -23,11 +23,10 @@ import com.gigaspaces.logger.Constants;
 import com.gigaspaces.start.SystemInfo;
 import com.j_spaces.core.Constants.QueryProcessorInfo;
 import com.j_spaces.core.JSpaceAttributes;
-
-import java.util.Properties;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.Properties;
 
 
 /**
@@ -90,6 +89,8 @@ public class QueryProcessorConfiguration {
 
     private TransactionManagerConfiguration _transactionManagerConfiguration;
 
+    private final Properties localProps;
+
     public QueryProcessorConfiguration(JSpaceAttributes conf, Properties localProps) {
         // set properties from space
         if (conf != null) {
@@ -136,6 +137,7 @@ public class QueryProcessorConfiguration {
 
         // set properties from override properties file
         configure(localProps);
+        this.localProps = localProps;
 
         if (_logger.isDebugEnabled()) {
             _logger.debug("\n QueryProcessor configuration:\n\t"
@@ -339,4 +341,7 @@ public class QueryProcessorConfiguration {
         return _transactionManagerConfiguration;
     }
 
+    public Properties getLocalProps() {
+        return localProps;
+    }
 }
