@@ -30,9 +30,15 @@ public class PipelineAuthority implements InternalAuthority {
 
     private static final long serialVersionUID = 1L;
     private final PipelinePrivilege pipelinePrivilege;
+    private final PipelineFilter filter;
 
     public PipelineAuthority(PipelinePrivilege pipelinePrivilege) {
+        this(pipelinePrivilege, null);
+    }
+
+    public PipelineAuthority(PipelinePrivilege pipelinePrivilege, PipelineFilter filter) {
         this.pipelinePrivilege = pipelinePrivilege;
+        this.filter = filter;
     }
 
     public static PipelineAuthority valueOf(String authority) {
@@ -46,14 +52,31 @@ public class PipelineAuthority implements InternalAuthority {
         }
 
         PipelinePrivilege systemPrivilege = PipelinePrivilege.valueOf(split[Constants.PRIVILEGE_VAL_POS]);
-        return new PipelineAuthority(systemPrivilege);
+
+        PipelineFilter filter = null;
+        if (split.length > Constants.FILTER_POS) {
+            String filterServiceId = split[Constants.FILTER_POS];
+            String serviceId = authority.substring(authority.indexOf(split[Constants.FILTER_PARAMS_POS]));
+            if (filterServiceId.equals(PipelineFilter.class.getSimpleName())) {
+                filter = new PipelineAuthority.PipelineFilter(serviceId);
+            } else {
+                throw new IllegalArgumentException("Unknown authority representation.");
+            }
+        }
+
+        return new PipelineAuthority(systemPrivilege, filter);
     }
 
     /*
      * @see com.gigaspaces.security.Authority#getAuthority()
      */
     public String getAuthority() {
-        return pipelinePrivilege.getClass().getSimpleName() + Constants.DELIM + pipelinePrivilege.name();
+        return pipelinePrivilege.getClass().getSimpleName() + Constants.DELIM + pipelinePrivilege.name()
+                + (filter == null ? "" : Constants.DELIM + filter);
+    }
+
+    public PipelineFilter getFilter() {
+        return filter;
     }
 
     /*
@@ -97,4 +120,34 @@ public class PipelineAuthority implements InternalAuthority {
     public Privilege getPrivilege() {
         return pipelinePrivilege;
     }
+
+    public static class PipelineFilter implements SpaceAuthority.Filter<String> {
+
+        private static final long serialVersionUID = 1L;
+
+        private String pipelineId;
+
+        public PipelineFilter(String pipelineId) {
+            this.pipelineId = pipelineId;
+        }
+
+        @Override
+        public String getExpression() {
+            return pipelineId;
+        }
+
+        @Override
+        public boolean accept(String other) {
+            if (pipelineId.equals(other)) {
+                return true;
+            }
+            return false;
+        }
+
+        @Override
+        public String toString() {
+            return "PipelineFilter " + pipelineId;
+        }
+    }
+
 }
