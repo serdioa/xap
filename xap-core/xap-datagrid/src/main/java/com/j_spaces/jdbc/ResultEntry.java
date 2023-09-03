@@ -22,7 +22,7 @@ import java.io.Serializable;
  * This is the result from which a ResultSet will be constructed in response to a SELECT query. This
  * class can be used when calling procedure classes to construct the {@link
  * com.j_spaces.jdbc.IProcedure} execute method return value.
- *
+ * <p>
  * The result consists of the field/column names, labels, tables and values.
  *
  * @author Michael Mitrani, 2004
@@ -49,6 +49,8 @@ public class ResultEntry implements Serializable {
      */
     private String[] _tableNames;
 
+    private Class<?>[] columnTypes;
+
     public ResultEntry() {
 
     }
@@ -59,6 +61,7 @@ public class ResultEntry implements Serializable {
         _tableNames = tableNames;
         fieldValues = resultValues;
     }
+
 
     /**
      * The ResultEntry Field Names
@@ -123,7 +126,7 @@ public class ResultEntry implements Serializable {
      */
     public Object[] getFieldValues(int row) {
         //row start at 1
-        if (row > fieldValues.length)
+        if (row > getRowNumber())
             return null;
         return fieldValues[row - 1];
     }
@@ -153,6 +156,14 @@ public class ResultEntry implements Serializable {
      */
     public int getRowNumber() {
         return ((fieldValues != null) ? fieldValues.length : 0);
+    }
+
+    public Class<?>[] getColumnTypes() {
+        return columnTypes;
+    }
+
+    public void setColumnTypes(Class<?>[] columnTypes) {
+        this.columnTypes = columnTypes;
     }
 
     /**

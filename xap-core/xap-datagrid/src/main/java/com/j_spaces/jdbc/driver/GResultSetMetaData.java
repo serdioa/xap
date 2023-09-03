@@ -18,11 +18,7 @@ package com.j_spaces.jdbc.driver;
 
 import com.j_spaces.jdbc.ResultEntry;
 
-import java.sql.ResultSetMetaData;
-import java.sql.SQLException;
-import java.sql.Time;
-import java.sql.Timestamp;
-import java.sql.Types;
+import java.sql.*;
 
 /**
  * This is the ResultSetMetaData implementation
@@ -40,7 +36,7 @@ public class GResultSetMetaData implements ResultSetMetaData {
     }
 
     public int getColumnCount() throws SQLException {
-        return results.getFieldNames().length;
+        return (results != null && results.getFieldNames() != null) ? results.getFieldNames().length : 0;
     }
 
     /* (non-Javadoc)
@@ -176,8 +172,12 @@ public class GResultSetMetaData implements ResultSetMetaData {
         if (results != null && results.getFieldValues(1) != null
                 && results.getFieldValues(1)[column - 1] != null) {
             return results.getFieldValues(1)[column - 1].getClass().getName();
-        } else
-            return "";
+        }
+        if (results != null && results.getColumnTypes() != null) {
+            return results.getColumnTypes()[column - 1].getName();
+        }
+        return "";
+
     }
 
     /* (non-Javadoc)
@@ -198,8 +198,7 @@ public class GResultSetMetaData implements ResultSetMetaData {
      * @see java.sql.ResultSetMetaData#getColumnTypeName(int)
      */
     public String getColumnTypeName(int column) throws SQLException {
-        // TODO Auto-generated method stub
-        return "";
+        return getColumnClassName(column);
     }
 
     /* (non-Javadoc)
@@ -223,5 +222,4 @@ public class GResultSetMetaData implements ResultSetMetaData {
     public <T> T unwrap(Class<T> iface) throws SQLException {
         throw new UnsupportedOperationException();
     }
-
 }
