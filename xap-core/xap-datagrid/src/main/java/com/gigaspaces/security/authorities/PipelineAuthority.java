@@ -55,10 +55,10 @@ public class PipelineAuthority implements InternalAuthority {
 
         PipelineFilter filter = null;
         if (split.length > Constants.FILTER_POS) {
-            String filterServiceId = split[Constants.FILTER_POS];
-            String serviceId = authority.substring(authority.indexOf(split[Constants.FILTER_PARAMS_POS]));
-            if (filterServiceId.equals(PipelineFilter.class.getSimpleName())) {
-                filter = new PipelineAuthority.PipelineFilter(serviceId);
+            String filterPipelineId = split[Constants.FILTER_POS];
+            String pipelineId = authority.substring(authority.indexOf(split[Constants.FILTER_PARAMS_POS]));
+            if (filterPipelineId.equals(PipelineFilter.class.getSimpleName())) {
+                filter = new PipelineAuthority.PipelineFilter(pipelineId);
             } else {
                 throw new IllegalArgumentException("Unknown authority representation.");
             }
