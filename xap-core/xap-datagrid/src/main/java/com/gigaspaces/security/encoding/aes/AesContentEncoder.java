@@ -67,9 +67,8 @@ public class AesContentEncoder extends AesEncrypter implements ContentEncoder {
     /*
      * @see com.gigaspaces.security.encoding.ContentEncoder#decode(byte[])
      */
-    public Object decode(byte[] bytes) throws EncodingException {
+    public synchronized Object decode(byte[] bytes) throws EncodingException {
         try {
-            logger.info("Secret key: " + loadSecretKey());
             logger.info("Decode bytes: " + Arrays.toString(bytes));
             byte[] decrypted = dcipher.doFinal(bytes);
             logger.info("Decrypted bytes: " + Arrays.toString(decrypted));
@@ -84,9 +83,8 @@ public class AesContentEncoder extends AesEncrypter implements ContentEncoder {
     /*
      * @see com.gigaspaces.security.encoding.ContentEncoder#encode(java.lang.Object)
      */
-    public byte[] encode(Object obj) throws EncodingException {
+    public synchronized byte[] encode(Object obj) throws EncodingException {
         try {
-            logger.info("Secret key: " + loadSecretKey());
             logger.info("Object encode: " + obj);
             byte[] objectToBytes = ByteUtils.objectToBytes(obj);
             logger.info("Encoded bytes: " + Arrays.toString(objectToBytes));
