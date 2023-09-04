@@ -193,7 +193,7 @@ public class MVCCCleanupManager {
                     totalDeletedVersions+=deletedEntriesPerUid;
                 }
             }
-            _currentCleanupExecutionInterval = System.currentTimeMillis() - startTime;
+            _currentCleanupExecutionInterval = SystemTime.timeMillis() - startTime;
             logAfterCleanupIteration(totalDeletedVersions, totalVersionsInPartition);
         }
 
