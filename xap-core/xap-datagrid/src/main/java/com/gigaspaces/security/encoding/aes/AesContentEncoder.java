@@ -21,8 +21,11 @@ import com.gigaspaces.internal.utils.ByteUtils;
 import com.gigaspaces.security.encoding.ContentEncoder;
 import com.gigaspaces.security.encoding.EncodingException;
 import com.gigaspaces.security.encoding.KeyFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.crypto.SecretKey;
+import java.util.Arrays;
 
 /**
  * A {@link ContentEncoder} using AES as the cryptographic algorithm.
@@ -32,6 +35,8 @@ import javax.crypto.SecretKey;
  */
 @com.gigaspaces.api.InternalApi
 public class AesContentEncoder extends AesEncrypter implements ContentEncoder {
+
+    private static final Logger logger = LoggerFactory.getLogger(AesContentEncoder.class.getPackage().getName() + "." + AesContentEncoder.class.getName());
 
     //see FileEncodingManager which instantiates this class by name
     public AesContentEncoder() {
@@ -64,8 +69,12 @@ public class AesContentEncoder extends AesEncrypter implements ContentEncoder {
      */
     public Object decode(byte[] bytes) throws EncodingException {
         try {
+            logger.info("Secret key: " + loadSecretKey());
+            logger.info("Decode bytes: " + Arrays.toString(bytes));
             byte[] decrypted = dcipher.doFinal(bytes);
+            logger.info("Decrypted bytes: " + Arrays.toString(decrypted));
             Object obj = ByteUtils.bytesToObject(decrypted);
+            logger.info("Decoded object: " + obj);
             return obj;
         } catch (Exception e) {
             throw new EncodingException("Failed to decode byte array.", e);
@@ -77,8 +86,12 @@ public class AesContentEncoder extends AesEncrypter implements ContentEncoder {
      */
     public byte[] encode(Object obj) throws EncodingException {
         try {
+            logger.info("Secret key: " + loadSecretKey());
+            logger.info("Object encode: " + obj);
             byte[] objectToBytes = ByteUtils.objectToBytes(obj);
+            logger.info("Encoded bytes: " + Arrays.toString(objectToBytes));
             byte[] encrypted = ecipher.doFinal(objectToBytes);
+            logger.info("Encrypted bytes: " + Arrays.toString(encrypted));
             return encrypted;
         } catch (Exception e) {
             throw new EncodingException("Failed to encode object.", e);
