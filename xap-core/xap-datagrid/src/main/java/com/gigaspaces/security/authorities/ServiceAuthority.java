@@ -31,9 +31,21 @@ public class ServiceAuthority implements InternalAuthority {
 
     private static final long serialVersionUID = 4934473878982940833L;
     private final ServiceAuthority.ServicePrivilege servicePrivilege;
+    private final ServiceFilter filter;
 
     public ServiceAuthority(ServiceAuthority.ServicePrivilege servicePrivilege) {
+        this(servicePrivilege, null);
+    }
+
+    /**
+     * An authority with the specified privilege.
+     *
+     * @param servicePrivilege granted privilege
+     * @param filter         a filter on the specified privilege.
+     */
+    public ServiceAuthority(ServiceAuthority.ServicePrivilege servicePrivilege, ServiceFilter filter) {
         this.servicePrivilege = servicePrivilege;
+        this.filter = filter;
     }
 
     public static ServiceAuthority valueOf(String authority) {
@@ -50,15 +62,28 @@ public class ServiceAuthority implements InternalAuthority {
             throw new IllegalArgumentException("Illegal Privilege name in: " + authority);
         }
         ServiceAuthority.ServicePrivilege servicePrivilege = ServiceAuthority.ServicePrivilege.valueOf(split[Constants.PRIVILEGE_VAL_POS]);
-        return new ServiceAuthority(servicePrivilege);
+
+        ServiceFilter filter = null;
+        if (split.length > Constants.FILTER_POS) {
+            String filterServiceId = split[Constants.FILTER_POS];
+            String serviceId = authority.substring(authority.indexOf(split[Constants.FILTER_PARAMS_POS]));
+            if (filterServiceId.equals(ServiceFilter.class.getSimpleName())) {
+                filter = new ServiceAuthority.ServiceFilter(serviceId);
+            } else {
+                throw new IllegalArgumentException("Unknown authority representation.");
+            }
+        }
+
+        return new ServiceAuthority(servicePrivilege, filter);
+
     }
 
     /*
      * @see com.gigaspaces.security.Authority#getAuthority()
      */
-    @Override
     public String getAuthority() {
-        return servicePrivilege.getClass().getSimpleName() + Constants.DELIM + servicePrivilege.name();
+        return servicePrivilege.getClass().getSimpleName() + Constants.DELIM
+                + servicePrivilege.name() + (filter == null ? "" : Constants.DELIM + filter);
     }
 
     /*
@@ -72,6 +97,10 @@ public class ServiceAuthority implements InternalAuthority {
     @Override
     public Privilege getPrivilege() {
         return servicePrivilege;
+    }
+
+    public ServiceAuthority.ServiceFilter getFilter() {
+        return this.filter;
     }
 
     @Override
@@ -98,6 +127,36 @@ public class ServiceAuthority implements InternalAuthority {
         } else if (!getAuthority().equals(other.getAuthority()))
             return false;
         return true;
+    }
+
+
+    public static class ServiceFilter implements SpaceAuthority.Filter<String> {
+
+        private static final long serialVersionUID = 1L;
+
+        private String serviceId;
+
+        public ServiceFilter(String serviceId) {
+            this.serviceId = serviceId;
+        }
+
+        @Override
+        public String getExpression() {
+            return serviceId;
+        }
+
+        @Override
+        public boolean accept(String other) {
+            if (serviceId.equals(other)) {
+                return true;
+            }
+            return false;
+        }
+
+        @Override
+        public String toString() {
+            return "ServiceFilter " + serviceId ;
+        }
     }
 
 }
