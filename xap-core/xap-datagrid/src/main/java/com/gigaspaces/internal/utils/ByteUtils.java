@@ -44,14 +44,17 @@ public class ByteUtils {
      * @throws java.io.IOException if an I/O error occurs while writing stream header.
      */
     public static byte[] objectToBytes(Object obj) throws java.io.IOException {
-        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+/*        ByteArrayOutputStream bos = new ByteArrayOutputStream();
         ObjectOutputStream oos = new ObjectOutputStream(bos);
         oos.writeObject(obj);
         oos.flush();
         oos.close();
-        bos.close();
-        byte[] data = bos.toByteArray();
-        return data;
+        bos.close();*/
+        try (ByteArrayOutputStream bos = new ByteArrayOutputStream();
+             ObjectOutputStream oos = new ObjectOutputStream(bos)) {
+            oos.writeObject(obj);
+            return bos.toByteArray();
+        }
     }
 
     /**
@@ -63,11 +66,15 @@ public class ByteUtils {
      * @throws ClassNotFoundException Class of a serialized object cannot be found
      */
     public static Object bytesToObject(byte[] bytes) throws IOException, ClassNotFoundException {
-        ByteArrayInputStream inStream = new ByteArrayInputStream(bytes);
+        /*ByteArrayInputStream inStream = new ByteArrayInputStream(bytes);
         ObjectInputStream in = new ContextClassLoaderObjectInputStream(inStream);
         Object data = in.readObject();
         in.close();
-        return data;
+        return data;*/
+        try (ByteArrayInputStream bis = new ByteArrayInputStream(bytes);
+             ObjectInputStream ois = new ObjectInputStream(bis)) {
+            return ois.readObject();
+        }
     }
 
     static class ContextClassLoaderObjectInputStream extends ObjectInputStream {
