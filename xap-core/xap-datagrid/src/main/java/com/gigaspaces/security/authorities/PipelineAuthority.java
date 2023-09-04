@@ -51,7 +51,7 @@ public class PipelineAuthority implements InternalAuthority {
             throw new IllegalArgumentException("Illegal Authority name in: " + authority);
         }
 
-        PipelinePrivilege systemPrivilege = PipelinePrivilege.valueOf(split[Constants.PRIVILEGE_VAL_POS]);
+        PipelinePrivilege pipelinePrivilege = PipelinePrivilege.valueOf(split[Constants.PRIVILEGE_VAL_POS]);
 
         PipelineFilter filter = null;
         if (split.length > Constants.FILTER_POS) {
@@ -64,7 +64,7 @@ public class PipelineAuthority implements InternalAuthority {
             }
         }
 
-        return new PipelineAuthority(systemPrivilege, filter);
+        return new PipelineAuthority(pipelinePrivilege, filter);
     }
 
     /*
