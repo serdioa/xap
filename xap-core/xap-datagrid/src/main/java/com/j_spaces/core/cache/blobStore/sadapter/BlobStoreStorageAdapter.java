@@ -110,7 +110,10 @@ public class BlobStoreStorageAdapter implements IStorageAdapter, IBlobStoreStora
         //load metadata first
         final BlobStoreMetaDataIterator metadataIterator = new BlobStoreMetaDataIterator(_engine);
         Map<String, BlobStoreStorageAdapterClassInfo> classesInfo = metadataIterator.getClassesInfo();
-
+        if (classesInfo == null)
+            _logger.info("BlobStoreStorageAdapter- No TYPES Loaded");
+        else
+            _logger.info("BlobStoreStorageAdapter- Loading types, map size:" + classesInfo.size());
 
         try {
             while (true) {
@@ -120,11 +123,13 @@ public class BlobStoreStorageAdapter implements IStorageAdapter, IBlobStoreStora
                 final String[] superClassesNames = typeDescriptor.getRestrictSuperClassesNames();
                 if (superClassesNames != null) {
                     for (String superClassName : superClassesNames) {
-                        if (_typeManager.getServerTypeDesc(superClassName) == null)
+                        if (_typeManager.getServerTypeDesc(superClassName) == null) {
+                            _logger.error("Missing super class type descriptor [" + superClassName + "] for type ["+typeDescriptor.getTypeName() + "]");
                             throw new IllegalArgumentException("Missing super class type descriptor ["
                                     + superClassName
                                     + "] for type ["
                                     + typeDescriptor.getTypeName() + "]");
+                        }
                     }
                 }
                 _classes.put(typeDescriptor.getTypeName(), classesInfo.get(typeDescriptor.getTypeName()));
@@ -143,12 +148,17 @@ public class BlobStoreStorageAdapter implements IStorageAdapter, IBlobStoreStora
         while (iter.hasNext()) {
             String className = iter.next();
             //check contains, if not then call introduce type
-            TypeData typeData = _engine.getCacheManager().getTypeData(_engine.getTypeManager().getServerTypeDesc(className));
-            if (typeData != null) {
-
-                BlobStoreStorageAdapterClassInfo cur = _classes.get(className);
-                if (!_classes.isContained(className, typeData)) {
-                    introduceDataType_impl(_engine.getTypeManager().getTypeDesc(className));
+            //DEBUG
+            IServerTypeDesc serverTypeDesc = _engine.getTypeManager().getServerTypeDesc(className);
+            if (serverTypeDesc == null)
+                _logger.error("Type descriptor for: " + className + " is null");
+            else {
+                TypeData typeData = _engine.getCacheManager().getTypeData(serverTypeDesc);
+                if (typeData != null) {
+                    BlobStoreStorageAdapterClassInfo cur = _classes.get(className);
+                    if (!_classes.isContained(className, typeData)) {
+                        introduceDataType_impl(_engine.getTypeManager().getTypeDesc(className));
+                    }
                 }
             }
         }

@@ -17,6 +17,8 @@
 package com.j_spaces.core.cache.blobStore.sadapter;
 
 import com.j_spaces.core.cache.TypeData;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -30,6 +32,7 @@ import java.util.HashSet;
 @com.gigaspaces.api.InternalApi
 public class BlobStoreStorageAdapterClasses {
     private volatile HashMap<String, BlobStoreStorageAdapterClassInfo> _classes;   //used classes
+    private transient static Logger _logger = LoggerFactory.getLogger(BlobStoreStorageAdapterClasses.class);
 
     public BlobStoreStorageAdapterClasses() {
         _classes = new HashMap<String, BlobStoreStorageAdapterClassInfo>();
@@ -52,6 +55,10 @@ public class BlobStoreStorageAdapterClasses {
     //NOTE- locked from outside (by SA)
     public boolean isContained(String className, TypeData typeData) {
         BlobStoreStorageAdapterClassInfo cur = get(className);
+        if (cur == null){
+            _logger.error("isContained: Can't find class:" + className);
+            return false;
+        }
         boolean[] newf = typeData.getIndexesRelatedFixedProperties();
         for (int i = 0; i < newf.length; i++) {
             if (newf[i] && !cur.getIndexesRelatedFixedProperties()[i])

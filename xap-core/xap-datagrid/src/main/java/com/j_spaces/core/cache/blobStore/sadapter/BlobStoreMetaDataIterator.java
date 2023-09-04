@@ -25,6 +25,8 @@ import com.gigaspaces.server.blobstore.BlobStoreGetBulkOperationResult;
 import com.gigaspaces.server.blobstore.BlobStoreObjectType;
 import com.j_spaces.core.sadapter.ISAdapterIterator;
 import com.j_spaces.core.sadapter.SAException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.Iterator;
@@ -42,6 +44,8 @@ public class BlobStoreMetaDataIterator implements ISAdapterIterator<ITypeDesc> {
     private final SpaceEngine _engine;
     private final Iterator<ITypeDesc> _iter;
     private final Map<String, BlobStoreStorageAdapterClassInfo> _classesInfo;
+    private final static Logger _logger = LoggerFactory.getLogger(com.gigaspaces.logger.Constants.LOGGER_PERSISTENT);
+
 
     public BlobStoreMetaDataIterator(SpaceEngine engine)
             throws SAException {
@@ -94,8 +98,11 @@ public class BlobStoreMetaDataIterator implements ISAdapterIterator<ITypeDesc> {
             return null;
         //NOTE- we dont care about blobStorePosition now
         BlobStoreTypeDescSerializable stored = (BlobStoreTypeDescSerializable) res.getData();
-        if (stored != null)
+        _logger.error("nextFromBlobStore- retrieve metaData: Data stored is null");
+        if (stored != null) {
             _classesInfo.put(stored.getTypeDesc().getTypeName(), stored.getBlobStoreStorageAdapterClassInfo());
+            _logger.info("nextFromBlobStore- Added Type: "+stored.getTypeDesc().getTypeName());
+        }
         return stored != null ? stored.getTypeDesc() : null;
     }
 
