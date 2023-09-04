@@ -68,7 +68,6 @@ public class MVCCSpaceEngineHandler {
                                         MVCCEntryHolder activeEntryHolder = activeTakenGenerationEntry.getEntryHolder();
                                         activeEntryHolder.setOverrideGeneration(nextGeneration);
                                         activeEntryHolder.resetEntryXtnInfo();
-                                        activeEntryHolder.setMaybeUnderXtn(true);
                                         entry.setOverridingAnother(true);
                                     }
                                     entry.setCommittedGeneration(nextGeneration);

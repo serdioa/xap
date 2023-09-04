@@ -76,11 +76,15 @@ public class MVCCCleanupManager {
     }
 
     private final class MVCCGenerationCleaner extends GSThread {
-
+        // minimal possible value(ms) for dynamic delay
         private final long MIN_CLEANUP_DELAY_INTERVAL_MILLIS = TimeUnit.MILLISECONDS.toMillis(1);
+
+        //maximal possible value(ms) for dynamic delay
         private final long MAX_CLEANUP_DELAY_INTERVAL_MILLIS = TimeUnit.SECONDS.toMillis(10);
+        // init value(ms) for dynamic delay - used as a base measurement for calc. next delays
         private final long INITIAL_CLEANUP_DELAY_INTERVAL_MILLIS = TimeUnit.MILLISECONDS.toMillis(100);
-        private final long INITIAL_CLEANUP_INTERVAL_MILLIS = TimeUnit.SECONDS.toMillis(1);
+        // init value(ms) for cleanup execution - used to calc. next dynamic delays
+        private final long INITIAL_CLEANUP_INTERVAL_MILLIS = TimeUnit.MILLISECONDS.toMillis(100);
 
         private final long _lifetimeLimitMillis;
         private final int _historicalEntriesLimit;
@@ -139,11 +143,7 @@ public class MVCCCleanupManager {
 
         private void calculateNextCleanupDelay() {
             long nextCleanupDelay = (_nextCleanupDelayInterval * _lastCleanupExecutionInterval) / _currentCleanupExecutionInterval;
-            _nextCleanupDelayInterval = nextCleanupDelay > MAX_CLEANUP_DELAY_INTERVAL_MILLIS
-                    ? MAX_CLEANUP_DELAY_INTERVAL_MILLIS
-                    : (nextCleanupDelay < MIN_CLEANUP_DELAY_INTERVAL_MILLIS
-                        ? MIN_CLEANUP_DELAY_INTERVAL_MILLIS
-                        : nextCleanupDelay);
+            _nextCleanupDelayInterval = Math.max(Math.min( MAX_CLEANUP_DELAY_INTERVAL_MILLIS, nextCleanupDelay), MIN_CLEANUP_DELAY_INTERVAL_MILLIS);
             _lastCleanupExecutionInterval = _currentCleanupExecutionInterval;
         }
 

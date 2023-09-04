@@ -4624,6 +4624,9 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
             if (ent.isDeleted()) {
                 throw ENTRY_DELETED_EXCEPTION/*new EntryDeletedException(ent.m_UID)*/;
             }
+            if (isMvccEnabled() && _cacheManager.getMVCCShellEntryCacheInfoByUid(ent.getUID()) == null) {
+                throw ENTRY_DELETED_EXCEPTION; // shell was removed by cleanup manager
+            }
             IEntryHolder entry = ent;
             if (getCacheManager().needReReadAfterEntryLock()) {
                 boolean replicatedFromCentralDB = isReplicatedFromCentralDB(context);
