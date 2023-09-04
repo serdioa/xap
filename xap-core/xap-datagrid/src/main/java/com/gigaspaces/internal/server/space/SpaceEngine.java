@@ -3776,7 +3776,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
 
                 if (res != null)
                     return res;
-            } else if (toScan != null && toScan.isIterator() && isMvccEnabled()) {
+            } else if (isMvccEnabled() && toScan instanceof MVCCShellEntryCacheInfo) {
                 toScan = toScan.createCopyForAlternatingThread();
                 res = getMatchedEntryAndOperateSA_Scan(context,
                         template, makeWaitForInfo,
@@ -4387,7 +4387,8 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
                 template.getServerIteratorInfo().setScanEntriesIter(null);
             }
         } else {
-            if (isMvccEnabled() && template.getID() != null) { // read by id -> scan iterates through the mvcc shell
+            if (isMvccEnabled() && toScan instanceof MVCCShellEntryCacheInfo) {
+                // read by id -> scan iterates through the mvcc shell
                 toScan = toScan.createCopyForAlternatingThread(); // use shell iterator
             }
             getMatchedEntriesAndOperateSA_Scan(context,
