@@ -62,9 +62,12 @@ public class AesContentEncoder extends AesEncrypter implements ContentEncoder {
     /*
      * @see com.gigaspaces.security.encoding.ContentEncoder#decode(byte[])
      */
-    public synchronized Object decode(byte[] bytes) throws EncodingException {
+    public Object decode(byte[] bytes) throws EncodingException {
         try {
-            byte[] decrypted = dcipher.doFinal(bytes);
+            byte[] decrypted;
+            synchronized (dcipher) {
+                decrypted = dcipher.doFinal(bytes);
+            }
             return ByteUtils.bytesToObject(decrypted);
         } catch (Exception e) {
             throw new EncodingException("Failed to decode byte array.", e);
@@ -74,10 +77,12 @@ public class AesContentEncoder extends AesEncrypter implements ContentEncoder {
     /*
      * @see com.gigaspaces.security.encoding.ContentEncoder#encode(java.lang.Object)
      */
-    public synchronized byte[] encode(Object obj) throws EncodingException {
+    public byte[] encode(Object obj) throws EncodingException {
         try {
             byte[] objectToBytes = ByteUtils.objectToBytes(obj);
-            return ecipher.doFinal(objectToBytes);
+            synchronized (ecipher) {
+                return ecipher.doFinal(objectToBytes);
+            }
         } catch (Exception e) {
             throw new EncodingException("Failed to encode object.", e);
         }
