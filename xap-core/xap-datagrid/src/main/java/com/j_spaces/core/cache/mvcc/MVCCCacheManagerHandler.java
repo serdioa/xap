@@ -76,13 +76,6 @@ public class MVCCCacheManagerHandler {
 
         entryHolder.setMaybeUnderXtn(entryHolder.anyReadLockXtn() || entryHolder.getWriteLockTransaction() != null);
 
-        if (cacheManager.isMVCCEnabled()) {
-            MVCCEntryHolder entry = (MVCCEntryHolder)entryHolder;
-            if (entry.getCommittedGeneration() == 3) {
-                JSpaceUtilities.DEBUG_LOGGER.info("Disconnecting 3rd committed mbUnderTxn: {}", entry.isMaybeUnderXtn());
-            }
-        }
-
         // unpin entry if relevant
         if (!entryHolder.isMaybeUnderXtn()) {
             if (!entryHolder.hasWaitingFor()) {
