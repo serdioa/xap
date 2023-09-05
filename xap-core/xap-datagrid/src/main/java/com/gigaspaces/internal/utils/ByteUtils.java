@@ -50,12 +50,8 @@ public class ByteUtils {
         oos.flush();
         oos.close();
         bos.close();
-        return bos.toByteArray();
-/*        try (ByteArrayOutputStream bos = new ByteArrayOutputStream();
-             ObjectOutputStream oos = new ObjectOutputStream(bos)) {
-            oos.writeObject(obj);
-            return bos.toByteArray();
-        }*/
+        byte[] data = bos.toByteArray();
+        return data;
     }
 
     /**
@@ -72,10 +68,6 @@ public class ByteUtils {
         Object data = in.readObject();
         in.close();
         return data;
-/*        try (ByteArrayInputStream bis = new ByteArrayInputStream(bytes);
-             ObjectInputStream ois = new ObjectInputStream(bis)) {
-            return ois.readObject();
-        }*/
     }
 
     static class ContextClassLoaderObjectInputStream extends ObjectInputStream {
