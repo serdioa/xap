@@ -1290,7 +1290,7 @@ public class Processor implements IConsumerObject<BusPacket<Processor>> {
                                 //NOTE: taken entries are handled in handleCommittedTakenEntries
 
                                 if(_engine.isMvccEnabled()){
-                                    _cacheManager.handleNewMvccGeneration(context, (MVCCEntryHolder) entry, xtnEntry);
+                                    _cacheManager.handleMVCCGenerations(context, (MVCCEntryHolder) entry, xtnEntry);
                                     _cacheManager.disconnectMVCCEntryFromXtn(context, (MVCCEntryCacheInfo) entryCacheHolder, xtnEntry, true);
                                 } else{
                                     if (!entry.isBlobStoreEntry())

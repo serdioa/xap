@@ -40,6 +40,7 @@ import com.j_spaces.core.cache.TerminatingFifoXtnsInfo;
 import com.j_spaces.core.cache.TypeData;
 import com.j_spaces.core.cache.context.Context;
 import com.j_spaces.core.cache.mvcc.MVCCEntryHolder;
+import com.j_spaces.core.cache.mvcc.MVCCShellEntryCacheInfo;
 import com.j_spaces.core.client.*;
 import com.j_spaces.core.filters.FilterManager;
 import com.j_spaces.jdbc.builder.QueryTemplatePacket;
@@ -49,6 +50,7 @@ import org.slf4j.Logger;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * This class represents a template in a J-Space. Each instance of this class contains a reference
@@ -804,8 +806,12 @@ public class TemplateHolder extends AbstractSpaceItem implements ITemplateHolder
                     || (overrideGeneration > completedGeneration)
                     || (overrideGeneration <= completedGeneration && mvccGenerationsState.isUncompletedGeneration(overrideGeneration));
             if (isDirtyRead) { // section to verify that dirty entry can't be matched
-                final long latestCommittedGeneration = cacheManager.getMVCCShellEntryCacheInfoByUid(entryHolder.getUID())
-                        .getLatestCommittedOrHollow().getCommittedGeneration(); // latest committed gen from shell by uid
+                MVCCEntryHolder activeData = Optional.ofNullable(cacheManager.getMVCCShellEntryCacheInfoByUid(entryHolder.getUID()))
+                        .map(MVCCShellEntryCacheInfo::getLatestCommittedOrHollow).orElse(null);
+                if (activeData == null) {
+                    return false;
+                }
+                final long latestCommittedGeneration = activeData.getCommittedGeneration(); // latest committed gen from shell by uid
                 if (latestCommittedGeneration != -1 // latest committed entry is not hollow
                         && latestCommittedGeneration > completedGeneration // completed is less than latest -> not committed entry shouldn't be matched
                         && (!mvccGenerationsState.isUncompletedGeneration(latestCommittedGeneration))) { // if latestCommitted is completed

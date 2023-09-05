@@ -23,6 +23,7 @@ import com.j_spaces.core.XtnEntry;
 import com.j_spaces.core.cache.mvcc.MVCCEntryCacheInfo;
 import com.j_spaces.core.sadapter.SelectType;
 import com.j_spaces.kernel.IStoredList;
+import com.j_spaces.kernel.JSpaceUtilities;
 import com.j_spaces.kernel.StoredListFactory;
 import net.jini.core.transaction.server.ServerTransaction;
 
@@ -464,7 +465,7 @@ public class XtnData {
     }
 
 
-    public MVCCEntryCacheInfo getMvccNewGenerationsEntries(String uid) {
+    public MVCCEntryCacheInfo getMvccNewGenerationsEntry(String uid) {
         return _mvccNewGenerationsEntries.get(uid);
     }
 

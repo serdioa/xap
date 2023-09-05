@@ -11,6 +11,7 @@ import com.j_spaces.core.cache.XtnData;
 import com.j_spaces.core.cache.context.Context;
 import com.j_spaces.core.sadapter.SAException;
 import com.j_spaces.core.server.transaction.EntryXtnInfo;
+import com.j_spaces.kernel.JSpaceUtilities;
 
 import java.util.concurrent.ConcurrentMap;
 
@@ -49,7 +50,7 @@ public class MVCCCacheManagerHandler {
         return existingShell;
 }
 
-    public void disconnectMvccEntryFromXtn(Context context, MVCCEntryCacheInfo pEntry, XtnEntry xtnEntry, boolean xtnEnd)
+    public void disconnectMVCCEntryFromXtn(Context context, MVCCEntryCacheInfo pEntry, XtnEntry xtnEntry, boolean xtnEnd)
             throws SAException {
         if (pEntry == null)
             return; //no mvcc entry to disconnect
@@ -75,9 +76,17 @@ public class MVCCCacheManagerHandler {
 
         entryHolder.setMaybeUnderXtn(entryHolder.anyReadLockXtn() || entryHolder.getWriteLockTransaction() != null);
 
+        if (cacheManager.isMVCCEnabled()) {
+            MVCCEntryHolder entry = (MVCCEntryHolder)entryHolder;
+            if (entry.getCommittedGeneration() == 3) {
+                JSpaceUtilities.DEBUG_LOGGER.info("Disconnecting 3rd committed mbUnderTxn: {}", entry.isMaybeUnderXtn());
+            }
+        }
+
         // unpin entry if relevant
         if (!entryHolder.isMaybeUnderXtn()) {
             if (!entryHolder.hasWaitingFor()) {
+                JSpaceUtilities.DEBUG_LOGGER.info("UNPIN mbUnderTxn: {}", entryHolder.isMaybeUnderXtn());
                 entryHolder.resetEntryXtnInfo();
                 if (pEntry.isPinned() && xtnEnd)
                     cacheManager.unpinIfNeeded(context, entryHolder, null /*template*/, pEntry);
@@ -85,26 +94,41 @@ public class MVCCCacheManagerHandler {
         }
     }
 
-    public void handleDisconnectNewMvccEntryGenerationFromTransaction(Context context, MVCCEntryHolder entry, XtnEntry xtnEntry) throws SAException {
-        MVCCEntryCacheInfo newMvccGenerationCacheInfo = xtnEntry.getXtnData().getMvccNewGenerationsEntries(entry.getUID());
-        int writeLockOperation = newMvccGenerationCacheInfo != null
-                ? newMvccGenerationCacheInfo.getEntryHolder().getWriteLockOperation() : SpaceOperations.NOOP;
+    public void handleDisconnectOldLogicallyDeletedMVCCEntryGenerationFromTransaction(Context context, MVCCEntryHolder entry, XtnEntry xtnEntry) throws SAException {
+        if (entry.getWriteLockOperation() != SpaceOperations.WRITE) { // disconnecting only for write operation for uid
+            return;
+        }
+        MVCCEntryCacheInfo oldLogicallyDeletedMVCCGenerationCacheInfo = xtnEntry.getXtnData().getMvccWriteActiveLogicallyDeletedEntry(entry.getUID());
+        if (oldLogicallyDeletedMVCCGenerationCacheInfo == null) { // check that logically deleted entry exists with same uid
+            return;
+        }
+        MVCCEntryHolder logicallyDeletedEntryHolder = oldLogicallyDeletedMVCCGenerationCacheInfo.getEntryHolder();
+        if (logicallyDeletedEntryHolder.getOverrideGeneration() == entry.getCommittedGeneration()) { // check that deleted entry was overridden by written entry
+            disconnectMVCCEntryFromXtn(context, oldLogicallyDeletedMVCCGenerationCacheInfo, xtnEntry, true);
+        }
+    }
+
+
+    public void handleDisconnectNewMVCCEntryGenerationFromTransaction(Context context, MVCCEntryHolder entry, XtnEntry xtnEntry) throws SAException {
+        MVCCEntryCacheInfo newMVCCGenerationCacheInfo = xtnEntry.getXtnData().getMvccNewGenerationsEntry(entry.getUID());
+        int writeLockOperation = newMVCCGenerationCacheInfo != null
+                ? newMVCCGenerationCacheInfo.getEntryHolder().getWriteLockOperation() : SpaceOperations.NOOP;
         if (writeLockOperation != SpaceOperations.WRITE && writeLockOperation != SpaceOperations.UPDATE && writeLockOperation != SpaceOperations.TAKE) {
             return;
         }
-        MVCCEntryHolder newMvccGenerationEntryHolder = newMvccGenerationCacheInfo.getEntryHolder();
+        MVCCEntryHolder newMvccGenerationEntryHolder = newMVCCGenerationCacheInfo.getEntryHolder();
         if (writeLockOperation == SpaceOperations.TAKE &&
                 newMvccGenerationEntryHolder.getCommittedGeneration() == entry.getOverrideGeneration() &&
                 newMvccGenerationEntryHolder.isLogicallyDeleted()) {
-            disconnectMvccEntryFromXtn(context, newMvccGenerationCacheInfo, xtnEntry, true);
+            disconnectMVCCEntryFromXtn(context, newMVCCGenerationCacheInfo, xtnEntry, true);
         }
         if (writeLockOperation == SpaceOperations.UPDATE &&
                 newMvccGenerationEntryHolder.getCommittedGeneration() == entry.getOverrideGeneration()) {
-            disconnectMvccEntryFromXtn(context, newMvccGenerationCacheInfo, xtnEntry, true);
+            disconnectMVCCEntryFromXtn(context, newMVCCGenerationCacheInfo, xtnEntry, true);
         }
         if (writeLockOperation == SpaceOperations.WRITE &&
                 newMvccGenerationEntryHolder.getOverrideGeneration() == entry.getCommittedGeneration()) {
-            disconnectMvccEntryFromXtn(context, newMvccGenerationCacheInfo, xtnEntry, true);
+            disconnectMVCCEntryFromXtn(context, newMVCCGenerationCacheInfo, xtnEntry, true);
         }
 
     }
