@@ -11,7 +11,6 @@ import com.j_spaces.core.cache.XtnData;
 import com.j_spaces.core.cache.context.Context;
 import com.j_spaces.core.sadapter.SAException;
 import com.j_spaces.core.server.transaction.EntryXtnInfo;
-import com.j_spaces.kernel.JSpaceUtilities;
 
 import java.util.concurrent.ConcurrentMap;
 
@@ -79,7 +78,6 @@ public class MVCCCacheManagerHandler {
         // unpin entry if relevant
         if (!entryHolder.isMaybeUnderXtn()) {
             if (!entryHolder.hasWaitingFor()) {
-                JSpaceUtilities.DEBUG_LOGGER.info("UNPIN mbUnderTxn: {}", entryHolder.isMaybeUnderXtn());
                 entryHolder.resetEntryXtnInfo();
                 if (pEntry.isPinned() && xtnEnd)
                     cacheManager.unpinIfNeeded(context, entryHolder, null /*template*/, pEntry);
