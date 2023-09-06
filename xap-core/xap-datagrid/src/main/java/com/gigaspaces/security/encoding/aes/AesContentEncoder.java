@@ -64,9 +64,11 @@ public class AesContentEncoder extends AesEncrypter implements ContentEncoder {
      */
     public Object decode(byte[] bytes) throws EncodingException {
         try {
-            byte[] decrypted = dcipher.doFinal(bytes);
-            Object obj = ByteUtils.bytesToObject(decrypted);
-            return obj;
+            byte[] decrypted;
+            synchronized (dcipher) {
+                decrypted = dcipher.doFinal(bytes);
+            }
+            return ByteUtils.bytesToObject(decrypted);
         } catch (Exception e) {
             throw new EncodingException("Failed to decode byte array.", e);
         }
@@ -78,8 +80,9 @@ public class AesContentEncoder extends AesEncrypter implements ContentEncoder {
     public byte[] encode(Object obj) throws EncodingException {
         try {
             byte[] objectToBytes = ByteUtils.objectToBytes(obj);
-            byte[] encrypted = ecipher.doFinal(objectToBytes);
-            return encrypted;
+            synchronized (ecipher) {
+                return ecipher.doFinal(objectToBytes);
+            }
         } catch (Exception e) {
             throw new EncodingException("Failed to encode object.", e);
         }
