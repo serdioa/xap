@@ -252,13 +252,24 @@ public class MVCCCleanupManager {
 
         private boolean matchToRemove(MVCCEntryHolder entry, MVCCGenerationsState generationState, int deletedEntries, int totalCommittedGens) {
             if (!entry.isMaybeUnderXtn()) {
+                _logger.trace("{} isMaybeUnderXtn", entry);
                 if (isLifetimeLimitExceeded(entry)) {
+                    _logger.trace("{} expired", entry);
+                    _logger.trace("{}: {} || {} || {}", entry,
+                            generationState.isUncompletedGeneration(entry.getCommittedGeneration()),
+                            (entry.getOverrideGeneration() != -1 && !generationState.isUncompletedGeneration(entry.getOverrideGeneration())),
+                            entry.isLogicallyDeleted());
                     if (generationState.isUncompletedGeneration(entry.getCommittedGeneration()) // committed uncompleted
                             || (entry.getOverrideGeneration() != -1 && !generationState.isUncompletedGeneration(entry.getOverrideGeneration())) // not active data and override gen not uncompleted
                             || entry.isLogicallyDeleted()) { // active completed logically deleted
                         return true;
                     }
                 } else if (totalCommittedGens - deletedEntries > _historicalEntriesLimit) {
+                    _logger.trace("{} exceeded", entry);
+                    _logger.trace("{}: {} && {} && {}", entry,
+                            entry.getOverrideGeneration() != -1,
+                            !generationState.isUncompletedGeneration(entry.getCommittedGeneration()),
+                            !generationState.isUncompletedGeneration(entry.getOverrideGeneration()));
                     if ((entry.getOverrideGeneration() != -1
                             && !generationState.isUncompletedGeneration(entry.getCommittedGeneration())
                             && !generationState.isUncompletedGeneration(entry.getOverrideGeneration()))) { // not active data and override gen not uncompleted
