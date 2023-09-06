@@ -82,9 +82,9 @@ public class MVCCCleanupManager {
         //maximal possible value(ms) for dynamic delay
         private final long MAX_CLEANUP_DELAY_INTERVAL_MILLIS = TimeUnit.SECONDS.toMillis(10);
         // init value(ms) for dynamic delay - used as a base measurement for calc. next delays
-        private final long INITIAL_CLEANUP_DELAY_INTERVAL_MILLIS = TimeUnit.SECONDS.toMillis(1);
+        private final long INITIAL_CLEANUP_DELAY_INTERVAL_MILLIS = TimeUnit.SECONDS.toMillis(10);
         // init value(ms) for cleanup execution - used to calc. next dynamic delays
-        private final long INITIAL_CLEANUP_INTERVAL_MILLIS = TimeUnit.MILLISECONDS.toMillis(100);
+        private final long INITIAL_CLEANUP_INTERVAL_MILLIS = TimeUnit.MILLISECONDS.toMillis(10);
 
         private final long _lifetimeLimitMillis;
         private final int _historicalEntriesLimit;
