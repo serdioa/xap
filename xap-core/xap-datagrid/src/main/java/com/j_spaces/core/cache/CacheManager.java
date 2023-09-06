@@ -4480,6 +4480,12 @@ public class CacheManager extends AbstractCacheManager
                 return getPEntryByUid(typeData.generateUid(templateValue));
             }
             IStoredList<IEntryCacheInfo> res = primaryKey.getUniqueEntriesStore().get(templateValue);
+            if (res == null && primaryKey.isCompound()) { // try using compound index if possible
+                final Object indexValue = primaryKey.getIndexValue(template.getEntryData());
+                if (indexValue != null) {
+                    res = primaryKey.getUniqueEntriesStore().get(indexValue);
+                }
+            }
             if (res != null && !res.isMultiObjectCollection()) {
                 return res.getObjectFromHead();
             }
