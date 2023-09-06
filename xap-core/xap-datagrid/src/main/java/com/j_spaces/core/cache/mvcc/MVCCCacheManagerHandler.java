@@ -104,11 +104,14 @@ public class MVCCCacheManagerHandler {
         MVCCEntryCacheInfo newMVCCGenerationCacheInfo = xtnEntry.getXtnData().getMvccNewGenerationsEntry(entry.getUID());
         int writeLockOperation = newMVCCGenerationCacheInfo != null
                 ? newMVCCGenerationCacheInfo.getEntryHolder().getWriteLockOperation() : SpaceOperations.NOOP;
-        if (writeLockOperation != SpaceOperations.WRITE && writeLockOperation != SpaceOperations.UPDATE && writeLockOperation != SpaceOperations.TAKE) {
+
+        if (writeLockOperation != SpaceOperations.WRITE && writeLockOperation != SpaceOperations.UPDATE
+                && writeLockOperation != SpaceOperations.TAKE && writeLockOperation != SpaceOperations.TAKE_IE) {
             return;
         }
         MVCCEntryHolder newMvccGenerationEntryHolder = newMVCCGenerationCacheInfo.getEntryHolder();
-        if (writeLockOperation == SpaceOperations.TAKE &&
+        // TAKE_IE operation only for backup
+        if ((writeLockOperation == SpaceOperations.TAKE || writeLockOperation == SpaceOperations.TAKE_IE) &&
                 newMvccGenerationEntryHolder.getCommittedGeneration() == entry.getOverrideGeneration() &&
                 newMvccGenerationEntryHolder.isLogicallyDeleted()) {
             disconnectMVCCEntryFromXtn(context, newMVCCGenerationCacheInfo, xtnEntry, true);
