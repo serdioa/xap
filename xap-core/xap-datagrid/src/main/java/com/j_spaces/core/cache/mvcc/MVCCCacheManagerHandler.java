@@ -49,7 +49,7 @@ public class MVCCCacheManagerHandler {
         return existingShell;
 }
 
-    public void disconnectMvccEntryFromXtn(Context context, MVCCEntryCacheInfo pEntry, XtnEntry xtnEntry, boolean xtnEnd)
+    public void disconnectMVCCEntryFromXtn(Context context, MVCCEntryCacheInfo pEntry, XtnEntry xtnEntry, boolean xtnEnd)
             throws SAException {
         if (pEntry == null)
             return; //no mvcc entry to disconnect
@@ -85,26 +85,44 @@ public class MVCCCacheManagerHandler {
         }
     }
 
-    public void handleDisconnectNewMvccEntryGenerationFromTransaction(Context context, MVCCEntryHolder entry, XtnEntry xtnEntry) throws SAException {
-        MVCCEntryCacheInfo newMvccGenerationCacheInfo = xtnEntry.getXtnData().getMvccNewGenerationsEntries(entry.getUID());
-        int writeLockOperation = newMvccGenerationCacheInfo != null
-                ? newMvccGenerationCacheInfo.getEntryHolder().getWriteLockOperation() : SpaceOperations.NOOP;
-        if (writeLockOperation != SpaceOperations.WRITE && writeLockOperation != SpaceOperations.UPDATE && writeLockOperation != SpaceOperations.TAKE) {
+    public void handleDisconnectOldLogicallyDeletedMVCCEntryGenerationFromTransaction(Context context, MVCCEntryHolder entry, XtnEntry xtnEntry) throws SAException {
+        if (entry.getWriteLockOperation() != SpaceOperations.WRITE) { // disconnecting only for write operation for uid
             return;
         }
-        MVCCEntryHolder newMvccGenerationEntryHolder = newMvccGenerationCacheInfo.getEntryHolder();
-        if (writeLockOperation == SpaceOperations.TAKE &&
+        MVCCEntryCacheInfo oldLogicallyDeletedMVCCGenerationCacheInfo = xtnEntry.getXtnData().getMvccWriteActiveLogicallyDeletedEntry(entry.getUID());
+        if (oldLogicallyDeletedMVCCGenerationCacheInfo == null) { // check that logically deleted entry exists with same uid
+            return;
+        }
+        MVCCEntryHolder logicallyDeletedEntryHolder = oldLogicallyDeletedMVCCGenerationCacheInfo.getEntryHolder();
+        if (logicallyDeletedEntryHolder.getOverrideGeneration() == entry.getCommittedGeneration()) { // check that deleted entry was overridden by written entry
+            disconnectMVCCEntryFromXtn(context, oldLogicallyDeletedMVCCGenerationCacheInfo, xtnEntry, true);
+        }
+    }
+
+
+    public void handleDisconnectNewMVCCEntryGenerationFromTransaction(Context context, MVCCEntryHolder entry, XtnEntry xtnEntry) throws SAException {
+        MVCCEntryCacheInfo newMVCCGenerationCacheInfo = xtnEntry.getXtnData().getMvccNewGenerationsEntry(entry.getUID());
+        int writeLockOperation = newMVCCGenerationCacheInfo != null
+                ? newMVCCGenerationCacheInfo.getEntryHolder().getWriteLockOperation() : SpaceOperations.NOOP;
+
+        if (writeLockOperation != SpaceOperations.WRITE && writeLockOperation != SpaceOperations.UPDATE
+                && writeLockOperation != SpaceOperations.TAKE && writeLockOperation != SpaceOperations.TAKE_IE) {
+            return;
+        }
+        MVCCEntryHolder newMvccGenerationEntryHolder = newMVCCGenerationCacheInfo.getEntryHolder();
+        // TAKE_IE operation only for backup
+        if ((writeLockOperation == SpaceOperations.TAKE || writeLockOperation == SpaceOperations.TAKE_IE) &&
                 newMvccGenerationEntryHolder.getCommittedGeneration() == entry.getOverrideGeneration() &&
                 newMvccGenerationEntryHolder.isLogicallyDeleted()) {
-            disconnectMvccEntryFromXtn(context, newMvccGenerationCacheInfo, xtnEntry, true);
+            disconnectMVCCEntryFromXtn(context, newMVCCGenerationCacheInfo, xtnEntry, true);
         }
         if (writeLockOperation == SpaceOperations.UPDATE &&
                 newMvccGenerationEntryHolder.getCommittedGeneration() == entry.getOverrideGeneration()) {
-            disconnectMvccEntryFromXtn(context, newMvccGenerationCacheInfo, xtnEntry, true);
+            disconnectMVCCEntryFromXtn(context, newMVCCGenerationCacheInfo, xtnEntry, true);
         }
         if (writeLockOperation == SpaceOperations.WRITE &&
                 newMvccGenerationEntryHolder.getOverrideGeneration() == entry.getCommittedGeneration()) {
-            disconnectMvccEntryFromXtn(context, newMvccGenerationCacheInfo, xtnEntry, true);
+            disconnectMVCCEntryFromXtn(context, newMVCCGenerationCacheInfo, xtnEntry, true);
         }
 
     }
