@@ -83,6 +83,7 @@ public class MVCCCleanupManager {
         private final long MAX_CLEANUP_DELAY_INTERVAL_MILLIS = TimeUnit.SECONDS.toMillis(10);
         // init value(ms) for dynamic delay - used as a base measurement for calc. next delays
         private final long INITIAL_CLEANUP_DELAY_INTERVAL_MILLIS = TimeUnit.SECONDS.toMillis(10);
+        private final boolean IS_PARTITIONED = _spaceImpl.getEngine().isPartitionedSpace();
 
         private final long _lifetimeLimitMillis;
         private final int _historicalEntriesLimit;
@@ -108,7 +109,7 @@ public class MVCCCleanupManager {
                             " Lifetime limit for entry: {}ms\n" +
                             " Max number in history per id: {}"
                     , getName(),
-                    isEmbedded() ? "embedded space" : "partition [" + _spaceImpl.getPartitionId() + "]",
+                    IS_PARTITIONED ? "partition [" + _spaceImpl.getPartitionId() + "]" : "single space",
                     _nextCleanupDelayInterval, _lifetimeLimitMillis, _historicalEntriesLimit);
         }
 
@@ -126,7 +127,7 @@ public class MVCCCleanupManager {
             } finally {
                 if (_logger.isDebugEnabled())
                     _logger.debug("MVCC cleaner daemon {} terminated at {}", getName(),
-                            isEmbedded() ? "embedded space" : "partition [" + _spaceImpl.getPartitionId() + "]");
+                            IS_PARTITIONED ? "partition [" + _spaceImpl.getPartitionId() + "]" : "single space");
             }
         }
 
@@ -200,7 +201,7 @@ public class MVCCCleanupManager {
 
         private void logAfterCleanupIteration(long totalDeletedVersion, long totalVersions) {
             _logger.info("MVCC cleanup at {} finished in {}ms. Total deleted: {}/{} entries versions.",
-                    isEmbedded() ? "embedded space" : "partition [" + _spaceImpl.getPartitionId() + "]",
+                    IS_PARTITIONED ? "partition [" + _spaceImpl.getPartitionId() + "]" : "single space",
                     _currentCleanupExecutionInterval, totalDeletedVersion, totalVersions);
         }
 
@@ -303,10 +304,6 @@ public class MVCCCleanupManager {
                 // if daemon is waiting between cleanups -> wake it up
                 notify();
             }
-        }
-
-        private boolean isEmbedded() {
-            return _spaceImpl.getPartitionId() == -1;
         }
     }
 
