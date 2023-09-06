@@ -83,8 +83,6 @@ public class MVCCCleanupManager {
         private final long MAX_CLEANUP_DELAY_INTERVAL_MILLIS = TimeUnit.SECONDS.toMillis(10);
         // init value(ms) for dynamic delay - used as a base measurement for calc. next delays
         private final long INITIAL_CLEANUP_DELAY_INTERVAL_MILLIS = TimeUnit.SECONDS.toMillis(10);
-        // init value(ms) for cleanup execution - used to calc. next dynamic delays
-        private final long INITIAL_CLEANUP_INTERVAL_MILLIS = TimeUnit.MILLISECONDS.toMillis(10);
 
         private final long _lifetimeLimitMillis;
         private final int _historicalEntriesLimit;
@@ -92,7 +90,8 @@ public class MVCCCleanupManager {
         private boolean _shouldTerminate;
         private long _nextCleanupDelayInterval;
         private long _lastCleanupExecutionInterval;
-        private long _currentCleanupExecutionInterval;
+        // init value(ms) for cleanup execution - used to calc. next dynamic delays
+        private long _currentCleanupExecutionInterval = TimeUnit.MILLISECONDS.toMillis(10);
 
         public MVCCGenerationCleaner(String name) {
             super(name);
@@ -100,16 +99,17 @@ public class MVCCCleanupManager {
             _dynamicDelayEnabled = _spaceConfig.getMvccFixedCleanupDelayMillis() == 0;
             _nextCleanupDelayInterval = _dynamicDelayEnabled ? INITIAL_CLEANUP_DELAY_INTERVAL_MILLIS : _spaceConfig.getMvccFixedCleanupDelayMillis();
             if (_dynamicDelayEnabled) {
-                _currentCleanupExecutionInterval = INITIAL_CLEANUP_INTERVAL_MILLIS;
                 _lastCleanupExecutionInterval = _currentCleanupExecutionInterval;
             }
             _lifetimeLimitMillis = _spaceConfig.getMvccHistoricalEntryLifetimeTimeUnit().toMillis(_spaceConfig.getMvccHistoricalEntryLifetime());
             _historicalEntriesLimit = _spaceConfig.getMvccHistoricalEntriesLimit();
-            _logger.info("MVCC cleaner daemon {} initialized at partition [{}] with configs:\n" +
+            _logger.info("MVCC cleaner daemon {} initialized at {} with configs:\n" +
                             (_dynamicDelayEnabled ? " Dynamic" : " Fixed") + " delay with initial value: {}ms\n" +
                             " Lifetime limit for entry: {}ms\n" +
                             " Max number in history per id: {}"
-                    , getName(), _spaceImpl.getPartitionId(), _nextCleanupDelayInterval, _lifetimeLimitMillis, _historicalEntriesLimit);
+                    , getName(),
+                    isEmbedded() ? "embedded space" : "partition [" + _spaceImpl.getPartitionId() + "]",
+                    _nextCleanupDelayInterval, _lifetimeLimitMillis, _historicalEntriesLimit);
         }
 
         @Override
@@ -125,7 +125,8 @@ public class MVCCCleanupManager {
                 }
             } finally {
                 if (_logger.isDebugEnabled())
-                    _logger.debug("MVCC cleaner daemon {} terminated at partition: [{}]", getName(), _spaceImpl.getPartitionId());
+                    _logger.debug("MVCC cleaner daemon {} terminated at {}", getName(),
+                            isEmbedded() ? "embedded space" : "partition [" + _spaceImpl.getPartitionId() + "]");
             }
         }
 
@@ -193,13 +194,14 @@ public class MVCCCleanupManager {
                     totalDeletedVersions+=deletedEntriesPerUid;
                 }
             }
-            _currentCleanupExecutionInterval = SystemTime.timeMillis() - startTime;
+            _currentCleanupExecutionInterval = SystemTime.timeMillis() - startTime + 1;
             logAfterCleanupIteration(totalDeletedVersions, totalVersionsInPartition);
         }
 
         private void logAfterCleanupIteration(long totalDeletedVersion, long totalVersions) {
-            _logger.info("MVCC cleanup at partition[{}] finished in {}ms. Total deleted: {}/{} entries versions.",
-                    _spaceImpl.getPartitionId(), _currentCleanupExecutionInterval, totalDeletedVersion, totalVersions);
+            _logger.info("MVCC cleanup at {} finished in {}ms. Total deleted: {}/{} entries versions.",
+                    isEmbedded() ? "embedded space" : "partition [" + _spaceImpl.getPartitionId() + "]",
+                    _currentCleanupExecutionInterval, totalDeletedVersion, totalVersions);
         }
 
         private boolean removeNextOnMatch(Iterator<MVCCEntryCacheInfo> toScan, MVCCShellEntryCacheInfo shellEntryCacheInfo,
@@ -301,6 +303,10 @@ public class MVCCCleanupManager {
                 // if daemon is waiting between cleanups -> wake it up
                 notify();
             }
+        }
+
+        private boolean isEmbedded() {
+            return _spaceImpl.getPartitionId() == -1;
         }
     }
 

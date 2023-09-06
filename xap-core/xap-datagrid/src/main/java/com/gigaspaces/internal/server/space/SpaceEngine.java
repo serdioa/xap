@@ -4516,7 +4516,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
                 if (isMvccEnabled() && !need_xtn_lock && template.isActiveRead(this, context)) {
                     need_xtn_lock = Optional.ofNullable(_cacheManager.getMVCCShellEntryCacheInfoByUid(entry.getUID()))
                             .map(mvccShellEntryCacheInfo -> mvccShellEntryCacheInfo.getDirtyEntryCacheInfo() != null)
-                            .orElseThrow(EntryDeletedException::new);
+                            .orElse(false);
                 }
 
                 try {
@@ -4748,12 +4748,12 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
             if (ent.isDeleted())
                 throw ENTRY_DELETED_EXCEPTION;
 
-            if (context.isNonBlockingReadOp() && _cacheManager.isDummyEntry(ent)) { //spare touching volatiles
-                throw ENTRY_DELETED_EXCEPTION/*new EntryDeletedException(ent.m_UID)*/;
-            }
-
             if (isMvccEnabled() && _cacheManager.getMVCCShellEntryCacheInfoByUid(ent.getUID()) == null) {
                 throw ENTRY_DELETED_EXCEPTION; // shell was removed by cleanup manager
+            }
+
+            if (context.isNonBlockingReadOp() && _cacheManager.isDummyEntry(ent)) { //spare touching volatiles
+                throw ENTRY_DELETED_EXCEPTION/*new EntryDeletedException(ent.m_UID)*/;
             }
             IEntryHolder entry = ent;
             boolean reRead = false;
