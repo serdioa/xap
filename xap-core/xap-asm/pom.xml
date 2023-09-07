@@ -7,7 +7,7 @@
     <parent>
         <artifactId>xap</artifactId>
         <groupId>org.gigaspaces</groupId>
-        <version>16.4.0-SNAPSHOT</version>
+        <version>16.4.0-PIC-2624-create-tpch-benchmark-test-for-gateway-thu-1119</version>
         <relativePath>../../pom.xml</relativePath>
     </parent>
     <artifactId>xap-asm</artifactId>
