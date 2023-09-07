@@ -29,6 +29,7 @@ import com.gigaspaces.internal.server.space.*;
 import com.gigaspaces.internal.server.space.iterator.ServerIteratorInfo;
 import com.gigaspaces.internal.server.space.mvcc.MVCCGenerationsState;
 import com.gigaspaces.internal.server.space.mvcc.exception.MVCCEntryModifyConflictException;
+import com.gigaspaces.internal.server.space.mvcc.exception.MVCCModifyOnUncompletedGenerationForbiddenException;
 import com.gigaspaces.internal.server.space.mvcc.exception.MVCCRevertGenerationException;
 import com.gigaspaces.internal.transport.AbstractProjectionTemplate;
 import com.gigaspaces.internal.transport.IEntryPacket;
@@ -49,6 +50,7 @@ import org.slf4j.Logger;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * This class represents a template in a J-Space. Each instance of this class contains a reference
@@ -711,7 +713,7 @@ public class TemplateHolder extends AbstractSpaceItem implements ITemplateHolder
 
     @Override
     public MatchResult match(CacheManager cacheManager, IEntryHolder entry, int skipAlreadyMatchedFixedPropertyIndex, String skipAlreadyMatchedIndexPath, boolean safeEntry, Context context, RegexCache regexCache) {
-        context.incrementNumOfEntriesMatched();
+        context.incrementNumOfEntriesMatched();// here
         MatchResult res = MatchResult.NONE;
         ITransactionalEntryData masterEntryData = null;
         IEntryData shadowEntryData = null;
@@ -815,6 +817,7 @@ public class TemplateHolder extends AbstractSpaceItem implements ITemplateHolder
             return isDirtyEntry || (committedIsCompleted && isOverridenEntryGenerationValidForHistoricalRead); // if dirty or completed with valid override version
 
         } else { //locking operations (take/update/exclusiveRead)
+            validateGenerationState(mvccGenerationsState, committedGeneration);
             if (isRevertGenerationRequested()) {
                 if (mvccGenerationsState.isUncompletedGeneration(committedGeneration)) {
                     return true;
@@ -832,6 +835,13 @@ public class TemplateHolder extends AbstractSpaceItem implements ITemplateHolder
                 throw new MVCCEntryModifyConflictException(mvccGenerationsState, entryHolder, getTemplateOperation()); // entry already younger than completedGen
             }
             return isDirtyEntry || (committedIsCompleted && !isOverridenEntry);
+        }
+    }
+
+    private void validateGenerationState(MVCCGenerationsState mvccGenerationsState, long committedGeneration) {
+        Set<Long> uncompletedGenerationsSet = mvccGenerationsState.getCopyOfUncompletedGenerationsSet();
+        if (uncompletedGenerationsSet != null && uncompletedGenerationsSet.contains(committedGeneration)) {
+            throw new MVCCModifyOnUncompletedGenerationForbiddenException(mvccGenerationsState, committedGeneration);
         }
     }
 
