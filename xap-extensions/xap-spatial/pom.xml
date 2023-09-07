@@ -5,7 +5,7 @@
     <parent>
         <artifactId>xap</artifactId>
         <groupId>org.gigaspaces</groupId>
-        <version>16.4.0-SNAPSHOT</version>
+        <version>16.4.0-wangw-fixes-thu-1122</version>
         <relativePath>../../pom.xml</relativePath>
     </parent>
 
