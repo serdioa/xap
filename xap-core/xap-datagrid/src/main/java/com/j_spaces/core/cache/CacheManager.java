@@ -2341,7 +2341,7 @@ public class CacheManager extends AbstractCacheManager
 
 
         if (!pXtn.isLockedEntry(pEntry)) {
-            if (!isMVCCEnabled() || pXtn.getMvccNewGenerationsEntries(pEntry.getUID()) == null) {
+            if (!isMVCCEnabled() || pXtn.getMvccNewGenerationsEntry(pEntry.getUID()) == null) {
                 lockEntry(pXtn, pEntry, context.getOperationID());
             }
         } else {
@@ -2451,7 +2451,7 @@ public class CacheManager extends AbstractCacheManager
                         new_content.getTxnEntryData().setXidOriginated(xtnEntry);
 
                         if (isRewrite) {
-                            _mvccCacheManagerHandler.disconnectMvccEntryFromXtn(context, (MVCCEntryCacheInfo) pEntry, xtnEntry, false);
+                            _mvccCacheManagerHandler.disconnectMVCCEntryFromXtn(context, (MVCCEntryCacheInfo) pEntry, xtnEntry, false);
                             pEntry = mvccShellEntryCacheInfo.getLatestGenerationCacheInfo();
                             mvccShellEntryCacheInfo.clearDirtyEntry();
                         }
@@ -2607,7 +2607,7 @@ public class CacheManager extends AbstractCacheManager
     }
 
     public void disconnectMVCCEntryFromXtn(Context context, MVCCEntryCacheInfo pEntry, XtnEntry xtnEntry, boolean xtnEnd) throws SAException {
-        _mvccCacheManagerHandler.disconnectMvccEntryFromXtn(context, pEntry, xtnEntry, xtnEnd);
+        _mvccCacheManagerHandler.disconnectMVCCEntryFromXtn(context, pEntry, xtnEntry, xtnEnd);
     }
 
 
@@ -2746,7 +2746,7 @@ public class CacheManager extends AbstractCacheManager
                 // by more than +1 due to several update operations within the same transaction.
                 if (isMVCCEnabled() && entryHolder.getWriteLockOperation() == SpaceOperations.UPDATE) {
                     ShadowEntryHolder activeEntry = createMVCCShadowEntryForActiveEntry(pEntry);
-                    IEntryHolder newEntryGeneration = pXtn.getMvccNewGenerationsEntries(entryHolder.getUID()).getEntryHolder();
+                    IEntryHolder newEntryGeneration = pXtn.getMvccNewGenerationsEntry(entryHolder.getUID()).getEntryHolder();
                     pLocked.add(new ReplicationEntryHolder(newEntryGeneration, activeEntry,  xtnEntry));
                     continue;
                 }
@@ -2794,7 +2794,7 @@ public class CacheManager extends AbstractCacheManager
                         pe.getEntryHolder(this).setUID(eh.getUID());
                         pXtn.getNeedNotifyEntries(true).add(pe);
                         pe = isMVCCEnabled()
-                                ? EntryCacheInfoFactory.createMvccEntryCacheInfo(pXtn.getMvccNewGenerationsEntries(eh.getUID()).getEntryHolder().createCopy())
+                                ? EntryCacheInfoFactory.createMvccEntryCacheInfo(pXtn.getMvccNewGenerationsEntry(eh.getUID()).getEntryHolder().createCopy())
                                 : EntryCacheInfoFactory.createEntryCacheInfo(eh.createCopy());
 
                         pe.getEntryHolder(this).setWriteLockOperation(SpaceOperations.WRITE, false /*createSnapshot*/);
@@ -3743,8 +3743,9 @@ public class CacheManager extends AbstractCacheManager
         return result;
     }
 
-    public void handleNewMvccGeneration(Context context, MVCCEntryHolder entry, XtnEntry xtnEntry) throws SAException {
-        _mvccCacheManagerHandler.handleDisconnectNewMvccEntryGenerationFromTransaction(context, entry, xtnEntry);
+    public void handleMVCCGenerations(Context context, MVCCEntryHolder entry, XtnEntry xtnEntry) throws SAException {
+        _mvccCacheManagerHandler.handleDisconnectNewMVCCEntryGenerationFromTransaction(context, entry, xtnEntry);
+        _mvccCacheManagerHandler.handleDisconnectOldLogicallyDeletedMVCCEntryGenerationFromTransaction(context, entry, xtnEntry);
     }
 
     /**
@@ -4479,6 +4480,12 @@ public class CacheManager extends AbstractCacheManager
                 return getPEntryByUid(typeData.generateUid(templateValue));
             }
             IStoredList<IEntryCacheInfo> res = primaryKey.getUniqueEntriesStore().get(templateValue);
+            if (res == null && primaryKey.isCompound()) { // try using compound index if possible
+                final Object indexValue = primaryKey.getIndexValue(template.getEntryData());
+                if (indexValue != null) {
+                    res = primaryKey.getUniqueEntriesStore().get(indexValue);
+                }
+            }
             if (res != null && !res.isMultiObjectCollection()) {
                 return res.getObjectFromHead();
             }

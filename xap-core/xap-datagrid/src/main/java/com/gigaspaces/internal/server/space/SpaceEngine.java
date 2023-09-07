@@ -4515,7 +4515,9 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
                     need_xtn_lock = template.isMaybeUnderXtn() && !context.isMemoryOnlyEntry();
                 }
                 if (isMvccEnabled() && !need_xtn_lock && template.isActiveRead(this, context)) {
-                    need_xtn_lock = _cacheManager.getMVCCShellEntryCacheInfoByUid(entry.getUID()).getDirtyEntryCacheInfo() != null;
+                    need_xtn_lock = Optional.ofNullable(_cacheManager.getMVCCShellEntryCacheInfoByUid(entry.getUID()))
+                            .map(mvccShellEntryCacheInfo -> mvccShellEntryCacheInfo.getDirtyEntryCacheInfo() != null)
+                            .orElse(false);
                 }
 
                 try {
@@ -4624,6 +4626,9 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
         if (needXtnLocked) { // TODO - tiered storage - handle tiered storage when adding support for txn
             if (ent.isDeleted()) {
                 throw ENTRY_DELETED_EXCEPTION/*new EntryDeletedException(ent.m_UID)*/;
+            }
+            if (isMvccEnabled() && _cacheManager.getMVCCShellEntryCacheInfoByUid(ent.getUID()) == null) {
+                throw ENTRY_DELETED_EXCEPTION; // shell was removed by cleanup manager
             }
             IEntryHolder entry = ent;
             if (getCacheManager().needReReadAfterEntryLock()) {
@@ -4743,6 +4748,10 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
 
             if (ent.isDeleted())
                 throw ENTRY_DELETED_EXCEPTION;
+
+            if (isMvccEnabled() && _cacheManager.getMVCCShellEntryCacheInfoByUid(ent.getUID()) == null) {
+                throw ENTRY_DELETED_EXCEPTION; // shell was removed by cleanup manager
+            }
 
             if (context.isNonBlockingReadOp() && _cacheManager.isDummyEntry(ent)) { //spare touching volatiles
                 throw ENTRY_DELETED_EXCEPTION/*new EntryDeletedException(ent.m_UID)*/;

@@ -34,8 +34,8 @@ import javax.crypto.spec.IvParameterSpec;
  */
 @com.gigaspaces.api.InternalApi
 public class AesEncrypter {
-    Cipher ecipher;
-    Cipher dcipher;
+    final Cipher ecipher;
+    final Cipher dcipher;
 
     /**
      * Constructs an AES Encrypter instance with the provided secret key.
