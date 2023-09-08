@@ -19,7 +19,7 @@
     <properties>
         <javax.version>3.0.1</javax.version>
         <slf4j.version>1.7.26</slf4j.version>
-        <gs.version>16.4.0-SNAPSHOT</gs.version>
+        <gs.version>16.4.0-PIC-3194-fri-1126</gs.version>
     </properties>
 
     <dependencies>
