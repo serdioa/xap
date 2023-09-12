@@ -48,10 +48,7 @@ import com.j_spaces.jdbc.builder.QueryTemplatePacket;
 import net.jini.core.transaction.server.ServerTransaction;
 import org.slf4j.Logger;
 
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 /**
  * This class represents a template in a J-Space. Each instance of this class contains a reference
