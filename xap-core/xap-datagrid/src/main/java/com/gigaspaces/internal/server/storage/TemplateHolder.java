@@ -819,7 +819,6 @@ public class TemplateHolder extends AbstractSpaceItem implements ITemplateHolder
             return isDirtyEntry || (committedIsCompleted && isOverridenEntryGenerationValidForHistoricalRead); // if dirty or completed with valid override version
 
         } else { //locking operations (take/update/exclusiveRead)
-            validateGenerationState(mvccGenerationsState, committedGeneration);
             if (isRevertGenerationRequested()) {
                 if (mvccGenerationsState.isUncompletedGeneration(committedGeneration)) {
                     return true;
@@ -827,6 +826,7 @@ public class TemplateHolder extends AbstractSpaceItem implements ITemplateHolder
                 throw new MVCCRevertGenerationException("Cant revert entry generation ["+entryHolder+"], under " +
                         "generation state [" + mvccGenerationsState + "]");
             }
+            validateGenerationState(mvccGenerationsState, committedGeneration);
             if (isOverridenEntry
                     && overrideGeneration > completedGeneration
                     && !mvccGenerationsState.isUncompletedGeneration(overrideGeneration)) {
@@ -842,7 +842,7 @@ public class TemplateHolder extends AbstractSpaceItem implements ITemplateHolder
 
     private void validateGenerationState(MVCCGenerationsState mvccGenerationsState, long committedGeneration) {
         Set<Long> uncompletedGenerationsSet = mvccGenerationsState.getCopyOfUncompletedGenerationsSet();
-        if (uncompletedGenerationsSet != null && uncompletedGenerationsSet.contains(committedGeneration)) {
+        if (!this.isReadOperation() && uncompletedGenerationsSet != null && uncompletedGenerationsSet.contains(committedGeneration)) {
             throw new MVCCModifyOnUncompletedGenerationForbiddenException(mvccGenerationsState, committedGeneration);
         }
     }
