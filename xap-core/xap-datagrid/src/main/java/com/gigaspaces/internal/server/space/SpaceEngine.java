@@ -6104,6 +6104,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
             while (true) {
                 boolean relock = false;
                 xtnEntry = getTransaction(st);
+                JSpaceUtilities.DEBUG_LOGGER.info("STR: {}, XTN_ENTRY: {}", st, xtnEntry);
                 xtnEntryLocked = xtnEntry;
                 if (xtnEntry == null) {
                     if (mgr instanceof LocalTransactionManager && !fromLeaseExpiration)

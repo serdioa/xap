@@ -23,6 +23,7 @@ import com.gigaspaces.internal.server.space.IRemoteSpace;
 import com.gigaspaces.logger.LogUtils;
 import com.gigaspaces.lrmi.ILRMIProxy;
 import com.gigaspaces.time.SystemTime;
+import com.j_spaces.kernel.JSpaceUtilities;
 import com.j_spaces.kernel.SystemProperties;
 import com.sun.jini.constants.TimeConstants;
 import com.sun.jini.constants.TxnConstants;
@@ -1247,6 +1248,7 @@ class TxnManagerTransaction
                     use_light_abort = true;
             }
         }
+        JSpaceUtilities.DEBUG_LOGGER.info("USE LIGHT ABORT: {} && {} ", _parts == null ? null : _parts.size(), _singleHandle != null);
         if (use_light_abort) {
             //single participant embedded - optimize but cutting thru all
             lightAbort(_singleHandle);
@@ -1288,7 +1290,6 @@ class TxnManagerTransaction
             //If an abort is possible, but a PrepareJob is in progress,
             //go ahead an halt the PrepareJob and replace it with
             //an AbortJob.
-
             if (modifyTxnState(ABORTED)) {
                 log.write(new AbortRecord(phs));
 

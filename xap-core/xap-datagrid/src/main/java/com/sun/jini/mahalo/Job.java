@@ -148,6 +148,11 @@ public abstract class Job {
      * Schedules tasks for execution
      */
     public void scheduleTasks() {
+        try {
+            throw new Exception();
+        } catch(Exception ex) {
+            ex.printStackTrace();
+        }
         TaskManager.Task[] tmp = createTasks();
 
         if (tmp != null) {
