@@ -4,7 +4,7 @@
     Declerative pipeline for Jenkins builds using a shared library
     for any internal build logic.
 */
-@Library('xap-common') _
+@Library('xap-common@dependency-check') _
 
 xap {
     java_version = 'Java8'
