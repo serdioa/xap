@@ -222,7 +222,7 @@ public class CPeer extends BaseClientPeer {
         // connect to server
         try {
             ServerAddress transformedAddress = mapAddress(host, connectionUrlDescriptor.getPort());
-
+_logger.info("Create Async channel: {} - {} - {}", transformedAddress.getHost(), transformedAddress.getPort(), lrmiMethod);
             m_SockChannel = createAsyncChannel(transformedAddress.getHost(), transformedAddress.getPort(), lrmiMethod);
 
             _socketDisplayString = NIOUtils.getSocketDisplayString(m_SockChannel);
