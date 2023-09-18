@@ -31,7 +31,6 @@ import com.gigaspaces.internal.transaction.DummyTransactionManager;
 import com.gigaspaces.internal.transport.IEntryPacket;
 import com.j_spaces.core.OperationID;
 import com.j_spaces.core.XtnEntry;
-import com.j_spaces.kernel.JSpaceUtilities;
 import net.jini.core.transaction.Transaction;
 import net.jini.core.transaction.UnknownTransactionException;
 import net.jini.core.transaction.server.ServerTransaction;
@@ -56,7 +55,6 @@ public class SpaceReplicationTransactionEventHandler implements IReplicationInTr
     @Override
     @SuppressWarnings("unchecked")
     public void inTransaction(IReplicationInContext context, ITransactionInContext transactionContext) throws Exception {
-        JSpaceUtilities.DEBUG_LOGGER.info("Get replication data for txn: {}, operationID: {}", transactionContext.getTransaction(), transactionContext.getOperationID());
         final boolean fromReplication = true;
         final boolean supportsTwoPhase = false;
         final OperationID operationId = null;

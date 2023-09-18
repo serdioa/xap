@@ -206,7 +206,7 @@ public class CPeer extends BaseClientPeer {
                 DynamicSmartStub.throwProxyClosedExeption(connectionURL);
         }
 
-//        if (_logger.isDebugEnabled())
+        if (_logger.isDebugEnabled())
             detailedLogging("CPeer.connect", "trying to connect using connection url [" + connectionURL + "], calling method [" + lrmiMethod.realMethod.getDeclaringClass().getSimpleName() + "." + lrmiMethod.realMethod.getName() + "]");
 
         // parse connection URL
@@ -222,7 +222,6 @@ public class CPeer extends BaseClientPeer {
         // connect to server
         try {
             ServerAddress transformedAddress = mapAddress(host, connectionUrlDescriptor.getPort());
-_logger.info("Create Async channel: {} - {} - {}", transformedAddress.getHost(), transformedAddress.getPort(), lrmiMethod);
             m_SockChannel = createAsyncChannel(transformedAddress.getHost(), transformedAddress.getPort(), lrmiMethod);
 
             _socketDisplayString = NIOUtils.getSocketDisplayString(m_SockChannel);
@@ -259,7 +258,6 @@ _logger.info("Create Async channel: {} - {} - {}", transformedAddress.getHost(),
         if (_logger.isDebugEnabled()) {
             _logger.debug("connecting new socket channel to " + host + ":" + port + ", connect timeout=" + _config.getSocketConnectTimeout() + " keepalive=" + LRMIUtilities.KEEP_ALIVE_MODE);
         }
-        _logger.error("connecting new socket channel to " + host + ":" + port + ", connect timeout=" + _config.getSocketConnectTimeout() + " keepalive=" + LRMIUtilities.KEEP_ALIVE_MODE);
         Conversation conversation = new Conversation(new InetSocketAddress(host, port));
         if (_protocolValidationEnabled) {
             conversation.addChat(new WriteBytesChat(ProtocolValidation.getProtocolHeaderBytes()));
@@ -633,7 +631,7 @@ _logger.info("Create Async channel: {} - {} - {}", transformedAddress.getHost(),
 
     public Object invoke(Object proxy, LRMIMethod lrmiMethod, Object[] args, ConnectionPool connPool)
             throws ApplicationException, ProtocolException, RemoteException, InterruptedException {
-        if (_logger.isDebugEnabled())
+//        if (_logger.isDebugEnabled())
             detailedLogging("CPeer.invoke", "trying to invoke method [" + lrmiMethod.realMethod.getDeclaringClass().getSimpleName() + "." + lrmiMethod.realMethod.getName() + "]");
 
         LRMIInvocationContext currentContext = LRMIInvocationContext.getCurrentContext();

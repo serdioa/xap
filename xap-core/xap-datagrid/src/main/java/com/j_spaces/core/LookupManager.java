@@ -19,7 +19,6 @@
  */
 package com.j_spaces.core;
 
-import com.j_spaces.kernel.JSpaceUtilities;
 import com.j_spaces.kernel.log.JProperties;
 
 import net.jini.core.discovery.LookupLocator;
@@ -205,12 +204,8 @@ public class LookupManager implements ServiceIDListener, LeaseListener {
      **/
     public void terminate() throws RemoteException {
         Hashtable<String, IJSpace> tmpDepot = (Hashtable<String, IJSpace>) _registeredSpaces.clone();
-        for (String spaceName : tmpDepot.keySet()) {
-            JSpaceUtilities.DEBUG_LOGGER.info("Start terminating JSpace and JSpace container from all Lookup Services for [{}]", spaceName);
+        for (String spaceName : tmpDepot.keySet())
             unregister(spaceName);
-            JSpaceUtilities.DEBUG_LOGGER.info("Finish terminating JSpace and JSpace container from all Lookup Services for [{}]", spaceName);
-
-        }
 
         if (_logger.isDebugEnabled())
             _logger.debug("All spaces unregistered successfully");

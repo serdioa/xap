@@ -20,7 +20,6 @@ import com.gigaspaces.config.lrmi.ITransportConfig;
 import com.gigaspaces.internal.lrmi.ConnectionUrlDescriptor;
 import com.gigaspaces.internal.lrmi.LRMIProxyMonitoringDetailsImpl;
 import com.gigaspaces.internal.version.PlatformLogicalVersion;
-import com.j_spaces.kernel.JSpaceUtilities;
 import com.j_spaces.kernel.SystemProperties;
 import com.j_spaces.kernel.pool.BlockingResourcePool;
 import com.j_spaces.kernel.pool.IResourcePool;
@@ -85,7 +84,6 @@ public class ConnectionPool {
      * full, the caller will be blocked until a free connection is available.
      */
     public ConnectionResource getConnection(LRMIMethod lrmiMethod) throws RemoteException, MalformedURLException {
-        JSpaceUtilities.DEBUG_LOGGER.info("Try to connect with url: [{}] and method: [{}] ", _connectionURL, lrmiMethod);
         boolean waitForConnection = true;
         if (lrmiMethod.isAsync){
             waitForConnection = WAIT_INDEFINITELY_FOR_CONNECTION;

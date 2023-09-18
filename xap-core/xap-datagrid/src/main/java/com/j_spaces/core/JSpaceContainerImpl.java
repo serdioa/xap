@@ -912,7 +912,6 @@ public class JSpaceContainerImpl implements IJSpaceContainer, IJSpaceContainerAd
     }
 
     public void shutdownInternal() {
-        JSpaceUtilities.DEBUG_LOGGER.info("Before shutdown status: {}", getContainerStatus());
         _allSpaceSchemasMap = null;
         // set shutdown container status
         synchronized (this) {
@@ -921,7 +920,6 @@ public class JSpaceContainerImpl implements IJSpaceContainer, IJSpaceContainerAd
 
             m_containerStatus = SHUTDOWN_STATUS;
         }
-        JSpaceUtilities.DEBUG_LOGGER.info("After shutdown status: {}", getContainerStatus());
 
         try {
             synchronized (_lock) {
@@ -936,7 +934,6 @@ public class JSpaceContainerImpl implements IJSpaceContainer, IJSpaceContainerAd
             if (m_LookupMng != null)
                 m_LookupMng.terminate();
 
-            JSpaceUtilities.DEBUG_LOGGER.info("isJMXEnabled(): {}", isJMXEnabled());
             // Unregister container MBean if JMX is enabled.
             if (isJMXEnabled()) {
                 try {

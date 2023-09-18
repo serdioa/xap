@@ -21,7 +21,6 @@
 package com.gigaspaces.lrmi;
 
 import com.gigaspaces.internal.reflection.IMethod;
-import com.j_spaces.kernel.JSpaceUtilities;
 
 import java.rmi.UnexpectedException;
 import java.util.HashMap;
@@ -82,7 +81,6 @@ public class RemoteMethodCache {
     	    */
             if (lrmiMethod == null) {
                 String invokedMethod = LRMIUtilities.getMethodNameAndDescriptor(method);
-                JSpaceUtilities.DEBUG_LOGGER.info("Create new lrmi method, invoked method: {}", invokedMethod);
                 for (Entry<IMethod, LRMIMethod> cacheMethod : methodMap.entrySet()) {
                     String cachedMethodDesc = LRMIUtilities.getMethodNameAndDescriptor(cacheMethod.getKey());
                     if (cachedMethodDesc.equals(invokedMethod)) {
