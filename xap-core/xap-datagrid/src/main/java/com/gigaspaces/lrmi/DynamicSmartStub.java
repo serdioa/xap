@@ -493,7 +493,6 @@ public class DynamicSmartStub
             try {
                 /* get initialize LRMIRuntime */
                 ClientPeerInvocationHandler clientInvocationHandler = LRMIRuntime.getRuntime().getClientInvocationHandler(_connectionURL, _config, _platformLogicalVersion);
-                JSpaceUtilities.DEBUG_LOGGER.info("NEW createRemoteMethodCache: [{}] - [{}] - [{}]", _stubInterfaces, _methodMapping, _methodsMetadata);
                 RemoteMethodCache methodCache = LRMIUtilities.createRemoteMethodCache(_stubInterfaces, _methodMapping, _methodsMetadata);
                 _remoteInvHandler = new MethodCachedInvocationHandler(methodCache, clientInvocationHandler, _platformVersion, _platformLogicalVersion, _connectionURL);
 

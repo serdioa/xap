@@ -222,6 +222,7 @@ public class CPeer extends BaseClientPeer {
         // connect to server
         try {
             ServerAddress transformedAddress = mapAddress(host, connectionUrlDescriptor.getPort());
+
             m_SockChannel = createAsyncChannel(transformedAddress.getHost(), transformedAddress.getPort(), lrmiMethod);
 
             _socketDisplayString = NIOUtils.getSocketDisplayString(m_SockChannel);
@@ -377,7 +378,7 @@ public class CPeer extends BaseClientPeer {
     }
 
     private void detailedLogging(String methodName, String description) {
-//        if (_logger.isDebugEnabled()) {
+        if (_logger.isDebugEnabled()) {
             String localAddress = "not connected";
             if (m_SockChannel != null) {
                 //Avoid possible NPE if socket gets disconnected
@@ -389,11 +390,11 @@ public class CPeer extends BaseClientPeer {
                         localAddress = localSocketAddress.toString();
                 }
             }
-            _logger.info("At " + methodName + " method, " + description + " [invoker address=" + localAddress + ", ServerEndPoint=" + getConnectionURL() + "]");
-//        }
-//        if (_logger.isTraceEnabled()) {
-            _logger.info("At " + methodName + ", thread stack:" + StringUtils.NEW_LINE + StringUtils.getCurrentStackTrace());
-//        }
+            _logger.debug("At " + methodName + " method, " + description + " [invoker address=" + localAddress + ", ServerEndPoint=" + getConnectionURL() + "]");
+        }
+        if (_logger.isTraceEnabled()) {
+            _logger.trace("At " + methodName + ", thread stack:" + StringUtils.NEW_LINE + StringUtils.getCurrentStackTrace());
+        }
     }
 
     /**
@@ -631,7 +632,7 @@ public class CPeer extends BaseClientPeer {
 
     public Object invoke(Object proxy, LRMIMethod lrmiMethod, Object[] args, ConnectionPool connPool)
             throws ApplicationException, ProtocolException, RemoteException, InterruptedException {
-//        if (_logger.isDebugEnabled())
+        if (_logger.isDebugEnabled())
             detailedLogging("CPeer.invoke", "trying to invoke method [" + lrmiMethod.realMethod.getDeclaringClass().getSimpleName() + "." + lrmiMethod.realMethod.getName() + "]");
 
         LRMIInvocationContext currentContext = LRMIInvocationContext.getCurrentContext();

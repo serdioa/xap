@@ -79,23 +79,6 @@ class ParticipantHandle implements Serializable, TransactionConstants {
     private static final Logger persistenceLogger =
             TxnManagerImpl.persistenceLogger;
 
-    @Override
-    public String toString() {
-        return "ParticipantHandle{" +
-                "_part=" + _part +
-                ", storedpart=" + storedpart +
-                ", crashcount=" + crashcount +
-                ", prepstate=" + prepstate +
-                ", _stubId=" + _stubId +
-                ", _disableDisjoin=" + _disableDisjoin +
-                ", _partitionId=" + _partitionId +
-                ", _clusterName='" + _clusterName + '\'' +
-                ", _clusterProxy=" + _clusterProxy +
-                ", _prepared=" + _prepared +
-                ", _commitEx=" + _commitEx +
-                ", _abortEx=" + _abortEx +
-                '}';
-    }
 
     /**
      * Create a new node that is equivalent to that node

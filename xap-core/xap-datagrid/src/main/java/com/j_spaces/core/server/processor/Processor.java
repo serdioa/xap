@@ -59,7 +59,6 @@ import com.j_spaces.core.sadapter.SAException;
 import com.j_spaces.core.sadapter.SelectType;
 import com.j_spaces.core.transaction.CheckXtnStatusInTmBusPackect;
 import com.j_spaces.kernel.IConsumerObject;
-import com.j_spaces.kernel.JSpaceUtilities;
 import com.j_spaces.kernel.locks.ILockObject;
 import net.jini.core.entry.UnusableEntryException;
 import net.jini.core.transaction.TransactionException;
@@ -2031,14 +2030,11 @@ public class Processor implements IConsumerObject<BusPacket<Processor>> {
             throws SAException {
         ISAdapterIterator iter = null;
         try {
-            JSpaceUtilities.DEBUG_LOGGER.info("handleNewRolledbackEntries: {}", _engine.getFullSpaceName());
-
             iter = _cacheManager.makeUnderXtnEntriesIter(context, xtnEntry, SelectType.NEW_ENTRIES);
             if (iter != null) {
                 final XtnData pXtn = xtnEntry.getXtnData();
                 while (true) {
                     IEntryHolder entry = (IEntryHolder) iter.next();
-                    JSpaceUtilities.DEBUG_LOGGER.info("Entry to be rolled back: {}", entry);
                     if (entry == null)
                         break;
 
