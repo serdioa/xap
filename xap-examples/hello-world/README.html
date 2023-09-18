@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Hello World Example</title>
+    <style>
+    div.container {
+        width: 880px;
+        border: 1px solid gray;
+        padding: 1em;
+    }
+    </style>
+</head>
+<body><div class="container"><h1>Hello World Example</h1><p>This example demonstrates the basic concepts behind GigaSpaces data grid.</p><h1>Overview</h1><p>There are two counter parts: a client and a server. The client, "HelloWorld.java" updates a data-grid with "Hello" and "World!" data entities and then reads them back.</p><h2>Message.java</h2><p>A Plain Old Java Object (POJO) is the entity behind the updates to the data-grid. It consists of getters and setters for the 'msg' field, and a <code>@SpaceId</code> for uniqueness (similar to a Map key).</p><h3>Annotations</h3><p>Additional annotations can be applied - here are a couple:</p>
+<ul>
+  <li>A <code>@SpaceRouting</code> annotation can be applied to any field to allow routing to partition instances. If not specified, <code>@SpaceId</code> will act as the routing field.</li>
+  <li>A <code>@SpaceIndex</code> annotation can be applied to any field to allow indexing. <code>@SpaceId</code> is by default indexed.</li>
+</ul><h2>HelloWorld.java</h2><p>This main class can either start a single data-grid instance (embedded) in it's JVM for easy development, or connect to an existing (remote) data-grid (by specifying its name).</p><h1>Running The Example</h1><p>This example is a standard maven project - Use maven to execute the main class:</p><p><code>mvn compile &amp;&amp; mvn exec:java -Dexec.mainClass=HelloWorld -Dexec.args=&quot;-name myDataGrid -mode embedded&quot;</code></p><p>Alternatively, if you have an IDE available, import the sources as a maven project using the POM: </p><p><code>examples/hello-world/pom.xml</code></p><p>The <code>HelloWorld</code> main class accepts the following arguments: <code>-name</code> {data-grid name} <code>-mode</code> {embedded | remote}</p><h2>Running in Embedded Mode</h2><p>Launch the <code>HelloWorld</code> main (arguments: <code>-name</code> myDataGrid <code>-mode</code> embedded)</p><p>This will start an embedded data-grid followed by write and read of Message entities.</p><h3>output</h3><p>```</p><p>Created embedded data-grid: myDataGrid</p><p>write - 'Hello'</p><p>write - 'World!'</p><p>read - ['Hello', 'World!']</p><p>```</p><p><img src="images/embedded.png" alt="helloworld-1" /></p><h2>Running in Remote Mode</h2><p>To connect to a <em>remote</em> data-grid, you need a cluster manager to host the data grid. </p><h3>Overview - Cluster Managers</h3><p>A data grid requires a cluster manager. The following cluster managers are available:</p>
+<ul>
+  <li>Standalone</li>
+  <li>Service Grid</li>
+  <li>Kubernetes</li>
+  <li>ElasticGrid</li>
+</ul><p>The "Service Grid" is recommended for beginners, which is what we'll show here. If you're using the open source package, you'll need to use the "Standalone" cluster manager, which is discussed later in this page. </p><p><em>Tip</em>: The cluster manager includes a web-based UI which is started at http://localhost:8090</p><h3>Deploying a data grid</h3><p>To start the service grid locally with a single container, run the <code>bin/gs.(sh|bat)</code> as follows:</p>
+<ul>
+  <li>gs.(sh|bat) host run-agent --auto --containers=1</li>
+</ul><p>To deploy a data grid called <code>myDataGrid</code>, run:</p>
+<ul>
+  <li>gs.(sh|bat) space deploy myDataGrid</li>
+</ul><p><img src="images/remote.png" alt="helloworld-1r" /></p><p>Now that we have a remote data-grid, we can connect to it.</p><p>Using maven: </p><p><code>mvn compile &amp;&amp; mvn exec:java -Dexec.mainClass=HelloWorld -Dexec.args=&quot;-name myDataGrid -mode remote&quot;</code></p><p>Using IDE:</p><p>Launch the <code>HelloWorld</code> main (arguments: <code>-name</code> myDataGrid <code>-mode</code> remote)</p><p>This will connect your client to your remote data-grid followed by write and read of Message entities.</p><h3>output</h3><p>```</p><p>Connected to remote data-grid: myDataGrid</p><p>write - 'Hello'</p><p>write - 'World!'</p><p>read - ['Hello', 'World!']</p><p>```</p><h3>Stopping the data grid</h3><p>To terminate the local service grid agent, run:</p>
+<ul>
+  <li>gs.(sh|bat) host kill-agent</li>
+</ul><h3>Deploying a data-grid with 2 partitions (optional)</h3><p>Use the same commands, but specify 2 containers (1 per instance), and add the <code>--partitions</code> parameter:</p>
+<ul>
+  <li>gs.(sh|bat) host run-agent --auto --containers=2</li>
+  <li>gs.(sh|bat) space deploy myDataGrid --partitions=2</li>
+</ul><p><img src="images/partitioned.png" alt="helloworld-2" /></p><h3>Deploying a data-grid with 2 highly-available partitions (optional)</h3><p>Use the same commands, but specify 4 containers (1 per instance), and add the <code>--ha</code> parameter:</p>
+<ul>
+  <li>gs.(sh|bat) host run-agent --auto --containers=4</li>
+  <li>gs.(sh|bat) space deploy myDataGrid --partitions=2 --ha</li>
+</ul><p><img src="images/partitioned-with-backup.png" alt="helloworld-3" /></p><h2>Starting standalone data grid instance/s (without Service Grid)</h2><p>Without the Service Grid, you will need to run the following commands using <code>bin/gs.(sh|bat)</code></p><h3>Single data grid instance</h3>
+<ul>
+  <li>gs.(sh|bat) space run --lus myDataGrid</li>
+</ul><h3>Data grid with 2 partitions</h3>
+<ul>
+  <li>gs.(sh|bat) space run --lus --partitions=2 myDataGrid</li>
+</ul><h4>Manually load each instance separately</h4><p>Each partition instance loads separately, as follows:</p>
+<ol>
+  <li>Specify <code>--partitions=2</code> for two partitions</li>
+  <li>Specify <code>--instances=1_1</code> or <code>--instances=2_1</code> for each partition instance</li>
+</ol><p>From the ${GS_HOME}/bin directory, run (in 2 separate terminals):</p>
+<ul>
+  <li>gs.(sh|bat) space run --lus --partitions=2 <strong>--instances=1_1</strong> myDataGrid</li>
+  <li>gs.(sh|bat) space run --lus --partitions=2 <strong>--instances=2_1</strong> myDataGrid</li>
+</ul><p>This will simulate a data-grid of 2 partitioned instances (without backups).</p><h3>Data grid with 2 highly available partitions (with backups for each partition)</h3>
+<ul>
+  <li>gs.(sh|bat) space run --lus --partitions=2 --ha myDataGrid</li>
+</ul><h4>Manually load each instance separately</h4><p>Each partition instance can be assigned a backup, as follows:</p>
+<ol>
+  <li>Specify <code>--partitions=2</code> for two partitions, <code>--ha</code> for high availability meaning a single backup for each partition.</li>
+  <li>Specify <code>--instances=1_1</code> to load primary of partition id=1, <code>--instances=1_2</code> to load the backup instance of partition id=1</li>
+</ol><p><strong>First partition:</strong></p>
+<ul>
+  <li>gs.(sh|bat) space run --lus --partitions=2 --ha <strong>--instances=1_1</strong> myDataGrid</li>
+  <li>gs.(sh|bat) space run --lus --partitions=2 --ha <strong>--instances=1_2</strong> myDataGrid</li>
+</ul><p><strong>Second partition:</strong></p>
+<ul>
+  <li>gs.(sh|bat) space run --lus --partitions=2 --ha <strong>--instances=2_1</strong> myDataGrid</li>
+  <li>gs.(sh|bat) space run --lus --partitions=2 --ha <strong>--instances=2_2</strong> myDataGrid</li>
+</ul></div></body></html>
