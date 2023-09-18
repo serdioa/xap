@@ -206,7 +206,7 @@ public class CPeer extends BaseClientPeer {
                 DynamicSmartStub.throwProxyClosedExeption(connectionURL);
         }
 
-        if (_logger.isDebugEnabled())
+//        if (_logger.isDebugEnabled())
             detailedLogging("CPeer.connect", "trying to connect using connection url [" + connectionURL + "], calling method [" + lrmiMethod.realMethod.getDeclaringClass().getSimpleName() + "." + lrmiMethod.realMethod.getName() + "]");
 
         // parse connection URL
@@ -259,6 +259,7 @@ _logger.info("Create Async channel: {} - {} - {}", transformedAddress.getHost(),
         if (_logger.isDebugEnabled()) {
             _logger.debug("connecting new socket channel to " + host + ":" + port + ", connect timeout=" + _config.getSocketConnectTimeout() + " keepalive=" + LRMIUtilities.KEEP_ALIVE_MODE);
         }
+        _logger.error("connecting new socket channel to " + host + ":" + port + ", connect timeout=" + _config.getSocketConnectTimeout() + " keepalive=" + LRMIUtilities.KEEP_ALIVE_MODE);
         Conversation conversation = new Conversation(new InetSocketAddress(host, port));
         if (_protocolValidationEnabled) {
             conversation.addChat(new WriteBytesChat(ProtocolValidation.getProtocolHeaderBytes()));
@@ -378,7 +379,7 @@ _logger.info("Create Async channel: {} - {} - {}", transformedAddress.getHost(),
     }
 
     private void detailedLogging(String methodName, String description) {
-        if (_logger.isDebugEnabled()) {
+//        if (_logger.isDebugEnabled()) {
             String localAddress = "not connected";
             if (m_SockChannel != null) {
                 //Avoid possible NPE if socket gets disconnected
@@ -390,11 +391,11 @@ _logger.info("Create Async channel: {} - {} - {}", transformedAddress.getHost(),
                         localAddress = localSocketAddress.toString();
                 }
             }
-            _logger.debug("At " + methodName + " method, " + description + " [invoker address=" + localAddress + ", ServerEndPoint=" + getConnectionURL() + "]");
-        }
-        if (_logger.isTraceEnabled()) {
-            _logger.trace("At " + methodName + ", thread stack:" + StringUtils.NEW_LINE + StringUtils.getCurrentStackTrace());
-        }
+            _logger.info("At " + methodName + " method, " + description + " [invoker address=" + localAddress + ", ServerEndPoint=" + getConnectionURL() + "]");
+//        }
+//        if (_logger.isTraceEnabled()) {
+            _logger.info("At " + methodName + ", thread stack:" + StringUtils.NEW_LINE + StringUtils.getCurrentStackTrace());
+//        }
     }
 
     /**

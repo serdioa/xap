@@ -208,6 +208,7 @@ public class AbortJob extends Job implements TransactionConstants {
                 //failure setting up connection, so give
                 //participant more time by retrying
                 if (numberOfRetriesDueToConnectionExceptionExceeded(who)) {
+                    new CannotAbortException("Failed to abort", ce).printStackTrace();
                     handle.setAbortException(new CannotAbortException("Failed to abort", ce));
                     response = ABORTED;
                 }
