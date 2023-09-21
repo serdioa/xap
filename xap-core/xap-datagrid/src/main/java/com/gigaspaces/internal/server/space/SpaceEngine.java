@@ -879,9 +879,11 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
         IEntryHolder eHolder = EntryHolderFactory.createEntryHolder(serverTypeDesc, entryPacket, _entryDataType,
                 entryUid, expiration, txnEntry, current, (_cacheManager.isBlobStoreCachePolicy() && serverTypeDesc.getTypeDesc().isBlobstoreEnabled() && !UpdateModifiers.isUpdateOnly(modifiers)), isMvccEnabled());
 
+        // TODO : exclude verification of SecurityFilter for replicas!
+
         /** set write lease mode */
         if (!reInsertedEntry && _filterManager._isFilter[FilterOperationCodes.BEFORE_WRITE])
-            _filterManager.invokeFilters(FilterOperationCodes.BEFORE_WRITE, sc, eHolder);
+            _filterManager.invokeFilters(FilterOperationCodes.BEFORE_WRITE, sc, eHolder, fromReplication);
 
         WriteEntryResult writeResult = null;
         EntryAlreadyInSpaceException entryInSpaceEx = null;
@@ -953,7 +955,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
             throw entryInSpaceEx;
 
         if (!reInsertedEntry && _filterManager._isFilter[FilterOperationCodes.AFTER_WRITE])
-            _filterManager.invokeFilters(FilterOperationCodes.AFTER_WRITE, sc, eHolder);
+            _filterManager.invokeFilters(FilterOperationCodes.AFTER_WRITE, sc, eHolder, fromReplication);
 
         /** perform sync-replication */
         if (context.isSyncReplFromMultipleOperation()) {
@@ -1020,7 +1022,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
         }
 
         if (_filterManager._isFilter[FilterOperationCodes.BEFORE_NOTIFY])
-            _filterManager.invokeFilters(FilterOperationCodes.BEFORE_NOTIFY, sc, tHolder);
+            _filterManager.invokeFilters(FilterOperationCodes.BEFORE_NOTIFY, sc, tHolder, fromReplication);
 
         AnswerHolder aHolder = new AnswerHolder();
         _coreProcessor.handleNotifyRegistration(tHolder, fromReplication, aHolder, template.getOperationID());
@@ -1318,14 +1320,14 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
         if (take) // call  filters for take
         {
             if (_filterManager._isFilter[FilterOperationCodes.BEFORE_TAKE] && !tHolder.isInitiatedEvictionOperation())
-                _filterManager.invokeFilters(FilterOperationCodes.BEFORE_TAKE, sc, tHolder);
+                _filterManager.invokeFilters(FilterOperationCodes.BEFORE_TAKE, sc, tHolder, fromReplication);
             //set fields for after filter (if one will be enlisted)
             if (!tHolder.isInitiatedEvictionOperation())
                 tHolder.setForAfterOperationFilter(FilterOperationCodes.AFTER_TAKE, sc, _filterManager, null);
         } else  //  filters for read
         {
             if (_filterManager._isFilter[FilterOperationCodes.BEFORE_READ])
-                _filterManager.invokeFilters(FilterOperationCodes.BEFORE_READ, sc, tHolder);
+                _filterManager.invokeFilters(FilterOperationCodes.BEFORE_READ, sc, tHolder, fromReplication);
             //set fields for after filter (if one will be enlisted)
             tHolder.setForAfterOperationFilter(FilterOperationCodes.AFTER_READ, sc, _filterManager, null);
         }
@@ -2080,14 +2082,14 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
         if (take) // call  filters for take
         {
             if (_filterManager._isFilter[FilterOperationCodes.BEFORE_TAKE_MULTIPLE] && !tHolder.isInitiatedEvictionOperation())
-                _filterManager.invokeFilters(FilterOperationCodes.BEFORE_TAKE_MULTIPLE, sc, tHolder);
+                _filterManager.invokeFilters(FilterOperationCodes.BEFORE_TAKE_MULTIPLE, sc, tHolder); // TODO : validate
             //set fields for after filter (if one will be enlisted)
             if (!tHolder.isInitiatedEvictionOperation())
                 tHolder.setForAfterOperationFilter(FilterOperationCodes.AFTER_TAKE_MULTIPLE, sc, _filterManager, null);
         } else  //  filters for read
         {
             if (_filterManager._isFilter[FilterOperationCodes.BEFORE_READ_MULTIPLE])
-                _filterManager.invokeFilters(FilterOperationCodes.BEFORE_READ_MULTIPLE, sc, tHolder);
+                _filterManager.invokeFilters(FilterOperationCodes.BEFORE_READ_MULTIPLE, sc, tHolder); // TODO : validate
             //set fields for after filter (if one will be enlisted)
             tHolder.setForAfterOperationFilter(FilterOperationCodes.AFTER_READ_MULTIPLE, sc, _filterManager, null);
         }
@@ -2576,7 +2578,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
 
         // invoke before_update filter
         if (_filterManager._isFilter[FilterOperationCodes.BEFORE_UPDATE]) {
-            _filterManager.invokeFilters(FilterOperationCodes.BEFORE_UPDATE, sc, updated_eh);
+            _filterManager.invokeFilters(FilterOperationCodes.BEFORE_UPDATE, sc, updated_eh, fromReplication);
         }
         //set fields for after filter (if one will be enlisted)
         tHolder.setForAfterOperationFilter(FilterOperationCodes.AFTER_UPDATE, sc, _filterManager, updated_entry);
@@ -2736,7 +2738,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
         tHolder.setChangeExpiration(expiration_time);
 
         if (_filterManager._isFilter[FilterOperationCodes.BEFORE_CHANGE])
-            _filterManager.invokeFilters(FilterOperationCodes.BEFORE_CHANGE, sc, tHolder);
+            _filterManager.invokeFilters(FilterOperationCodes.BEFORE_CHANGE, sc, tHolder, fromReplication);
 
         //set fields for after filter (if one will be enlisted)
         tHolder.setForAfterOperationFilter(FilterOperationCodes.AFTER_CHANGE, sc, _filterManager, null);
@@ -2832,7 +2834,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
         tHolder.setBatchOperationContext(opContext);
 
         if (_filterManager._isFilter[FilterOperationCodes.BEFORE_CHANGE])
-            _filterManager.invokeFilters(FilterOperationCodes.BEFORE_CHANGE, sc, tHolder);
+            _filterManager.invokeFilters(FilterOperationCodes.BEFORE_CHANGE, sc, tHolder, fromReplication);
 
         //set fields for after filter (if one will be enlisted)
         tHolder.setForAfterOperationFilter(FilterOperationCodes.AFTER_CHANGE, sc, _filterManager, null);
@@ -5755,7 +5757,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
         boolean fromLeaseExpiration = removeReason == EntryRemoveReasonCodes.LEASE_CANCEL || removeReason == EntryRemoveReasonCodes.LEASE_EXPIRED;
         // check for before-remove filter
         if ((fromLeaseExpiration || _general_purpose_remove_filters) && _filterManager._isFilter[FilterOperationCodes.BEFORE_REMOVE])
-            _filterManager.invokeFilters(FilterOperationCodes.BEFORE_REMOVE, null, entry);
+            _filterManager.invokeFilters(FilterOperationCodes.BEFORE_REMOVE, null, entry, fromReplication);
 
         boolean noRealRemoveFromSpace = fromLeaseExpiration && isExpiredEntryStayInSpace(entry);
         //TODO - tiered storage - decide replication of time based eviction and retention
@@ -6789,7 +6791,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
             throw new EngineInternalSpaceException("Remote space for : " + sourceRemoteUrl + " can not be null!");
 
         if ((_filterManager._isFilter[FilterOperationCodes.BEFORE_WRITE])) {
-            _filterManager.invokeFilters(FilterOperationCodes.BEFORE_WRITE, sc, templPacket);
+            _filterManager.invokeFilters(FilterOperationCodes.BEFORE_WRITE, sc, templPacket);// todo : validate it!
         }
 
         int concurrentConsumers = 1;

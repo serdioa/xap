@@ -51,7 +51,7 @@ public class SpaceCopyReplicaDataProducer
             for (ITemplatePacket templatePacket : templatePackets) {
                 engine.getFilterManager().invokeFilters(FilterOperationCodes.BEFORE_READ,
                         sc,
-                        templatePacket);
+                        templatePacket, true); // todo : validate changes!
             }
         }
 
