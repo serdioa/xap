@@ -290,6 +290,7 @@ public class ExtendedIndexHandler<K>
     @Override
     public IScanListIterator<IEntryCacheInfo> establishScan(K startPos, short relation, K endPos, boolean endPosInclusive, boolean ordered) {
         ordered |= FORCE_ORDERED_SCAN; //should we force ordered scan always ?
+        _logger.info("Ordered: " + ordered);
         long startTime = _recentExtendedIndexUpdates != null ? System.currentTimeMillis() : 0;
         IScanListIterator<IEntryCacheInfo> res = ordered ?
                 establishScanOrdered(startPos, relation, endPos, endPosInclusive) :
@@ -307,6 +308,7 @@ public class ExtendedIndexHandler<K>
 
 
     private ExtendedIndexIterator<IEntryCacheInfo> establishScanUnOrdered(K startPos, short relation, K endPos, boolean endPosInclusive) {
+        _logger.info("ExtendedIndexHandler establishScanOrdered");
         boolean reversedScan = (relation == TemplateMatchCodes.LT || relation == TemplateMatchCodes.LE);
 
         K start;
@@ -350,12 +352,20 @@ public class ExtendedIndexHandler<K>
                 ( !reversedScan ? 0 : relation ) :
                 ( endPosInclusive ? TemplateMatchCodes.LE : TemplateMatchCodes.LT );
 
+        _logger.info("ExtendedIndexHandler establishScanOrdered");
+        _logger.info("All unique index values:");
+        _orderedStore.keySet().forEach(store -> _logger.info(store.toString()));
+
         NavigableMap baseMap = reversedScan ? _orderedStore.descendingMap() : _orderedStore;
         NavigableMap mapToScan;
         if (endPos == null)
             mapToScan = startPos != null ? baseMap.tailMap(startPos, startinclusive) : baseMap;
         else
             mapToScan = startPos != null ? baseMap.subMap(startPos, startinclusive, endPos, endPosInclusive) : baseMap.headMap(endPos, endPosInclusive);
+
+        _logger.info("Filtered index values:");
+        mapToScan.keySet().forEach(store -> _logger.info(store.toString()));
+
         return new ExtendedIndexIterator<>(mapToScan, _index,originalStart,originalStartCondition, originalEnd,originalEndCondition);
     }
 }
