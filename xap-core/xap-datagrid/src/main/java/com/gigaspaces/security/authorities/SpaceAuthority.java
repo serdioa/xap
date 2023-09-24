@@ -167,7 +167,7 @@ public class SpaceAuthority implements InternalAuthority {
             } else if (filterClass.equals(SpacenameFilter.class.getSimpleName())) {
                 filter = new SpacenameFilter(filterParams);
             } else {
-                throw new IllegalArgumentException("Unknown authority representation.");
+                throw new IllegalArgumentException("Unknown authority representation: " + authority);
             }
         }
 
