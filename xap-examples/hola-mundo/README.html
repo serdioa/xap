@@ -22,7 +22,7 @@
 <ul>
   <li><p>The <code>translator/src/main/resources/META-INF/spring/pu.xml</code> - configures an embedded data-grid, the translator bean, and declares annotation support.</p></li>
   <li><p>The <code>feeder/src/main/resources/META-INF/spring/pu.xml</code> - configures the connection to the remote data-grid used by the feeder bean.</p></li>
-</ul><h2>Running the example from the IDE</h2><p>Import Maven <code>examples/hola-mundo/pom.xml</code> into your IDE of choice as a new maven project.</p><p><strong>note:</strong> this section refers to IntelliJ IDE, but eclipse users can mimic the configuration settings</p><p>The <code>runConfigurations</code> folder consists of IntelliJ runtime configurations, which need to be copied to the <code>.idea/runConfigurations</code> directory under the IDE project structure (<code>.idea</code> is a hidden directory). In IntelliJ, these configurations will appear in the "Edit Configurations..." section.</p><p>A configuration consists of a PlaneCmd class to run, and a module classpath to use. The main class uses <code>org.openspaces.pu.container.integrated.IntegratedProcessingUnitContainer</code> - a built in container used to run a Processing Unit.</p><h3>Running with a single data-grid (1 instance)</h3>
+</ul><h2>Running the example from the IDE</h2><p>Import Maven <code>examples/hola-mundo/pom.xml</code> into your IDE of choice as a new maven project.</p><p><strong>note:</strong> this section refers to IntelliJ IDE, but eclipse users can mimic the configuration settings</p><p>The <code>runConfigurations</code> folder consists of IntelliJ runtime configurations, which need to be copied to the <code>.idea/runConfigurations</code> directory under the IDE project structure (<code>.idea</code> is a hidden directory). In IntelliJ, these configurations will appear in the "Edit Configurations..." section.</p><p>A configuration consists of a Main class to run, and a module classpath to use. The main class uses <code>org.openspaces.pu.container.integrated.IntegratedProcessingUnitContainer</code> - a built in container used to run a Processing Unit.</p><h3>Running with a single data-grid (1 instance)</h3>
 <ul>
   <li><p>Run the translator (run configuration) -  This will start an embedded data-grid, with a translator bean</p></li>
   <li><p>Run the feeder (run configuration) -  This will write "Hello" and "World!" and read the translated Phrase entities.</p></li>
@@ -53,11 +53,11 @@ translated - World! to Mundo!
  first partition backup:  -cluster schema=partitioned total_members=2,1 id=1 backup_id=1
  second partition:        -cluster schema=partitioned total_members=2,1 id=2
  second partition backup: -cluster schema=partitioned total_members=2,1 id=2 backup_id=1
-</code></pre><h2>Running the example from the command line</h2><p>Use Maven to compile and package the example (e.g. <code>mvn clean package</code>).</p><p>This will create the processing unit jars that can be referenced by <code>gs.(sh|bat) pu run</code></p><p>From the ${GS_HOME}/bin directory, run:</p>
+</code></pre><h2>Running the example from the command line</h2><p>Use Maven to compile and package the example (e.g. <code>mvn clean package</code>).</p><p>This will create the processing unit jars that can be referenced by <code>xap pu run</code></p><p>From the ${XAP_HOME}/bin directory, run:</p>
 <ul>
-  <li>gs.(sh|bat) pu run --lus ../examples/hola-mundo/translator/target/hola-mundo-translator.jar</li>
-  <li>gs.(sh|bat) pu run --lus ../examples/hola-mundo/feeder/target/hola-mundo-feeder.jar</li>
+  <li>./xap pu run --lus ../examples/hola-mundo/translator/target/hola-mundo-translator.jar</li>
+  <li>./xap pu run --lus ../examples/hola-mundo/feeder/target/hola-mundo-feeder.jar</li>
 </ul><p>This will run the translator (as a single data-grid) and the feeder.</p><p>To start a partitioned translator (data-grid of 2 partitions), add the --partitions arguments:</p>
 <ul>
-  <li>gs.(sh|bat) pu run --lus --partitions=2 ../examples/hola-mundo/translator/target/hola-mundo-translator.jar</li>
+  <li>./xap pu run --lus --partitions=2 ../examples/hola-mundo/translator/target/hola-mundo-translator.jar</li>
 </ul></div></body></html>
