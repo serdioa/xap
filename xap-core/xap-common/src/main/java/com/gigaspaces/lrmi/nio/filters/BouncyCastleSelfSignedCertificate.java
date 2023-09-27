@@ -57,13 +57,18 @@ public class BouncyCastleSelfSignedCertificate {
     private static BouncyCastleSelfSignedCertificate instance;
     private static boolean created;
 
+    // Mutex to prevent racing condition if multiple threads are attempting to initialize this.keyStore simultaneously.
+    private static final Object instanceMutex = new Object();
+
     public static synchronized KeyStore keystore() {
-        if (!created) {
-            created = true;
-            try {
-                instance = new BouncyCastleSelfSignedCertificate();
-            } catch (Exception e) {
-                logger.warn("Failed to create self signed certificate", e);
+        synchronized (instanceMutex) {
+            if (!created) {
+                created = true;
+                try {
+                    instance = new BouncyCastleSelfSignedCertificate();
+                } catch (Exception e) {
+                    logger.warn("Failed to create self signed certificate", e);
+                }
             }
         }
         if (instance != null) {
