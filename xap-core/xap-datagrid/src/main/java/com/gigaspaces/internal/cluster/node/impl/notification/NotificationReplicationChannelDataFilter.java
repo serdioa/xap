@@ -353,7 +353,7 @@ public class NotificationReplicationChannelDataFilter extends ReliableAsyncChann
         IServerTypeDesc typeDesc = _typeManager.getServerTypeDesc(typeName);
 
         if (getTemplate().isAssignableFrom(typeDesc)) {
-            if (getTemplate().match(_cacheManager.getCacheContext(), _cacheManager, entry, -1, null, _regexCache))
+            if (getTemplate().match(_cacheManager.getCacheContext(), _cacheManager, entry, -1, null, _regexCache, -1))
                 return true;
         }
         return false;
@@ -371,9 +371,9 @@ public class NotificationReplicationChannelDataFilter extends ReliableAsyncChann
         IServerTypeDesc typeDesc = _typeManager.getServerTypeDesc(typeName);
 
         if (getTemplate().isAssignableFrom(typeDesc)) {
-            if (!matchPrevious && prevEntry != null && getTemplate().match(_cacheManager.getCacheContext(), _cacheManager, prevEntry, -1, null, _regexCache))
+            if (!matchPrevious && prevEntry != null && getTemplate().match(_cacheManager.getCacheContext(), _cacheManager, prevEntry, -1, null, _regexCache, -1))
                 matchPrevious = true;
-            if (!matchCurrent && getTemplate().match(_cacheManager.getCacheContext(), _cacheManager, entry, -1, null, _regexCache))
+            if (!matchCurrent && getTemplate().match(_cacheManager.getCacheContext(), _cacheManager, entry, -1, null, _regexCache, -1))
                 matchCurrent = true;
         }
 

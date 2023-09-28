@@ -5015,7 +5015,18 @@ public class CacheManager extends AbstractCacheManager
                     continue;   //uncompleted index
 
                 final short extendedMatchCode = template.getExtendedMatchCodes()[pos];
-                final Object templateValue = index.getIndexValueForTemplate(template.getEntryData());
+                /*final */Object templateValue = index.getIndexValueForTemplate(template.getEntryData());
+                TypeDataIndex idxRight = null;
+                if (templateValue == null) {
+                    String columnRight = template.getExtendedMatchCodeColumns()[pos];
+                    if (columnRight != null) {
+                        idxRight = Arrays.stream(indexes)
+                                .filter(i -> i.getIndexDefinition().getName().equals(columnRight)
+                                                && i.getIndexDefinition().getIndexType().isOrdered())
+                                .findFirst()
+                                .orElse(null);
+                    }
+                }
 
                 // ignore indexes that don't support fifo order scanning - otherwise the results won't preserve the fifo order
                 if (template.isFifoTemplate() && !TemplateMatchCodes.supportFifoOrder(extendedMatchCode))
@@ -5085,6 +5096,19 @@ public class CacheManager extends AbstractCacheManager
                     case TemplateMatchCodes.LE:
                     case TemplateMatchCodes.GE:
                     case TemplateMatchCodes.GT: //for GT we must clip first value if eq to limit
+                        //todo update below depend on extendedMatchCode and extend validation
+                        //todo check which index is more efficient to use
+                        if (templateValue == null
+                                && idxRight != null
+                                && idxRight.getExtendedIndexForScanning() != null  //mean ordered index
+                                && idxRight.getExtendedIndexForScanning() instanceof ExtendedIndexHandler) {
+                            if (extendedMatchCode == TemplateMatchCodes.GE || extendedMatchCode == TemplateMatchCodes.GT) {
+                                templateValue = ((ExtendedIndexHandler) idxRight.getExtendedIndexForScanning()).getMin();
+                            } else {
+                                templateValue = ((ExtendedIndexHandler) idxRight.getExtendedIndexForScanning()).getMax();
+                            }
+                            template.getTemplateEntryData().setFixedPropertyValue(pos, templateValue);
+                        }
                         if (templateValue == null)
                             continue; //TBD
                         if (ignoreOrderedIndexes)
@@ -5105,6 +5129,9 @@ public class CacheManager extends AbstractCacheManager
                             IScanListIterator<IEntryCacheInfo> originalOIS = resultOIS;
                             resultOIS = index.getExtendedIndexForScanning().establishScan(templateValue,
                                     extendedMatchCode, rangeValue, isInclusive);
+                            if (idxRight != null && resultOIS instanceof ExtendedIndexIterator) {
+                                ((ExtendedIndexIterator)resultOIS).setIdxRight(idxRight);
+                            }
                             if (resultOIS == null)
                                 return null;  //no values
 

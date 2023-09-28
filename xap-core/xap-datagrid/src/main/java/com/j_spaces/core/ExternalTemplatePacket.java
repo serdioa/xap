@@ -44,6 +44,7 @@ public class ExternalTemplatePacket extends ExternalEntryPacket implements ITemp
     private static final long serialVersionUID = 1L;
 
     protected short[] _extendedMatchCodes;
+    protected String[] _extendedMatchCodeColumns;
     protected Object[] _rangeValues;
     protected boolean[] _rangeValuesInclusion;
 
@@ -59,6 +60,7 @@ public class ExternalTemplatePacket extends ExternalEntryPacket implements ITemp
             _entryType = ee._returnTrueType ? entryType : EntryType.EXTERNAL_ENTRY;
             _returnOnlyUIDs = ee.m_ReturnOnlyUids;
             _extendedMatchCodes = getOrderedExtMatchCodes(ee);
+            _extendedMatchCodeColumns = getOrderedExtMatchCodeColumns(ee);
             _rangeValues = getOrderedExtRangeValues(ee);
             _rangeValuesInclusion = getOrderedExtRangeValuesInclusion(ee);
         }
@@ -83,6 +85,10 @@ public class ExternalTemplatePacket extends ExternalEntryPacket implements ITemp
 
     public short[] getExtendedMatchCodes() {
         return _extendedMatchCodes;
+    }
+
+    public String[] getExtendedMatchCodeColumns() {
+        return _extendedMatchCodeColumns;
     }
 
     public Object[] getRangeValues() {
@@ -117,6 +123,34 @@ public class ExternalTemplatePacket extends ExternalEntryPacket implements ITemp
         }
 
         return newMatchCodes;
+    }
+
+    private String[] getOrderedExtMatchCodeColumns(ExternalEntry ee) {
+        final String[] extendedMatchCodeColumns = ee.m_ExtendedMatchCodeColumns;
+        if (extendedMatchCodeColumns == null)
+            return null;
+
+        final String[] fieldsNames = ee.getFieldsNames();
+        if (fieldsNames == null) {
+            if (_typeDesc.getNumOfFixedProperties() != extendedMatchCodeColumns.length)
+                throw new ConversionException(new IllegalArgumentException("Original fields count does not match the size of extendedMatchCode"));
+            return extendedMatchCodeColumns;
+        }
+
+        return extendedMatchCodeColumns;
+/*
+        ObjectShortMap<String> fieldsNamesToCodes = CollectionsFactory.getInstance().createObjectShortMap();
+        for (int i = 0; i < fieldsNames.length; i++)
+            fieldsNamesToCodes.put(fieldsNames[i], extendedMatchCodeColumns[i]);
+
+        short[] newMatchCodes = new short[_typeDesc.getNumOfFixedProperties()];
+        for (int i = 0; i < newMatchCodes.length; i++) {
+            String fieldName = _typeDesc.getFixedProperty(i).getName();
+            if (fieldsNamesToCodes.containsKey(fieldName))
+                newMatchCodes[i] = fieldsNamesToCodes.get(fieldName);
+        }
+
+        return newMatchCodes;*/
     }
 
     private Object[] getOrderedExtRangeValues(ExternalEntry ee) {
@@ -183,6 +217,7 @@ public class ExternalTemplatePacket extends ExternalEntryPacket implements ITemp
 
     private final void serializePacket(ObjectOutput out) throws IOException {
         IOUtils.writeShortArray(out, _extendedMatchCodes);
+        IOUtils.writeStringArray(out, _extendedMatchCodeColumns);
         IOUtils.writeObjectArray(out, _rangeValues);
         IOUtils.writeBooleanArray(out, _rangeValuesInclusion);
     }
@@ -198,6 +233,7 @@ public class ExternalTemplatePacket extends ExternalEntryPacket implements ITemp
     private final void deserializePacket(ObjectInput in) throws IOException,
             ClassNotFoundException {
         _extendedMatchCodes = IOUtils.readShortArray(in);
+        _extendedMatchCodeColumns = IOUtils.readStringArray(in);
         _rangeValues = IOUtils.readObjectArray(in);
         _rangeValuesInclusion = IOUtils.readBooleanArray(in);
     }

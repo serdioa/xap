@@ -37,6 +37,7 @@ public class ExtendedIndexIterator<V>
     private boolean _eof;
     private V _res;
     private final TypeDataIndex _idx;
+    private TypeDataIndex _idxRight;
     private boolean _randomScan;
     private final Object _originalStart;
     private final short _originalStartCondition;
@@ -51,6 +52,7 @@ public class ExtendedIndexIterator<V>
         _originalStartCondition=originalStartCondition;
         _originalEnd=originalEnd;
         _originalEndCondition =originalEndCondition;
+        _idxRight=null;
     }
 
     public boolean hasNext() {
@@ -138,7 +140,10 @@ public class ExtendedIndexIterator<V>
     public int getAlreadyMatchedFixedPropertyIndexPos() {
         if (_idx == null)
             return -1;
-        return _idx.getPos();
+        if (_idxRight == null) {
+            return _idx.getPos();
+        }
+        return -1;
     }
 
     public boolean isMultiValueIterator() {
@@ -176,7 +181,8 @@ public class ExtendedIndexIterator<V>
                 && (TypeData.objectsEquality(_originalStart, other._originalStart))
                 && (_originalStartCondition == other._originalStartCondition)
                 && (TypeData.objectsEquality(_originalEnd, other._originalEnd))
-                && (_originalEndCondition == other._originalEndCondition);
+                && (_originalEndCondition == other._originalEndCondition)
+                && (_idxRight == other._idxRight);
 
     }
 
@@ -193,5 +199,13 @@ public class ExtendedIndexIterator<V>
 
     public short getOriginalEndCondition() {
         return _originalEndCondition;
+    }
+
+    public TypeDataIndex getIdxRight() {
+        return _idxRight;
+    }
+
+    public void setIdxRight(TypeDataIndex idxRight) {
+        this._idxRight = idxRight;
     }
 }

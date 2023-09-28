@@ -32,6 +32,7 @@ import org.slf4j.LoggerFactory;
 import java.util.NavigableMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListMap;
+import java.util.stream.Collectors;
 
 /**
  * Handles data manipulation of space extended index
@@ -352,20 +353,38 @@ public class ExtendedIndexHandler<K>
                 ( !reversedScan ? 0 : relation ) :
                 ( endPosInclusive ? TemplateMatchCodes.LE : TemplateMatchCodes.LT );
 
-        _logger.info("ExtendedIndexHandler establishScanOrdered");
-        _logger.info("All unique index values:");
-        _orderedStore.keySet().forEach(store -> _logger.info(store.toString()));
+        String values = _orderedStore.keySet().stream().map(String::valueOf).collect(Collectors.joining(", "));
+        _logger.info("Thread before filter" + Thread.currentThread().getName() + ": " + values);
 
         NavigableMap baseMap = reversedScan ? _orderedStore.descendingMap() : _orderedStore;
-        NavigableMap mapToScan;
+        NavigableMap<Object, IStoredList<?>> mapToScan;
         if (endPos == null)
             mapToScan = startPos != null ? baseMap.tailMap(startPos, startinclusive) : baseMap;
         else
             mapToScan = startPos != null ? baseMap.subMap(startPos, startinclusive, endPos, endPosInclusive) : baseMap.headMap(endPos, endPosInclusive);
 
-        _logger.info("Filtered index values:");
-        mapToScan.keySet().forEach(store -> _logger.info(store.toString()));
+        _logger.info("Filtered index values: " + _index.getIndexDefinition().getName());
+        values = mapToScan.keySet()
+                .stream()
+                .map(Object::toString)
+                .collect(Collectors.joining(", "));
+        _logger.info("Thread for filtered values" + Thread.currentThread().getName() + ": " + values);
 
         return new ExtendedIndexIterator<>(mapToScan, _index,originalStart,originalStartCondition, originalEnd,originalEndCondition);
     }
+
+    public Object getMin() {
+        String values = _orderedStore.keySet().stream().map(String::valueOf).collect(Collectors.joining(", "));
+        _logger.info("Thread min values " + Thread.currentThread().getName() + ": " + values);
+        _logger.info("Min " + Thread.currentThread().getName() + ": " + _orderedStore.firstKey());
+        return _orderedStore.firstKey();
+    }
+
+    public Object getMax() {
+        String values = _orderedStore.keySet().stream().map(String::valueOf).collect(Collectors.joining(", "));
+        _logger.info("Thread max values " + Thread.currentThread().getName() + ": " + values);
+        _logger.info("Max " + Thread.currentThread().getName() + ": " + _orderedStore.lastKey());
+        return _orderedStore.lastKey();
+    }
+
 }

@@ -346,7 +346,7 @@ public class EntryReplicaProducer
                 true,
                 _context,
                 _engine.getTemplateScanner()
-                        .getRegexCache());
+                        .getRegexCache(), -1);
         if (matchResult == MatchResult.NONE)
             return null;
 

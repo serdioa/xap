@@ -58,6 +58,7 @@ public class TemplateEntryData implements IEntryData {
     private boolean isAllNullFields;
 
     private final short[] _extendedMatchCodes;
+    private final String[] _extendedMatchCodeColumns;
     private final Object[] _rangeValues;
     private final boolean[] _rangeValuesInclusion;
 
@@ -74,10 +75,12 @@ public class TemplateEntryData implements IEntryData {
         ITemplatePacket templatePacket = packet instanceof ITemplatePacket ? (ITemplatePacket) packet : null;
         if (templatePacket != null && templatePacket.supportExtendedMatching()) {
             _extendedMatchCodes = templatePacket.getExtendedMatchCodes();
+            _extendedMatchCodeColumns = templatePacket.getExtendedMatchCodeColumns();
             _rangeValues = templatePacket.getRangeValues();
             _rangeValuesInclusion = templatePacket.getRangeValuesInclusion();
         } else {
             _extendedMatchCodes = null;
+            _extendedMatchCodeColumns = null;
             _rangeValues = null;
             _rangeValuesInclusion = null;
         }
@@ -102,6 +105,7 @@ public class TemplateEntryData implements IEntryData {
     public TemplateEntryData() {
         _entryTypeDesc = null;
         _extendedMatchCodes = null;
+        _extendedMatchCodeColumns = null;
         _rangeValues = null;
         _rangeValuesInclusion = null;
         _isIdQuery = false;
@@ -218,14 +222,14 @@ public class TemplateEntryData implements IEntryData {
         return _rangeValuesInclusion == null ? true : _rangeValuesInclusion[index];
     }
 
-    public boolean match(Context cacheContext, CacheManager cacheManager, ServerEntry entry, int skipAlreadyMatchedFixedPropertyIndex, String skipAlreadyMatchedIndexPath, RegexCache regexCache) {
+    public boolean match(Context cacheContext, CacheManager cacheManager, ServerEntry entry, int skipAlreadyMatchedFixedPropertyIndex, String skipAlreadyMatchedIndexPath, RegexCache regexCache, int rightIndex) {
         if (!isNullTemplate()) {
             entry = cacheContext.getViewEntryData((IEntryData) entry);
         }
         int[] positions = getEntryTypeDesc().getTypeDesc().getPositionsForScanning();
         boolean result = _extendedMatchCodes == null
                 ? matchBasic(entry, skipAlreadyMatchedFixedPropertyIndex, positions)
-                : matchExtended(entry, skipAlreadyMatchedFixedPropertyIndex, regexCache, positions);
+                : matchExtended(entry, skipAlreadyMatchedFixedPropertyIndex, regexCache, positions, rightIndex);
 
         if (result && _customQuery != null)
             result = _customQuery.matches(cacheManager, entry, skipAlreadyMatchedIndexPath);
@@ -294,7 +298,7 @@ public class TemplateEntryData implements IEntryData {
         return false;
     }
 
-    private boolean matchExtended(ServerEntry entry, int skipIndex, RegexCache regexCache, int[] templateIndexes) {
+    private boolean matchExtended(ServerEntry entry, int skipIndex, RegexCache regexCache, int[] templateIndexes, int rightIndex) {
         for(int i : templateIndexes){
             if (i == skipIndex)
                 continue;
@@ -320,7 +324,18 @@ public class TemplateEntryData implements IEntryData {
                 return false;
             }
 
-            Object templateValue = _fieldsValues[i];
+            Object templateValue = null;
+            if (rightIndex == -1) {
+                templateValue = _fieldsValues[i];
+            } else {
+                try {
+                    templateValue = entry.getFixedPropertyValue(rightIndex);
+                } catch (Exception e) {
+                    System.out.println("Failed to get right column value: " + e.getMessage());
+                }
+            }
+            System.out.println("template value = " + templateValue);
+            System.out.println("entry value = " + entryValue);
             if (templateValue == null)
                 continue;
             if (entryValue == null)
@@ -463,6 +478,10 @@ public class TemplateEntryData implements IEntryData {
 
     public short[] getExtendedMatchCodes() {
         return _extendedMatchCodes;
+    }
+
+    public String[] getExtendedMatchCodeColumns() {
+        return _extendedMatchCodeColumns;
     }
 
     public SQLQuery<?> toSQLQuery(ITypeDesc typeDesc) {

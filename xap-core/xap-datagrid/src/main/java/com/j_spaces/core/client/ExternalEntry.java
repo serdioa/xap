@@ -138,6 +138,13 @@ public class ExternalEntry implements Entry, IGSEntry, Cloneable {
     public short[] m_ExtendedMatchCodes;
 
     /**
+     * Codes for extending matching.
+     *
+     * @see #setExtendedMatchCodes(short[])
+     */
+    public String[] m_ExtendedMatchCodeColumns;
+
+    /**
      * range values- correspond to m_ExtendedMatchCodes, this is UP-TO and include values.
      */
     public Object[] m_RangeValues;
@@ -212,6 +219,7 @@ public class ExternalEntry implements Entry, IGSEntry, Cloneable {
         m_isFifo = entry.m_isFifo;
         m_VersionID = entry.m_VersionID;
         m_ExtendedMatchCodes = entry.m_ExtendedMatchCodes;
+        m_ExtendedMatchCodeColumns = entry.m_ExtendedMatchCodeColumns;
         m_RangeValues = entry.m_RangeValues;
         m_RangeValuesInclusion = entry.m_RangeValuesInclusion;
         m_TimeToLive = entry.m_TimeToLive;
@@ -563,6 +571,13 @@ public class ExternalEntry implements Entry, IGSEntry, Cloneable {
                 }
             }
 
+            if (m_ExtendedMatchCodeColumns != null) {
+                out.writeInt(m_ExtendedMatchCodeColumns.length);
+                for (int i = 0; i < m_ExtendedMatchCodeColumns.length; i++) {
+                    out.writeUTF(m_ExtendedMatchCodeColumns[i]);
+                }
+            }
+
             if (m_RangeValues != null) {
                 out.writeInt(m_RangeValues.length);
                 for (int i = 0; i < m_RangeValues.length; i++) {
@@ -696,6 +711,13 @@ public class ExternalEntry implements Entry, IGSEntry, Cloneable {
                     m_ExtendedMatchCodes[i] = in.readShort();
             }
 
+            if ((flags & BitMap.EXTENDED_MATCH) != 0) {
+                int size = in.readInt();
+                m_ExtendedMatchCodeColumns = new String[size];
+                for (int i = 0; i < size; i++)
+                    m_ExtendedMatchCodeColumns[i] = in.readUTF();
+            }
+
             if ((flags & BitMap.RANGE_VALUES) != 0) {
                 int size = in.readInt();
                 m_RangeValues = new Object[size];
@@ -822,6 +844,15 @@ public class ExternalEntry implements Entry, IGSEntry, Cloneable {
     }
 
     /**
+     * Matching codes array.
+     *
+     * @return Returns the Matching codes array.
+     */
+    public String[] getExtendedMatchCodeColumns() {
+        return m_ExtendedMatchCodeColumns;
+    }
+
+    /**
      * The matching codes.
      *
      * @param extendedMatchCodes The matching codes to set for template objects.
@@ -845,6 +876,10 @@ public class ExternalEntry implements Entry, IGSEntry, Cloneable {
      */
     public void setExtendedMatchCodes(short[] extendedMatchCodes) {
         m_ExtendedMatchCodes = extendedMatchCodes;
+    }
+
+    public void setM_ExtendedMatchCodeColumns(String[] extendedMatchCodeColumns) {
+        m_ExtendedMatchCodeColumns = extendedMatchCodeColumns;
     }
 
     /**
@@ -1323,6 +1358,18 @@ public class ExternalEntry implements Entry, IGSEntry, Cloneable {
             return 0;
 
         return m_ExtendedMatchCodes[index];
+    }
+
+    /**
+     * Get extended match code at specified index
+     *
+     * @return the match code for the given property index
+     */
+    public String getExtendedMatchCodeColumn(int index) {
+        if (m_ExtendedMatchCodeColumns == null)
+            return null;
+
+        return m_ExtendedMatchCodeColumns[index];
     }
 
     /**

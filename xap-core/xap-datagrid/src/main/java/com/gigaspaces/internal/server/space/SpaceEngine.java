@@ -3961,7 +3961,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
                 context.setPendingExpiredEntriesExist(true);
                 return null;
             }
-            if (needMatch && !_templateScanner.match(context, entry, template, skipAlreadyMatchedFixedPropertyIndex, skipAlreadyMatchedIndexPath, false))
+            if (needMatch && !_templateScanner.match(context, entry, template, skipAlreadyMatchedFixedPropertyIndex, skipAlreadyMatchedIndexPath, false, -1))
                 return null;
         }
         if (!template.isNonBlockingRead() && entry.isDeleted())
@@ -4269,6 +4269,10 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
         try {
             //can we use blob-store prefetch ?
             toScan = BlobStorePreFetchIteratorBasedHandler.createPreFetchIterIfRelevant(context, _cacheManager, toScan, template, _logger);
+            int rightIndex = -1;
+            if (toScan instanceof ExtendedIndexIterator && ((ExtendedIndexIterator)toScan).getIdxRight() != null) {
+                rightIndex = ((ExtendedIndexIterator)toScan).getIdxRight().getPos();
+            }
             while (hasNext = toScan.hasNext()) {
                 IEntryCacheInfo pEntry = toScan.next();
                 if (pEntry == null) {
@@ -4277,7 +4281,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
                 getMatchedEntriesAndOperateSA_Entry(context,
                         template,
                         needMatch, alreadyMatchedFixedPropertyIndexPos, alreadyMatchedIndexPath, leaseFilter,
-                        pEntry, makeWaitForInfo, entryTypeDesc);
+                        pEntry, makeWaitForInfo, entryTypeDesc, rightIndex);
                 if (template.getBatchOperationContext().reachedMaxEntries()) {
                     return;
                 }
@@ -4325,7 +4329,8 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
                                              int skipAlreadyMatchedFixedPropertyIndex, String skipAlreadyMatchedIndexPath,
                                              long leaseFilter,
                                              IEntryCacheInfo pEntry, boolean makeWaitForInfo,
-                                             IServerTypeDesc entryTypeDesc /*can be null in LRU (non blobstore cache policy)*/)
+                                             IServerTypeDesc entryTypeDesc /*can be null in LRU (non blobstore cache policy)*/,
+                                             int rightIndex)
             throws TransactionException, TemplateDeletedException,
             SAException {
         if (pEntry.isBlobStoreEntry() && !pEntry.preMatch(context, template))
@@ -4347,7 +4352,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
             return;
         }
 
-        if (needMatch && !_templateScanner.match(context, entry, template, skipAlreadyMatchedFixedPropertyIndex, skipAlreadyMatchedIndexPath, false))
+        if (needMatch && !_templateScanner.match(context, entry, template, skipAlreadyMatchedFixedPropertyIndex, skipAlreadyMatchedIndexPath, false, rightIndex))
             return;
         if (!template.isNonBlockingRead() && entry.isDeleted())
             return;
@@ -4382,7 +4387,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
             getMatchedEntriesAndOperateSA_Entry(context,
                     template,
                     true /*needMatch*/, -1 /*indexPos*/, null, SystemTime.timeMillis(),
-                    toScan.next(), makeWaitForInfo, entryTypeDesc);
+                    toScan.next(), makeWaitForInfo, entryTypeDesc, -1);
             if(template.isServerIterator()){
                 template.getServerIteratorInfo().setScanEntriesIter(null);
             }
@@ -4906,7 +4911,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
                 tryShadow = entry.hasShadow(true /*safeEntry*/);
             } else {
                 if (needRematch) {
-                    MatchResult mr = template.match(_cacheManager, entry, -1 /*skipIndex*/, null, true /*safeEntry*/, context, _templateScanner.getRegexCache());
+                    MatchResult mr = template.match(_cacheManager, entry, -1 /*skipIndex*/, null, true /*safeEntry*/, context, _templateScanner.getRegexCache(), -1);
                     tryMaster = (mr == MatchResult.MASTER || mr == MatchResult.MASTER_AND_SHADOW);
                     tryShadow = (mr == MatchResult.SHADOW || mr == MatchResult.MASTER_AND_SHADOW);
                     if (getLogger().isDebugEnabled() && isMvccEnabled()) {
@@ -5695,7 +5700,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
         Collection<ITemplateHolder> wf = entry.getTemplatesWaitingForEntry();
         for (ITemplateHolder template : wf) {
             if (!template.isDeleted()) {
-                boolean match = _templateScanner.match(context, entry, template, -1, null, true);
+                boolean match = _templateScanner.match(context, entry, template, -1, null, true, -1);
                 if (!match) {
                     // entry should be removed from template wf and visa-versa
 

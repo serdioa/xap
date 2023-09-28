@@ -353,6 +353,11 @@ public class TemplateHolder extends AbstractSpaceItem implements ITemplateHolder
         return _templateData.getExtendedMatchCodes();
     }
 
+    @Override
+    public String[] getExtendedMatchCodeColumns() {
+        return _templateData.getExtendedMatchCodeColumns();
+    }
+
     /**
      * return indication if the template is exclusive read-lock operation
      *
@@ -712,7 +717,7 @@ public class TemplateHolder extends AbstractSpaceItem implements ITemplateHolder
     }
 
     @Override
-    public MatchResult match(CacheManager cacheManager, IEntryHolder entry, int skipAlreadyMatchedFixedPropertyIndex, String skipAlreadyMatchedIndexPath, boolean safeEntry, Context context, RegexCache regexCache) {
+    public MatchResult match(CacheManager cacheManager, IEntryHolder entry, int skipAlreadyMatchedFixedPropertyIndex, String skipAlreadyMatchedIndexPath, boolean safeEntry, Context context, RegexCache regexCache, int rightIndex) {
         context.incrementNumOfEntriesMatched();
         MatchResult res = MatchResult.NONE;
         ITransactionalEntryData masterEntryData = null;
@@ -742,12 +747,12 @@ public class TemplateHolder extends AbstractSpaceItem implements ITemplateHolder
             if ( ( this.isMatchByID() && !isChangeQuery() ) || this.isEmptyTemplate())
                 res = shadowEntryData == null ? MatchResult.MASTER : MatchResult.MASTER_AND_SHADOW;
             else {
-                boolean masterMatch = _templateData.match(context, cacheManager, masterEntryData, skipAlreadyMatchedFixedPropertyIndex, skipAlreadyMatchedIndexPath, regexCache);
+                boolean masterMatch = _templateData.match(context, cacheManager, masterEntryData, skipAlreadyMatchedFixedPropertyIndex, skipAlreadyMatchedIndexPath, regexCache, rightIndex);
 
                 if (shadowEntryData == null)
                     res = masterMatch ? MatchResult.MASTER : MatchResult.NONE;
                 else {
-                    boolean shadowMatch = _templateData.match(context, cacheManager, shadowEntryData, skipAlreadyMatchedFixedPropertyIndex, skipAlreadyMatchedIndexPath, regexCache);
+                    boolean shadowMatch = _templateData.match(context, cacheManager, shadowEntryData, skipAlreadyMatchedFixedPropertyIndex, skipAlreadyMatchedIndexPath, regexCache, rightIndex);
 
                     if (masterMatch)
                         res = shadowMatch ? MatchResult.MASTER_AND_SHADOW : MatchResult.MASTER;

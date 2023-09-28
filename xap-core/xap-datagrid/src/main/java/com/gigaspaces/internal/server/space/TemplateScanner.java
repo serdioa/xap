@@ -468,18 +468,18 @@ public class TemplateScanner {
      *                  entry field at skipIndex, and hence does not check this index.
      */
     public boolean match(Context context, IEntryHolder entry, ITemplateHolder template,
-                         int skipAlreadyMatchedFixedPropertyIndex, String skipAlreadyMatchedIndexPath, boolean safeEntry) {
-        MatchResult res = template.match(_cacheManager, entry, skipAlreadyMatchedFixedPropertyIndex, skipAlreadyMatchedIndexPath, safeEntry, context, _regexCache);
+                         int skipAlreadyMatchedFixedPropertyIndex, String skipAlreadyMatchedIndexPath, boolean safeEntry, int rightIndex) {
+        MatchResult res = template.match(_cacheManager, entry, skipAlreadyMatchedFixedPropertyIndex, skipAlreadyMatchedIndexPath, safeEntry, context, _regexCache, rightIndex);
         return res != MatchResult.NONE;
     }
 
     public boolean match(Context context, IEntryHolder entry, ITemplateHolder template) {
-        MatchResult res = template.match(_cacheManager, entry, -1, null, false, context, _regexCache);
+        MatchResult res = template.match(_cacheManager, entry, -1, null, false, context, _regexCache, -1);
         return res != MatchResult.NONE;
     }
 
     public boolean notifyMatch(Context context, IEntryHolder entry, ITemplateHolder template) {
-        MatchResult res = template.match(_cacheManager, entry, -1, null, false, context, _regexCache);
+        MatchResult res = template.match(_cacheManager, entry, -1, null, false, context, _regexCache, -1);
         return res == MatchResult.MASTER || res == MatchResult.MASTER_AND_SHADOW;
     }
 

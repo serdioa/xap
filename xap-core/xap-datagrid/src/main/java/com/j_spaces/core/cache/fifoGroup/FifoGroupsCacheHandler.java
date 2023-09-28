@@ -231,7 +231,7 @@ public class FifoGroupsCacheHandler {
                         MatchResult match;
                         if (template.isEmptyTemplate() || template.getEntryData().getNumOfFixedProperties() <= curEntry.getEntryData().getNumOfFixedProperties()) {
                             //perfrom match between the requesting template and the already locked entry
-                            match = template.match(_cacheManager, curEntry, -1 /*skipIndex*/, null, false /*safeEntry*/, context, _cacheManager.getEngine().getTemplateScanner().getRegexCache());
+                            match = template.match(_cacheManager, curEntry, -1 /*skipIndex*/, null, false /*safeEntry*/, context, _cacheManager.getEngine().getTemplateScanner().getRegexCache(), -1);
                             if (match == MatchResult.SHADOW || match == MatchResult.MASTER_AND_SHADOW ||
                                     (match == MatchResult.MASTER && context.getLastRawMatchSnapshot().getOtherUpdateUnderXtnEntry() == null)) {
                                 if (template.getXidOriginated() != e._xtn)
@@ -243,7 +243,7 @@ public class FifoGroupsCacheHandler {
 
                         if (e._holdingTemplate.isEmptyTemplate() || e._holdingTemplate.getEntryData().getNumOfFixedProperties() <= entry.getEntryData().getNumOfFixedProperties()) {
                             //perfrom match between the template already locked and the requesting entry
-                            match = e._holdingTemplate.match(_cacheManager, entry, -1 /*skipIndex*/, null, true /*safeEntry*/, context, _cacheManager.getEngine().getTemplateScanner().getRegexCache());
+                            match = e._holdingTemplate.match(_cacheManager, entry, -1 /*skipIndex*/, null, true /*safeEntry*/, context, _cacheManager.getEngine().getTemplateScanner().getRegexCache(), -1);
                             if (match == MatchResult.SHADOW || match == MatchResult.MASTER_AND_SHADOW ||
                                     (match == MatchResult.MASTER && context.getLastRawMatchSnapshot().getOtherUpdateUnderXtnEntry() == null))
                                 return false;  //the requesting entry belongs to the f-g of the already locked entry

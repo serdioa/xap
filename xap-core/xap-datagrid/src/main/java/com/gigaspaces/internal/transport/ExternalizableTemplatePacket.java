@@ -62,6 +62,10 @@ public class ExternalizableTemplatePacket extends ExternalizableEntryPacket impl
         return null;
     }
 
+    public String[] getExtendedMatchCodeColumns() {
+        return null;
+    }
+
     public Object[] getRangeValues() {
         return null;
     }
