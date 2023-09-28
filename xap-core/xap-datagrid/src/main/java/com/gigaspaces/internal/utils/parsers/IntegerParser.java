@@ -26,10 +26,6 @@ import java.sql.SQLException;
 public class IntegerParser extends AbstractParser {
     @Override
     public Object parse(String s) throws SQLException {
-        try {
-            return Integer.valueOf(s);
-        } catch (NumberFormatException ex) {
-            return Long.valueOf(Math.round(Double.parseDouble(s))).intValue();
-        }
+        return Integer.valueOf(s);
     }
 }
