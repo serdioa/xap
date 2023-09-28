@@ -330,6 +330,9 @@ public class TemplateEntryData implements IEntryData {
             } else {
                 try {
                     templateValue = entry.getFixedPropertyValue(rightIndex);
+                    if (templateValue == null) {
+                        return false; //todo check logic on row 343
+                    }
                 } catch (Exception e) {
                     System.out.println("Failed to get right column value: " + e.getMessage());
                 }
@@ -337,7 +340,7 @@ public class TemplateEntryData implements IEntryData {
             System.out.println("template value = " + templateValue);
             System.out.println("entry value = " + entryValue);
             if (templateValue == null)
-                continue;
+                continue; //todo check
             if (entryValue == null)
                 return false; //TBD- null terminology
 
