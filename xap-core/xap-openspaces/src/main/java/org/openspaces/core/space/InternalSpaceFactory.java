@@ -23,6 +23,7 @@ import com.gigaspaces.internal.lookup.SpaceUrlUtils;
 import com.gigaspaces.internal.sync.mirror.MirrorDistributedTxnConfig;
 import com.gigaspaces.query.sql.functions.SqlFunction;
 import com.gigaspaces.server.SpaceCustomComponent;
+import com.gigaspaces.start.SystemInfo;
 import com.gigaspaces.utils.Pair;
 import com.j_spaces.core.IJSpace;
 import com.j_spaces.core.client.FinderException;
@@ -178,7 +179,8 @@ public class InternalSpaceFactory {
             factory.addFilterProvider(filterProvider);
         }
 
-        if (clusterInfo!=null && clusterInfo.isSecured()) {
+        if (!isRemote && clusterInfo!=null && clusterInfo.isSecured()
+        && SystemInfo.singleton().security().isOpenIdSecurityManager()) {
             Pair<ISpaceFilter, int[]> securityFilterPair = loadSecurityFilter(spaceFactoryBean.getName());
 
             FilterProvider filterProvider = new FilterProvider("SpaceSecurityFilter", securityFilterPair.getFirst());
