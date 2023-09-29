@@ -50,7 +50,6 @@ This project is licensed under the Apache License 2.0 - see the [LICENSE.md](LIC
 
 ### [Download Center](http://www.gigaspaces.com/xap-download)
 ### [Documentation](http://docs.gigaspaces.com/)
-### [Community Forum](http://ask.gigaspaces.org/questions/)
 ### [Blog](http://blog.gigaspaces.com/)
 ### [Training](http://www.gigaspaces.com/Training)
 
