@@ -5017,7 +5017,7 @@ public class CacheManager extends AbstractCacheManager
                 final short extendedMatchCode = template.getExtendedMatchCodes()[pos];
                 /*final */Object templateValue = index.getIndexValueForTemplate(template.getEntryData());
                 TypeDataIndex idxRight = null;
-                if (templateValue == null) {
+                if (templateValue == null && template.getExtendedMatchCodeColumns() != null) {
                     String columnRight = template.getExtendedMatchCodeColumns()[pos];
                     if (columnRight != null) {
                         idxRight = Arrays.stream(indexes)

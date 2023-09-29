@@ -337,7 +337,6 @@ public class TemplateEntryData implements IEntryData {
                     System.out.println("Failed to get right column value: " + e.getMessage());
                 }
             }
-            System.out.println("template value = " + templateValue);
             System.out.println("entry value = " + entryValue);
             if (templateValue == null)
                 continue; //todo check
