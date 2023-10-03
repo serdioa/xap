@@ -37,7 +37,7 @@ public class ExtendedIndexIterator<V>
     private boolean _eof;
     private V _res;
     private final TypeDataIndex _idx;
-    private TypeDataIndex _idxRight;
+    private int _rightColumnPosition;
     private boolean _randomScan;
     private final Object _originalStart;
     private final short _originalStartCondition;
@@ -52,7 +52,7 @@ public class ExtendedIndexIterator<V>
         _originalStartCondition=originalStartCondition;
         _originalEnd=originalEnd;
         _originalEndCondition =originalEndCondition;
-        _idxRight=null;
+        _rightColumnPosition=-1;
     }
 
     public boolean hasNext() {
@@ -137,13 +137,14 @@ public class ExtendedIndexIterator<V>
     }
 
 
+    /**
+     * If _rightColumnPosition != -1 then match should be executed after index scan
+     */
     public int getAlreadyMatchedFixedPropertyIndexPos() {
-        if (_idx == null)
+        if (_idx == null || _rightColumnPosition != -1)
             return -1;
-        if (_idxRight == null) {
-            return _idx.getPos();
-        }
-        return -1;
+
+        return _idx.getPos();
     }
 
     public boolean isMultiValueIterator() {
@@ -182,7 +183,7 @@ public class ExtendedIndexIterator<V>
                 && (_originalStartCondition == other._originalStartCondition)
                 && (TypeData.objectsEquality(_originalEnd, other._originalEnd))
                 && (_originalEndCondition == other._originalEndCondition)
-                && (_idxRight == other._idxRight);
+                && (_rightColumnPosition == other._rightColumnPosition);
 
     }
 
@@ -201,11 +202,12 @@ public class ExtendedIndexIterator<V>
         return _originalEndCondition;
     }
 
-    public TypeDataIndex getIdxRight() {
-        return _idxRight;
+    public int getRightColumnPosition() {
+        return _rightColumnPosition;
     }
 
-    public void setIdxRight(TypeDataIndex idxRight) {
-        this._idxRight = idxRight;
+    public void setRightColumnPosition(int rightColumnPosition) {
+        this._rightColumnPosition = rightColumnPosition;
     }
+
 }

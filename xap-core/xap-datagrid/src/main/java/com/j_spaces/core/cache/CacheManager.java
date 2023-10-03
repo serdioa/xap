@@ -5018,10 +5018,10 @@ public class CacheManager extends AbstractCacheManager
                 /*final */Object templateValue = index.getIndexValueForTemplate(template.getEntryData());
                 TypeDataIndex idxRight = null;
                 if (templateValue == null && template.getExtendedMatchCodeColumns() != null) {
-                    String columnRight = template.getExtendedMatchCodeColumns()[pos];
-                    if (columnRight != null) {
+                    int columnRight = template.getExtendedMatchCodeColumns()[pos];
+                    if (columnRight != -1) {
                         idxRight = Arrays.stream(indexes)
-                                .filter(i -> i.getIndexDefinition().getName().equals(columnRight)
+                                .filter(i -> i.getPos() == columnRight
                                                 && i.getIndexDefinition().getIndexType().isOrdered())
                                 .findFirst()
                                 .orElse(null);
@@ -5130,7 +5130,7 @@ public class CacheManager extends AbstractCacheManager
                             resultOIS = index.getExtendedIndexForScanning().establishScan(templateValue,
                                     extendedMatchCode, rangeValue, isInclusive);
                             if (idxRight != null && resultOIS instanceof ExtendedIndexIterator) {
-                                ((ExtendedIndexIterator)resultOIS).setIdxRight(idxRight);
+                                ((ExtendedIndexIterator)resultOIS).setRightColumnPosition(idxRight.getPos());
                             }
                             if (resultOIS == null)
                                 return null;  //no values

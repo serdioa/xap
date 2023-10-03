@@ -62,7 +62,7 @@ public class ExternalizableTemplatePacket extends ExternalizableEntryPacket impl
         return null;
     }
 
-    public String[] getExtendedMatchCodeColumns() {
+    public int[] getExtendedMatchCodeColumns() {
         return null;
     }
 

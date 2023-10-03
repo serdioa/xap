@@ -113,14 +113,14 @@ public class FifoGroupsHandler {
                 IEntryCacheInfo pEntry = toScan.next();
                 if (pEntry == null)
                     continue;
-                int rightIndex = -1;
-                if (toScan instanceof ExtendedIndexIterator && ((ExtendedIndexIterator)toScan).getIdxRight() != null) {
-                    rightIndex = ((ExtendedIndexIterator)toScan).getIdxRight().getPos();
+                int rightColumnPosition = -1;
+                if (toScan instanceof ExtendedIndexIterator) {
+                    rightColumnPosition = ((ExtendedIndexIterator<?>)toScan).getRightColumnPosition();
                 }
                 _spaceEngine.getMatchedEntriesAndOperateSA_Entry(context,
                         template,
                         needMatch, alreadyMatchedFixedPropertyIndexPos, alreadyMatchedIndexPath, leaseFilter,
-                        pEntry, makeWaitForInfo, entryTypeDesc, rightIndex);
+                        pEntry, makeWaitForInfo, entryTypeDesc, rightColumnPosition);
                 if (template.getBatchOperationContext().getNumResults() >= template.getBatchOperationContext().getMaxEntries())
                     return;
                 if (context.isFifoGroupScanEncounteredXtnConflict()) {

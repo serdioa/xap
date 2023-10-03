@@ -44,7 +44,7 @@ public class ExternalTemplatePacket extends ExternalEntryPacket implements ITemp
     private static final long serialVersionUID = 1L;
 
     protected short[] _extendedMatchCodes;
-    protected String[] _extendedMatchCodeColumns;
+    protected int[] _extendedMatchCodeColumns;
     protected Object[] _rangeValues;
     protected boolean[] _rangeValuesInclusion;
 
@@ -87,7 +87,7 @@ public class ExternalTemplatePacket extends ExternalEntryPacket implements ITemp
         return _extendedMatchCodes;
     }
 
-    public String[] getExtendedMatchCodeColumns() {
+    public int[] getExtendedMatchCodeColumns() {
         return _extendedMatchCodeColumns;
     }
 
@@ -125,15 +125,15 @@ public class ExternalTemplatePacket extends ExternalEntryPacket implements ITemp
         return newMatchCodes;
     }
 
-    private String[] getOrderedExtMatchCodeColumns(ExternalEntry ee) {
-        final String[] extendedMatchCodeColumns = ee.m_ExtendedMatchCodeColumns;
+    private int[] getOrderedExtMatchCodeColumns(ExternalEntry ee) {
+        final int[] extendedMatchCodeColumns = ee.m_ExtendedMatchCodeColumns;
         if (extendedMatchCodeColumns == null)
             return null;
 
         final String[] fieldsNames = ee.getFieldsNames();
         if (fieldsNames == null) {
             if (_typeDesc.getNumOfFixedProperties() != extendedMatchCodeColumns.length)
-                throw new ConversionException(new IllegalArgumentException("Original fields count does not match the size of extendedMatchCode"));
+                throw new ConversionException(new IllegalArgumentException("Original fields count does not match the size of extendedMatchCodeColumn"));
             return extendedMatchCodeColumns;
         }
 
@@ -217,7 +217,7 @@ public class ExternalTemplatePacket extends ExternalEntryPacket implements ITemp
 
     private final void serializePacket(ObjectOutput out) throws IOException {
         IOUtils.writeShortArray(out, _extendedMatchCodes);
-        IOUtils.writeStringArray(out, _extendedMatchCodeColumns);
+        IOUtils.writeIntegerArray(out, _extendedMatchCodeColumns);
         IOUtils.writeObjectArray(out, _rangeValues);
         IOUtils.writeBooleanArray(out, _rangeValuesInclusion);
     }
@@ -233,7 +233,7 @@ public class ExternalTemplatePacket extends ExternalEntryPacket implements ITemp
     private final void deserializePacket(ObjectInput in) throws IOException,
             ClassNotFoundException {
         _extendedMatchCodes = IOUtils.readShortArray(in);
-        _extendedMatchCodeColumns = IOUtils.readStringArray(in);
+        _extendedMatchCodeColumns = IOUtils.readIntegerArray(in);
         _rangeValues = IOUtils.readObjectArray(in);
         _rangeValuesInclusion = IOUtils.readBooleanArray(in);
     }

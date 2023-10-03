@@ -58,7 +58,7 @@ public class TemplateEntryData implements IEntryData {
     private boolean isAllNullFields;
 
     private final short[] _extendedMatchCodes;
-    private final String[] _extendedMatchCodeColumns;
+    private final int[] _extendedMatchCodeColumns;
     private final Object[] _rangeValues;
     private final boolean[] _rangeValuesInclusion;
 
@@ -482,7 +482,7 @@ public class TemplateEntryData implements IEntryData {
         return _extendedMatchCodes;
     }
 
-    public String[] getExtendedMatchCodeColumns() {
+    public int[] getExtendedMatchCodeColumns() {
         return _extendedMatchCodeColumns;
     }
 

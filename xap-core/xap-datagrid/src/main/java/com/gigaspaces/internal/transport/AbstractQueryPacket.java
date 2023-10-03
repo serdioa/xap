@@ -74,7 +74,7 @@ public abstract class AbstractQueryPacket extends AbstractEntryPacket implements
         return null;
     }
 
-    public String[] getExtendedMatchCodeColumns() {
+    public int[] getExtendedMatchCodeColumns() {
         return null;
     }
 

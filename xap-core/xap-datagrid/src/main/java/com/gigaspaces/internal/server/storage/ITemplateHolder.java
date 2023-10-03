@@ -136,7 +136,7 @@ public interface ITemplateHolder extends ISpaceItem, IEntryHolder {
 
     short[] getExtendedMatchCodes();
 
-    String[] getExtendedMatchCodeColumns();
+    int[] getExtendedMatchCodeColumns();
 
     Object getRangeValue(int index);
 
@@ -210,7 +210,7 @@ public interface ITemplateHolder extends ISpaceItem, IEntryHolder {
 
     void setID(Object id);
 
-    MatchResult match(CacheManager cacheManager, IEntryHolder entry, int skipAlreadyMatchedFixedPropertyIndex, String skipAlreadyMatchedIndexPath, boolean safeEntry, Context context, RegexCache regexCache, int rightIndex);
+    MatchResult match(CacheManager cacheManager, IEntryHolder entry, int skipAlreadyMatchedFixedPropertyIndex, String skipAlreadyMatchedIndexPath, boolean safeEntry, Context context, RegexCache regexCache, int rightColumnPosition);
 
     SQLQuery<?> toSQLQuery(ITypeDesc typeDesc);
 

@@ -4271,9 +4271,9 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
         try {
             //can we use blob-store prefetch ?
             toScan = BlobStorePreFetchIteratorBasedHandler.createPreFetchIterIfRelevant(context, _cacheManager, toScan, template, _logger);
-            int rightIndex = -1;
-            if (toScan instanceof ExtendedIndexIterator && ((ExtendedIndexIterator)toScan).getIdxRight() != null) {
-                rightIndex = ((ExtendedIndexIterator)toScan).getIdxRight().getPos();
+            int rightColumnPosition = -1;
+            if (toScan instanceof ExtendedIndexIterator) {
+                rightColumnPosition = ((ExtendedIndexIterator<?>)toScan).getRightColumnPosition();
             }
             while (hasNext = toScan.hasNext()) {
                 IEntryCacheInfo pEntry = toScan.next();
@@ -4283,7 +4283,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
                 getMatchedEntriesAndOperateSA_Entry(context,
                         template,
                         needMatch, alreadyMatchedFixedPropertyIndexPos, alreadyMatchedIndexPath, leaseFilter,
-                        pEntry, makeWaitForInfo, entryTypeDesc, rightIndex);
+                        pEntry, makeWaitForInfo, entryTypeDesc, rightColumnPosition);
                 if (template.getBatchOperationContext().reachedMaxEntries()) {
                     return;
                 }
@@ -4332,7 +4332,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
                                              long leaseFilter,
                                              IEntryCacheInfo pEntry, boolean makeWaitForInfo,
                                              IServerTypeDesc entryTypeDesc /*can be null in LRU (non blobstore cache policy)*/,
-                                             int rightIndex)
+                                             int rightColumnPosition)
             throws TransactionException, TemplateDeletedException,
             SAException {
         if (pEntry.isBlobStoreEntry() && !pEntry.preMatch(context, template))
@@ -4354,7 +4354,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
             return;
         }
 
-        if (needMatch && !_templateScanner.match(context, entry, template, skipAlreadyMatchedFixedPropertyIndex, skipAlreadyMatchedIndexPath, false, rightIndex))
+        if (needMatch && !_templateScanner.match(context, entry, template, skipAlreadyMatchedFixedPropertyIndex, skipAlreadyMatchedIndexPath, false, rightColumnPosition))
             return;
         if (!template.isNonBlockingRead() && entry.isDeleted())
             return;

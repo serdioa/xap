@@ -43,13 +43,11 @@ public abstract class Range extends AbstractCustomQuery {
     private static final long serialVersionUID = 1L;
 
     private transient String _path;
-    private transient String _path2;
+    private transient int _rightColumnPosition;
     private FunctionCallDescription functionCallDescription;
     private transient boolean _isNested;
-    private transient boolean _isNested2;
 
     private ISpaceValueGetter<ServerEntry> _valueGetter;
-    private ISpaceValueGetter<ServerEntry> _valueGetter2;
     private ISpacePredicate _predicate;
 
     private SqlFunction function;
@@ -68,13 +66,11 @@ public abstract class Range extends AbstractCustomQuery {
         this.setFunctionCallDescription(functionCallDescription);
     }
 
-    protected Range(String path, FunctionCallDescription functionCallDescription, ISpacePredicate predicate, String path2) {
+    protected Range(String path, FunctionCallDescription functionCallDescription, ISpacePredicate predicate, int rightColumnPosition) {
         this._path = path;
         this._isNested = isNested(path);
         this._valueGetter = _isNested ? new SpaceEntryPathGetter(path) : new SpaceEntryPropertyGetter(path);
-        this._path2 = path2;
-        this._isNested2 = isNested(path2);
-        this._valueGetter2 = _isNested2 ? new SpaceEntryPathGetter(path2) : new SpaceEntryPropertyGetter(path2);
+        this._rightColumnPosition = rightColumnPosition;
         this._predicate = predicate;
         this.setFunctionCallDescription(functionCallDescription);
     }
@@ -91,9 +87,8 @@ public abstract class Range extends AbstractCustomQuery {
         return _path;
     }
 
-
-    public String getPath2() {
-        return _path2;
+    public int getRightColumnPosition() {
+        return _rightColumnPosition;
     }
 
     /**
