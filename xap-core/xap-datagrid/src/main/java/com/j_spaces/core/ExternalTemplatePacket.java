@@ -138,19 +138,6 @@ public class ExternalTemplatePacket extends ExternalEntryPacket implements ITemp
         }
 
         return extendedMatchCodeColumns;
-/*
-        ObjectShortMap<String> fieldsNamesToCodes = CollectionsFactory.getInstance().createObjectShortMap();
-        for (int i = 0; i < fieldsNames.length; i++)
-            fieldsNamesToCodes.put(fieldsNames[i], extendedMatchCodeColumns[i]);
-
-        short[] newMatchCodes = new short[_typeDesc.getNumOfFixedProperties()];
-        for (int i = 0; i < newMatchCodes.length; i++) {
-            String fieldName = _typeDesc.getFixedProperty(i).getName();
-            if (fieldsNamesToCodes.containsKey(fieldName))
-                newMatchCodes[i] = fieldsNamesToCodes.get(fieldName);
-        }
-
-        return newMatchCodes;*/
     }
 
     private Object[] getOrderedExtRangeValues(ExternalEntry ee) {

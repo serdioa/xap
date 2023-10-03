@@ -5015,14 +5015,13 @@ public class CacheManager extends AbstractCacheManager
                     continue;   //uncompleted index
 
                 final short extendedMatchCode = template.getExtendedMatchCodes()[pos];
-                /*final */Object templateValue = index.getIndexValueForTemplate(template.getEntryData());
+                Object templateValue = index.getIndexValueForTemplate(template.getEntryData());
                 TypeDataIndex idxRight = null;
                 if (templateValue == null && template.getExtendedMatchCodeColumns() != null) {
                     int columnRight = template.getExtendedMatchCodeColumns()[pos];
                     if (columnRight != -1) {
                         idxRight = Arrays.stream(indexes)
-                                .filter(i -> i.getPos() == columnRight
-                                                && i.getIndexDefinition().getIndexType().isOrdered())
+                                .filter(i -> i.getPos() == columnRight && i.getIndexDefinition().getIndexType().isOrdered())
                                 .findFirst()
                                 .orElse(null);
                     }
@@ -5096,7 +5095,6 @@ public class CacheManager extends AbstractCacheManager
                     case TemplateMatchCodes.LE:
                     case TemplateMatchCodes.GE:
                     case TemplateMatchCodes.GT: //for GT we must clip first value if eq to limit
-                        //todo update below depend on extendedMatchCode and extend validation
                         //todo check which index is more efficient to use
                         if (templateValue == null
                                 && idxRight != null
