@@ -30,6 +30,7 @@ import com.gigaspaces.internal.extension.XapExtensions;
 import com.gigaspaces.internal.server.metadata.IServerTypeDesc;
 import com.gigaspaces.internal.server.space.SpaceEngine;
 import com.gigaspaces.internal.transport.IEntryPacket;
+import com.gigaspaces.internal.transport.mvcc.MVCCShellEntryPacket;
 import com.gigaspaces.internal.utils.StringUtils;
 import com.gigaspaces.internal.utils.collections.CopyOnUpdateMap;
 import com.gigaspaces.logger.Constants;
@@ -261,7 +262,8 @@ public class ReplicationNodeReplicaHandler {
                         continue;
                 }
                 // We add a packet to the batch
-                result.add(data);
+                int replicaDataSize = getBatchSize(data);
+                result.add(data, replicaDataSize);
                 if(!isFifoBatch){
                     isFifoBatch = isFifoType(data);
                 }
@@ -284,6 +286,16 @@ public class ReplicationNodeReplicaHandler {
         {
             _lock.unlock();
         }
+    }
+
+    private int getBatchSize(ISpaceReplicaData data) {
+        if (_spaceEngine.isMvccEnabled() && data instanceof AbstractEntryReplicaData) {
+            AbstractEntryReplicaData replicaPacketData = ((AbstractEntryReplicaData)data);
+            if (replicaPacketData.getEntryPacket() instanceof MVCCShellEntryPacket) {
+                return ((MVCCShellEntryPacket)replicaPacketData.getEntryPacket()).getEntryVersionsPackets().size();
+            }
+        }
+        return 1;
     }
 
     private boolean isFifoType(ISpaceReplicaData data) {

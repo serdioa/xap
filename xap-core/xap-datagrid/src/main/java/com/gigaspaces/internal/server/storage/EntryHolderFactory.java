@@ -140,7 +140,7 @@ public class EntryHolderFactory {
         if (xidOriginated != null)
             entryData.setXidOriginated(xidOriginated);
 
-        IEntryHolder entryHolder = new MVCCEntryHolder(typeDesc, uid, scn, entryPacket.isTransient(), entryData);
+        IEntryHolder entryHolder = new MVCCEntryHolder(typeDesc, uid, scn, entryPacket, entryData);
         return entryHolder;
     }
 

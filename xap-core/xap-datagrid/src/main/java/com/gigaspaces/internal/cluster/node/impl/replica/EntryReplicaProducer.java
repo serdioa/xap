@@ -29,10 +29,9 @@ import com.gigaspaces.internal.server.space.SpaceEngine;
 import com.gigaspaces.internal.server.storage.IEntryHolder;
 import com.gigaspaces.internal.server.storage.ITemplateHolder;
 import com.gigaspaces.internal.server.storage.TemplateHolderFactory;
-import com.gigaspaces.internal.transport.EntryPacketFactory;
-import com.gigaspaces.internal.transport.IEntryPacket;
-import com.gigaspaces.internal.transport.ITemplatePacket;
-import com.gigaspaces.internal.transport.TemplatePacket;
+import com.gigaspaces.internal.transport.*;
+import com.gigaspaces.internal.transport.mvcc.IMVCCEntryPacket;
+import com.gigaspaces.internal.transport.mvcc.MVCCShellEntryPacket;
 import com.gigaspaces.logger.Constants;
 import com.gigaspaces.time.SystemTime;
 import com.j_spaces.core.SpaceOperations;
@@ -40,15 +39,21 @@ import com.j_spaces.core.TransactionConflictException;
 import com.j_spaces.core.XtnEntry;
 import com.j_spaces.core.XtnStatus;
 import com.j_spaces.core.cache.context.Context;
+import com.j_spaces.core.cache.mvcc.MVCCEntryCacheInfo;
+import com.j_spaces.core.cache.mvcc.MVCCEntryHolder;
+import com.j_spaces.core.cache.mvcc.MVCCShellEntryCacheInfo;
 import com.j_spaces.core.cluster.IReplicationFilterEntry;
 import com.j_spaces.core.cluster.ReplicationPolicy;
 import com.j_spaces.core.exception.internal.ReplicationInternalSpaceException;
 import com.j_spaces.core.sadapter.ISAdapterIterator;
 import com.j_spaces.core.sadapter.SAException;
+import com.j_spaces.kernel.JSpaceUtilities;
 import com.j_spaces.kernel.locks.ILockObject;
 import net.jini.space.InternalSpaceException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.Iterator;
 
 
 @com.gigaspaces.api.InternalApi
@@ -63,8 +68,9 @@ public class EntryReplicaProducer
     private final boolean _isFullReplication;
     private final Context _context;
 
-    private final ISAdapterIterator<IEntryHolder> _entriesIterSA;
-    private final ITemplateHolder _templateHolder;
+    private ISAdapterIterator<IEntryHolder> _entriesIterSA;
+    private ISAdapterIterator<MVCCShellEntryCacheInfo> _mvccEntryShellsIterSA;
+    private ITemplateHolder _templateHolder;
     private final SpaceCopyReplicaParameters _parameters;
     private final Object _requestContext;
 
@@ -95,23 +101,28 @@ public class EntryReplicaProducer
             IServerTypeDesc typeDesc = _engine.getTypeManager()
                     .loadServerTypeDesc(templatePacket);
 
-            _templateHolder = TemplateHolderFactory.createTemplateHolder(typeDesc,
-                    templatePacket,
-                    _engine.generateUid(),
-                    Long.MAX_VALUE /*
-                     * expiration
-                     * time
-                     */);
+            if (_engine.isMvccEnabled()) {
+                _mvccEntryShellsIterSA = _engine.getCacheManager()
+                        .makeMVCCShellsIter(typeDesc);
+            } else {
+                _templateHolder = TemplateHolderFactory.createTemplateHolder(typeDesc,
+                        templatePacket,
+                        _engine.generateUid(),
+                        Long.MAX_VALUE /*
+                         * expiration
+                         * time
+                         */);
 
-            // iterator for entries
-            _entriesIterSA = _engine.getCacheManager()
-                    .makeEntriesIter(_context,
-                            _templateHolder,
-                            typeDesc,
-                            0,
-                            SystemTime.timeMillis(),
-                            parameters.isMemoryOnly(),
-                            parameters.isTransient());
+                _entriesIterSA = _engine.getCacheManager()
+                        .makeEntriesIter(_context,
+                                _templateHolder,
+                                typeDesc,
+                                0,
+                                SystemTime.timeMillis(),
+                                parameters.isMemoryOnly(),
+                                parameters.isTransient());
+
+            }
         } catch (Exception ex) {
             throw new ReplicationInternalSpaceException("", ex);
         }
@@ -141,9 +152,10 @@ public class EntryReplicaProducer
                     this.notifyAll(); //i am done
                     throw new RuntimeException("space=" + _engine.getFullSpaceName() + " replica forced closing");
                 }
-                IEntryHolder entry = _entriesIterSA.next();
                 // no more entries
-                AbstractEntryReplicaData replicaData = produceDataFromEntry(syncCallback, entry);
+                AbstractEntryReplicaData replicaData = _engine.isMvccEnabled() ?
+                        produceMVCCDataFromShell(syncCallback, _mvccEntryShellsIterSA.next()) :
+                        produceDataFromEntry(syncCallback, _entriesIterSA.next());
                 if (replicaData == null && !_isClosed) {
                     continue;
                 }
@@ -157,6 +169,28 @@ public class EntryReplicaProducer
         }
     }
 
+    private AbstractEntryReplicaData produceMVCCDataFromShell(ISynchronizationCallback syncCallback, MVCCShellEntryCacheInfo pEntryShell) {
+        if (pEntryShell == null) {
+            // Any consecutive call should return null, so we close this producer.
+            close(false /*forced*/);
+            return null;
+        }
+
+        ITypeDesc typeDesc = _engine.getTypeManager()
+                .getTypeDesc(pEntryShell.getServerTypeDesc().getTypeName());
+        if (!isRelevant(typeDesc))
+            return null;
+
+        AbstractEntryReplicaData replicaData = buildMVCCEntryReplicaData(pEntryShell, syncCallback);
+
+        // for some reason no data was created - go to another entry
+        if (replicaData == null)
+            return null;
+
+        increaseGeneratedDataCount();
+        return replicaData;
+    }
+
     protected AbstractEntryReplicaData produceDataFromEntry(ISynchronizationCallback syncCallback, IEntryHolder entry) {
         if (entry == null) {
             // Any consecutive call should return null, so we close this
@@ -167,7 +201,7 @@ public class EntryReplicaProducer
 
         ITypeDesc typeDesc = _engine.getTypeManager()
                 .getTypeDesc(entry.getClassName());
-        if (!isRelevant(entry, typeDesc))
+        if (!isRelevant(typeDesc))
             return null;
 
         AbstractEntryReplicaData replicaData = buildEntryReplicaData(entry,
@@ -181,7 +215,7 @@ public class EntryReplicaProducer
         return replicaData;
     }
 
-    private boolean isRelevant(IEntryHolder entry, ITypeDesc typeDesc) {
+    private boolean isRelevant(ITypeDesc typeDesc) {
         if (!_isFullReplication && !typeDesc.isReplicable())
             return false; // non replicable entry - ignore
 
@@ -205,6 +239,8 @@ public class EntryReplicaProducer
         try {
             if (_entriesIterSA != null)
                 _entriesIterSA.close();
+            if (_mvccEntryShellsIterSA != null)
+                _mvccEntryShellsIterSA.close();
 
         } catch (SAException e) {
             throw new ReplicationInternalSpaceException("Failed to close entries iterator.",
@@ -255,6 +291,43 @@ public class EntryReplicaProducer
         }
 
         return null;
+    }
+
+    /**
+     * Creates the replica data from the mvcc entry shell
+     *
+     * @return The constructed recovery data with a list of versioned entryPackets. Assume Shell under lock.
+     */
+    private AbstractEntryReplicaData buildMVCCEntryReplicaData(MVCCShellEntryCacheInfo shell,
+                                                           ISynchronizationCallback syncCallback) {
+
+        ILockObject entryLock = _engine.getCacheManager().getLockManager()
+                .getLockObject(shell.getLatestCommittedOrHollow());
+
+        MVCCShellEntryPacket mvccShellEntryPacket = new MVCCShellEntryPacket(shell);
+        try {
+            synchronized (entryLock) {
+                Iterator <MVCCEntryCacheInfo> toScan = shell.ascIterator();
+                while (toScan.hasNext()) {
+                    IEntryHolder entry = toScan.next().getEntryHolder();
+                    IEntryPacket entryPacket = buildEntryPacket(entry);
+                    if (entryPacket == null)
+                        return null;
+                    mvccShellEntryPacket.addEntryVersionPacket(entryPacket);
+                }
+            }
+        } finally {
+            _engine.getCacheManager().getLockManager()
+                    .freeLockObject(entryLock);
+        }
+
+        AbstractEntryReplicaData data = newEntryReplicaData(mvccShellEntryPacket);
+        boolean duplicateUid = syncCallback.synchronizationDataGenerated(data);
+
+        if (duplicateUid)
+            return null;
+
+        return data;
     }
 
     private AbstractEntryReplicaData newEntryReplicaData(
@@ -419,6 +492,9 @@ public class EntryReplicaProducer
             return null;
 
         IEntryPacket entryPacket = EntryPacketFactory.createFullPacketForReplication(eh, null, eh.getUID(), ttl);
+        if (_engine.isMvccEnabled() && entryPacket instanceof IMVCCEntryPacket) {
+            ((IMVCCEntryPacket)entryPacket).applyMVCCEntryMetadata((MVCCEntryHolder)eh);
+        }
         entryPacket.setSerializeTypeDesc(true);
         return entryPacket;
     }
