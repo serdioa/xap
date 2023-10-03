@@ -79,10 +79,6 @@ public class TwoColumnsSegmentRange extends Range {
         e.setExtendedMatchCode(index, _code);
     }
 
-    public TwoColumnsSegmentRange(String colNameLeft, int rightColumnPosition, boolean includeMin, boolean includeMax, short code) {
-        this(colNameLeft, null, rightColumnPosition, includeMin, includeMax, code);
-    }
-
     public TwoColumnsSegmentRange(String colNameLeft, FunctionCallDescription functionCallDescription, int rightColumnPosition, boolean includeMin,
                                   boolean includeMax, short code) {
         super(colNameLeft, functionCallDescription, null, rightColumnPosition);
