@@ -29,7 +29,7 @@ import com.gigaspaces.internal.server.space.*;
 import com.gigaspaces.internal.server.space.iterator.ServerIteratorInfo;
 import com.gigaspaces.internal.server.space.mvcc.MVCCGenerationsState;
 import com.gigaspaces.internal.server.space.mvcc.exception.MVCCEntryModifyConflictException;
-import com.gigaspaces.internal.server.space.mvcc.exception.MVCCModifyOnUncompletedGenerationForbiddenException;
+import com.gigaspaces.internal.server.space.mvcc.exception.MVCCModifyOnUncompletedGenerationException;
 import com.gigaspaces.internal.server.space.mvcc.exception.MVCCRevertGenerationException;
 import com.gigaspaces.internal.transport.AbstractProjectionTemplate;
 import com.gigaspaces.internal.transport.IEntryPacket;
@@ -826,7 +826,7 @@ public class TemplateHolder extends AbstractSpaceItem implements ITemplateHolder
                 throw new MVCCRevertGenerationException("Cant revert entry generation ["+entryHolder+"], under " +
                         "generation state [" + mvccGenerationsState + "]");
             }
-            validateGenerationState(mvccGenerationsState, committedGeneration);
+            validateGenerationState(mvccGenerationsState, committedGeneration, entryHolder);
             if (isOverridenEntry
                     && overrideGeneration > completedGeneration
                     && !mvccGenerationsState.isUncompletedGeneration(overrideGeneration)) {
@@ -840,10 +840,9 @@ public class TemplateHolder extends AbstractSpaceItem implements ITemplateHolder
         }
     }
 
-    private void validateGenerationState(MVCCGenerationsState mvccGenerationsState, long committedGeneration) {
-        Set<Long> uncompletedGenerationsSet = mvccGenerationsState.getCopyOfUncompletedGenerationsSet();
-        if (!this.isReadOperation() && uncompletedGenerationsSet != null && uncompletedGenerationsSet.contains(committedGeneration)) {
-            throw new MVCCModifyOnUncompletedGenerationForbiddenException(mvccGenerationsState, committedGeneration);
+    private void validateGenerationState(MVCCGenerationsState mvccGenerationsState, long committedGeneration, MVCCEntryHolder entryHolder) {
+        if (mvccGenerationsState.isUncompletedGeneration(committedGeneration) && !this.isReadOperation()) {
+            throw new MVCCModifyOnUncompletedGenerationException(mvccGenerationsState, committedGeneration, entryHolder, getTemplateOperation());
         }
     }
 
