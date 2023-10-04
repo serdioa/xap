@@ -328,18 +328,14 @@ public class TemplateEntryData implements IEntryData {
             if (rightIndex == -1) {
                 templateValue = _fieldsValues[i];
             } else {
-                try {
-                    templateValue = entry.getFixedPropertyValue(rightIndex);
-                    if (templateValue == null) {
-                        return false; //todo check logic on row 343
-                    }
-                } catch (Exception e) {
-                    System.out.println("Failed to get right column value: " + e.getMessage());
+                templateValue = entry.getFixedPropertyValue(rightIndex);
+                if (templateValue == null) {
+                    return false;
                 }
             }
 
             if (templateValue == null)
-                continue; //todo check
+                continue;
             if (entryValue == null)
                 return false; //TBD- null terminology
 
