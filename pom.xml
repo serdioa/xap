@@ -283,12 +283,12 @@
 
     <distributionManagement>
         <snapshotRepository>
-            <id>org.openspaces</id>
-            <url>s3://gigaspaces-maven-repository-eu</url>
+            <id>nexus-snapshots</id>
+            <url>https://artifactory.gigaspaces.com/repository/maven-snapshots/</url>
         </snapshotRepository>
         <repository>
-            <id>org.openspaces</id>
-            <url>s3://gigaspaces-maven-repository-eu</url>
+            <id>nexus-releases</id>
+            <url>https://artifactory.gigaspaces.com/repository/maven-releases/</url>
         </repository>
     </distributionManagement>
 
