@@ -32,7 +32,6 @@ import org.slf4j.LoggerFactory;
 import java.util.NavigableMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListMap;
-import java.util.stream.Collectors;
 
 /**
  * Handles data manipulation of space extended index
