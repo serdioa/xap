@@ -330,6 +330,40 @@ public class FilterManager implements ISpaceComponentsHandler {
         }
     }
 
+    public void invokeFilters(int operationCode, SpaceContext sc, Object subject, boolean fromReplicas) throws RuntimeException {
+        PrioritySpaceFiltersHolder prioritySpaceFiltersHolder = _filters[operationCode];
+        if (prioritySpaceFiltersHolder == null)
+            return;
+
+        if (prioritySpaceFiltersHolder.isSingleFilterHolder)
+            execute_filter(prioritySpaceFiltersHolder.singleFilterHolder, operationCode, sc, subject, fromReplicas);
+        else {
+            FilterHolder[][] filters_by_priority = prioritySpaceFiltersHolder.prioritizedFilterHolders;
+
+            /* operate the filters according to desired priority */
+            for (int priority = MAX_FILTER_PRIORITIES - 1; priority >= 0; priority--) {
+                FilterHolder[] filters_per_priority = filters_by_priority[priority];
+
+                if (filters_per_priority == null)
+                    continue;
+
+                invoke_same_priority_filters(operationCode, sc, subject, filters_per_priority, fromReplicas);
+            }
+        }
+    }
+
+    private void invoke_same_priority_filters(int operationCode, SpaceContext sc, Object subject,
+                                              FilterHolder[] filters_per_priority, boolean fromReplicas) throws RuntimeException {
+        for (int i = 0; i < filters_per_priority.length; ++i) {
+            FilterHolder filterHolder = filters_per_priority[i];
+            if (filterHolder == null)
+                continue;
+
+            /* execute the filter process method */
+            execute_filter(filterHolder, operationCode, sc, subject, fromReplicas);
+        } // for
+    }
+
     private void invoke_same_priority_filters(int operationCode, SpaceContext sc, Object subject,
                                               FilterHolder[] filters_per_priority) throws RuntimeException {
         for (int i = 0; i < filters_per_priority.length; ++i) {
@@ -358,6 +392,38 @@ public class FilterManager implements ISpaceComponentsHandler {
                     entries[i] = createFilterEntry(packets[i]);
             }
             // execute the filter
+            filterHolder.getFilter().process(sc, entries, operationCode);
+        } else {
+            ISpaceFilterEntry filterEntry = filterHolder.isPassFilterEntry() ? createFilterEntry(subject) : null;
+
+            // execute the filter
+            filterHolder.getFilter().process(sc, filterEntry, operationCode);
+        }
+    }
+
+    /**
+     * execute the filter process method.
+     */
+    private void execute_filter(FilterHolder filterHolder, int operationCode, SpaceContext sc, Object subject, boolean fromReplicas) {
+        if (!filterHolder.isInitialized())
+            return;
+
+        //  exclude execution at replicas SecurityFilter
+        if (fromReplicas && "com.gigaspaces.security.spring.SecurityFilter".equals(filterHolder.getFilter().getClass().getName())) {
+            _logger.debug("exclude execution at replicas SecurityFilter");
+            return;
+        }
+
+        if (subject instanceof Object[]) {
+            ISpaceFilterEntry[] entries = null;
+            if (filterHolder.isPassFilterEntry()) {
+                Object[] packets = (Object[]) subject;
+                entries = new ISpaceFilterEntry[packets.length];
+                for (int i = 0; i < packets.length; ++i)
+                    entries[i] = createFilterEntry(packets[i]);
+            }
+            // execute the filter
+
             filterHolder.getFilter().process(sc, entries, operationCode);
         } else {
             ISpaceFilterEntry filterEntry = filterHolder.isPassFilterEntry() ? createFilterEntry(subject) : null;
