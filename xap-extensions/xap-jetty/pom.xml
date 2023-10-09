@@ -301,7 +301,7 @@
     <parent>
         <artifactId>xap</artifactId>
         <groupId>org.gigaspaces</groupId>
-        <version>16.4.0-SNAPSHOT</version>
+        <version>16.5.0-cache-operator-logs-mon-1201</version>
         <relativePath>../../pom.xml</relativePath>
     </parent>
     <repositories>
