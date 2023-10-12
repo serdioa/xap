@@ -140,7 +140,7 @@ public class ExternalEntry implements Entry, IGSEntry, Cloneable {
     /**
      * Codes for extending matching with columns in comparison.
      *
-     * @see #setExtendedMatchCodeColumns(int[])
+     * @see #setExtendedMatchCodeColumns(short[])
      */
     public short[] m_ExtendedMatchCodeColumns;
 
@@ -408,6 +408,7 @@ public class ExternalEntry implements Entry, IGSEntry, Cloneable {
         private static final int IS_TRANSIENT = 0x00040000;
         private static final int NO_WRITE_LEASE = 0x00080000;
         private static final int RANGE_INCLUSION = 0x00001000;
+        private static final int EXTENDED_MATCH_COLUMN = 0x00002000;
     }
 
     private int buildFlags() {
@@ -448,6 +449,9 @@ public class ExternalEntry implements Entry, IGSEntry, Cloneable {
         }
         if (m_ExtendedMatchCodes != null) {
             flags |= BitMap.EXTENDED_MATCH;
+        }
+        if (m_ExtendedMatchCodeColumns != null) {
+            flags |= BitMap.EXTENDED_MATCH_COLUMN;
         }
         if (m_RangeValues != null) {
             flags |= BitMap.RANGE_VALUES;
@@ -711,7 +715,7 @@ public class ExternalEntry implements Entry, IGSEntry, Cloneable {
                     m_ExtendedMatchCodes[i] = in.readShort();
             }
 
-            if ((flags & BitMap.EXTENDED_MATCH) != 0) {
+            if ((flags & BitMap.EXTENDED_MATCH_COLUMN) != 0) {
                 int size = in.readInt();
                 m_ExtendedMatchCodeColumns = new short[size];
                 for (int i = 0; i < size; i++)
