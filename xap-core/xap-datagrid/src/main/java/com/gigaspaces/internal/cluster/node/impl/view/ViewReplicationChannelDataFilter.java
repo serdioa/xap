@@ -181,7 +181,7 @@ public class ViewReplicationChannelDataFilter extends ReliableAsyncChannelDataFi
                 if (_templates[i].match(_cacheManager.getCacheContext(), _cacheManager,
                         entry,
                         -1, null,
-                        _regexCache, -1)) {
+                        _regexCache)) {
                     if (_templatePackets[i].getProjectionTemplate() == null || operationType != ReplicationSingleOperationType.WRITE)
                         return ReplicationChannelEntryDataFilterResult.PASS;
 
@@ -209,13 +209,13 @@ public class ViewReplicationChannelDataFilter extends ReliableAsyncChannelDataFi
                 if (!matchPrevious && prevEntry != null && _templates[i].match(_cacheManager.getCacheContext(), _cacheManager,
                         prevEntry,
                         -1, null,
-                        _regexCache, -1)) {
+                        _regexCache)) {
                     matchPrevious = true;
                 }
                 if (!matchCurrent && _templates[i].match(_cacheManager.getCacheContext(), _cacheManager,
                         entry,
                         -1, null,
-                        _regexCache, -1)) {
+                        _regexCache)) {
                     templatePacket = _templatePackets[i];
                     matchCurrent = true;
                 }

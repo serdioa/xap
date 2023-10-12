@@ -473,13 +473,18 @@ public class TemplateScanner {
         return res != MatchResult.NONE;
     }
 
+    public boolean match(Context context, IEntryHolder entry, ITemplateHolder template,
+                         int skipAlreadyMatchedFixedPropertyIndex, String skipAlreadyMatchedIndexPath, boolean safeEntry) {
+        return match(context, entry, template, skipAlreadyMatchedFixedPropertyIndex, skipAlreadyMatchedIndexPath, safeEntry, -1);
+    }
+
     public boolean match(Context context, IEntryHolder entry, ITemplateHolder template) {
-        MatchResult res = template.match(_cacheManager, entry, -1, null, false, context, _regexCache, -1);
+        MatchResult res = template.match(_cacheManager, entry, -1, null, false, context, _regexCache);
         return res != MatchResult.NONE;
     }
 
     public boolean notifyMatch(Context context, IEntryHolder entry, ITemplateHolder template) {
-        MatchResult res = template.match(_cacheManager, entry, -1, null, false, context, _regexCache, -1);
+        MatchResult res = template.match(_cacheManager, entry, -1, null, false, context, _regexCache);
         return res == MatchResult.MASTER || res == MatchResult.MASTER_AND_SHADOW;
     }
 

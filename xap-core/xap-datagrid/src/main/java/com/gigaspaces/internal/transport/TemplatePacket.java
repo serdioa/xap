@@ -64,7 +64,7 @@ public class TemplatePacket extends EntryPacket implements ITemplatePacket {
         return null;
     }
 
-    public int[] getExtendedMatchCodeColumns() {
+    public short[] getExtendedMatchCodeColumns() {
         return null;
     }
 

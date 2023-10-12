@@ -127,7 +127,7 @@ public class QueryTemplatePacket extends ExternalTemplatePacket {
         super._entryType = typeDesc.getObjectType();
         setFieldsValues(new Object[typeDesc.getNumOfFixedProperties()]);
         _extendedMatchCodes = new short[typeDesc.getNumOfFixedProperties()];
-        _extendedMatchCodeColumns = new int[typeDesc.getNumOfFixedProperties()];
+        _extendedMatchCodeColumns = new short[typeDesc.getNumOfFixedProperties()];
     }
 
 
@@ -615,7 +615,7 @@ public class QueryTemplatePacket extends ExternalTemplatePacket {
         _extendedMatchCodes[index] = eq;
     }
 
-    public void setExtendedMatchCodeColumns(int index, int eq) {
+    public void setExtendedMatchCodeColumns(int index, short eq) {
         _extendedMatchCodeColumns[index] = eq;
     }
 

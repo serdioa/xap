@@ -3963,7 +3963,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
                 context.setPendingExpiredEntriesExist(true);
                 return null;
             }
-            if (needMatch && !_templateScanner.match(context, entry, template, skipAlreadyMatchedFixedPropertyIndex, skipAlreadyMatchedIndexPath, false, -1))
+            if (needMatch && !_templateScanner.match(context, entry, template, skipAlreadyMatchedFixedPropertyIndex, skipAlreadyMatchedIndexPath, false))
                 return null;
         }
         if (!template.isNonBlockingRead() && entry.isDeleted())
@@ -5702,7 +5702,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
         Collection<ITemplateHolder> wf = entry.getTemplatesWaitingForEntry();
         for (ITemplateHolder template : wf) {
             if (!template.isDeleted()) {
-                boolean match = _templateScanner.match(context, entry, template, -1, null, true, -1);
+                boolean match = _templateScanner.match(context, entry, template, -1, null, true);
                 if (!match) {
                     // entry should be removed from template wf and visa-versa
 

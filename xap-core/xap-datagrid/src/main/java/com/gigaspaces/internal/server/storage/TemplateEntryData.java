@@ -58,7 +58,7 @@ public class TemplateEntryData implements IEntryData {
     private boolean isAllNullFields;
 
     private final short[] _extendedMatchCodes;
-    private final int[] _extendedMatchCodeColumns;
+    private final short[] _extendedMatchCodeColumns;
     private final Object[] _rangeValues;
     private final boolean[] _rangeValuesInclusion;
 
@@ -234,6 +234,10 @@ public class TemplateEntryData implements IEntryData {
         if (result && _customQuery != null)
             result = _customQuery.matches(cacheManager, entry, skipAlreadyMatchedIndexPath);
         return result;
+    }
+
+    public boolean match(Context cacheContext, CacheManager cacheManager, ServerEntry entry, int skipAlreadyMatchedFixedPropertyIndex, String skipAlreadyMatchedIndexPath, RegexCache regexCache) {
+        return match(cacheContext, cacheManager, entry, skipAlreadyMatchedFixedPropertyIndex, skipAlreadyMatchedIndexPath, regexCache, -1);
     }
 
     private boolean isNullTemplate() {
@@ -478,7 +482,7 @@ public class TemplateEntryData implements IEntryData {
         return _extendedMatchCodes;
     }
 
-    public int[] getExtendedMatchCodeColumns() {
+    public short[] getExtendedMatchCodeColumns() {
         return _extendedMatchCodeColumns;
     }
 
