@@ -187,7 +187,7 @@ public abstract class AbstractScheduledPoolConnectionMonitor<T, L>
     }
 
     public void close() {
-        //Aquire lock on pool so it wont be executed concurrently
+        //acquire lock on pool so it wont be executed concurrently
         synchronized (_pool) {
             if (_closed)
                 return;
