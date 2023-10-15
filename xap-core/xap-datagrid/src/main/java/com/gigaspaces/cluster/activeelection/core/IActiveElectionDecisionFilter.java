@@ -25,7 +25,7 @@ import java.util.List;
 
 /**
  * This interface provides an acceptable decision for the proposed service candidate to
- * advance(aquire) the desired {@link ActiveElectionState.State} state.<br> The filter
+ * advance(acquire) the desired {@link ActiveElectionState.State} state.<br> The filter
  * implementation invokes by {@link ActiveElectionManager} to identify whether the managed service
  * candidate is acceptable to advance current state to <code>advanceState</code>.<br> The state will
  * be advanced by service <b>only</b> if {@link #isAcceptable(ActiveElectionState.State, List)}
@@ -42,8 +42,8 @@ public interface IActiveElectionDecisionFilter {
      * Returns <code>true</code> if the managed service is acceptable to advance the state to
      * <code>advanceState</code>.
      *
-     * @param advanceState The advance state (The state to aquire).
-     * @param candidateSrv The service candidates to aquire <code>advanceState</code>.
+     * @param advanceState The advance state (The state to acquire).
+     * @param candidateSrv The service candidates to acquire <code>advanceState</code>.
      * @return <code>true</code> if the <code>advanceState</code> is acceptable by this filter.
      **/
     public boolean isAcceptable(ActiveElectionState.State advanceState, List<ServiceItem> candidateSrv);

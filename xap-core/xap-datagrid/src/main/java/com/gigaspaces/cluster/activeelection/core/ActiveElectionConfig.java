@@ -167,7 +167,7 @@ public class ActiveElectionConfig implements SmartExternalizable {
     }
 
     /**
-     * Time to yield to other participants between every election phase(total 3) before aquire
+     * Time to yield to other participants between every election phase(total 3) before acquire
      * Primary or Backup state.
      *
      * @param yieldTime time in milliseconds.
