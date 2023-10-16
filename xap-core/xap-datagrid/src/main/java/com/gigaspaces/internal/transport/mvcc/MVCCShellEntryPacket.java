@@ -33,7 +33,7 @@ public class MVCCShellEntryPacket implements IEntryPacket {
 
     private String _uid;
     private String _typeName;
-    private List<IEntryPacket> _entryVersionsPackets;
+    private List<IMVCCEntryPacket> _entryVersionsPackets;
 
     public MVCCShellEntryPacket() {
     }
@@ -44,11 +44,11 @@ public class MVCCShellEntryPacket implements IEntryPacket {
         _typeName = pEntryShell.getServerTypeDesc().getTypeName();
     }
 
-    public List<IEntryPacket> getEntryVersionsPackets() {
+    public List<IMVCCEntryPacket> getEntryVersionsPackets() {
         return _entryVersionsPackets;
     }
 
-    public void addEntryVersionPacket(IEntryPacket packet) {
+    public void addEntryVersionPacket(IMVCCEntryPacket packet) {
         _entryVersionsPackets.add(packet);
     }
 

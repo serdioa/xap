@@ -47,7 +47,6 @@ import com.j_spaces.core.cluster.ReplicationPolicy;
 import com.j_spaces.core.exception.internal.ReplicationInternalSpaceException;
 import com.j_spaces.core.sadapter.ISAdapterIterator;
 import com.j_spaces.core.sadapter.SAException;
-import com.j_spaces.kernel.JSpaceUtilities;
 import com.j_spaces.kernel.locks.ILockObject;
 import net.jini.space.InternalSpaceException;
 import org.slf4j.Logger;
@@ -310,7 +309,8 @@ public class EntryReplicaProducer
                 Iterator <MVCCEntryCacheInfo> toScan = shell.ascIterator();
                 while (toScan.hasNext()) {
                     IEntryHolder entry = toScan.next().getEntryHolder();
-                    IEntryPacket entryPacket = buildEntryPacket(entry);
+                    final IMVCCEntryPacket entryPacket = buildEntryPacket(entry);
+                    // JSpaceUtilities.DEBUG_LOGGER.info("BUILDED_PACKET: {}, META:", entryPacket, entryPacket.getMVCCEntryMetadata());
                     if (entryPacket == null)
                         return null;
                     mvccShellEntryPacket.addEntryVersionPacket(entryPacket);
@@ -483,7 +483,7 @@ public class EntryReplicaProducer
                 || (xtnEntry.getStatus() == XtnStatus.PREPARED && xtnEntry.m_SingleParticipant);
     }
 
-    private IEntryPacket buildEntryPacket(IEntryHolder eh) {
+    private <T extends IEntryPacket> T buildEntryPacket(IEntryHolder eh) {
         long exp = eh.getEntryData().getExpirationTime();
         if (eh.hasShadow(true /* safeEntry */))
             exp = Math.max(exp, eh.getShadow().getExpirationTime());
@@ -491,7 +491,7 @@ public class EntryReplicaProducer
         if (ttl <= 0)
             return null;
 
-        IEntryPacket entryPacket = EntryPacketFactory.createFullPacketForReplication(eh, null, eh.getUID(), ttl);
+        T entryPacket = (T)EntryPacketFactory.createFullPacketForReplication(eh, null, eh.getUID(), ttl);
         if (_engine.isMvccEnabled() && entryPacket instanceof IMVCCEntryPacket) {
             ((IMVCCEntryPacket)entryPacket).applyMVCCEntryMetadata((MVCCEntryHolder)eh);
         }

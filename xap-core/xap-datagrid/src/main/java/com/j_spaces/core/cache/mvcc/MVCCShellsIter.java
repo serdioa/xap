@@ -31,6 +31,10 @@ public class MVCCShellsIter implements ISAdapterIterator<MVCCShellEntryCacheInfo
         _types = serverTypeDesc.getAssignableTypes();
     }
 
+    /**
+     * Iterates through shells list from types[] array.
+     * Returns null after last was retrieved (after last shell for last type)
+     * */
     @Override
     public MVCCShellEntryCacheInfo next() throws SAException {
         for (; currentClass < _types.length; currentClass++) {
