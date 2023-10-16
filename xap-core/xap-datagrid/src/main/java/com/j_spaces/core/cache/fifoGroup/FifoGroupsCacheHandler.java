@@ -170,14 +170,14 @@ public class FifoGroupsCacheHandler {
             }
         }
 
-        public FgCacheElement aquireLock(Object obj) {
+        public FgCacheElement acquireLock(Object obj) {
             return _locks[obj.hashCode() & CACHE_POS_COMPUTE];
         }
 
         public void releaseLock(FgCacheElement lockObject) {
         }
 
-        public Object aquireIndexLock(Object obj) {
+        public Object acquireIndexLock(Object obj) {
             return _indexLocks[obj.hashCode() & CACHE_POS_COMPUTE];
         }
 
@@ -205,7 +205,7 @@ public class FifoGroupsCacheHandler {
         final ITemplateHolder lastRawmatchTemplate = context.getLastRawmatchTemplate();
 
 
-        FgCacheElement lock = _lm.aquireLock(val);
+        FgCacheElement lock = _lm.acquireLock(val);
 
         try {
             synchronized (lock) {
@@ -267,7 +267,7 @@ public class FifoGroupsCacheHandler {
 
 
     void removeEntryFromFGCache(Context context, String uid, Object val, XtnEntry xtnEntry) {
-        FgCacheElement lock = _lm.aquireLock(val);
+        FgCacheElement lock = _lm.acquireLock(val);
         try {
             synchronized (lock) {
                 lock.removeFromFGEntriesPerValue(val, uid, xtnEntry);
@@ -279,8 +279,8 @@ public class FifoGroupsCacheHandler {
 
     }
 
-    public Object aquireIndexLock(Object obj) {
-        return _lm.aquireIndexLock(obj);
+    public Object acquireIndexLock(Object obj) {
+        return _lm.acquireIndexLock(obj);
     }
 
     public void releaseIndexLock(Object lockObject) {

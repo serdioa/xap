@@ -52,7 +52,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * TODO	add Javadoc
@@ -504,8 +503,8 @@ public class FifoGroupCacheImpl {
         return _numOfTemplates.get();
     }
 
-    public Object aquireIndexLock(Object obj) {
-        return _fgCacheHandeler.aquireIndexLock(obj);
+    public Object acquireIndexLock(Object obj) {
+        return _fgCacheHandeler.acquireIndexLock(obj);
     }
 
     public void releaseIndexLock(Object lockObject) {

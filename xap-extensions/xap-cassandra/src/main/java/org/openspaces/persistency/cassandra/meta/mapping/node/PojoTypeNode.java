@@ -121,7 +121,7 @@ public class PojoTypeNode extends AbstractCompoundTypeNode
         }
 
         // this means we got here from readExternal so all the fixed properties 
-        // were already aquired from getChildren
+        // were already acquired from getChildren
         if (context == null) {
             return;
         }
