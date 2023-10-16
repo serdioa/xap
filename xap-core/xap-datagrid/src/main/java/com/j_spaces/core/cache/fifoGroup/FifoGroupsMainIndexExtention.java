@@ -55,7 +55,7 @@ public class FifoGroupsMainIndexExtention<K> implements IFifoGroupsIndexExtentio
             _index.insertEntryIndexedField_impl(pEntry, fieldValue, pType, pEntry.getBackRefs());
             return;
         }
-        Object lockObject = _fifoGroupsCacheImpl.aquireIndexLock(fieldValue);
+        Object lockObject = _fifoGroupsCacheImpl.acquireIndexLock(fieldValue);
         try {
             synchronized (lockObject) {
                 _index.insertEntryIndexedField_impl(pEntry, fieldValue, pType, pEntry.getBackRefs());
@@ -71,7 +71,7 @@ public class FifoGroupsMainIndexExtention<K> implements IFifoGroupsIndexExtentio
             _index.insertEntryIndexedField_impl(pEntry, fieldValue, pType, insertBackRefs);
             return;
         }
-        Object lockObject = _fifoGroupsCacheImpl.aquireIndexLock(fieldValue);
+        Object lockObject = _fifoGroupsCacheImpl.acquireIndexLock(fieldValue);
         try {
             synchronized (lockObject) {
                 _index.insertEntryIndexedField_impl(pEntry, fieldValue, pType, insertBackRefs);
@@ -102,7 +102,7 @@ public class FifoGroupsMainIndexExtention<K> implements IFifoGroupsIndexExtentio
                     _index.removeEntryIndexedField_impl(eh, deletedBackRefs,
                             fieldValue, refpos, removeIndexedValue, pEntry);
         }
-        Object lockObject = _fifoGroupsCacheImpl.aquireIndexLock(fieldValue);
+        Object lockObject = _fifoGroupsCacheImpl.acquireIndexLock(fieldValue);
         try {
             synchronized (lockObject) {
                 return
