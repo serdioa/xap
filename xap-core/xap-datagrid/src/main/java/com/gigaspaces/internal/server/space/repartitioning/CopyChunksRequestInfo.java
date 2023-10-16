@@ -80,6 +80,7 @@ public class CopyChunksRequestInfo implements SpaceRequestInfo {
             IOUtils.writeString(out, entry.getValue());
         }
         out.writeByte(scaleType.value);
+        IOUtils.writeObject(out, context);
     }
 
     @Override
@@ -94,5 +95,6 @@ public class CopyChunksRequestInfo implements SpaceRequestInfo {
             instanceIds.put((int) IOUtils.readShort(in), IOUtils.readString(in));
         }
         this.scaleType = in.readByte() == 0 ? ScaleType.IN : ScaleType.OUT;
+        this.context = IOUtils.readObject(in);
     }
 }
