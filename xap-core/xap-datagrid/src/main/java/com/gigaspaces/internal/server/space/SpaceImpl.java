@@ -151,6 +151,7 @@ import com.j_spaces.core.service.Service;
 import com.j_spaces.jdbc.IQueryProcessor;
 import com.j_spaces.jdbc.QueryProcessor;
 import com.j_spaces.jdbc.QueryProcessorFactory;
+import com.j_spaces.jdbc.builder.QueryTemplatePacket;
 import com.j_spaces.kernel.ClassLoaderHelper;
 import com.j_spaces.kernel.JSpaceUtilities;
 import com.j_spaces.kernel.ResourceLoader;
@@ -2618,7 +2619,13 @@ public class SpaceImpl extends AbstractService implements IRemoteSpace, IInterna
             throws UnusableEntryException, RemoteException {
         //todo it is incorrect to check only ALTER privilege, because different SQL can be run via snapshot
         if (sc != null) {
-            beforeTypeOperation(false, sc, SpacePrivilege.ALTER, template.getTypeName());
+            if (template instanceof QueryTemplatePacket) {
+                beforeTypeOperation(false, sc, SpacePrivilege.READ, template.getTypeName());
+            } else if (template instanceof ExternalEntry) {
+                beforeTypeOperation(false, sc, SpacePrivilege.ALTER, template.getTypeName());
+            } else {
+                throw logException(new SecurityException("Not supported template type for snapshot call to the secured space"));
+            }
             snapshotInner(template);
         } else {
             snapshot(template);
