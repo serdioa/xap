@@ -826,7 +826,9 @@ public class TemplateHolder extends AbstractSpaceItem implements ITemplateHolder
                 throw new MVCCRevertGenerationException("Cant revert entry generation ["+entryHolder+"], under " +
                         "generation state [" + mvccGenerationsState + "]");
             }
-            validateGenerationState(mvccGenerationsState, committedGeneration, entryHolder);
+            if (!this.isReadOperation() && mvccGenerationsState.isUncompletedGeneration(committedGeneration)) {
+                throw new MVCCModifyOnUncompletedGenerationException(mvccGenerationsState, committedGeneration, entryHolder, getTemplateOperation());
+            }
             if (isOverridenEntry
                     && overrideGeneration > completedGeneration
                     && !mvccGenerationsState.isUncompletedGeneration(overrideGeneration)) {
@@ -837,12 +839,6 @@ public class TemplateHolder extends AbstractSpaceItem implements ITemplateHolder
                 throw new MVCCEntryModifyConflictException(mvccGenerationsState, entryHolder, getTemplateOperation()); // entry already younger than completedGen
             }
             return isDirtyEntry || (committedIsCompleted && !isOverridenEntry);
-        }
-    }
-
-    private void validateGenerationState(MVCCGenerationsState mvccGenerationsState, long committedGeneration, MVCCEntryHolder entryHolder) {
-        if (mvccGenerationsState.isUncompletedGeneration(committedGeneration) && !this.isReadOperation()) {
-            throw new MVCCModifyOnUncompletedGenerationException(mvccGenerationsState, committedGeneration, entryHolder, getTemplateOperation());
         }
     }
 
