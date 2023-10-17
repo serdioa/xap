@@ -3931,6 +3931,13 @@ public class CacheManager extends AbstractCacheManager
      * Inserts the refs to cache.
      */
     public void insertEntryReferences(Context context, IEntryCacheInfo pEntry, TypeData pType, boolean applySequenceNumber) {
+        if (isMVCCEnabled() && context.isInMemoryRecovery()) {
+            MVCCEntryHolder eh = (MVCCEntryHolder)pEntry.getEntryHolder(this);
+            if (eh.isLogicallyDeleted()) {
+                JSpaceUtilities.DEBUG_LOGGER.info("NOT_INSERT_REFS");
+                return; // recovered logically deleted entry shouldn't have any refs (entryData fields is empty)
+            }
+        }
         context.clearNumOfIndexesInserted();
         IEntryData entryData = context.getCacheViewEntryDataIfNeeded(pEntry.getEntryHolder(this).getEntryData());
         // add entry to type info
