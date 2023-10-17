@@ -122,6 +122,7 @@ import com.gigaspaces.management.space.LocalCacheDetails;
 import com.gigaspaces.management.space.LocalViewDetails;
 import com.gigaspaces.management.transport.ITransportConnection;
 import com.gigaspaces.metadata.StorageType;
+import com.gigaspaces.security.Authority;
 import com.gigaspaces.security.SecurityException;
 import com.gigaspaces.security.authorities.GridAuthority;
 import com.gigaspaces.security.authorities.Privilege;
@@ -2619,6 +2620,10 @@ public class SpaceImpl extends AbstractService implements IRemoteSpace, IInterna
             throws UnusableEntryException, RemoteException {
         //todo it is incorrect to check only ALTER privilege, because different SQL can be run via snapshot
         if (sc != null) {
+            _logger.info("Template type: " + template.getClass());
+            _logger.info("Space context: " + sc.getSecurityContext().getUserDetails().getUsername());
+            _logger.info("Space context: " + sc.getSecurityContext().getUserDetails().getPassword());
+            _logger.info("Space context: " + Arrays.stream(sc.getSecurityContext().getUserDetails().getAuthorities()).map(Authority::getAuthority).collect(Collectors.joining(", ")));
             if (template instanceof QueryTemplatePacket) {
                 beforeTypeOperation(false, sc, SpacePrivilege.READ, template.getTypeName());
             } else if (template instanceof ExternalEntry) {
