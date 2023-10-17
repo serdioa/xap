@@ -25,21 +25,14 @@ import org.bouncycastle.cert.jcajce.JcaX509v3CertificateBuilder;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.operator.ContentSigner;
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.math.BigInteger;
-import java.security.KeyPair;
-import java.security.KeyPairGenerator;
-import java.security.KeyStore;
-import java.security.NoSuchAlgorithmException;
-import java.security.PrivateKey;
-import java.security.Provider;
-import java.security.SecureRandom;
+import java.security.*;
 import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
 import java.util.Date;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Created by Barak Bar Orion 2/1/15.
@@ -54,23 +47,26 @@ public class BouncyCastleSelfSignedCertificate {
     static final Date NOT_AFTER = new Date(253402300799000L);
 
     private final KeyStore keyStore;
-    private static BouncyCastleSelfSignedCertificate instance;
-    private static boolean created;
 
-    public static synchronized KeyStore keystore() {
-        if (!created) {
-            created = true;
+    private static class SingletonHolder {
+        private static final BouncyCastleSelfSignedCertificate INSTANCE;
+
+        static {
             try {
-                instance = new BouncyCastleSelfSignedCertificate();
+                INSTANCE = new BouncyCastleSelfSignedCertificate();
             } catch (Exception e) {
-                logger.warn("Failed to create self signed certificate", e);
+                if (logger != null) logger.error("Failed to create self signed certificate", e);
+                throw new ExceptionInInitializerError(e);
             }
         }
-        if (instance != null) {
+    }
+
+    public static synchronized KeyStore keystore() {
+        final BouncyCastleSelfSignedCertificate instance = SingletonHolder.INSTANCE;
+        if (instance != null)
             return instance.getKeyStore();
-        } else {
-            return null;
-        }
+        else
+            return null; //instance can be null if there was an initialization problem
     }
 
     private BouncyCastleSelfSignedCertificate() throws Exception {
