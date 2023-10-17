@@ -130,4 +130,32 @@ public class LpadSqlFunctionTest {
         lpadSqlFunction.apply(sqlFunctionExecutionContext);
 
     }
+
+    //SELECT LPAD("SQL", 20, "ABC");
+    @Test(expected = RuntimeException.class)
+    public void retries() {
+        SqlFunctionExecutionContext sqlFunctionExecutionContext = new SqlFunctionExecutionContext() {
+            @Override
+            public int getNumberOfArguments() {
+                return 3;
+            }
+
+            @Override
+            public Object getArgument(int index) {
+                if (index == 0) {
+                    return "SQL";
+                }
+                if (index == 1)
+                    return 20;
+                else
+                    return "ABC";
+            }
+        };
+
+        Object res = lpadSqlFunction.apply(sqlFunctionExecutionContext);
+        assertNotNull(res);
+        assertTrue(res.equals("ABCABCABCABCABCABSQL"));
+
+
+    }
 }
