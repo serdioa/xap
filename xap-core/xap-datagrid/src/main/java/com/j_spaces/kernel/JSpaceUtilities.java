@@ -1577,12 +1577,4 @@ public class JSpaceUtilities {
     public static String createContainerId(String hostName, long pid){
         return hostName + "~" + pid;
     }
-
-    public static void printStackTrace() {
-        try {
-            throw new Exception();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
 }

@@ -310,7 +310,6 @@ public class EntryReplicaProducer
                 while (toScan.hasNext()) {
                     IEntryHolder entry = toScan.next().getEntryHolder();
                     final IMVCCEntryPacket entryPacket = buildEntryPacket(entry);
-                    // JSpaceUtilities.DEBUG_LOGGER.info("BUILDED_PACKET: {}, META:", entryPacket, entryPacket.getMVCCEntryMetadata());
                     if (entryPacket == null)
                         return null;
                     mvccShellEntryPacket.addEntryVersionPacket(entryPacket);

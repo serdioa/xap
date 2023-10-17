@@ -3934,7 +3934,6 @@ public class CacheManager extends AbstractCacheManager
         if (isMVCCEnabled() && context.isInMemoryRecovery()) {
             MVCCEntryHolder eh = (MVCCEntryHolder)pEntry.getEntryHolder(this);
             if (eh.isLogicallyDeleted()) {
-                JSpaceUtilities.DEBUG_LOGGER.info("NOT_INSERT_REFS");
                 return; // recovered logically deleted entry shouldn't have any refs (entryData fields is empty)
             }
         }

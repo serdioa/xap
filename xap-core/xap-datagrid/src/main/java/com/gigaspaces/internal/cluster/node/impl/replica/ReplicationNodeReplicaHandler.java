@@ -262,8 +262,7 @@ public class ReplicationNodeReplicaHandler {
                         continue;
                 }
                 // We add a packet to the batch
-                int replicaDataSize = getBatchSize(data);
-                result.add(data, replicaDataSize);
+                result.add(data, getBatchSize(data));
                 if(!isFifoBatch){
                     isFifoBatch = isFifoType(data);
                 }

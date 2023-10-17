@@ -29,7 +29,6 @@ import com.gigaspaces.internal.transport.mvcc.MVCCShellEntryPacket;
 import com.gigaspaces.logger.Constants;
 
 
-import com.j_spaces.kernel.JSpaceUtilities;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
