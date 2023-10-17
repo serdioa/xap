@@ -36,12 +36,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * This election decision filter provides the condition to aquire desired space state on
+ * This election decision filter provides the condition to acquire desired space state on
  * NamingService. The state will be acquired only if {@link #isAcceptable(ActiveElectionState.State,
  * List)} returns true. <p> The final Primary space status will be acquired only if
  * ActiveElectionState.State.ACTIVE will be accepted. <p> NOTE: The member with {@link
  * ISpaceState#STARTED} of {@link com.j_spaces.lookup.entry.State} or with lower order memberID in
- * fail-over group is acceptable to advance to <code>aquireState</code>.
+ * fail-over group is acceptable to advance to <code>acquireState</code>.
  *
  * @author Igor Goldenberg
  * @version 1.0
@@ -67,16 +67,16 @@ public class PriorityElectionFilter
     }
 
     /**
-     * This method provides the condition to advance the manage member to <code>aquireState</code>
+     * This method provides the condition to advance the manage member to <code>acquireState</code>
      * state.
      *
-     * @param candidateSrv the candidates to aquire desired state.
-     * @param aquireState  the state to aquire.
-     * @return <code>true</code> if the manage member is acceptable to aquire desired
-     * <code>aquireState</code> state.
+     * @param candidateSrv the candidates to acquire desired state.
+     * @param acquireState  the state to acquire.
+     * @return <code>true</code> if the manage member is acceptable to acquire desired
+     * <code>acquireState</code> state.
      **/
     @Override
-    public boolean isAcceptable(ActiveElectionState.State aquireState, List<ServiceItem> candidateSrv) {
+    public boolean isAcceptable(ActiveElectionState.State acquireState, List<ServiceItem> candidateSrv) {
         final String STARTED_STATE = JSpaceState.convertToString(ISpaceState.STARTED);
 
 	  /* prepare sorted candidate list */
@@ -102,13 +102,13 @@ public class PriorityElectionFilter
 
         if (_logger.isDebugEnabled()) {
             _logger.debug("PriorityElectionFilter - " +
-                    "\n Member: [" + _memberName + "] ask to acquire [" + aquireState + "] state." +
+                    "\n Member: [" + _memberName + "] ask to acquire [" + acquireState + "] state." +
                     "\n OrderId: " + orderId +
                     "\n Candidates: " + orderedMemberList +
                     "\n Acquire accepted: " + (orderId == 0));
         }
 	 
-	  /* acceptable to aquire the state, only if index==0 */
+	  /* acceptable to acquire the state, only if index==0 */
         return orderId == 0;
     }
 
