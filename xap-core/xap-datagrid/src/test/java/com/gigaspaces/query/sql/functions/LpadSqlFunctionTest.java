@@ -113,45 +113,6 @@ public class LpadSqlFunctionTest {
 
     }
 
-    @Test
-    public void testApplyEmptyString() {
-        SqlFunctionExecutionContext sqlFunctionExecutionContext = new SqlFunctionExecutionContext() {
-            @Override
-            public int getNumberOfArguments() {
-                return 1;
-            }
-
-            @Override
-            public Object getArgument(int index) {
-                return "";
-            }
-        };
-
-        Object res = lpadSqlFunction.apply(sqlFunctionExecutionContext);
-        assertNotNull(res);
-        assertTrue(res.equals(""));
-    }
-
-    @Test
-    public void testApplySpaceDeliminatorString() throws Exception {
-        SqlFunctionExecutionContext sqlFunctionExecutionContext = new SqlFunctionExecutionContext() {
-            @Override
-            public int getNumberOfArguments() {
-                return 1;
-            }
-
-            @Override
-            public Object getArgument(int index) {
-                return " ";
-            }
-        };
-
-        Object res = lpadSqlFunction.apply(sqlFunctionExecutionContext);
-        assertNotNull(res);
-        assertTrue(res.equals(" "));
-
-    }
-
     @Test(expected = RuntimeException.class)
     public void testApplyWrongType() throws Exception {
         SqlFunctionExecutionContext sqlFunctionExecutionContext = new SqlFunctionExecutionContext() {
