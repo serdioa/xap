@@ -28,6 +28,7 @@ import com.gigaspaces.internal.query.ICustomQuery;
 import com.gigaspaces.internal.transport.mvcc.IMVCCEntryPacket;
 import com.gigaspaces.internal.transport.mvcc.MVCCEntryPacketMetadata;
 import com.gigaspaces.internal.version.PlatformLogicalVersion;
+import com.gigaspaces.lrmi.LRMIInvocationContext;
 import com.j_spaces.core.EntrySerializationException;
 import com.j_spaces.core.cache.mvcc.MVCCEntryHolder;
 
@@ -312,8 +313,10 @@ public class EntryPacket extends AbstractEntryPacket implements IMVCCEntryPacket
                 IOUtils.writeObject(out, _dynamicProperties);
             if (_customQuery != null)
                 IOUtils.writeObject(out, _customQuery);
-            if (_mvccEntryMetaData != null) {
-                IOUtils.writeObject(out, _mvccEntryMetaData);
+            if (LRMIInvocationContext.getEndpointLogicalVersion().greaterThan(PlatformLogicalVersion.v16_4_0)) {
+                if (_mvccEntryMetaData != null) {
+                    IOUtils.writeObject(out, _mvccEntryMetaData);
+                }
             }
         } catch (EntrySerializationException e) {
             throw e;
@@ -362,8 +365,9 @@ public class EntryPacket extends AbstractEntryPacket implements IMVCCEntryPacket
                 _dynamicProperties = IOUtils.readObject(in);
             if ((flags & FLAG_CUSTOM_QUERY) != 0)
                 _customQuery = IOUtils.readObject(in);
-            if ((flags & FLAG_MVCC_GENERATIONS) != 0) {
-                _mvccEntryMetaData = IOUtils.readObject(in);
+            if (LRMIInvocationContext.getEndpointLogicalVersion().greaterThan(PlatformLogicalVersion.v16_4_0)) {
+                if ((flags & FLAG_MVCC_GENERATIONS) != 0) {
+                    _mvccEntryMetaData = IOUtils.readObject(in);}
             }
         } catch (EntrySerializationException e) {
             throw e;
