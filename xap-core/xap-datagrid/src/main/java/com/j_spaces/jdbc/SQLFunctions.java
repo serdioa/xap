@@ -47,11 +47,12 @@ public class SQLFunctions {
         builtInFunctions.put("TO_CHAR", new ToCharSqlFunction());
         builtInFunctions.put("CONTAINS_KEY", new ContainsKeySqlFunction());
         builtInFunctions.put("REPLACE", new ReplaceSqlFunction());
+        builtInFunctions.put("LPAD", new LpadSqlFunction());
         builtInFunctions.putAll(SQLFunctionsExtended.getFunctions());
     }
 
-    public SQLFunctions(Map<String, SqlFunction> userFunctions){
-        if(userFunctions != null) {
+    public SQLFunctions(Map<String, SqlFunction> userFunctions) {
+        if (userFunctions != null) {
             userDefinedFunctions.putAll(userFunctions);
         }
     }
@@ -64,15 +65,13 @@ public class SQLFunctions {
         return builtInFunctions.keySet().contains(functionName.toUpperCase());
     }
 
-    public static SqlFunction getBuiltInFunction(String functionName){
+    public static SqlFunction getBuiltInFunction(String functionName) {
         return builtInFunctions.get(functionName.toUpperCase());
     }
 
-    public SqlFunction getFunction(String functionName){
+    public SqlFunction getFunction(String functionName) {
         functionName = functionName.toUpperCase();
         SqlFunction sqlFunction = builtInFunctions.get(functionName);
-        return  sqlFunction != null ? sqlFunction : userDefinedFunctions.get(functionName);
+        return sqlFunction != null ? sqlFunction : userDefinedFunctions.get(functionName);
     }
 }
-
-

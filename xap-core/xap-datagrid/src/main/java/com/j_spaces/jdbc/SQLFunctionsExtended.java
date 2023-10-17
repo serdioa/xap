@@ -62,6 +62,7 @@ public class SQLFunctionsExtended {
         functions.put("DIVIDE", new DivideSqlFunction());
         functions.put("GETDATE", new GetDateSqlFunction());
         functions.put("CURRENT_TIMESTAMP", new GetDateSqlFunction());
+        functions.put("LPAD", new LpadSqlFunction());
     }
 
     public static Map<String, SqlFunction> getFunctions() {

@@ -46,12 +46,13 @@ public abstract class SqlFunction {
         }
     }
 
+
     /**
      * Validate the number of arguments a function receives is in a given range.
      *
      * @param minExpected minimum number of arguments, according to every function inner logic.
      * @param maxExpected maximum number of arguments, according to every function inner logic.
-     * @param context  the actual received arguments, which are contained in the context.
+     * @param context     the actual received arguments, which are contained in the context.
      * @throws RuntimeException if expected doesn't match actual number of arguments in context
      */
     protected void assertNumberOfArguments(int minExpected, int maxExpected, SqlFunctionExecutionContext context) {
@@ -60,26 +61,33 @@ public abstract class SqlFunction {
         }
     }
 
-    protected boolean isWholeNumber(Object object){
-        if(object instanceof Number)
+    protected boolean isWholeNumber(Object object) {
+        if (object instanceof Number)
             return ((Number) object).doubleValue() == Math.ceil(((Number) object).doubleValue());
         return false;
     }
 
-    protected boolean isString(Object object){
+    protected boolean isString(Object object) {
         return object instanceof String;
     }
 
     protected Class<?> fromSqlTypeName(String sqlTypeName, Class<?> def) {
         if (sqlTypeName == null) return def;
         switch (sqlTypeName) {
-            case "BOOLEAN": return Boolean.class;
-            case "DOUBLE": return Double.class;
-            case "INTEGER": return Integer.class;
-            case "SMALLINT": return Short.class;
-            case "BIGINT": return Long.class;
-            case "FLOAT": return Float.class;
-            default: return def;
+            case "BOOLEAN":
+                return Boolean.class;
+            case "DOUBLE":
+                return Double.class;
+            case "INTEGER":
+                return Integer.class;
+            case "SMALLINT":
+                return Short.class;
+            case "BIGINT":
+                return Long.class;
+            case "FLOAT":
+                return Float.class;
+            default:
+                return def;
         }
     }
 
