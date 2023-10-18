@@ -82,7 +82,7 @@ public class CopyChunksRequestInfo implements SpaceRequestInfo {
             IOUtils.writeString(out, entry.getValue());
         }
         out.writeByte(scaleType.value);
-        if (LRMIInvocationContext.getEndpointLogicalVersion().greaterOrEquals(PlatformLogicalVersion.v16_4_0)) {
+        if (LRMIInvocationContext.getEndpointLogicalVersion().greaterThan(PlatformLogicalVersion.v16_4_0)) {
             IOUtils.writeObject(out, context);
         }
     }
@@ -99,7 +99,7 @@ public class CopyChunksRequestInfo implements SpaceRequestInfo {
             instanceIds.put((int) IOUtils.readShort(in), IOUtils.readString(in));
         }
         this.scaleType = in.readByte() == 0 ? ScaleType.IN : ScaleType.OUT;
-        if (LRMIInvocationContext.getEndpointLogicalVersion().greaterOrEquals(PlatformLogicalVersion.v16_4_0)) {
+        if (LRMIInvocationContext.getEndpointLogicalVersion().greaterThan(PlatformLogicalVersion.v16_4_0)) {
             this.context = IOUtils.readObject(in);
         }
     }

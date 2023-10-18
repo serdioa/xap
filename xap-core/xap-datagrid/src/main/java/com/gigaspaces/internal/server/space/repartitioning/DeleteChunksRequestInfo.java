@@ -48,7 +48,7 @@ public class DeleteChunksRequestInfo implements SpaceRequestInfo {
     public void writeExternal(ObjectOutput out) throws IOException {
         IOUtils.writeObject(out, newMap);
         IOUtils.writeObject(out, token);
-        if (LRMIInvocationContext.getEndpointLogicalVersion().greaterOrEquals(PlatformLogicalVersion.v16_4_0)) {
+        if (LRMIInvocationContext.getEndpointLogicalVersion().greaterThan(PlatformLogicalVersion.v16_4_0)) {
             IOUtils.writeObject(out, context);
         }
     }
@@ -57,7 +57,7 @@ public class DeleteChunksRequestInfo implements SpaceRequestInfo {
     public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         this.newMap = IOUtils.readObject(in);
         this.token = IOUtils.readObject(in);
-        if (LRMIInvocationContext.getEndpointLogicalVersion().greaterOrEquals(PlatformLogicalVersion.v16_4_0)) {
+        if (LRMIInvocationContext.getEndpointLogicalVersion().greaterThan(PlatformLogicalVersion.v16_4_0)) {
             this.context = IOUtils.readObject(in);
         }
     }
