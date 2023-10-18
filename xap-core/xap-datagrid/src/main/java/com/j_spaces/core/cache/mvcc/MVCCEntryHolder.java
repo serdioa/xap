@@ -4,6 +4,7 @@ import com.gigaspaces.internal.server.metadata.IServerTypeDesc;
 import com.gigaspaces.internal.server.storage.*;
 import com.gigaspaces.internal.transport.IEntryPacket;
 import com.gigaspaces.internal.transport.mvcc.IMVCCEntryPacket;
+import com.gigaspaces.internal.transport.mvcc.MVCCEntryPacketMetadata;
 import com.gigaspaces.internal.utils.Textualizer;
 import com.gigaspaces.time.SystemTime;
 import com.j_spaces.core.Constants;
@@ -28,10 +29,11 @@ public class MVCCEntryHolder extends EntryHolder implements IMVCCLockObject {
         if (entryPacket instanceof IMVCCEntryPacket) { // recovery replication
             IMVCCEntryPacket mvccEntryPacket = (IMVCCEntryPacket)entryPacket;
             if (mvccEntryPacket.isMVCCEntryMetadataApplied()) {
-                this.committedGeneration = mvccEntryPacket.getMVCCEntryMetadata().getCommittedGeneration();
-                this.overrideGeneration = mvccEntryPacket.getMVCCEntryMetadata().getOverrideGeneration();
-                setLogicallyDeleted(mvccEntryPacket.getMVCCEntryMetadata().isLogicallyDeleted());
-                setOverridingAnother(mvccEntryPacket.getMVCCEntryMetadata().isOverridingAnother());
+                MVCCEntryPacketMetadata metadata = mvccEntryPacket.getMVCCEntryMetadata();
+                this.committedGeneration = metadata.getCommittedGeneration();
+                this.overrideGeneration = metadata.getOverrideGeneration();
+                setLogicallyDeleted(metadata.isLogicallyDeleted());
+                setOverridingAnother(metadata.isOverridingAnother());
             }
         }
     }
