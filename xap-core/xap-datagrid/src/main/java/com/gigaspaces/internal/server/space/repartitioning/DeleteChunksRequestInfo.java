@@ -4,6 +4,8 @@ import com.gigaspaces.admin.quiesce.QuiesceToken;
 import com.gigaspaces.internal.cluster.ClusterTopology;
 import com.gigaspaces.internal.io.IOUtils;
 import com.gigaspaces.internal.space.requests.SpaceRequestInfo;
+import com.gigaspaces.internal.version.PlatformLogicalVersion;
+import com.gigaspaces.lrmi.LRMIInvocationContext;
 import com.j_spaces.core.SpaceContext;
 
 import java.io.IOException;
@@ -46,13 +48,17 @@ public class DeleteChunksRequestInfo implements SpaceRequestInfo {
     public void writeExternal(ObjectOutput out) throws IOException {
         IOUtils.writeObject(out, newMap);
         IOUtils.writeObject(out, token);
-        IOUtils.writeObject(out, context);
+        if (LRMIInvocationContext.getEndpointLogicalVersion().greaterOrEquals(PlatformLogicalVersion.v16_4_0)) {
+            IOUtils.writeObject(out, context);
+        }
     }
 
     @Override
     public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         this.newMap = IOUtils.readObject(in);
         this.token = IOUtils.readObject(in);
-        this.context = IOUtils.readObject(in);
+        if (LRMIInvocationContext.getEndpointLogicalVersion().greaterOrEquals(PlatformLogicalVersion.v16_4_0)) {
+            this.context = IOUtils.readObject(in);
+        }
     }
 }

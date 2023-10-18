@@ -4,6 +4,8 @@ import com.gigaspaces.admin.quiesce.QuiesceToken;
 import com.gigaspaces.internal.cluster.ClusterTopology;
 import com.gigaspaces.internal.io.IOUtils;
 import com.gigaspaces.internal.space.requests.SpaceRequestInfo;
+import com.gigaspaces.internal.version.PlatformLogicalVersion;
+import com.gigaspaces.lrmi.LRMIInvocationContext;
 import com.j_spaces.core.SpaceContext;
 
 import java.io.IOException;
@@ -80,7 +82,9 @@ public class CopyChunksRequestInfo implements SpaceRequestInfo {
             IOUtils.writeString(out, entry.getValue());
         }
         out.writeByte(scaleType.value);
-        IOUtils.writeObject(out, context);
+        if (LRMIInvocationContext.getEndpointLogicalVersion().greaterOrEquals(PlatformLogicalVersion.v16_4_0)) {
+            IOUtils.writeObject(out, context);
+        }
     }
 
     @Override
@@ -95,6 +99,8 @@ public class CopyChunksRequestInfo implements SpaceRequestInfo {
             instanceIds.put((int) IOUtils.readShort(in), IOUtils.readString(in));
         }
         this.scaleType = in.readByte() == 0 ? ScaleType.IN : ScaleType.OUT;
-        this.context = IOUtils.readObject(in);
+        if (LRMIInvocationContext.getEndpointLogicalVersion().greaterOrEquals(PlatformLogicalVersion.v16_4_0)) {
+            this.context = IOUtils.readObject(in);
+        }
     }
 }
