@@ -313,7 +313,7 @@ public class EntryPacket extends AbstractEntryPacket implements IMVCCEntryPacket
                 IOUtils.writeObject(out, _dynamicProperties);
             if (_customQuery != null)
                 IOUtils.writeObject(out, _customQuery);
-            if (LRMIInvocationContext.getEndpointLogicalVersion().greaterThan(PlatformLogicalVersion.v16_4_0)) {
+            if (version.greaterThan(PlatformLogicalVersion.v16_4_0)) {
                 if (_mvccEntryMetaData != null) {
                     IOUtils.writeObject(out, _mvccEntryMetaData);
                 }
@@ -365,7 +365,7 @@ public class EntryPacket extends AbstractEntryPacket implements IMVCCEntryPacket
                 _dynamicProperties = IOUtils.readObject(in);
             if ((flags & FLAG_CUSTOM_QUERY) != 0)
                 _customQuery = IOUtils.readObject(in);
-            if (LRMIInvocationContext.getEndpointLogicalVersion().greaterThan(PlatformLogicalVersion.v16_4_0)) {
+            if (version.greaterThan(PlatformLogicalVersion.v16_4_0)) {
                 if ((flags & FLAG_MVCC_GENERATIONS) != 0) {
                     _mvccEntryMetaData = IOUtils.readObject(in);}
             }

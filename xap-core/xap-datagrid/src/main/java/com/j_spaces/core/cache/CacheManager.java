@@ -3069,8 +3069,8 @@ public class CacheManager extends AbstractCacheManager
                 memoryOnly, false);
     }
 
-    public ISAdapterIterator<MVCCShellEntryCacheInfo> makeMVCCShellsIter(IServerTypeDesc serverTypeDesc) {
-        return new MVCCShellsIter(serverTypeDesc, this);
+    public ISAdapterIterator<MVCCShellEntryCacheInfo> makeMVCCShellsRecoveryIter(IServerTypeDesc serverTypeDesc) {
+        return new MVCCShellsRecoveryIter(serverTypeDesc, this);
     }
 
     public IScanListIterator makeScanableEntriesIter(Context context, ITemplateHolder template,

@@ -102,7 +102,7 @@ public class EntryReplicaProducer
 
             if (_engine.isMvccEnabled()) {
                 _mvccEntryShellsIterSA = _engine.getCacheManager()
-                        .makeMVCCShellsIter(typeDesc);
+                        .makeMVCCShellsRecoveryIter(typeDesc);
             } else {
                 _templateHolder = TemplateHolderFactory.createTemplateHolder(typeDesc,
                         templatePacket,

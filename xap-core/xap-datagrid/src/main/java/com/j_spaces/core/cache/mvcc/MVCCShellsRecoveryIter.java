@@ -17,16 +17,16 @@ import java.util.Iterator;
  * @since 16.4.0
  */
 @com.gigaspaces.api.InternalApi
-public class MVCCShellsIter implements ISAdapterIterator<MVCCShellEntryCacheInfo> {
+public class MVCCShellsRecoveryIter implements ISAdapterIterator<MVCCShellEntryCacheInfo> {
 
-    private static Logger _logger = LoggerFactory.getLogger(MVCCShellsIter.class.getName());
+    private static Logger _logger = LoggerFactory.getLogger(MVCCShellsRecoveryIter.class.getName());
 
     private final CacheManager _cacheManager;
     private final IServerTypeDesc[] _types;
     private Iterator<MVCCShellEntryCacheInfo> _shellsIter;
     private int currentClass = 0;
 
-    public MVCCShellsIter(IServerTypeDesc serverTypeDesc, CacheManager cacheManager) {
+    public MVCCShellsRecoveryIter(IServerTypeDesc serverTypeDesc, CacheManager cacheManager) {
         _cacheManager = cacheManager;
         _types = serverTypeDesc.getAssignableTypes();
     }
