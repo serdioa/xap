@@ -25,8 +25,12 @@ import com.gigaspaces.internal.metadata.EntryType;
 import com.gigaspaces.internal.metadata.ITypeDesc;
 import com.gigaspaces.internal.metadata.PropertyInfo;
 import com.gigaspaces.internal.query.ICustomQuery;
+import com.gigaspaces.internal.transport.mvcc.IMVCCEntryPacket;
+import com.gigaspaces.internal.transport.mvcc.MVCCEntryPacketMetadata;
 import com.gigaspaces.internal.version.PlatformLogicalVersion;
+import com.gigaspaces.lrmi.LRMIInvocationContext;
 import com.j_spaces.core.EntrySerializationException;
+import com.j_spaces.core.cache.mvcc.MVCCEntryHolder;
 
 import java.io.IOException;
 import java.io.ObjectInput;
@@ -46,7 +50,7 @@ import java.util.Map;
  * @version 1.0
  */
 @com.gigaspaces.api.InternalApi
-public class EntryPacket extends AbstractEntryPacket {
+public class EntryPacket extends AbstractEntryPacket implements IMVCCEntryPacket {
     private static final long serialVersionUID = 1L;
 
     protected String _typeName;
@@ -68,6 +72,10 @@ public class EntryPacket extends AbstractEntryPacket {
     // Deprecated:
     private boolean _noWriteLease;
     private boolean _fifo;
+
+    // metadata for mvcc entries only
+    private MVCCEntryPacketMetadata _mvccEntryMetaData;
+
 
     /**
      * Default constructor required by {@link java.io.Externalizable}.
@@ -221,6 +229,7 @@ public class EntryPacket extends AbstractEntryPacket {
     private static final short FLAG_RETURN_ONLY_UIDS = 1 << 9;
     private static final short FLAG_CUSTOM_QUERY = 1 << 10;
     private static final short FLAG_DYNAMIC_PROPERTIES = 1 << 11;
+    private static final short FLAG_MVCC_GENERATIONS = 1 << 12;
 
     private short buildFlags() {
         short flags = 0;
@@ -249,6 +258,8 @@ public class EntryPacket extends AbstractEntryPacket {
             flags |= FLAG_CUSTOM_QUERY;
         if (_dynamicProperties != null)
             flags |= FLAG_DYNAMIC_PROPERTIES;
+        if (_mvccEntryMetaData != null)
+            flags |= FLAG_MVCC_GENERATIONS;
 
         return flags;
     }
@@ -302,6 +313,11 @@ public class EntryPacket extends AbstractEntryPacket {
                 IOUtils.writeObject(out, _dynamicProperties);
             if (_customQuery != null)
                 IOUtils.writeObject(out, _customQuery);
+            if (version.greaterThan(PlatformLogicalVersion.v16_4_0)) {
+                if (_mvccEntryMetaData != null) {
+                    IOUtils.writeObject(out, _mvccEntryMetaData);
+                }
+            }
         } catch (EntrySerializationException e) {
             throw e;
         } catch (Exception e) {
@@ -349,6 +365,10 @@ public class EntryPacket extends AbstractEntryPacket {
                 _dynamicProperties = IOUtils.readObject(in);
             if ((flags & FLAG_CUSTOM_QUERY) != 0)
                 _customQuery = IOUtils.readObject(in);
+            if (version.greaterThan(PlatformLogicalVersion.v16_4_0)) {
+                if ((flags & FLAG_MVCC_GENERATIONS) != 0) {
+                    _mvccEntryMetaData = IOUtils.readObject(in);}
+            }
         } catch (EntrySerializationException e) {
             throw e;
         } catch (Exception e) {
@@ -388,4 +408,25 @@ public class EntryPacket extends AbstractEntryPacket {
         return true;
     }
 
+    @Override
+    public void applyMVCCEntryMetadata(MVCCEntryHolder eh) {
+        _mvccEntryMetaData = new MVCCEntryPacketMetadata();
+        _mvccEntryMetaData.setCommittedGeneration(eh.getCommittedGeneration());
+        _mvccEntryMetaData.setOverrideGeneration(eh.getOverrideGeneration());
+        _mvccEntryMetaData.setLogicallyDeleted(eh.isLogicallyDeleted());
+        _mvccEntryMetaData.setOverridingAnother(eh.isOverridingAnother());
+    }
+
+    /**
+     * If packet is using not for recovery, metadata is not applied -> has default values
+     */
+    @Override
+    public boolean isMVCCEntryMetadataApplied() {
+        return _mvccEntryMetaData != null;
+    }
+
+    @Override
+    public MVCCEntryPacketMetadata getMVCCEntryMetadata() {
+        return _mvccEntryMetaData;
+    }
 }

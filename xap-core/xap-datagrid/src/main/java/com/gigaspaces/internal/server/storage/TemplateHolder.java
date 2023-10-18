@@ -834,8 +834,8 @@ public class TemplateHolder extends AbstractSpaceItem implements ITemplateHolder
                     && !mvccGenerationsState.isUncompletedGeneration(overrideGeneration)) {
                 throw new MVCCEntryModifyConflictException(mvccGenerationsState, entryHolder, getTemplateOperation()); // overriden can't be modified
             }
-            if ((committedGeneration > completedGeneration)
-                    && (!mvccGenerationsState.isUncompletedGeneration(committedGeneration))) {
+            if (committedGeneration > completedGeneration
+                    && !mvccGenerationsState.isUncompletedGeneration(committedGeneration)) {
                 throw new MVCCEntryModifyConflictException(mvccGenerationsState, entryHolder, getTemplateOperation()); // entry already younger than completedGen
             }
             return isDirtyEntry || (committedIsCompleted && !isOverridenEntry);

@@ -93,10 +93,7 @@ import com.j_spaces.core.cache.context.IndexMetricsContext;
 import com.j_spaces.core.cache.context.TemplateMatchTier;
 import com.j_spaces.core.cache.context.TieredState;
 import com.j_spaces.core.cache.fifoGroup.FifoGroupCacheImpl;
-import com.j_spaces.core.cache.mvcc.MVCCCacheManagerHandler;
-import com.j_spaces.core.cache.mvcc.MVCCEntryCacheInfo;
-import com.j_spaces.core.cache.mvcc.MVCCEntryHolder;
-import com.j_spaces.core.cache.mvcc.MVCCShellEntryCacheInfo;
+import com.j_spaces.core.cache.mvcc.*;
 import com.j_spaces.core.client.*;
 import com.j_spaces.core.cluster.ClusterPolicy;
 import com.j_spaces.core.exception.internal.EngineInternalSpaceException;
@@ -124,6 +121,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 import static com.j_spaces.core.Constants.CacheManager.*;
 import static com.j_spaces.core.Constants.Engine.UPDATE_NO_LEASE;
@@ -3071,6 +3069,10 @@ public class CacheManager extends AbstractCacheManager
                 memoryOnly, false);
     }
 
+    public ISAdapterIterator<MVCCShellEntryCacheInfo> makeMVCCShellsRecoveryIter(IServerTypeDesc serverTypeDesc) {
+        return new MVCCShellsRecoveryIter(serverTypeDesc, this);
+    }
+
     public IScanListIterator makeScanableEntriesIter(Context context, ITemplateHolder template,
                                                      IServerTypeDesc serverTypeDesc, long SCNFilter, long leaseFilter,
                                                      boolean memoryOnly)
@@ -3786,9 +3788,9 @@ public class CacheManager extends AbstractCacheManager
                 alreadyIn = false;
                 IEntryCacheInfo oldEntry;
                 if (isMVCCEnabled()) {
-                    oldEntry = _mvccCacheManagerHandler.insertMvccEntryToCache((MVCCEntryCacheInfo) pEntry, _entries);
+                    oldEntry = _mvccCacheManagerHandler.insertMvccEntryToCache(context, (MVCCEntryCacheInfo) pEntry, _entries);
                 } else {
-                     oldEntry = _entries.putIfAbsent(pEntry.getUID(), pEntry);
+                    oldEntry = _entries.putIfAbsent(pEntry.getUID(), pEntry);
                 }
 
                 if (oldEntry == null)
@@ -3929,6 +3931,12 @@ public class CacheManager extends AbstractCacheManager
      * Inserts the refs to cache.
      */
     public void insertEntryReferences(Context context, IEntryCacheInfo pEntry, TypeData pType, boolean applySequenceNumber) {
+        if (isMVCCEnabled() && context.isInMemoryRecovery()) {
+            MVCCEntryHolder eh = (MVCCEntryHolder)pEntry.getEntryHolder(this);
+            if (eh.isLogicallyDeleted()) {
+                return; // recovered logically deleted entry shouldn't have any refs (entryData fields is empty)
+            }
+        }
         context.clearNumOfIndexesInserted();
         IEntryData entryData = context.getCacheViewEntryDataIfNeeded(pEntry.getEntryHolder(this).getEntryData());
         // add entry to type info

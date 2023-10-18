@@ -94,6 +94,7 @@ import com.gigaspaces.internal.sync.SynchronizationStorageAdapter;
 import com.gigaspaces.internal.sync.hybrid.SyncHybridSAException;
 import com.gigaspaces.internal.sync.hybrid.SyncHybridTransactionException;
 import com.gigaspaces.internal.transport.*;
+import com.gigaspaces.internal.transport.mvcc.IMVCCEntryPacket;
 import com.gigaspaces.internal.utils.GsEnv;
 import com.gigaspaces.internal.utils.StringUtils;
 import com.gigaspaces.internal.utils.collections.IAddOnlySet;
@@ -860,6 +861,9 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
         final XtnEntry txnEntry = initTransactionEntry(txn, sc, fromReplication);
 
         context.applyMVCCGenerationsState(isMvccEnabled(), txnEntry, sc);
+        if (isMvccEnabled() && entryPacket instanceof IMVCCEntryPacket && ((IMVCCEntryPacket)entryPacket).isMVCCEntryMetadataApplied()) {
+            context.setInMemoryRecovery(true);
+        }
 
         /**
          * build Entry Holder .
