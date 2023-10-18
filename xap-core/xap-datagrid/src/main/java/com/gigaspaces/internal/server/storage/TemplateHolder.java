@@ -29,6 +29,7 @@ import com.gigaspaces.internal.server.space.*;
 import com.gigaspaces.internal.server.space.iterator.ServerIteratorInfo;
 import com.gigaspaces.internal.server.space.mvcc.MVCCGenerationsState;
 import com.gigaspaces.internal.server.space.mvcc.exception.MVCCEntryModifyConflictException;
+import com.gigaspaces.internal.server.space.mvcc.exception.MVCCModifyOnUncompletedGenerationException;
 import com.gigaspaces.internal.server.space.mvcc.exception.MVCCRevertGenerationException;
 import com.gigaspaces.internal.transport.AbstractProjectionTemplate;
 import com.gigaspaces.internal.transport.IEntryPacket;
@@ -47,10 +48,7 @@ import com.j_spaces.jdbc.builder.QueryTemplatePacket;
 import net.jini.core.transaction.server.ServerTransaction;
 import org.slf4j.Logger;
 
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 /**
  * This class represents a template in a J-Space. Each instance of this class contains a reference
@@ -827,6 +825,9 @@ public class TemplateHolder extends AbstractSpaceItem implements ITemplateHolder
                 }
                 throw new MVCCRevertGenerationException("Cant revert entry generation ["+entryHolder+"], under " +
                         "generation state [" + mvccGenerationsState + "]");
+            }
+            if (!this.isReadOperation() && mvccGenerationsState.isUncompletedGeneration(committedGeneration)) {
+                throw new MVCCModifyOnUncompletedGenerationException(mvccGenerationsState, committedGeneration, entryHolder, getTemplateOperation());
             }
             if (isOverridenEntry
                     && overrideGeneration > completedGeneration
