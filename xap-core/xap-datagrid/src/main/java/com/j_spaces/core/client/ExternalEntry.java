@@ -19,6 +19,8 @@ package com.j_spaces.core.client;
 
 import com.gigaspaces.internal.client.spaceproxy.ISpaceProxy;
 import com.gigaspaces.internal.io.IOUtils;
+import com.gigaspaces.internal.version.PlatformLogicalVersion;
+import com.gigaspaces.lrmi.LRMIInvocationContext;
 import com.j_spaces.core.EntrySerializationException;
 import com.j_spaces.core.IGSEntry;
 import com.j_spaces.core.IJSpace;
@@ -450,9 +452,6 @@ public class ExternalEntry implements Entry, IGSEntry, Cloneable {
         if (m_ExtendedMatchCodes != null) {
             flags |= BitMap.EXTENDED_MATCH;
         }
-        if (m_ExtendedMatchCodeColumns != null) {
-            flags |= BitMap.EXTENDED_MATCH_COLUMN;
-        }
         if (m_RangeValues != null) {
             flags |= BitMap.RANGE_VALUES;
         }
@@ -469,6 +468,10 @@ public class ExternalEntry implements Entry, IGSEntry, Cloneable {
         }
         if (m_NOWriteLeaseMode) {
             flags |= BitMap.NO_WRITE_LEASE;
+        }
+        if (LRMIInvocationContext.getEndpointLogicalVersion().greaterThan(PlatformLogicalVersion.v16_4_0)
+                && m_ExtendedMatchCodeColumns != null) {
+            flags |= BitMap.EXTENDED_MATCH_COLUMN;
         }
 
         return flags;
@@ -575,13 +578,6 @@ public class ExternalEntry implements Entry, IGSEntry, Cloneable {
                 }
             }
 
-            if (m_ExtendedMatchCodeColumns != null) {
-                out.writeInt(m_ExtendedMatchCodeColumns.length);
-                for (int i = 0; i < m_ExtendedMatchCodeColumns.length; i++) {
-                    out.writeInt(m_ExtendedMatchCodeColumns[i]);
-                }
-            }
-
             if (m_RangeValues != null) {
                 out.writeInt(m_RangeValues.length);
                 for (int i = 0; i < m_RangeValues.length; i++) {
@@ -593,6 +589,14 @@ public class ExternalEntry implements Entry, IGSEntry, Cloneable {
                 out.writeInt(m_RangeValuesInclusion.length);
                 for (int i = 0; i < m_RangeValuesInclusion.length; i++) {
                     out.writeObject(m_RangeValuesInclusion[i]);
+                }
+            }
+
+            if (LRMIInvocationContext.getEndpointLogicalVersion().greaterThan(PlatformLogicalVersion.v16_4_0)
+                    && m_ExtendedMatchCodeColumns != null) {
+                out.writeInt(m_ExtendedMatchCodeColumns.length);
+                for (int i = 0; i < m_ExtendedMatchCodeColumns.length; i++) {
+                    out.writeInt(m_ExtendedMatchCodeColumns[i]);
                 }
             }
         } catch (Exception ex) {
@@ -715,13 +719,6 @@ public class ExternalEntry implements Entry, IGSEntry, Cloneable {
                     m_ExtendedMatchCodes[i] = in.readShort();
             }
 
-            if ((flags & BitMap.EXTENDED_MATCH_COLUMN) != 0) {
-                int size = in.readInt();
-                m_ExtendedMatchCodeColumns = new short[size];
-                for (int i = 0; i < size; i++)
-                    m_ExtendedMatchCodeColumns[i] = in.readShort();
-            }
-
             if ((flags & BitMap.RANGE_VALUES) != 0) {
                 int size = in.readInt();
                 m_RangeValues = new Object[size];
@@ -734,6 +731,14 @@ public class ExternalEntry implements Entry, IGSEntry, Cloneable {
                 m_RangeValuesInclusion = new boolean[size];
                 for (int i = 0; i < size; i++)
                     m_RangeValuesInclusion[i] = in.readBoolean();
+            }
+
+            if (LRMIInvocationContext.getEndpointLogicalVersion().greaterThan(PlatformLogicalVersion.v16_4_0)
+                    && (flags & BitMap.EXTENDED_MATCH_COLUMN) != 0) {
+                int size = in.readInt();
+                m_ExtendedMatchCodeColumns = new short[size];
+                for (int i = 0; i < size; i++)
+                    m_ExtendedMatchCodeColumns[i] = in.readShort();
             }
         } catch (Exception ex) {
             if (ex instanceof EntrySerializationException)

@@ -26,6 +26,7 @@ import com.gigaspaces.internal.metadata.converter.ConversionException;
 import com.gigaspaces.internal.transport.AbstractProjectionTemplate;
 import com.gigaspaces.internal.transport.ITemplatePacket;
 import com.gigaspaces.internal.version.PlatformLogicalVersion;
+import com.gigaspaces.lrmi.LRMIInvocationContext;
 import com.j_spaces.core.client.ExternalEntry;
 import com.j_spaces.core.client.TemplateMatchCodes;
 
@@ -181,7 +182,7 @@ public class ExternalTemplatePacket extends ExternalEntryPacket implements ITemp
     public void writeToSwap(ObjectOutput out) throws IOException {
         super.writeToSwap(out);
 
-        serializePacket(out);
+        serializePacket(out, LRMIInvocationContext.getEndpointLogicalVersion());
     }
 
     @Override
@@ -189,7 +190,7 @@ public class ExternalTemplatePacket extends ExternalEntryPacket implements ITemp
             ClassNotFoundException {
         super.readFromSwap(in);
 
-        deserializePacket(in);
+        deserializePacket(in, LRMIInvocationContext.getEndpointLogicalVersion());
     }
 
     @Override
@@ -197,14 +198,16 @@ public class ExternalTemplatePacket extends ExternalEntryPacket implements ITemp
             throws IOException {
         super.writeExternal(out, version);
 
-        serializePacket(out);
+        serializePacket(out, version);
     }
 
-    private final void serializePacket(ObjectOutput out) throws IOException {
+    private final void serializePacket(ObjectOutput out, PlatformLogicalVersion version) throws IOException {
         IOUtils.writeShortArray(out, _extendedMatchCodes);
-        IOUtils.writeShortArray(out, _extendedMatchCodeColumns);
         IOUtils.writeObjectArray(out, _rangeValues);
         IOUtils.writeBooleanArray(out, _rangeValuesInclusion);
+        if (version.greaterThan(PlatformLogicalVersion.v16_4_0)) {
+            IOUtils.writeShortArray(out, _extendedMatchCodeColumns);
+        }
     }
 
     @Override
@@ -212,15 +215,17 @@ public class ExternalTemplatePacket extends ExternalEntryPacket implements ITemp
             throws IOException, ClassNotFoundException {
         super.readExternal(in, version);
 
-        deserializePacket(in);
+        deserializePacket(in, version);
     }
 
-    private final void deserializePacket(ObjectInput in) throws IOException,
+    private final void deserializePacket(ObjectInput in, PlatformLogicalVersion version) throws IOException,
             ClassNotFoundException {
         _extendedMatchCodes = IOUtils.readShortArray(in);
-        _extendedMatchCodeColumns = IOUtils.readShortArray(in);
         _rangeValues = IOUtils.readObjectArray(in);
         _rangeValuesInclusion = IOUtils.readBooleanArray(in);
+        if (version.greaterThan(PlatformLogicalVersion.v16_4_0)) {
+            _extendedMatchCodeColumns = IOUtils.readShortArray(in);
+        }
     }
 
     @Override
