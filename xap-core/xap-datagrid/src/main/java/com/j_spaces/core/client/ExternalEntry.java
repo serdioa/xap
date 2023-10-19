@@ -469,8 +469,7 @@ public class ExternalEntry implements Entry, IGSEntry, Cloneable {
         if (m_NOWriteLeaseMode) {
             flags |= BitMap.NO_WRITE_LEASE;
         }
-        if (LRMIInvocationContext.getEndpointLogicalVersion().greaterThan(PlatformLogicalVersion.v16_4_0)
-                && m_ExtendedMatchCodeColumns != null) {
+        if (m_ExtendedMatchCodeColumns != null) {
             flags |= BitMap.EXTENDED_MATCH_COLUMN;
         }
 
