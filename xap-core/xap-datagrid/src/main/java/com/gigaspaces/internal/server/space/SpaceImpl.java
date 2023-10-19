@@ -2127,20 +2127,6 @@ public class SpaceImpl extends AbstractService implements IRemoteSpace, IInterna
 
     public WriteEntryResult write(IEntryPacket entry, Transaction txn, long lease, int modifiers, boolean fromReplication, SpaceContext sc)
             throws TransactionException, UnusableEntryException, UnknownTypeException, RemoteException {
-        _logger.info("SpaceContext WriteEntryResult write: " + sc);
-        if (sc != null) {
-            if (sc.getSecurityContext() != null) {
-                if (sc.getSecurityContext().getUserDetails() != null) {
-                    _logger.info("Space context: " + sc.getSecurityContext().getUserDetails().getUsername());
-                    _logger.info("Space context: " + sc.getSecurityContext().getUserDetails().getPassword());
-                    _logger.info("Space context: " + Arrays.stream(sc.getSecurityContext().getUserDetails().getAuthorities()).map(Authority::getAuthority).collect(Collectors.joining(", ")));
-                } else {
-                    _logger.info("User details is null");
-                }
-            } else {
-                _logger.info("Security context is null");
-            }
-        }
         if (UpdateModifiers.isPotentialUpdate(modifiers))
             beginPacketOperation(true, sc, SpacePrivilege.WRITE, entry);
         else
@@ -2187,20 +2173,6 @@ public class SpaceImpl extends AbstractService implements IRemoteSpace, IInterna
     public WriteEntriesResult write(IEntryPacket[] entries, Transaction txn, long lease, long[] leases, SpaceContext sc, long timeout, int modifiers,
                                     boolean newRouter)
             throws TransactionException, UnknownTypesException, RemoteException {
-        _logger.info("SpaceContext WriteEntriesResult write: " + sc);
-        if (sc != null) {
-            if (sc.getSecurityContext() != null) {
-                if (sc.getSecurityContext().getUserDetails() != null) {
-                    _logger.info("Space context: " + sc.getSecurityContext().getUserDetails().getUsername());
-                    _logger.info("Space context: " + sc.getSecurityContext().getUserDetails().getPassword());
-                    _logger.info("Space context: " + Arrays.stream(sc.getSecurityContext().getUserDetails().getAuthorities()).map(Authority::getAuthority).collect(Collectors.joining(", ")));
-                } else {
-                    _logger.info("User details is null");
-                }
-            } else {
-                _logger.info("Security context is null");
-            }
-        }
         if (UpdateModifiers.isPotentialUpdate(modifiers))
             beginBatchOperation(sc, SpacePrivilege.WRITE, entries);
         else
@@ -2261,20 +2233,6 @@ public class SpaceImpl extends AbstractService implements IRemoteSpace, IInterna
     public AnswerPacket update(IEntryPacket entry, Transaction txn, long lease, long timeout,
                                SpaceContext sc, int modifiers, boolean newRouter)
             throws TransactionException, UnusableEntryException, UnknownTypeException, RemoteException, InterruptedException {
-        _logger.info("SpaceContext AnswerPacket update: " + sc);
-        if (sc != null) {
-            if (sc.getSecurityContext() != null) {
-                if (sc.getSecurityContext().getUserDetails() != null) {
-                    _logger.info("Space context: " + sc.getSecurityContext().getUserDetails().getUsername());
-                    _logger.info("Space context: " + sc.getSecurityContext().getUserDetails().getPassword());
-                    _logger.info("Space context: " + Arrays.stream(sc.getSecurityContext().getUserDetails().getAuthorities()).map(Authority::getAuthority).collect(Collectors.joining(", ")));
-                } else {
-                    _logger.info("User details is null");
-                }
-            } else {
-                _logger.info("Security context is null");
-            }
-        }
         if (UpdateModifiers.isPotentialUpdate(modifiers))
             beginPacketOperation(true, sc, SpacePrivilege.WRITE, entry);
         else
@@ -2321,20 +2279,6 @@ public class SpaceImpl extends AbstractService implements IRemoteSpace, IInterna
     private Object[] updateMultiple(IEntryPacket[] entries, Transaction txn, long[] leases,
                                     SpaceContext sc, int modifiers)
             throws UnusableEntryException, UnknownTypeException, TransactionException, RemoteException {
-        _logger.info("SpaceContext Object[] updateMultiple: " + sc);
-        if (sc != null) {
-            if (sc.getSecurityContext() != null) {
-                if (sc.getSecurityContext().getUserDetails() != null) {
-                    _logger.info("Space context: " + sc.getSecurityContext().getUserDetails().getUsername());
-                    _logger.info("Space context: " + sc.getSecurityContext().getUserDetails().getPassword());
-                    _logger.info("Space context: " + Arrays.stream(sc.getSecurityContext().getUserDetails().getAuthorities()).map(Authority::getAuthority).collect(Collectors.joining(", ")));
-                } else {
-                    _logger.info("User details is null");
-                }
-            } else {
-                _logger.info("Security context is null");
-            }
-        }
         if (UpdateModifiers.isPotentialUpdate(modifiers))
             beginBatchOperation(sc, SpacePrivilege.WRITE, entries);
         else
@@ -2422,20 +2366,6 @@ public class SpaceImpl extends AbstractService implements IRemoteSpace, IInterna
     public AnswerHolder readNew(ITemplatePacket template, Transaction txn, long timeout, boolean ifExists,
                                 boolean take, IJSpaceProxyListener listener, SpaceContext sc, boolean returnOnlyUid, int modifiers)
             throws TransactionException, UnusableEntryException, UnknownTypeException, RemoteException, InterruptedException {
-        _logger.info("SpaceContext AnswerHolder readNew: " + sc);
-        if (sc != null) {
-            if (sc.getSecurityContext() != null) {
-                if (sc.getSecurityContext().getUserDetails() != null) {
-                    _logger.info("Space context: " + sc.getSecurityContext().getUserDetails().getUsername());
-                    _logger.info("Space context: " + sc.getSecurityContext().getUserDetails().getPassword());
-                    _logger.info("Space context: " + Arrays.stream(sc.getSecurityContext().getUserDetails().getAuthorities()).map(Authority::getAuthority).collect(Collectors.joining(", ")));
-                } else {
-                    _logger.info("User details is null");
-                }
-            } else {
-                _logger.info("Security context is null");
-            }
-        }
         beginPacketOperation(true, sc, (take ? SpacePrivilege.TAKE : SpacePrivilege.READ), template);
 
         try {
@@ -2464,20 +2394,6 @@ public class SpaceImpl extends AbstractService implements IRemoteSpace, IInterna
     public AnswerPacket read(ITemplatePacket template, Transaction txn, long timeout, boolean ifExists,
                              boolean take, IJSpaceProxyListener listener, SpaceContext sc, boolean returnOnlyUid, int modifiers)
             throws TransactionException, UnusableEntryException, UnknownTypeException, RemoteException, InterruptedException {
-        _logger.info("SpaceContext AnswerPacket read: " + sc);
-        if (sc != null) {
-            if (sc.getSecurityContext() != null) {
-                if (sc.getSecurityContext().getUserDetails() != null) {
-                    _logger.info("Space context: " + sc.getSecurityContext().getUserDetails().getUsername());
-                    _logger.info("Space context: " + sc.getSecurityContext().getUserDetails().getPassword());
-                    _logger.info("Space context: " + Arrays.stream(sc.getSecurityContext().getUserDetails().getAuthorities()).map(Authority::getAuthority).collect(Collectors.joining(", ")));
-                } else {
-                    _logger.info("User details is null");
-                }
-            } else {
-                _logger.info("Security context is null");
-            }
-        }
         AnswerHolder answerHolder = readNew(template, txn, timeout, ifExists, take, listener, sc, returnOnlyUid, modifiers);
         return answerHolder != null ? answerHolder.getAnswerPacket() : null;
     }
@@ -2486,20 +2402,6 @@ public class SpaceImpl extends AbstractService implements IRemoteSpace, IInterna
                             boolean take, IJSpaceProxyListener listener, SpaceContext sc, boolean returnOnlyUid, int modifiers,
                             final IFuture result)
             throws UnusableEntryException, TransactionException, UnknownTypeException, RemoteException, InterruptedException {
-        _logger.info("SpaceContext Object asyncRead: " + sc);
-        if (sc != null) {
-            if (sc.getSecurityContext() != null) {
-                if (sc.getSecurityContext().getUserDetails() != null) {
-                    _logger.info("Space context: " + sc.getSecurityContext().getUserDetails().getUsername());
-                    _logger.info("Space context: " + sc.getSecurityContext().getUserDetails().getPassword());
-                    _logger.info("Space context: " + Arrays.stream(sc.getSecurityContext().getUserDetails().getAuthorities()).map(Authority::getAuthority).collect(Collectors.joining(", ")));
-                } else {
-                    _logger.info("User details is null");
-                }
-            } else {
-                _logger.info("Security context is null");
-            }
-        }
         boolean isEmbedded = (result != null);
         if (isEmbedded) {
             IResponseContext respContext = new AbstractResponseContext(null, OperationPriority.REGULAR, null, null) {
@@ -2552,20 +2454,6 @@ public class SpaceImpl extends AbstractService implements IRemoteSpace, IInterna
     public IEntryPacket[] readMultiple(ITemplatePacket template, Transaction txn, boolean take,
                                        int maxEntries, SpaceContext sc, boolean returnOnlyUid, int modifiers)
             throws TransactionException, UnusableEntryException, UnknownTypeException, RemoteException {
-        _logger.info("SpaceContext IEntryPacket[] readMultiple: " + sc);
-        if (sc != null) {
-            if (sc.getSecurityContext() != null) {
-                if (sc.getSecurityContext().getUserDetails() != null) {
-                    _logger.info("Space context: " + sc.getSecurityContext().getUserDetails().getUsername());
-                    _logger.info("Space context: " + sc.getSecurityContext().getUserDetails().getPassword());
-                    _logger.info("Space context: " + Arrays.stream(sc.getSecurityContext().getUserDetails().getAuthorities()).map(Authority::getAuthority).collect(Collectors.joining(", ")));
-                } else {
-                    _logger.info("User details is null");
-                }
-            } else {
-                _logger.info("Security context is null");
-            }
-        }
         AnswerHolder answerHolder = readMultiple(template, txn, take,
                 maxEntries, sc, returnOnlyUid, modifiers, maxEntries /*minEntries*/, 0L /*timeout*/, false /* isIfExist*/);
         return answerHolder != null ? answerHolder.getEntryPackets() : null;
@@ -2575,20 +2463,6 @@ public class SpaceImpl extends AbstractService implements IRemoteSpace, IInterna
     public AnswerHolder readMultiple(ITemplatePacket template, Transaction txn, boolean take,
                                      int maxEntries, SpaceContext sc, boolean returnOnlyUid, int modifiers, int minEntries, long timeout, boolean isIfExist)
             throws TransactionException, UnusableEntryException, UnknownTypeException, RemoteException {
-        _logger.info("SpaceContext AnswerHolder readMultiple: " + sc);
-        if (sc != null) {
-            if (sc.getSecurityContext() != null) {
-                if (sc.getSecurityContext().getUserDetails() != null) {
-                    _logger.info("Space context: " + sc.getSecurityContext().getUserDetails().getUsername());
-                    _logger.info("Space context: " + sc.getSecurityContext().getUserDetails().getPassword());
-                    _logger.info("Space context: " + Arrays.stream(sc.getSecurityContext().getUserDetails().getAuthorities()).map(Authority::getAuthority).collect(Collectors.joining(", ")));
-                } else {
-                    _logger.info("User details is null");
-                }
-            } else {
-                _logger.info("Security context is null");
-            }
-        }
         beginPacketOperation(true, sc, (take ? SpacePrivilege.TAKE : SpacePrivilege.READ), template);
 
         try {
@@ -2745,33 +2619,11 @@ public class SpaceImpl extends AbstractService implements IRemoteSpace, IInterna
 
     public void snapshot(ITemplatePacket template, SpaceContext sc)
             throws UnusableEntryException, RemoteException {
-        //todo it is incorrect to check only ALTER privilege, because different SQL can be run via snapshot
         if (sc != null) {
-            _logger.info("Template type: " + template.getClass());
-            if (sc.getSecurityContext() != null) {
-                if (sc.getSecurityContext().getUserDetails() != null) {
-                    _logger.info("Space context: " + sc.getSecurityContext().getUserDetails().getUsername());
-                    _logger.info("Space context: " + sc.getSecurityContext().getUserDetails().getPassword());
-                    _logger.info("Space context: " + Arrays.stream(sc.getSecurityContext().getUserDetails().getAuthorities()).map(Authority::getAuthority).collect(Collectors.joining(", ")));
-                } else {
-                    _logger.info("User details is null");
-                }
-            } else {
-                _logger.info("Security context is null");
-            }
             if (_engine.getTypeManager().getTypeDesc(template.getTypeName()) == null) { //check privilege only if type doesn't exist
-                beginPacketOperation(true, sc, SpacePrivilege.ALTER, template);
+                //beginPacketOperation(true, sc, SpacePrivilege.ALTER, template);
+                beforeTypeOperation(false, sc, SpacePrivilege.ALTER, template.getTypeName());
             }
-            //SpaceAuthority.SpacePrivilege privilege = null;
-            /*if (template instanceof QueryTemplatePacket || template instanceof TemplatePacket) {
-                privilege = SpacePrivilege.READ;
-            } else if (template instanceof ExternalEntry || template instanceof ExternalTemplatePacket) {
-                privilege = SpacePrivilege.ALTER;
-            } else {
-                //throw logException(new SecurityException("Not supported template type for snapshot call to the secured space"));
-            }*/
-
-            //beginPacketOperation(true, sc, privilege, template);
             snapshotInner(template);
         } else {
             snapshot(template);
@@ -2780,7 +2632,6 @@ public class SpaceImpl extends AbstractService implements IRemoteSpace, IInterna
 
     public void snapshot(ITemplatePacket template)
             throws UnusableEntryException, RemoteException {
-        //todo should uncomment below validation
         if (isSecuredSpace()) {
             throw logException(new SecurityException("Method for secured space should contain SpaceContext"));
         }

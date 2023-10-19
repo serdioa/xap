@@ -220,15 +220,9 @@ public class SecurityInterceptor {
      *                                 accessed resource.
      */
     public void intercept(SecurityContext securityContext, Privilege privilege, String className) {
-        logger.info("Intercept");
         if (securityContext == null) {
             throw new SecurityException("Invalid security context");
         }
-        logger.info(securityContext.toString());
-        if (privilege != null) {
-            logger.info(privilege.toString());
-        }
-        logger.info(className);
         AuthenticationToken token = securityContext.getAuthenticationToken();
         if (token == null) {
             throw new AuthenticationException("Authentication token is invalid");
