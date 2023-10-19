@@ -4,6 +4,8 @@ import com.gigaspaces.admin.quiesce.QuiesceToken;
 import com.gigaspaces.internal.cluster.ClusterTopology;
 import com.gigaspaces.internal.io.IOUtils;
 import com.gigaspaces.internal.space.requests.SpaceRequestInfo;
+import com.gigaspaces.internal.version.PlatformLogicalVersion;
+import com.gigaspaces.lrmi.LRMIInvocationContext;
 import com.j_spaces.core.SpaceContext;
 
 import java.io.IOException;
@@ -12,6 +14,7 @@ import java.io.ObjectOutput;
 
 public class DeleteChunksRequestInfo implements SpaceRequestInfo {
     private static final long serialVersionUID = 4826314985077083352L;
+    private SpaceContext context;
     private ClusterTopology newMap;
     private QuiesceToken token;
 
@@ -33,23 +36,29 @@ public class DeleteChunksRequestInfo implements SpaceRequestInfo {
 
     @Override
     public SpaceContext getSpaceContext() {
-        return null;
+        return this.context;
     }
 
     @Override
     public void setSpaceContext(SpaceContext spaceContext) {
-
+        this.context = spaceContext;
     }
 
     @Override
     public void writeExternal(ObjectOutput out) throws IOException {
         IOUtils.writeObject(out, newMap);
         IOUtils.writeObject(out, token);
+        if (LRMIInvocationContext.getEndpointLogicalVersion().greaterThan(PlatformLogicalVersion.v16_4_0)) {
+            IOUtils.writeObject(out, context);
+        }
     }
 
     @Override
     public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         this.newMap = IOUtils.readObject(in);
         this.token = IOUtils.readObject(in);
+        if (LRMIInvocationContext.getEndpointLogicalVersion().greaterThan(PlatformLogicalVersion.v16_4_0)) {
+            this.context = IOUtils.readObject(in);
+        }
     }
 }
