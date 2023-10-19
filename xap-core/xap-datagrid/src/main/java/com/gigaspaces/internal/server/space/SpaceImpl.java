@@ -2759,15 +2759,19 @@ public class SpaceImpl extends AbstractService implements IRemoteSpace, IInterna
             } else {
                 _logger.info("Security context is null");
             }
-            SpaceAuthority.SpacePrivilege privilege = null;
-            if (template instanceof QueryTemplatePacket) {
+            if (_engine.getTypeManager().getTypeDesc(template.getTypeName()) == null) { //check privilege only if type doesn't exist
+                beginPacketOperation(true, sc, SpacePrivilege.ALTER, template);
+            }
+            //SpaceAuthority.SpacePrivilege privilege = null;
+            /*if (template instanceof QueryTemplatePacket || template instanceof TemplatePacket) {
                 privilege = SpacePrivilege.READ;
-            } else if (template instanceof ExternalEntry) {
+            } else if (template instanceof ExternalEntry || template instanceof ExternalTemplatePacket) {
                 privilege = SpacePrivilege.ALTER;
             } else {
                 //throw logException(new SecurityException("Not supported template type for snapshot call to the secured space"));
-            }
-            beginPacketOperation(true, sc, privilege, template);
+            }*/
+
+            //beginPacketOperation(true, sc, privilege, template);
             snapshotInner(template);
         } else {
             snapshot(template);
