@@ -19,6 +19,8 @@ package com.j_spaces.core.client;
 
 import com.gigaspaces.internal.client.spaceproxy.ISpaceProxy;
 import com.gigaspaces.internal.io.IOUtils;
+import com.gigaspaces.internal.version.PlatformLogicalVersion;
+import com.gigaspaces.lrmi.LRMIInvocationContext;
 import com.j_spaces.core.EntrySerializationException;
 import com.j_spaces.core.IGSEntry;
 import com.j_spaces.core.IJSpace;
@@ -138,6 +140,13 @@ public class ExternalEntry implements Entry, IGSEntry, Cloneable {
     public short[] m_ExtendedMatchCodes;
 
     /**
+     * Codes for extending matching with columns in comparison.
+     *
+     * @see #setExtendedMatchCodeColumns(short[])
+     */
+    public short[] m_ExtendedMatchCodeColumns;
+
+    /**
      * range values- correspond to m_ExtendedMatchCodes, this is UP-TO and include values.
      */
     public Object[] m_RangeValues;
@@ -212,6 +221,7 @@ public class ExternalEntry implements Entry, IGSEntry, Cloneable {
         m_isFifo = entry.m_isFifo;
         m_VersionID = entry.m_VersionID;
         m_ExtendedMatchCodes = entry.m_ExtendedMatchCodes;
+        m_ExtendedMatchCodeColumns = entry.m_ExtendedMatchCodeColumns;
         m_RangeValues = entry.m_RangeValues;
         m_RangeValuesInclusion = entry.m_RangeValuesInclusion;
         m_TimeToLive = entry.m_TimeToLive;
@@ -400,6 +410,7 @@ public class ExternalEntry implements Entry, IGSEntry, Cloneable {
         private static final int IS_TRANSIENT = 0x00040000;
         private static final int NO_WRITE_LEASE = 0x00080000;
         private static final int RANGE_INCLUSION = 0x00001000;
+        private static final int EXTENDED_MATCH_COLUMN = 0x00002000;
     }
 
     private int buildFlags() {
@@ -457,6 +468,9 @@ public class ExternalEntry implements Entry, IGSEntry, Cloneable {
         }
         if (m_NOWriteLeaseMode) {
             flags |= BitMap.NO_WRITE_LEASE;
+        }
+        if (m_ExtendedMatchCodeColumns != null) {
+            flags |= BitMap.EXTENDED_MATCH_COLUMN;
         }
 
         return flags;
@@ -574,6 +588,14 @@ public class ExternalEntry implements Entry, IGSEntry, Cloneable {
                 out.writeInt(m_RangeValuesInclusion.length);
                 for (int i = 0; i < m_RangeValuesInclusion.length; i++) {
                     out.writeObject(m_RangeValuesInclusion[i]);
+                }
+            }
+
+            if (LRMIInvocationContext.getEndpointLogicalVersion().greaterThan(PlatformLogicalVersion.v16_4_0)
+                    && m_ExtendedMatchCodeColumns != null) {
+                out.writeInt(m_ExtendedMatchCodeColumns.length);
+                for (int i = 0; i < m_ExtendedMatchCodeColumns.length; i++) {
+                    out.writeInt(m_ExtendedMatchCodeColumns[i]);
                 }
             }
         } catch (Exception ex) {
@@ -709,6 +731,14 @@ public class ExternalEntry implements Entry, IGSEntry, Cloneable {
                 for (int i = 0; i < size; i++)
                     m_RangeValuesInclusion[i] = in.readBoolean();
             }
+
+            if (LRMIInvocationContext.getEndpointLogicalVersion().greaterThan(PlatformLogicalVersion.v16_4_0)
+                    && (flags & BitMap.EXTENDED_MATCH_COLUMN) != 0) {
+                int size = in.readInt();
+                m_ExtendedMatchCodeColumns = new short[size];
+                for (int i = 0; i < size; i++)
+                    m_ExtendedMatchCodeColumns[i] = in.readShort();
+            }
         } catch (Exception ex) {
             if (ex instanceof EntrySerializationException)
                 throw (EntrySerializationException) ex;
@@ -822,6 +852,15 @@ public class ExternalEntry implements Entry, IGSEntry, Cloneable {
     }
 
     /**
+     * Matching code columns array.
+     *
+     * @return Returns the Matching code columns array.
+     */
+    public short[] getExtendedMatchCodeColumns() {
+        return m_ExtendedMatchCodeColumns;
+    }
+
+    /**
      * The matching codes.
      *
      * @param extendedMatchCodes The matching codes to set for template objects.
@@ -845,6 +884,10 @@ public class ExternalEntry implements Entry, IGSEntry, Cloneable {
      */
     public void setExtendedMatchCodes(short[] extendedMatchCodes) {
         m_ExtendedMatchCodes = extendedMatchCodes;
+    }
+
+    public void setExtendedMatchCodeColumns(short[] extendedMatchCodeColumns) {
+        m_ExtendedMatchCodeColumns = extendedMatchCodeColumns;
     }
 
     /**
@@ -1323,6 +1366,18 @@ public class ExternalEntry implements Entry, IGSEntry, Cloneable {
             return 0;
 
         return m_ExtendedMatchCodes[index];
+    }
+
+    /**
+     * Get extended match code at specified index
+     *
+     * @return the match code for the given property index
+     */
+    public int getExtendedMatchCodeColumn(int index) {
+        if (m_ExtendedMatchCodeColumns == null)
+            return -1;
+
+        return m_ExtendedMatchCodeColumns[index];
     }
 
     /**
