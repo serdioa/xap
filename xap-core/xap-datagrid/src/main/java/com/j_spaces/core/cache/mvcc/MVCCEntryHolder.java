@@ -2,6 +2,9 @@ package com.j_spaces.core.cache.mvcc;
 
 import com.gigaspaces.internal.server.metadata.IServerTypeDesc;
 import com.gigaspaces.internal.server.storage.*;
+import com.gigaspaces.internal.transport.IEntryPacket;
+import com.gigaspaces.internal.transport.mvcc.IMVCCEntryPacket;
+import com.gigaspaces.internal.transport.mvcc.MVCCEntryPacketMetadata;
 import com.gigaspaces.internal.utils.Textualizer;
 import com.gigaspaces.time.SystemTime;
 import com.j_spaces.core.Constants;
@@ -18,6 +21,21 @@ public class MVCCEntryHolder extends EntryHolder implements IMVCCLockObject {
     public MVCCEntryHolder(IServerTypeDesc typeDesc, String uid, long scn, boolean isTransient, ITransactionalEntryData entryData) {
         super(typeDesc, uid, scn, isTransient, entryData);
 
+    }
+
+    // build eHolder from entryPacket (only for recovery)
+    public MVCCEntryHolder(IServerTypeDesc typeDesc, String uid, long scn, IEntryPacket entryPacket, ITransactionalEntryData entryData) {
+        super(typeDesc, uid, scn, entryPacket.isTransient(), entryData);
+        if (entryPacket instanceof IMVCCEntryPacket) { // recovery replication
+            IMVCCEntryPacket mvccEntryPacket = (IMVCCEntryPacket)entryPacket;
+            if (mvccEntryPacket.isMVCCEntryMetadataApplied()) {
+                MVCCEntryPacketMetadata metadata = mvccEntryPacket.getMVCCEntryMetadata();
+                this.committedGeneration = metadata.getCommittedGeneration();
+                this.overrideGeneration = metadata.getOverrideGeneration();
+                setLogicallyDeleted(metadata.isLogicallyDeleted());
+                setOverridingAnother(metadata.isOverridingAnother());
+            }
+        }
     }
 
     protected MVCCEntryHolder(MVCCEntryHolder other) {

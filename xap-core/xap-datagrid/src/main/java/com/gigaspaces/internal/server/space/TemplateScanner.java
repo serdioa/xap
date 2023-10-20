@@ -468,9 +468,14 @@ public class TemplateScanner {
      *                  entry field at skipIndex, and hence does not check this index.
      */
     public boolean match(Context context, IEntryHolder entry, ITemplateHolder template,
-                         int skipAlreadyMatchedFixedPropertyIndex, String skipAlreadyMatchedIndexPath, boolean safeEntry) {
-        MatchResult res = template.match(_cacheManager, entry, skipAlreadyMatchedFixedPropertyIndex, skipAlreadyMatchedIndexPath, safeEntry, context, _regexCache);
+                         int skipAlreadyMatchedFixedPropertyIndex, String skipAlreadyMatchedIndexPath, boolean safeEntry, int rightColumnPosition) {
+        MatchResult res = template.match(_cacheManager, entry, skipAlreadyMatchedFixedPropertyIndex, skipAlreadyMatchedIndexPath, safeEntry, context, _regexCache, rightColumnPosition);
         return res != MatchResult.NONE;
+    }
+
+    public boolean match(Context context, IEntryHolder entry, ITemplateHolder template,
+                         int skipAlreadyMatchedFixedPropertyIndex, String skipAlreadyMatchedIndexPath, boolean safeEntry) {
+        return match(context, entry, template, skipAlreadyMatchedFixedPropertyIndex, skipAlreadyMatchedIndexPath, safeEntry, -1);
     }
 
     public boolean match(Context context, IEntryHolder entry, ITemplateHolder template) {

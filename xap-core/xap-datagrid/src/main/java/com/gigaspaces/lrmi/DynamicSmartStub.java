@@ -79,7 +79,7 @@ import org.slf4j.LoggerFactory;
  * #writeExternal(java.io.ObjectOutput)} method the {@link #getLocalObjImpl()} will be exported to
  * the underlying transport protocol. The serialization process is an indication for
  * DynamicSmartStub about exiting out side from local JVM.<br> On deserialization the
- * DynamicSmartStub will try to aquire the direct localObject reference from the underlying
+ * DynamicSmartStub will try to acquire the direct localObject reference from the underlying
  * transport protocol. If direct reference wasn't acquired, it means the stub instance is not in
  * local JVM. Every future injected method will be called remotely.
  *

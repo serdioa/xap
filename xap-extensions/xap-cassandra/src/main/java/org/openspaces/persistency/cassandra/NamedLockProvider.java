@@ -45,7 +45,7 @@ public class NamedLockProvider {
      * @param name The name of the lock to get
      * @return The shared {@link java.util.concurrent.locks.ReentrantLock} matching the provided
      * name. One is created if it doesn't already exist. Note that the returned {@link
-     * java.util.concurrent.locks.ReentrantLock} should still be aquired and released by the client
+     * java.util.concurrent.locks.ReentrantLock} should still be acquired and released by the client
      * calling this method.
      */
     public ReentrantLock forName(String name) {

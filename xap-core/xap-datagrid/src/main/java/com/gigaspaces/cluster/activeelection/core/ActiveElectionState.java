@@ -30,7 +30,7 @@ import java.io.ObjectOutput;
 /**
  * The election state <i>attribute</i> registered in conjunction with service candidate. This state
  * managed by {@link ActiveElectionManager} and modified on Naming service if the candidate service
- * aquire a new state. <p> The following states are available: <li>NONE 	- The service is not
+ * acquire a new state. <p> The following states are available: <li>NONE 	- The service is not
  * initialized yet.</li> <li>PENDING - The service is a candidate to acquire PREPARE state.</li>
  * <li>PREPARE - The service is a candidate to acquire an ACTIVE state.</li> <li>ACTIVE  - The
  * service become to be an ACTIVE.</li> <p>

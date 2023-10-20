@@ -25,6 +25,7 @@ import com.j_spaces.core.TemplateDeletedException;
 import com.j_spaces.core.TransactionConflictException;
 import com.j_spaces.core.XtnEntry;
 import com.j_spaces.core.cache.CacheManager;
+import com.j_spaces.core.cache.ExtendedIndexIterator;
 import com.j_spaces.core.cache.IEntryCacheInfo;
 import com.j_spaces.core.cache.XtnData;
 import com.j_spaces.core.cache.context.Context;
@@ -112,10 +113,14 @@ public class FifoGroupsHandler {
                 IEntryCacheInfo pEntry = toScan.next();
                 if (pEntry == null)
                     continue;
+                int rightColumnPosition = -1;
+                if (toScan instanceof ExtendedIndexIterator) {
+                    rightColumnPosition = ((ExtendedIndexIterator<?>)toScan).getRightColumnPosition();
+                }
                 _spaceEngine.getMatchedEntriesAndOperateSA_Entry(context,
                         template,
                         needMatch, alreadyMatchedFixedPropertyIndexPos, alreadyMatchedIndexPath, leaseFilter,
-                        pEntry, makeWaitForInfo, entryTypeDesc);
+                        pEntry, makeWaitForInfo, entryTypeDesc, rightColumnPosition);
                 if (template.getBatchOperationContext().getNumResults() >= template.getBatchOperationContext().getMaxEntries())
                     return;
                 if (context.isFifoGroupScanEncounteredXtnConflict()) {

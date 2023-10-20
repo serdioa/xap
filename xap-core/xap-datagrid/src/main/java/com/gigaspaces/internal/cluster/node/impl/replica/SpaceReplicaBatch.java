@@ -1,6 +1,8 @@
 package com.gigaspaces.internal.cluster.node.impl.replica;
 
+import com.gigaspaces.internal.cluster.node.impl.replica.data.AbstractEntryReplicaData;
 import com.gigaspaces.internal.io.IOUtils;
+import com.gigaspaces.internal.transport.mvcc.MVCCShellEntryPacket;
 import com.gigaspaces.serialization.SmartExternalizable;
 
 import java.io.IOException;
@@ -22,7 +24,6 @@ public class SpaceReplicaBatch implements Collection<ISpaceReplicaData>, SmartEx
     private static final long serialVersionUID = -7311317700438888710L;
 
     private Collection<ISpaceReplicaData> batch;
-
     private int fifoId = 0 ;
 
     public SpaceReplicaBatch() {
@@ -51,6 +52,7 @@ public class SpaceReplicaBatch implements Collection<ISpaceReplicaData>, SmartEx
     boolean isFifoBatch(){
         return fifoId != 0;
     }
+
 
     @Override
     public int size() {

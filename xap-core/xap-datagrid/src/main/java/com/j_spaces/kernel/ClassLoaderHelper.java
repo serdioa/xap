@@ -58,7 +58,7 @@ public class ClassLoaderHelper {
 
     /**
      * @return direct private contextClassLoader field of Thread class or <code>null</code> if
-     * failed to aquire field.
+     * failed to acquire field.
      */
     final static private Field getContextThreadCLField() {
         Field threadCLField = null;

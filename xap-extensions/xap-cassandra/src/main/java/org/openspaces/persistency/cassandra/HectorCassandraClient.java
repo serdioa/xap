@@ -492,7 +492,7 @@ public class HectorCassandraClient {
     /**
      * Tries to read from the internal metadata column family, the {@link ColumnFamilyMetadata}
      * metadata matching the given type name. If found, this metadata is stored in cache and can
-     * later be aquired by calling {@link #getColumnFamilyMetadata(String)}
+     * later be acquired by calling {@link #getColumnFamilyMetadata(String)}
      *
      * @param typeName The typeName describing the matching column family.
      * @return The {@link ColumnFamilyMetadata} instance if found, null otherwise.
@@ -555,7 +555,7 @@ public class HectorCassandraClient {
      * @param keyValue The key of the requested entry.
      * @return The SpaceDocument matching the key if found, null otherwise.
      */
-    public SpaceDocument readDocmentByKey(
+    public SpaceDocument readDocumentByKey(
             SpaceDocumentColumnFamilyMapper mapper,
             String typeName,
             Object keyValue) {
