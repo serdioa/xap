@@ -336,7 +336,6 @@ public class SystemConfig {
 
         if (SystemInfo.singleton().security().isOpenIdSecurityManager()) {
             classpathBuilder.appendOptionalJars("security/xap-security.jar");
-            classpathBuilder.appendOptionalJars("security/xap-token-service.jar");
             classpathBuilder.appendRequiredJar("spring-security-oauth2-jose.jar");
             classpathBuilder.appendRequiredJar("spring-security-oauth2-resource-server.jar");
             classpathBuilder.appendRequiredJar("spring-security-oauth2-core.jar");
