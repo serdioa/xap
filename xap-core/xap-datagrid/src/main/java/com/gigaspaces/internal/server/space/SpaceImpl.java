@@ -2617,8 +2617,7 @@ public class SpaceImpl extends AbstractService implements IRemoteSpace, IInterna
     public void snapshot(ITemplatePacket template, SpaceContext sc)
             throws UnusableEntryException, RemoteException {
         if (sc != null) {
-            if (_engine.getTypeManager().getTypeDesc(template.getTypeName()) == null) { //check privilege only if type doesn't exist
-                //beginPacketOperation(true, sc, SpacePrivilege.ALTER, template);
+            if (_engine.getTypeManager().getTypeDesc(template.getTypeName()) == null) { //check ALTER privilege only if type doesn't exist
                 beforeTypeOperation(false, sc, SpacePrivilege.ALTER, template.getTypeName());
             }
             snapshotInner(template);
