@@ -329,12 +329,7 @@ public class Webster implements Runnable {
     }
 
     private KeyStore keystore() {
-        try {
-            return BouncyCastleSelfSignedCertificate.keystore();
-        } catch (Throwable t) {
-            logger.warn("Since 16.4.0, Bouncy Castle is used for self-sign certificate, but there was an error", t);
-        }
-        return null;
+        return BouncyCastleSelfSignedCertificate.keystore(); //may return null
     }
 
     private void logAndThrowBindExceptionException(String bindAddress,

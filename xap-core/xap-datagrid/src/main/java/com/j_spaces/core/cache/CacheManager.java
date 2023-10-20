@@ -93,10 +93,7 @@ import com.j_spaces.core.cache.context.IndexMetricsContext;
 import com.j_spaces.core.cache.context.TemplateMatchTier;
 import com.j_spaces.core.cache.context.TieredState;
 import com.j_spaces.core.cache.fifoGroup.FifoGroupCacheImpl;
-import com.j_spaces.core.cache.mvcc.MVCCCacheManagerHandler;
-import com.j_spaces.core.cache.mvcc.MVCCEntryCacheInfo;
-import com.j_spaces.core.cache.mvcc.MVCCEntryHolder;
-import com.j_spaces.core.cache.mvcc.MVCCShellEntryCacheInfo;
+import com.j_spaces.core.cache.mvcc.*;
 import com.j_spaces.core.client.*;
 import com.j_spaces.core.cluster.ClusterPolicy;
 import com.j_spaces.core.exception.internal.EngineInternalSpaceException;
@@ -124,6 +121,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 import static com.j_spaces.core.Constants.CacheManager.*;
 import static com.j_spaces.core.Constants.Engine.UPDATE_NO_LEASE;
@@ -3071,6 +3069,10 @@ public class CacheManager extends AbstractCacheManager
                 memoryOnly, false);
     }
 
+    public ISAdapterIterator<MVCCShellEntryCacheInfo> makeMVCCShellsRecoveryIter(IServerTypeDesc serverTypeDesc) {
+        return new MVCCShellsRecoveryIter(serverTypeDesc, this);
+    }
+
     public IScanListIterator makeScanableEntriesIter(Context context, ITemplateHolder template,
                                                      IServerTypeDesc serverTypeDesc, long SCNFilter, long leaseFilter,
                                                      boolean memoryOnly)
@@ -3786,9 +3788,9 @@ public class CacheManager extends AbstractCacheManager
                 alreadyIn = false;
                 IEntryCacheInfo oldEntry;
                 if (isMVCCEnabled()) {
-                    oldEntry = _mvccCacheManagerHandler.insertMvccEntryToCache((MVCCEntryCacheInfo) pEntry, _entries);
+                    oldEntry = _mvccCacheManagerHandler.insertMvccEntryToCache(context, (MVCCEntryCacheInfo) pEntry, _entries);
                 } else {
-                     oldEntry = _entries.putIfAbsent(pEntry.getUID(), pEntry);
+                    oldEntry = _entries.putIfAbsent(pEntry.getUID(), pEntry);
                 }
 
                 if (oldEntry == null)
@@ -3929,6 +3931,12 @@ public class CacheManager extends AbstractCacheManager
      * Inserts the refs to cache.
      */
     public void insertEntryReferences(Context context, IEntryCacheInfo pEntry, TypeData pType, boolean applySequenceNumber) {
+        if (isMVCCEnabled() && context.isInMemoryRecovery()) {
+            MVCCEntryHolder eh = (MVCCEntryHolder)pEntry.getEntryHolder(this);
+            if (eh.isLogicallyDeleted()) {
+                return; // recovered logically deleted entry shouldn't have any refs (entryData fields is empty)
+            }
+        }
         context.clearNumOfIndexesInserted();
         IEntryData entryData = context.getCacheViewEntryDataIfNeeded(pEntry.getEntryHolder(this).getEntryData());
         // add entry to type info
@@ -5015,7 +5023,17 @@ public class CacheManager extends AbstractCacheManager
                     continue;   //uncompleted index
 
                 final short extendedMatchCode = template.getExtendedMatchCodes()[pos];
-                final Object templateValue = index.getIndexValueForTemplate(template.getEntryData());
+                Object templateValue = index.getIndexValueForTemplate(template.getEntryData());
+                TypeDataIndex idxRight = null;
+                if (templateValue == null && template.getExtendedMatchCodeColumns() != null) {
+                    int columnRight = template.getExtendedMatchCodeColumns()[pos];
+                    if (columnRight != -1) {
+                        idxRight = Arrays.stream(indexes)
+                                .filter(i -> i.getPos() == columnRight && i.getIndexDefinition().getIndexType().isOrdered())
+                                .findFirst()
+                                .orElse(null);
+                    }
+                }
 
                 // ignore indexes that don't support fifo order scanning - otherwise the results won't preserve the fifo order
                 if (template.isFifoTemplate() && !TemplateMatchCodes.supportFifoOrder(extendedMatchCode))
@@ -5085,6 +5103,18 @@ public class CacheManager extends AbstractCacheManager
                     case TemplateMatchCodes.LE:
                     case TemplateMatchCodes.GE:
                     case TemplateMatchCodes.GT: //for GT we must clip first value if eq to limit
+                        //todo check which index is more efficient to use
+                        if (templateValue == null
+                                && idxRight != null
+                                && idxRight.getExtendedIndexForScanning() != null  //mean ordered index
+                                && idxRight.getExtendedIndexForScanning() instanceof ExtendedIndexHandler) {
+                            if (extendedMatchCode == TemplateMatchCodes.GE || extendedMatchCode == TemplateMatchCodes.GT) {
+                                templateValue = ((ExtendedIndexHandler) idxRight.getExtendedIndexForScanning()).getMin();
+                            } else {
+                                templateValue = ((ExtendedIndexHandler) idxRight.getExtendedIndexForScanning()).getMax();
+                            }
+                            template.getTemplateEntryData().setFixedPropertyValue(pos, templateValue);
+                        }
                         if (templateValue == null)
                             continue; //TBD
                         if (ignoreOrderedIndexes)
@@ -5105,6 +5135,9 @@ public class CacheManager extends AbstractCacheManager
                             IScanListIterator<IEntryCacheInfo> originalOIS = resultOIS;
                             resultOIS = index.getExtendedIndexForScanning().establishScan(templateValue,
                                     extendedMatchCode, rangeValue, isInclusive);
+                            if (idxRight != null && resultOIS instanceof ExtendedIndexIterator) {
+                                ((ExtendedIndexIterator)resultOIS).setRightColumnPosition(idxRight.getPos());
+                            }
                             if (resultOIS == null)
                                 return null;  //no values
 

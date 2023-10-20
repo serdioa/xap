@@ -36,12 +36,26 @@ public class MVCCShellEntryCacheInfo extends MemoryBasedEntryCacheInfo {
         return id;
     }
 
+    @Override
+    public IServerTypeDesc getServerTypeDesc() {
+        return serverTypeDesc;
+    }
+
+    @Override
+    public String getUID() {
+        return uid;
+    }
+
     public Iterator<MVCCEntryCacheInfo> ascIterator() {
         return allEntryGenerations.iterator();
     }
 
     public Iterator<MVCCEntryCacheInfo> descIterator() {
         return allEntryGenerations.descendingIterator();
+    }
+
+    public void addCommittedEntryToGenerationQueue(MVCCEntryCacheInfo committedEntry) {
+        allEntryGenerations.add(committedEntry);
     }
 
     public void addDirtyEntryToGenerationQueue() {

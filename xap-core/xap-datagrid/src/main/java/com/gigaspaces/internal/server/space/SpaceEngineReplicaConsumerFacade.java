@@ -24,11 +24,14 @@ import com.gigaspaces.internal.cluster.node.replica.SpaceCopyReplicaParameters.R
 import com.gigaspaces.internal.metadata.ITypeDesc;
 import com.gigaspaces.internal.transport.IEntryPacket;
 import com.gigaspaces.internal.transport.ITemplatePacket;
+import com.gigaspaces.internal.transport.mvcc.IMVCCEntryPacket;
+import com.gigaspaces.internal.transport.mvcc.MVCCShellEntryPacket;
 import com.gigaspaces.logger.Constants;
 
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 
 
 @com.gigaspaces.api.InternalApi
@@ -58,6 +61,14 @@ public class SpaceEngineReplicaConsumerFacade
                     .getEvictionReplicationsMarkersRepository()
                     .insert(entryPacket.getUID(), evictionMarker, false);
         }
+        if (entryPacket instanceof MVCCShellEntryPacket) {
+            write((MVCCShellEntryPacket)entryPacket, replicaType);
+        } else {
+            write(entryPacket, replicaType);
+        }
+    }
+
+    private void write(IEntryPacket entryPacket, ReplicaType replicaType) throws Exception {
         _spaceEngine.write(entryPacket,
                 null /* txn */,
                 entryPacket.getTTL(),
@@ -65,6 +76,22 @@ public class SpaceEngineReplicaConsumerFacade
                 _spaceEngine.isReplicated() /* fromRepl */,
                 replicaType == ReplicaType.COPY/* origin */,
                 null);
+    }
+
+    /**
+     * Method retrieves mvccShell from mvccShellPacket writes(only if shell does not already exist)
+     * it in scope of recovery process into the cache not under txn.
+     *
+     * */
+    private void write(MVCCShellEntryPacket entryPacket, ReplicaType replicaType) throws Exception {
+        if (_spaceEngine.getCacheManager().getMVCCShellEntryCacheInfoByUid(entryPacket.getUID()) != null) {
+            _logger.info("Can not recover shell with uid [{}] - already exists", entryPacket.getUID());
+            return;
+        }
+        for (IMVCCEntryPacket versionedEntryPacket : entryPacket.getEntryVersionsPackets()) {
+            write(versionedEntryPacket, replicaType);
+        }
+        _logger.debug("Mvcc shell with uid [{}] was recovered to {}", entryPacket.getUID(), _spaceEngine.getSpaceImpl().getContainerName());
     }
 
     @Override

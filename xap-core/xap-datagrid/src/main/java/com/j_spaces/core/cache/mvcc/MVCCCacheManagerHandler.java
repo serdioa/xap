@@ -23,13 +23,26 @@ public class MVCCCacheManagerHandler {
         this.cacheManager = cacheManager;
     }
 
-    public IEntryCacheInfo insertMvccEntryToCache(MVCCEntryCacheInfo pEntry, ConcurrentMap<String, IEntryCacheInfo> entries) throws SAException {
+    public IEntryCacheInfo insertMvccEntryToCache(Context context, MVCCEntryCacheInfo pEntry,
+                                                  ConcurrentMap<String, IEntryCacheInfo> entries) throws SAException {
         String uid = pEntry.getUID();
         MVCCShellEntryCacheInfo existingShell = (MVCCShellEntryCacheInfo) entries.get(uid);
+        MVCCShellEntryCacheInfo newShell = null;
         IEntryHolder newEntryToWrite = pEntry.getEntryHolder();
         if (existingShell == null) {
-            entries.put(uid, new MVCCShellEntryCacheInfo(newEntryToWrite, pEntry));
-        } else if (existingShell.getDirtyEntryCacheInfo() == null) {
+            newShell = new MVCCShellEntryCacheInfo(newEntryToWrite, pEntry);
+            entries.put(uid, newShell);
+        }
+        if (context.isInMemoryRecovery()) {
+            if (existingShell == null) { // write first - add dirty to gen queue
+                newShell.addDirtyEntryToGenerationQueue();
+            } else { // write second - add committed directly to gen queue
+                existingShell.addCommittedEntryToGenerationQueue(pEntry);
+            }
+            return null;
+        }
+
+        if (existingShell != null && existingShell.getDirtyEntryCacheInfo() == null) {
             MVCCEntryCacheInfo latestGenerationCacheInfo = existingShell.getLatestGenerationCacheInfo();
             if (newEntryToWrite.getWriteLockOperation() == SpaceOperations.WRITE) {
                 final boolean isLatestCommittedExist = latestGenerationCacheInfo != null;

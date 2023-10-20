@@ -37,6 +37,7 @@ public class ExtendedIndexIterator<V>
     private boolean _eof;
     private V _res;
     private final TypeDataIndex _idx;
+    private int _rightColumnPosition;
     private boolean _randomScan;
     private final Object _originalStart;
     private final short _originalStartCondition;
@@ -51,6 +52,7 @@ public class ExtendedIndexIterator<V>
         _originalStartCondition=originalStartCondition;
         _originalEnd=originalEnd;
         _originalEndCondition =originalEndCondition;
+        _rightColumnPosition=-1;
     }
 
     public boolean hasNext() {
@@ -135,9 +137,13 @@ public class ExtendedIndexIterator<V>
     }
 
 
+    /**
+     * If _rightColumnPosition != -1 then match should be executed after index scan
+     */
     public int getAlreadyMatchedFixedPropertyIndexPos() {
-        if (_idx == null)
+        if (_idx == null || _rightColumnPosition != -1)
             return -1;
+
         return _idx.getPos();
     }
 
@@ -176,7 +182,8 @@ public class ExtendedIndexIterator<V>
                 && (TypeData.objectsEquality(_originalStart, other._originalStart))
                 && (_originalStartCondition == other._originalStartCondition)
                 && (TypeData.objectsEquality(_originalEnd, other._originalEnd))
-                && (_originalEndCondition == other._originalEndCondition);
+                && (_originalEndCondition == other._originalEndCondition)
+                && (_rightColumnPosition == other._rightColumnPosition);
 
     }
 
@@ -194,4 +201,13 @@ public class ExtendedIndexIterator<V>
     public short getOriginalEndCondition() {
         return _originalEndCondition;
     }
+
+    public int getRightColumnPosition() {
+        return _rightColumnPosition;
+    }
+
+    public void setRightColumnPosition(int rightColumnPosition) {
+        this._rightColumnPosition = rightColumnPosition;
+    }
+
 }
