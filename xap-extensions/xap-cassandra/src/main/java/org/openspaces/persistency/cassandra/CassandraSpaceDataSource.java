@@ -244,7 +244,7 @@ public class CassandraSpaceDataSource extends ClusterInfoAwareSpaceDataSource {
     }
 
     private Object getByIdImpl(String typeName, Object id) {
-        return hectorClient.readDocmentByKey(mapper, typeName, id);
+        return hectorClient.readDocumentByKey(mapper, typeName, id);
     }
 
     @Override

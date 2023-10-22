@@ -37,6 +37,8 @@ public interface ITemplatePacket extends ITransportPacket, IEntryPacket {
 
     short[] getExtendedMatchCodes();
 
+    short[] getExtendedMatchCodeColumns();
+
     Object[] getRangeValues();
 
     boolean[] getRangeValuesInclusion();

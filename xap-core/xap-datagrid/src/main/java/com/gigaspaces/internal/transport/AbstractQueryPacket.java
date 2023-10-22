@@ -74,6 +74,10 @@ public abstract class AbstractQueryPacket extends AbstractEntryPacket implements
         return null;
     }
 
+    public short[] getExtendedMatchCodeColumns() {
+        return null;
+    }
+
     public Object[] getRangeValues() {
         return null;
     }

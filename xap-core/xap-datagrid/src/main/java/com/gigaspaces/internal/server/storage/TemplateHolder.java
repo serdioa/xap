@@ -29,6 +29,7 @@ import com.gigaspaces.internal.server.space.*;
 import com.gigaspaces.internal.server.space.iterator.ServerIteratorInfo;
 import com.gigaspaces.internal.server.space.mvcc.MVCCGenerationsState;
 import com.gigaspaces.internal.server.space.mvcc.exception.MVCCEntryModifyConflictException;
+import com.gigaspaces.internal.server.space.mvcc.exception.MVCCModifyOnUncompletedGenerationException;
 import com.gigaspaces.internal.server.space.mvcc.exception.MVCCRevertGenerationException;
 import com.gigaspaces.internal.transport.AbstractProjectionTemplate;
 import com.gigaspaces.internal.transport.IEntryPacket;
@@ -47,10 +48,7 @@ import com.j_spaces.jdbc.builder.QueryTemplatePacket;
 import net.jini.core.transaction.server.ServerTransaction;
 import org.slf4j.Logger;
 
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 /**
  * This class represents a template in a J-Space. Each instance of this class contains a reference
@@ -351,6 +349,11 @@ public class TemplateHolder extends AbstractSpaceItem implements ITemplateHolder
     @Override
     public short[] getExtendedMatchCodes() {
         return _templateData.getExtendedMatchCodes();
+    }
+
+    @Override
+    public short[] getExtendedMatchCodeColumns() {
+        return _templateData.getExtendedMatchCodeColumns();
     }
 
     /**
@@ -712,7 +715,7 @@ public class TemplateHolder extends AbstractSpaceItem implements ITemplateHolder
     }
 
     @Override
-    public MatchResult match(CacheManager cacheManager, IEntryHolder entry, int skipAlreadyMatchedFixedPropertyIndex, String skipAlreadyMatchedIndexPath, boolean safeEntry, Context context, RegexCache regexCache) {
+    public MatchResult match(CacheManager cacheManager, IEntryHolder entry, int skipAlreadyMatchedFixedPropertyIndex, String skipAlreadyMatchedIndexPath, boolean safeEntry, Context context, RegexCache regexCache, int rightColumnPosition) {
         context.incrementNumOfEntriesMatched();
         MatchResult res = MatchResult.NONE;
         ITransactionalEntryData masterEntryData = null;
@@ -742,12 +745,12 @@ public class TemplateHolder extends AbstractSpaceItem implements ITemplateHolder
             if ( ( this.isMatchByID() && !isChangeQuery() ) || this.isEmptyTemplate())
                 res = shadowEntryData == null ? MatchResult.MASTER : MatchResult.MASTER_AND_SHADOW;
             else {
-                boolean masterMatch = _templateData.match(context, cacheManager, masterEntryData, skipAlreadyMatchedFixedPropertyIndex, skipAlreadyMatchedIndexPath, regexCache);
+                boolean masterMatch = _templateData.match(context, cacheManager, masterEntryData, skipAlreadyMatchedFixedPropertyIndex, skipAlreadyMatchedIndexPath, regexCache, rightColumnPosition);
 
                 if (shadowEntryData == null)
                     res = masterMatch ? MatchResult.MASTER : MatchResult.NONE;
                 else {
-                    boolean shadowMatch = _templateData.match(context, cacheManager, shadowEntryData, skipAlreadyMatchedFixedPropertyIndex, skipAlreadyMatchedIndexPath, regexCache);
+                    boolean shadowMatch = _templateData.match(context, cacheManager, shadowEntryData, skipAlreadyMatchedFixedPropertyIndex, skipAlreadyMatchedIndexPath, regexCache, rightColumnPosition);
 
                     if (masterMatch)
                         res = shadowMatch ? MatchResult.MASTER_AND_SHADOW : MatchResult.MASTER;
@@ -786,6 +789,11 @@ public class TemplateHolder extends AbstractSpaceItem implements ITemplateHolder
             }
         }
         return res;
+    }
+
+    @Override
+    public MatchResult match(CacheManager cacheManager, IEntryHolder entry, int skipAlreadyMatchedFixedPropertyIndex, String skipAlreadyMatchedIndexPath, boolean safeEntry, Context context, RegexCache regexCache) {
+        return match(cacheManager, entry, skipAlreadyMatchedFixedPropertyIndex, skipAlreadyMatchedIndexPath, safeEntry, context, regexCache, - 1);
     }
 
     private boolean isMVCCEntryMatchedByGenerationsState(MVCCEntryHolder entryHolder, CacheManager cacheManager, Context context) {
@@ -828,13 +836,16 @@ public class TemplateHolder extends AbstractSpaceItem implements ITemplateHolder
                 throw new MVCCRevertGenerationException("Cant revert entry generation ["+entryHolder+"], under " +
                         "generation state [" + mvccGenerationsState + "]");
             }
+            if (!this.isReadOperation() && mvccGenerationsState.isUncompletedGeneration(committedGeneration)) {
+                throw new MVCCModifyOnUncompletedGenerationException(mvccGenerationsState, committedGeneration, entryHolder, getTemplateOperation());
+            }
             if (isOverridenEntry
                     && overrideGeneration > completedGeneration
                     && !mvccGenerationsState.isUncompletedGeneration(overrideGeneration)) {
                 throw new MVCCEntryModifyConflictException(mvccGenerationsState, entryHolder, getTemplateOperation()); // overriden can't be modified
             }
-            if ((committedGeneration > completedGeneration)
-                    && (!mvccGenerationsState.isUncompletedGeneration(committedGeneration))) {
+            if (committedGeneration > completedGeneration
+                    && !mvccGenerationsState.isUncompletedGeneration(committedGeneration)) {
                 throw new MVCCEntryModifyConflictException(mvccGenerationsState, entryHolder, getTemplateOperation()); // entry already younger than completedGen
             }
             return isDirtyEntry || (committedIsCompleted && !isOverridenEntry);

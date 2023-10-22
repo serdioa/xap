@@ -49,7 +49,7 @@ public interface SpaceDocumentColumnFamilyMapper {
      * @param metadata The metadata corresponding the the converted document's type name.
      * @param document The document typ convert.
      * @param rowType  The row type.
-     * @return A {@link ColumnFamilyRow} matching the provided docment.
+     * @return A {@link ColumnFamilyRow} matching the provided document.
      */
     ColumnFamilyRow toColumnFamilyRow(
             ColumnFamilyMetadata metadata,

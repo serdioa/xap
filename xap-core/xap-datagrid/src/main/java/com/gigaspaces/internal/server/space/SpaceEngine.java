@@ -94,6 +94,7 @@ import com.gigaspaces.internal.sync.SynchronizationStorageAdapter;
 import com.gigaspaces.internal.sync.hybrid.SyncHybridSAException;
 import com.gigaspaces.internal.sync.hybrid.SyncHybridTransactionException;
 import com.gigaspaces.internal.transport.*;
+import com.gigaspaces.internal.transport.mvcc.IMVCCEntryPacket;
 import com.gigaspaces.internal.utils.GsEnv;
 import com.gigaspaces.internal.utils.StringUtils;
 import com.gigaspaces.internal.utils.collections.IAddOnlySet;
@@ -860,6 +861,9 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
         final XtnEntry txnEntry = initTransactionEntry(txn, sc, fromReplication);
 
         context.applyMVCCGenerationsState(isMvccEnabled(), txnEntry, sc);
+        if (isMvccEnabled() && entryPacket instanceof IMVCCEntryPacket && ((IMVCCEntryPacket)entryPacket).isMVCCEntryMetadataApplied()) {
+            context.setInMemoryRecovery(true);
+        }
 
         /**
          * build Entry Holder .
@@ -4271,6 +4275,10 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
         try {
             //can we use blob-store prefetch ?
             toScan = BlobStorePreFetchIteratorBasedHandler.createPreFetchIterIfRelevant(context, _cacheManager, toScan, template, _logger);
+            int rightColumnPosition = -1;
+            if (toScan instanceof ExtendedIndexIterator) {
+                rightColumnPosition = ((ExtendedIndexIterator<?>)toScan).getRightColumnPosition();
+            }
             while (hasNext = toScan.hasNext()) {
                 IEntryCacheInfo pEntry = toScan.next();
                 if (pEntry == null) {
@@ -4279,7 +4287,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
                 getMatchedEntriesAndOperateSA_Entry(context,
                         template,
                         needMatch, alreadyMatchedFixedPropertyIndexPos, alreadyMatchedIndexPath, leaseFilter,
-                        pEntry, makeWaitForInfo, entryTypeDesc);
+                        pEntry, makeWaitForInfo, entryTypeDesc, rightColumnPosition);
                 if (template.getBatchOperationContext().reachedMaxEntries()) {
                     return;
                 }
@@ -4327,7 +4335,8 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
                                              int skipAlreadyMatchedFixedPropertyIndex, String skipAlreadyMatchedIndexPath,
                                              long leaseFilter,
                                              IEntryCacheInfo pEntry, boolean makeWaitForInfo,
-                                             IServerTypeDesc entryTypeDesc /*can be null in LRU (non blobstore cache policy)*/)
+                                             IServerTypeDesc entryTypeDesc /*can be null in LRU (non blobstore cache policy)*/,
+                                             int rightColumnPosition)
             throws TransactionException, TemplateDeletedException,
             SAException {
         if (pEntry.isBlobStoreEntry() && !pEntry.preMatch(context, template))
@@ -4349,7 +4358,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
             return;
         }
 
-        if (needMatch && !_templateScanner.match(context, entry, template, skipAlreadyMatchedFixedPropertyIndex, skipAlreadyMatchedIndexPath, false))
+        if (needMatch && !_templateScanner.match(context, entry, template, skipAlreadyMatchedFixedPropertyIndex, skipAlreadyMatchedIndexPath, false, rightColumnPosition))
             return;
         if (!template.isNonBlockingRead() && entry.isDeleted())
             return;
@@ -4384,7 +4393,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
             getMatchedEntriesAndOperateSA_Entry(context,
                     template,
                     true /*needMatch*/, -1 /*indexPos*/, null, SystemTime.timeMillis(),
-                    toScan.next(), makeWaitForInfo, entryTypeDesc);
+                    toScan.next(), makeWaitForInfo, entryTypeDesc, -1);
             if(template.isServerIterator()){
                 template.getServerIteratorInfo().setScanEntriesIter(null);
             }
