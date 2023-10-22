@@ -47,7 +47,6 @@ public class SQLFunctions {
         builtInFunctions.put("TO_CHAR", new ToCharSqlFunction());
         builtInFunctions.put("CONTAINS_KEY", new ContainsKeySqlFunction());
         builtInFunctions.put("REPLACE", new ReplaceSqlFunction());
-        builtInFunctions.put("LPAD", new LpadSqlFunction());
         builtInFunctions.putAll(SQLFunctionsExtended.getFunctions());
     }
 
