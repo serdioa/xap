@@ -5,8 +5,6 @@ public class LpadSqlFunction extends SqlFunction {
      * @param context contains 2 String arguments and one optional Integer.
      * @return If n > 0, the n last characters, else all characters but the first |n| characters from t.
      */
-    // LPAD(string, length [, pattern ])
-    // SELECT LPAD( 'NEW', 6, '#');
     @Override
     public Object apply(SqlFunctionExecutionContext context) {
         String regex = " ";
