@@ -16,17 +16,17 @@ public class LpadSqlFunction extends SqlFunction {
             return null;
         }
         if (!(arg1 instanceof String)) {
-            throw new RuntimeException("LPAD - 1st argument must be a String");
+            throw new RuntimeException("LPAD - 1st argument must be a String or Number");
         }
         String input = (String) arg1;
         Object length = context.getArgument(1);
         if (!(length instanceof String || length instanceof Integer))
             throw new RuntimeException("Right function - 2nd argument must be a String or an Integer: " + length);
-        Integer len = Integer.parseInt(length.toString());
+        int len = Integer.parseInt(length.toString());
         Object arg3 = context.getArgument(2);
         if (len < input.length())
             return input.substring(0, len);
-        if (arg3 != null && (arg3 instanceof String)) {
+        if (arg3 instanceof String) {
             regex = (String) arg3;
         }
         while (input.length() < len) {
@@ -39,7 +39,7 @@ public class LpadSqlFunction extends SqlFunction {
                 int trimEnd = trimStart + len;
                 input = input.substring(trimStart, trimEnd);
             } else {
-                input = regex + input; // Concatenate the regex
+                input = regex + input;
             }
         }
         return input;
