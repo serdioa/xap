@@ -30,11 +30,10 @@ import java.io.Serializable;
 @com.gigaspaces.api.InternalApi
 public class ResultEntry implements Serializable {
 
+    private static final long serialVersionUID = -4685489071410876605L;
     /**
      *
      */
-    private static final long serialVersionUID = 1L;
-
     private String[] fieldNames;
     private Object[][] fieldValues;
 
@@ -181,6 +180,8 @@ public class ResultEntry implements Serializable {
                 buffer.append(fieldNames[i]);
                 buffer.append('=');
                 buffer.append(fieldValues[j][i]);
+                buffer.append(' ');
+                buffer.append(" of type :" + columnTypes[i].getTypeName());
                 buffer.append(' ');
             }
             buffer.append(']');

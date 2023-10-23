@@ -42,14 +42,14 @@ public class GResultSetMetaData implements ResultSetMetaData {
     /* (non-Javadoc)
      * @see java.sql.ResultSetMetaData#getColumnDisplaySize(int)
      */
-    public int getColumnDisplaySize(int column) throws SQLException {
+    public int getColumnDisplaySize(int column) {
         return DISPLAY_SIZE;
     }
 
     /* (non-Javadoc)
      * @see java.sql.ResultSetMetaData#getColumnType(int)
      */
-    public int getColumnType(int column) throws SQLException {
+    public int getColumnType(int column) {
         //TODO
         int type = 0;
         String clName = this.getColumnClassName(column);
@@ -77,7 +77,7 @@ public class GResultSetMetaData implements ResultSetMetaData {
     /* (non-Javadoc)
      * @see java.sql.ResultSetMetaData#getPrecision(int)
      */
-    public int getPrecision(int column) throws SQLException {
+    public int getPrecision(int column) {
         // TODO Auto-generated method stub
         return 0;
     }
@@ -85,7 +85,7 @@ public class GResultSetMetaData implements ResultSetMetaData {
     /* (non-Javadoc)
      * @see java.sql.ResultSetMetaData#getScale(int)
      */
-    public int getScale(int column) throws SQLException {
+    public int getScale(int column) {
         // TODO Auto-generated method stub
         return 0;
     }
@@ -100,28 +100,28 @@ public class GResultSetMetaData implements ResultSetMetaData {
     /* (non-Javadoc)
      * @see java.sql.ResultSetMetaData#isAutoIncrement(int)
      */
-    public boolean isAutoIncrement(int column) throws SQLException {
+    public boolean isAutoIncrement(int column) {
         return false;
     }
 
     /* (non-Javadoc)
      * @see java.sql.ResultSetMetaData#isCaseSensitive(int)
      */
-    public boolean isCaseSensitive(int column) throws SQLException {
+    public boolean isCaseSensitive(int column) {
         return true;
     }
 
     /* (non-Javadoc)
      * @see java.sql.ResultSetMetaData#isCurrency(int)
      */
-    public boolean isCurrency(int column) throws SQLException {
+    public boolean isCurrency(int column) {
         return false;
     }
 
     /* (non-Javadoc)
      * @see java.sql.ResultSetMetaData#isDefinitelyWritable(int)
      */
-    public boolean isDefinitelyWritable(int column) throws SQLException {
+    public boolean isDefinitelyWritable(int column) {
         return false;
     }
 
@@ -135,14 +135,14 @@ public class GResultSetMetaData implements ResultSetMetaData {
     /* (non-Javadoc)
      * @see java.sql.ResultSetMetaData#isSearchable(int)
      */
-    public boolean isSearchable(int column) throws SQLException {
+    public boolean isSearchable(int column) {
         return true;
     }
 
     /* (non-Javadoc)
      * @see java.sql.ResultSetMetaData#isSigned(int)
      */
-    public boolean isSigned(int column) throws SQLException {
+    public boolean isSigned(int column) {
         Object[] colObj = results.getFieldValues(1);
         if (colObj == null)
             return false;
@@ -153,31 +153,31 @@ public class GResultSetMetaData implements ResultSetMetaData {
     /* (non-Javadoc)
      * @see java.sql.ResultSetMetaData#isWritable(int)
      */
-    public boolean isWritable(int column) throws SQLException {
+    public boolean isWritable(int column) {
         return true;
     }
 
     /* (non-Javadoc)
      * @see java.sql.ResultSetMetaData#getCatalogName(int)
      */
-    public String getCatalogName(int column) throws SQLException {
+    public String getCatalogName(int column) {
         return "";
     }
 
     /* (non-Javadoc)
      * @see java.sql.ResultSetMetaData#getColumnClassName(int)
      */
-    public String getColumnClassName(int column)
-            throws SQLException {
-        if (results != null && results.getFieldValues(1) != null
+    public String getColumnClassName(int column) {
+        String columnClassName = "";
+        if (results == null) {
+            columnClassName = "";
+        } else if (results.getFieldValues(1) != null
                 && results.getFieldValues(1)[column - 1] != null) {
-            return results.getFieldValues(1)[column - 1].getClass().getName();
+            columnClassName = results.getFieldValues(1)[column - 1].getClass().getName();
+        } else if (results.getColumnTypes() != null) {
+            columnClassName = results.getColumnTypes()[column - 1].getName();
         }
-        if (results != null && results.getColumnTypes() != null) {
-            return results.getColumnTypes()[column - 1].getName();
-        }
-        return "";
-
+        return columnClassName;
     }
 
     /* (non-Javadoc)
@@ -197,7 +197,7 @@ public class GResultSetMetaData implements ResultSetMetaData {
     /* (non-Javadoc)
      * @see java.sql.ResultSetMetaData#getColumnTypeName(int)
      */
-    public String getColumnTypeName(int column) throws SQLException {
+    public String getColumnTypeName(int column) {
         return getColumnClassName(column);
     }
 
