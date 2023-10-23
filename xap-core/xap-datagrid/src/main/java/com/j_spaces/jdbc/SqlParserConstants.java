@@ -132,7 +132,6 @@ public interface SqlParserConstants {
     int QUESTIONMARK = 114;
     int OPENBRAKET = 115;
     int CLOSEBRAKET = 116;
-    int LPAD = 117;
 
     int DEFAULT = 0;
 
@@ -208,7 +207,6 @@ public interface SqlParserConstants {
             "\"varchar2\"",
             "\"char\"",
             "\"long\"",
-            "\"lpad\"",
             "\"clob\"",
             "\"blob\"",
             "\"empty_clob()\"",
