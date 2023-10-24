@@ -36,7 +36,6 @@ import com.j_spaces.jdbc.parser.grammar.SqlParser;
 import com.j_spaces.jdbc.request.SetAutoCommitRequest;
 import com.j_spaces.jdbc.request.SetTransaction;
 import com.j_spaces.jdbc.request.SetUseSingleSpace;
-import com.j_spaces.jdbc.request.SqlPreparedStatementContext;
 import net.jini.core.lease.LeaseDeniedException;
 import net.jini.core.transaction.*;
 import org.slf4j.Logger;
@@ -155,41 +154,40 @@ public class QueryHandler {
     }
 
     private ResponsePacket handleRequest(RequestPacketV3 request, QuerySession session)
-            throws LeaseDeniedException, RemoteException, SQLException,
-            TransactionException {
+            throws SQLException {
         ResponsePacket response;
 
         //see RequestPacket documentation for types
         ISpaceProxy space = getSpace(session.isUseRegularSpace());
-        SqlPreparedStatementContext sqlPreparedStatementContext = new SqlPreparedStatementContext();
+        Object[] preparedValues = null;
         switch (request.getType()) {
             case STATEMENT:
             case PREPARED_STATEMENT:
                 break;
             case PREPARED_WITH_VALUES:
-                sqlPreparedStatementContext.setPreparedValues(request.getPreparedValues());
+                preparedValues = request.getPreparedValues();
                 break;
             case PREPARED_VALUES_BATCH:
-                sqlPreparedStatementContext.setPreparedValues(Optional.of(request)
+                preparedValues = Optional.of(request)
                         .map(RequestPacket::getPreparedValuesCollection)
                         .map(GPreparedStatement.PreparedValuesCollection::getBatchValues)
                         .orElse(Collections.emptyList()).stream()
                         .flatMap(Arrays::stream)
-                        .toArray());
+                        .toArray();
                 break;
             case PREPARED_FETCH_METADATA:
-                sqlPreparedStatementContext.setFetchMetaData(true);
                 break;
             default:
                 throw new SQLException("Unknown execution type [" + request.getType() + "]", "GSP", -117);
         }
+        request.setPreparedValues(preparedValues);
 
         try {
             Class<?> clazz = Class.forName("com.gigaspaces.jdbc.QueryHandler");
             Object newQueryHandler = clazz.newInstance();
             response = (ResponsePacket) clazz
-                    .getDeclaredMethod("handle", String.class, IJSpace.class, SqlPreparedStatementContext.class, Properties.class)
-                    .invoke(newQueryHandler, request.getStatement(), space, sqlPreparedStatementContext, _config.getLocalProps());
+                    .getDeclaredMethod("handle", IJSpace.class, RequestPacket.class, Properties.class)
+                    .invoke(newQueryHandler, space, request, _config.getLocalProps());
         } catch (InvocationTargetException e) {
             if (_logger.isDebugEnabled()) {
                 //if debug is enabled, show exception with full trace
