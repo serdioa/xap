@@ -169,13 +169,13 @@ public class GResultSetMetaData implements ResultSetMetaData {
      */
     public String getColumnClassName(int column) {
         String columnClassName = "";
-        if (results == null) {
-            columnClassName = "";
-        } else if (results.getFieldValues(1) != null
-                && results.getFieldValues(1)[column - 1] != null) {
-            columnClassName = results.getFieldValues(1)[column - 1].getClass().getName();
-        } else if (results.getColumnTypes() != null) {
-            columnClassName = results.getColumnTypes()[column - 1].getName();
+        if (results != null) {
+            if (results.getFieldValues(1) != null
+                    && results.getFieldValues(1)[column - 1] != null) {
+                columnClassName = results.getFieldValues(1)[column - 1].getClass().getName();
+            } else if (results.getColumnTypes() != null) {
+                columnClassName = results.getColumnTypes()[column - 1].getName();
+            }
         }
         return columnClassName;
     }

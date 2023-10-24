@@ -17,6 +17,7 @@
 package com.j_spaces.jdbc;
 
 import java.io.Serializable;
+import java.util.Objects;
 
 /**
  * This is the result from which a ResultSet will be constructed in response to a SELECT query. This
@@ -180,8 +181,10 @@ public class ResultEntry implements Serializable {
                 buffer.append(fieldNames[i]);
                 buffer.append('=');
                 buffer.append(fieldValues[j][i]);
-                buffer.append(' ');
-                buffer.append(" of type :" + columnTypes[i].getTypeName());
+                if (Objects.nonNull(columnTypes)) {
+                    buffer.append(' ');
+                    buffer.append(" of type :" + columnTypes[i].getTypeName());
+                }
                 buffer.append(' ');
             }
             buffer.append(']');
