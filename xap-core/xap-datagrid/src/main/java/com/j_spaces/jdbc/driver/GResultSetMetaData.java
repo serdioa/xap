@@ -174,7 +174,7 @@ public class GResultSetMetaData implements ResultSetMetaData {
                     && results.getFieldValues(1)[column - 1] != null) {
                 columnClassName = results.getFieldValues(1)[column - 1].getClass().getName();
             } else if (results.getColumnTypes() != null) {
-                columnClassName = results.getColumnTypes()[column - 1].getName();
+                columnClassName = results.getColumnTypes()[column - 1];
             }
         }
         return columnClassName;

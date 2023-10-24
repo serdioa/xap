@@ -49,7 +49,7 @@ public class ResultEntry implements Serializable {
      */
     private String[] _tableNames;
 
-    private Class<?>[] columnTypes;
+    private String[] columnTypes;
 
     public ResultEntry() {
 
@@ -158,11 +158,11 @@ public class ResultEntry implements Serializable {
         return ((fieldValues != null) ? fieldValues.length : 0);
     }
 
-    public Class<?>[] getColumnTypes() {
+    public String[] getColumnTypes() {
         return columnTypes;
     }
 
-    public void setColumnTypes(Class<?>[] columnTypes) {
+    public void setColumnTypes(String[] columnTypes) {
         this.columnTypes = columnTypes;
     }
 
@@ -183,7 +183,7 @@ public class ResultEntry implements Serializable {
                 buffer.append(fieldValues[j][i]);
                 if (Objects.nonNull(columnTypes)) {
                     buffer.append(' ');
-                    buffer.append(" of type :" + columnTypes[i].getTypeName());
+                    buffer.append(" of type :" + columnTypes[i]);
                 }
                 buffer.append(' ');
             }
