@@ -26,7 +26,6 @@ import com.j_spaces.core.exception.internal.ReplicationInternalSpaceException;
 
 import com.j_spaces.kernel.SystemProperties;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 
 @com.gigaspaces.api.InternalApi
@@ -99,14 +98,15 @@ public class SynchronizingData<T extends IReplicationPacketData<?>> {
     // getPackets
     public synchronized boolean filterEntryData(String uid, long packetKey,
                                                 boolean filterIfNotPresentInReplicaState) {
+        //Don't filter any data from redo log if filter is not enabled
+        if (!_isFilterEnabled)
+            return  false;
+
         if (!_entriesUidMap.containsKey(uid)) {
             if (_logger.isDebugEnabled()) {
                 _logger.debug("[SynchronizingData::filterEntryData] not in _entriesUidMap: uid=" + uid + " ,_keyWhenCopyStageCompleted=" + _keyWhenCopyStageCompleted +
                         " ,packetKey=" + packetKey + " ,isDirectPersistency=" + _isDirectPersistencySync + " ,isFilteredEnabled=" +_isFilterEnabled);
             }
-            //Don't filter any data from redo log if filter is not enabled
-            if (!_isFilterEnabled)
-                return  false;
             //don't filter any data from redo log (which is not in sync list) when doing direct persistency sync list recovery
             if (_isDirectPersistencySync) {
                 return false;

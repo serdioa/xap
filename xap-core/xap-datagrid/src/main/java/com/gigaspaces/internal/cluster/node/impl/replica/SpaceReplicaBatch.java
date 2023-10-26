@@ -1,8 +1,6 @@
 package com.gigaspaces.internal.cluster.node.impl.replica;
 
-import com.gigaspaces.internal.cluster.node.impl.replica.data.AbstractEntryReplicaData;
 import com.gigaspaces.internal.io.IOUtils;
-import com.gigaspaces.internal.transport.mvcc.MVCCShellEntryPacket;
 import com.gigaspaces.serialization.SmartExternalizable;
 
 import java.io.IOException;
@@ -25,6 +23,7 @@ public class SpaceReplicaBatch implements Collection<ISpaceReplicaData>, SmartEx
 
     private Collection<ISpaceReplicaData> batch;
     private int fifoId = 0 ;
+    private int batchSize = 0;
 
     public SpaceReplicaBatch() {
     }
@@ -56,7 +55,7 @@ public class SpaceReplicaBatch implements Collection<ISpaceReplicaData>, SmartEx
 
     @Override
     public int size() {
-        return batch.size();
+        return batchSize == 0 ? batch.size() : batchSize;
     }
 
     @Override
@@ -82,6 +81,12 @@ public class SpaceReplicaBatch implements Collection<ISpaceReplicaData>, SmartEx
     @Override
     public <T> T[] toArray(T[] a) {
         return batch.toArray(a);
+    }
+
+
+    public void add(ISpaceReplicaData data, int batchSize) {
+        add(data);
+        this.batchSize += batchSize;
     }
 
     @Override
@@ -124,6 +129,7 @@ public class SpaceReplicaBatch implements Collection<ISpaceReplicaData>, SmartEx
         return "SpaceReplicaBatch{" +
                 "batch=" + batch +
                 ", fifoId=" + fifoId +
+                ", batchSize=" + batchSize +
                 '}';
     }
 
@@ -131,11 +137,13 @@ public class SpaceReplicaBatch implements Collection<ISpaceReplicaData>, SmartEx
     public void writeExternal(ObjectOutput out) throws IOException {
         IOUtils.writeObject(out, batch);
         IOUtils.writeInt(out, fifoId);
+        IOUtils.writeInt(out, batchSize);
     }
 
     @Override
     public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         batch = IOUtils.readObject(in);
         fifoId = IOUtils.readInt(in);
+        batchSize = IOUtils.readInt(in);
     }
 }

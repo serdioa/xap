@@ -262,7 +262,7 @@ public class ReplicationNodeReplicaHandler {
                         continue;
                 }
                 // We add a packet to the batch
-                result.add(data);
+                result.add(data, getBatchSize(data));
                 if(!isFifoBatch){
                     isFifoBatch = isFifoType(data);
                 }
@@ -285,6 +285,16 @@ public class ReplicationNodeReplicaHandler {
         {
             _lock.unlock();
         }
+    }
+
+    private int getBatchSize(ISpaceReplicaData data) {
+        if (_spaceEngine.isMvccEnabled() && data instanceof AbstractEntryReplicaData) {
+            AbstractEntryReplicaData replicaPacketData = ((AbstractEntryReplicaData)data);
+            if (replicaPacketData.getEntryPacket() instanceof MVCCShellEntryPacket) {
+                return ((MVCCShellEntryPacket)replicaPacketData.getEntryPacket()).getEntryVersionsPackets().size();
+            }
+        }
+        return 1;
     }
 
     private boolean isFifoType(ISpaceReplicaData data) {

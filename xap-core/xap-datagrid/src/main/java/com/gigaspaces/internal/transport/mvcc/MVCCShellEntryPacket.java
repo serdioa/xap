@@ -31,6 +31,7 @@ import java.util.Map;
 @com.gigaspaces.api.InternalApi
 public class MVCCShellEntryPacket implements IEntryPacket {
 
+    private static final long serialVersionUID = 6212108453322058146L;
     private String _uid;
     private String _typeName;
     private List<IMVCCEntryPacket> _entryVersionsPackets;
