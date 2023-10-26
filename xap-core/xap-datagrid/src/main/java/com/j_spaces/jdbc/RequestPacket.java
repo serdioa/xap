@@ -17,7 +17,6 @@
 package com.j_spaces.jdbc;
 
 import com.j_spaces.jdbc.driver.GPreparedStatement.PreparedValuesCollection;
-
 import net.jini.core.lease.LeaseDeniedException;
 import net.jini.core.transaction.TransactionException;
 
@@ -48,7 +47,7 @@ public class RequestPacket implements Serializable {
 
 
     public static enum Type {
-        @Deprecated LOGIN, STATEMENT, PREPARED_STATEMENT, PREPARED_WITH_VALUES, PREPARED_VALUES_BATCH
+        @Deprecated LOGIN, STATEMENT, PREPARED_STATEMENT, PREPARED_WITH_VALUES, PREPARED_VALUES_BATCH, PREPARED_FETCH_METADATA
     }
 
 

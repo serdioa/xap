@@ -154,37 +154,37 @@ public class QueryHandler {
     }
 
     private ResponsePacket handleRequest(RequestPacketV3 request, QuerySession session)
-            throws LeaseDeniedException, RemoteException, SQLException,
-            TransactionException {
+            throws SQLException {
         ResponsePacket response;
 
         //see RequestPacket documentation for types
         ISpaceProxy space = getSpace(session.isUseRegularSpace());
-        Object[] preparedValues;
         switch (request.getType()) {
             case STATEMENT:
-            case PREPARED_WITH_VALUES:
-                preparedValues = request.getPreparedValues();
-                break;
             case PREPARED_STATEMENT:
+            case PREPARED_WITH_VALUES:
+            case PREPARED_FETCH_METADATA:
+                break;
             case PREPARED_VALUES_BATCH:
-                preparedValues = Optional.of(request)
+                Object[] preparedValues = Optional.of(request)
                         .map(RequestPacket::getPreparedValuesCollection)
                         .map(GPreparedStatement.PreparedValuesCollection::getBatchValues)
                         .orElse(Collections.emptyList()).stream()
                         .flatMap(Arrays::stream)
                         .toArray();
+                request.setPreparedValues(preparedValues);
                 break;
             default:
                 throw new SQLException("Unknown execution type [" + request.getType() + "]", "GSP", -117);
         }
 
+
         try {
             Class<?> clazz = Class.forName("com.gigaspaces.jdbc.QueryHandler");
             Object newQueryHandler = clazz.newInstance();
             response = (ResponsePacket) clazz
-                    .getDeclaredMethod("handle", String.class, IJSpace.class, Object[].class, Properties.class)
-                    .invoke(newQueryHandler, request.getStatement(), space, preparedValues, _config.getLocalProps());
+                    .getDeclaredMethod("handle", IJSpace.class, RequestPacket.class, Properties.class)
+                    .invoke(newQueryHandler, space, request, _config.getLocalProps());
         } catch (InvocationTargetException e) {
             if (_logger.isDebugEnabled()) {
                 //if debug is enabled, show exception with full trace
