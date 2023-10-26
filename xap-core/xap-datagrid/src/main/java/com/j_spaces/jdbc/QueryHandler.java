@@ -159,28 +159,25 @@ public class QueryHandler {
 
         //see RequestPacket documentation for types
         ISpaceProxy space = getSpace(session.isUseRegularSpace());
-        Object[] preparedValues = null;
         switch (request.getType()) {
             case STATEMENT:
             case PREPARED_STATEMENT:
-                break;
             case PREPARED_WITH_VALUES:
-                preparedValues = request.getPreparedValues();
+            case PREPARED_FETCH_METADATA:
                 break;
             case PREPARED_VALUES_BATCH:
-                preparedValues = Optional.of(request)
+                Object[] preparedValues = Optional.of(request)
                         .map(RequestPacket::getPreparedValuesCollection)
                         .map(GPreparedStatement.PreparedValuesCollection::getBatchValues)
                         .orElse(Collections.emptyList()).stream()
                         .flatMap(Arrays::stream)
                         .toArray();
-                break;
-            case PREPARED_FETCH_METADATA:
+                request.setPreparedValues(preparedValues);
                 break;
             default:
                 throw new SQLException("Unknown execution type [" + request.getType() + "]", "GSP", -117);
         }
-        request.setPreparedValues(preparedValues);
+
 
         try {
             Class<?> clazz = Class.forName("com.gigaspaces.jdbc.QueryHandler");
