@@ -18,7 +18,8 @@ package com.j_spaces.jdbc.driver;
 
 import com.j_spaces.jdbc.ResultEntry;
 
-import java.sql.*;
+import java.sql.ResultSetMetaData;
+import java.sql.SQLException;
 
 /**
  * This is the ResultSetMetaData implementation
@@ -50,28 +51,9 @@ public class GResultSetMetaData implements ResultSetMetaData {
      * @see java.sql.ResultSetMetaData#getColumnType(int)
      */
     public int getColumnType(int column) {
-        //TODO
-        int type = 0;
-        String clName = this.getColumnClassName(column);
-
-        if (clName.equals(String.class.getName()))
-            type = Types.VARCHAR;
-        else if (clName.equals(Integer.class.getName()))
-            type = Types.INTEGER;
-        else if (clName.equals(Double.class.getName()))
-            type = Types.DOUBLE;
-        else if (clName.equals(Float.class.getName()))
-            type = Types.FLOAT;
-        else if (clName.equals(Object.class.getName()))
-            type = Types.JAVA_OBJECT;
-        else if (clName.equals(Timestamp.class.getName()))
-            type = Types.TIMESTAMP;
-        else if (clName.equals(Time.class.getName()))
-            type = Types.TIME;
-        else
-            type = Types.OTHER;
-
-        return type;
+        if (results == null || results.getColumnCodes() == null || column < 0 || column > results.getColumnCodes().length)
+            return -1;
+        return results.getColumnCodes()[column - 1];
     }
 
     /* (non-Javadoc)

@@ -35,6 +35,7 @@ public class ResultEntry implements Serializable {
     /**
      *
      */
+
     private String[] fieldNames;
     private Object[][] fieldValues;
 
@@ -51,6 +52,8 @@ public class ResultEntry implements Serializable {
 
     private String[] columnTypes;
 
+    private int[] columnCodes;
+
     public ResultEntry() {
 
     }
@@ -60,6 +63,19 @@ public class ResultEntry implements Serializable {
         _columnLabels = columnLabels;
         _tableNames = tableNames;
         fieldValues = resultValues;
+    }
+
+    /**
+     * The column type codes in jdbc
+     *
+     * @return Returns the column type codes
+     */
+    public int[] getColumnCodes() {
+        return columnCodes;
+    }
+
+    public void setColumnCodes(int[] columnCodes) {
+        this.columnCodes = columnCodes;
     }
 
 
@@ -183,7 +199,12 @@ public class ResultEntry implements Serializable {
                 buffer.append(fieldValues[j][i]);
                 if (Objects.nonNull(columnTypes)) {
                     buffer.append(' ');
-                    buffer.append(" of type :" + columnTypes[i]);
+                    buffer.append(" of type :").append(columnTypes[i]);
+                }
+                buffer.append(' ');
+                if (Objects.nonNull(columnCodes)) {
+                    buffer.append(' ');
+                    buffer.append(" with int code :").append(columnCodes[i]);
                 }
                 buffer.append(' ');
             }
