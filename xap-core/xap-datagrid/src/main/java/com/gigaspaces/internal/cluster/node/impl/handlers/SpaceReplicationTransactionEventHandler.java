@@ -38,7 +38,6 @@ import net.jini.core.transaction.server.ServerTransaction;
 import java.rmi.RemoteException;
 import java.util.Collection;
 import java.util.List;
-import java.util.Optional;
 
 
 @com.gigaspaces.api.InternalApi
@@ -71,18 +70,8 @@ public class SpaceReplicationTransactionEventHandler implements IReplicationInTr
                 xtnEntry.setMvccRevertGenerationTxn(castedATRPD.isMvccRevertGeneration());
             }
             for (IReplicationTransactionalPacketEntryData packetEntryData : packetsData) {
-                if (_spaceEngine.isMvccEnabled() && _spaceEngine.getSpaceImpl().isRecovering() && xtnEntry.getMVCCGenerationsState() != null) {
-                    boolean isOlderGeneration = Optional.ofNullable(_spaceEngine.getCacheManager().getMVCCShellEntryCacheInfoByUid(packetEntryData.getUid()))
-                            .map(shell -> shell.getLatestCommittedOrHollow())
-                            .map(entry -> !entry.isHollowEntry() &&
-                                    entry.getCommittedGeneration() > xtnEntry.getMVCCGenerationsState().getCompletedGeneration())
-                            .orElse(false);
-                    if (isOlderGeneration) {
-                        if (_spaceEngine.getOperationLogger().isDebugEnabled())
-                            _spaceEngine.getOperationLogger().debug("Ignore mvcc entry [{}] replication as generation younger than {} exists",
-                                    packetEntryData.getUid(), xtnEntry.getMVCCGenerationsState());
-                        continue;
-                    }
+                if (_spaceEngine.isMvccEnabled() && _spaceEngine.mvccYoungerGenerationRecovered(packetEntryData.getUid(), xtnEntry.getMVCCGenerationsState())) {
+                    continue;
                 }
                 packetEntryData.executeTransactional(context, this, txn, supportsTwoPhase);
             }

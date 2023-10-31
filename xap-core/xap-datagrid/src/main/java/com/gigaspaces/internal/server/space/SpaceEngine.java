@@ -81,6 +81,7 @@ import com.gigaspaces.internal.server.space.iterator.ServerIteratorInfo;
 import com.gigaspaces.internal.server.space.iterator.ServerIteratorRequestInfo;
 import com.gigaspaces.internal.server.space.iterator.ServerIteratorsManager;
 import com.gigaspaces.internal.server.space.metadata.SpaceTypeManager;
+import com.gigaspaces.internal.server.space.mvcc.MVCCGenerationsState;
 import com.gigaspaces.internal.server.space.mvcc.MVCCSpaceEngineHandler;
 import com.gigaspaces.internal.server.space.mvcc.exception.MVCCEntryModifyConflictException;
 import com.gigaspaces.internal.server.space.operations.WriteEntriesResult;
@@ -7741,6 +7742,10 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
 
     public boolean isMvccEnabled() {
         return _mvccSpaceEngineHandler != null;
+    }
+
+    public boolean mvccYoungerGenerationRecovered(String uid, MVCCGenerationsState mvccGenerationsState) {
+        return _mvccSpaceEngineHandler.isYoungerGenerationRecoveredForUID(uid, mvccGenerationsState);
     }
 
     public static EntryDeletedException getEntryDeletedException() {
