@@ -31,6 +31,7 @@ import java.sql.*;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * This is the PreparedStatement implementation.
@@ -387,8 +388,11 @@ public class GPreparedStatement extends GStatement implements PreparedStatement 
      * @see java.sql.PreparedStatement#getMetaData()
      */
     public ResultSetMetaData getMetaData() throws SQLException {
-        //TODO
-        return null;
+        ResponsePacket response = connection.sendFetchMetaData(sql);
+        if (Objects.isNull(response)) {
+            return null;
+        }
+        return new GResultSetMetaData(response.getResultEntry());
     }
 
     /* (non-Javadoc)

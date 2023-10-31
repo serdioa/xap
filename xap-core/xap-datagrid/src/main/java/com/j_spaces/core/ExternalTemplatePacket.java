@@ -26,6 +26,7 @@ import com.gigaspaces.internal.metadata.converter.ConversionException;
 import com.gigaspaces.internal.transport.AbstractProjectionTemplate;
 import com.gigaspaces.internal.transport.ITemplatePacket;
 import com.gigaspaces.internal.version.PlatformLogicalVersion;
+import com.gigaspaces.lrmi.LRMIInvocationContext;
 import com.j_spaces.core.client.ExternalEntry;
 import com.j_spaces.core.client.TemplateMatchCodes;
 
@@ -44,6 +45,7 @@ public class ExternalTemplatePacket extends ExternalEntryPacket implements ITemp
     private static final long serialVersionUID = 1L;
 
     protected short[] _extendedMatchCodes;
+    protected short[] _extendedMatchCodeColumns;
     protected Object[] _rangeValues;
     protected boolean[] _rangeValuesInclusion;
 
@@ -59,6 +61,7 @@ public class ExternalTemplatePacket extends ExternalEntryPacket implements ITemp
             _entryType = ee._returnTrueType ? entryType : EntryType.EXTERNAL_ENTRY;
             _returnOnlyUIDs = ee.m_ReturnOnlyUids;
             _extendedMatchCodes = getOrderedExtMatchCodes(ee);
+            _extendedMatchCodeColumns = getOrderedExtMatchCodeColumns(ee);
             _rangeValues = getOrderedExtRangeValues(ee);
             _rangeValuesInclusion = getOrderedExtRangeValuesInclusion(ee);
         }
@@ -83,6 +86,10 @@ public class ExternalTemplatePacket extends ExternalEntryPacket implements ITemp
 
     public short[] getExtendedMatchCodes() {
         return _extendedMatchCodes;
+    }
+
+    public short[] getExtendedMatchCodeColumns() {
+        return _extendedMatchCodeColumns;
     }
 
     public Object[] getRangeValues() {
@@ -117,6 +124,19 @@ public class ExternalTemplatePacket extends ExternalEntryPacket implements ITemp
         }
 
         return newMatchCodes;
+    }
+
+    private short[] getOrderedExtMatchCodeColumns(ExternalEntry ee) {
+        final short[] extendedMatchCodeColumns = ee.m_ExtendedMatchCodeColumns;
+        if (extendedMatchCodeColumns == null)
+            return null;
+
+        final String[] fieldsNames = ee.getFieldsNames();
+        if (fieldsNames == null && _typeDesc.getNumOfFixedProperties() != extendedMatchCodeColumns.length) {
+            throw new ConversionException(new IllegalArgumentException("Original fields count does not match the size of extendedMatchCodeColumn"));
+        }
+
+        return extendedMatchCodeColumns;
     }
 
     private Object[] getOrderedExtRangeValues(ExternalEntry ee) {
@@ -162,7 +182,7 @@ public class ExternalTemplatePacket extends ExternalEntryPacket implements ITemp
     public void writeToSwap(ObjectOutput out) throws IOException {
         super.writeToSwap(out);
 
-        serializePacket(out);
+        serializePacket(out, LRMIInvocationContext.getEndpointLogicalVersion());
     }
 
     @Override
@@ -170,7 +190,7 @@ public class ExternalTemplatePacket extends ExternalEntryPacket implements ITemp
             ClassNotFoundException {
         super.readFromSwap(in);
 
-        deserializePacket(in);
+        deserializePacket(in, LRMIInvocationContext.getEndpointLogicalVersion());
     }
 
     @Override
@@ -178,13 +198,16 @@ public class ExternalTemplatePacket extends ExternalEntryPacket implements ITemp
             throws IOException {
         super.writeExternal(out, version);
 
-        serializePacket(out);
+        serializePacket(out, version);
     }
 
-    private final void serializePacket(ObjectOutput out) throws IOException {
+    private final void serializePacket(ObjectOutput out, PlatformLogicalVersion version) throws IOException {
         IOUtils.writeShortArray(out, _extendedMatchCodes);
         IOUtils.writeObjectArray(out, _rangeValues);
         IOUtils.writeBooleanArray(out, _rangeValuesInclusion);
+        if (version.greaterThan(PlatformLogicalVersion.v16_4_0)) {
+            IOUtils.writeShortArray(out, _extendedMatchCodeColumns);
+        }
     }
 
     @Override
@@ -192,14 +215,17 @@ public class ExternalTemplatePacket extends ExternalEntryPacket implements ITemp
             throws IOException, ClassNotFoundException {
         super.readExternal(in, version);
 
-        deserializePacket(in);
+        deserializePacket(in, version);
     }
 
-    private final void deserializePacket(ObjectInput in) throws IOException,
+    private final void deserializePacket(ObjectInput in, PlatformLogicalVersion version) throws IOException,
             ClassNotFoundException {
         _extendedMatchCodes = IOUtils.readShortArray(in);
         _rangeValues = IOUtils.readObjectArray(in);
         _rangeValuesInclusion = IOUtils.readBooleanArray(in);
+        if (version.greaterThan(PlatformLogicalVersion.v16_4_0)) {
+            _extendedMatchCodeColumns = IOUtils.readShortArray(in);
+        }
     }
 
     @Override

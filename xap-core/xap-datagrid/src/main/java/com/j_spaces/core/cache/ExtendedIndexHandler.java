@@ -356,6 +356,16 @@ public class ExtendedIndexHandler<K>
             mapToScan = startPos != null ? baseMap.tailMap(startPos, startinclusive) : baseMap;
         else
             mapToScan = startPos != null ? baseMap.subMap(startPos, startinclusive, endPos, endPosInclusive) : baseMap.headMap(endPos, endPosInclusive);
+
         return new ExtendedIndexIterator<>(mapToScan, _index,originalStart,originalStartCondition, originalEnd,originalEndCondition);
     }
+
+    public Object getMin() {
+        return _orderedStore.firstKey();
+    }
+
+    public Object getMax() {
+        return _orderedStore.lastKey();
+    }
+
 }

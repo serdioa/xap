@@ -351,6 +351,11 @@ public class TemplateHolder extends AbstractSpaceItem implements ITemplateHolder
         return _templateData.getExtendedMatchCodes();
     }
 
+    @Override
+    public short[] getExtendedMatchCodeColumns() {
+        return _templateData.getExtendedMatchCodeColumns();
+    }
+
     /**
      * return indication if the template is exclusive read-lock operation
      *
@@ -710,7 +715,7 @@ public class TemplateHolder extends AbstractSpaceItem implements ITemplateHolder
     }
 
     @Override
-    public MatchResult match(CacheManager cacheManager, IEntryHolder entry, int skipAlreadyMatchedFixedPropertyIndex, String skipAlreadyMatchedIndexPath, boolean safeEntry, Context context, RegexCache regexCache) {
+    public MatchResult match(CacheManager cacheManager, IEntryHolder entry, int skipAlreadyMatchedFixedPropertyIndex, String skipAlreadyMatchedIndexPath, boolean safeEntry, Context context, RegexCache regexCache, int rightColumnPosition) {
         context.incrementNumOfEntriesMatched();
         MatchResult res = MatchResult.NONE;
         ITransactionalEntryData masterEntryData = null;
@@ -740,12 +745,12 @@ public class TemplateHolder extends AbstractSpaceItem implements ITemplateHolder
             if ( ( this.isMatchByID() && !isChangeQuery() ) || this.isEmptyTemplate())
                 res = shadowEntryData == null ? MatchResult.MASTER : MatchResult.MASTER_AND_SHADOW;
             else {
-                boolean masterMatch = _templateData.match(context, cacheManager, masterEntryData, skipAlreadyMatchedFixedPropertyIndex, skipAlreadyMatchedIndexPath, regexCache);
+                boolean masterMatch = _templateData.match(context, cacheManager, masterEntryData, skipAlreadyMatchedFixedPropertyIndex, skipAlreadyMatchedIndexPath, regexCache, rightColumnPosition);
 
                 if (shadowEntryData == null)
                     res = masterMatch ? MatchResult.MASTER : MatchResult.NONE;
                 else {
-                    boolean shadowMatch = _templateData.match(context, cacheManager, shadowEntryData, skipAlreadyMatchedFixedPropertyIndex, skipAlreadyMatchedIndexPath, regexCache);
+                    boolean shadowMatch = _templateData.match(context, cacheManager, shadowEntryData, skipAlreadyMatchedFixedPropertyIndex, skipAlreadyMatchedIndexPath, regexCache, rightColumnPosition);
 
                     if (masterMatch)
                         res = shadowMatch ? MatchResult.MASTER_AND_SHADOW : MatchResult.MASTER;
@@ -784,6 +789,11 @@ public class TemplateHolder extends AbstractSpaceItem implements ITemplateHolder
             }
         }
         return res;
+    }
+
+    @Override
+    public MatchResult match(CacheManager cacheManager, IEntryHolder entry, int skipAlreadyMatchedFixedPropertyIndex, String skipAlreadyMatchedIndexPath, boolean safeEntry, Context context, RegexCache regexCache) {
+        return match(cacheManager, entry, skipAlreadyMatchedFixedPropertyIndex, skipAlreadyMatchedIndexPath, safeEntry, context, regexCache, - 1);
     }
 
     private boolean isMVCCEntryMatchedByGenerationsState(MVCCEntryHolder entryHolder, CacheManager cacheManager, Context context) {
@@ -826,12 +836,15 @@ public class TemplateHolder extends AbstractSpaceItem implements ITemplateHolder
                 throw new MVCCRevertGenerationException("Cant revert entry generation ["+entryHolder+"], under " +
                         "generation state [" + mvccGenerationsState + "]");
             }
+            if (isReadOperation() && overrideGeneration > completedGeneration && !mvccGenerationsState.isUncompletedGeneration(overrideGeneration)) {
+                return false;
+            }
             if (!this.isReadOperation() && mvccGenerationsState.isUncompletedGeneration(committedGeneration)) {
                 throw new MVCCModifyOnUncompletedGenerationException(mvccGenerationsState, committedGeneration, entryHolder, getTemplateOperation());
             }
             if (isOverridenEntry
                     && overrideGeneration > completedGeneration
-                    && !mvccGenerationsState.isUncompletedGeneration(overrideGeneration)) {
+                    && !mvccGenerationsState.isUncompletedGeneration(overrideGeneration) && this.getEntryId() != null) {
                 throw new MVCCEntryModifyConflictException(mvccGenerationsState, entryHolder, getTemplateOperation()); // overriden can't be modified
             }
             if (committedGeneration > completedGeneration

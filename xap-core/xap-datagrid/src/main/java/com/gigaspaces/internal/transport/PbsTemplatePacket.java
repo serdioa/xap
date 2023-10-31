@@ -73,6 +73,10 @@ public class PbsTemplatePacket extends PbsEntryPacket implements ITemplatePacket
         return null;
     }
 
+    public short[] getExtendedMatchCodeColumns() {
+        return null;
+    }
+
     public Object[] getRangeValues() {
         return null;
     }
