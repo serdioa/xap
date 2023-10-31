@@ -136,11 +136,11 @@ public class MVCCSpaceEngineHandler {
             boolean exists = Optional.ofNullable(_spaceEngine.getCacheManager().getMVCCShellEntryCacheInfoByUid(uid))
                     .map(shell -> shell.getLatestCommittedOrHollow())
                     .map(entry -> !entry.isHollowEntry() &&
-                            entry.getCommittedGeneration() > mvccGenerationsState.getCompletedGeneration())
+                            entry.getCommittedGeneration() >= mvccGenerationsState.getNextGeneration())
                     .orElse(false);
             if (exists) {
-                if (_spaceEngine.getOperationLogger().isDebugEnabled())
-                    _spaceEngine.getOperationLogger().debug("Ignore mvcc entry [{}] replication as generation younger than [{}] exists",
+                if (_spaceEngine.getLogger().isDebugEnabled())
+                    _spaceEngine.getLogger().debug("Ignore mvcc entry [{}] replication as generation younger than [{}] exists",
                             uid, mvccGenerationsState.getCompletedGeneration());
             }
             return exists;
