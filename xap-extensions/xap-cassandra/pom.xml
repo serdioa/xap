@@ -7,7 +7,7 @@
     <parent>
         <artifactId>xap</artifactId>
         <groupId>org.gigaspaces</groupId>
-        <version>16.5.0-SNAPSHOT</version>
+        <version>16.5.0-improve-get-col-type-names-tue-1270</version>
         <relativePath>../../pom.xml</relativePath>
     </parent>
 
