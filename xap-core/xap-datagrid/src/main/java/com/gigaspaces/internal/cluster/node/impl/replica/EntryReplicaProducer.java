@@ -153,7 +153,7 @@ public class EntryReplicaProducer
                 }
                 // no more entries
                 AbstractEntryReplicaData replicaData = _engine.isMvccEnabled() ?
-                        produceMVCCDataFromShell(_mvccEntryShellsIterSA.next()) :
+                        produceMVCCDataFromShell(syncCallback, _mvccEntryShellsIterSA.next()) :
                         produceDataFromEntry(syncCallback, _entriesIterSA.next());
                 if (replicaData == null && !_isClosed) {
                     continue;
@@ -168,7 +168,7 @@ public class EntryReplicaProducer
         }
     }
 
-    private AbstractEntryReplicaData produceMVCCDataFromShell(MVCCShellEntryCacheInfo pEntryShell) {
+    private AbstractEntryReplicaData produceMVCCDataFromShell(ISynchronizationCallback syncCallback, MVCCShellEntryCacheInfo pEntryShell) {
         if (pEntryShell == null) {
             // Any consecutive call should return null, so we close this producer.
             close(false /*forced*/);
@@ -180,7 +180,7 @@ public class EntryReplicaProducer
         if (!isRelevant(typeDesc))
             return null;
 
-        AbstractEntryReplicaData replicaData = buildMVCCEntryReplicaData(pEntryShell);
+        AbstractEntryReplicaData replicaData = buildMVCCEntryReplicaData(pEntryShell, syncCallback);
 
         // for some reason no data was created - go to another entry
         if (replicaData == null)
@@ -297,7 +297,8 @@ public class EntryReplicaProducer
      *
      * @return The constructed recovery data with a list of versioned entryPackets. Assume Shell under lock.
      */
-    private AbstractEntryReplicaData buildMVCCEntryReplicaData(MVCCShellEntryCacheInfo shell) {
+    private AbstractEntryReplicaData buildMVCCEntryReplicaData(MVCCShellEntryCacheInfo shell,
+                                                           ISynchronizationCallback syncCallback) {
 
         ILockObject entryLock = _engine.getCacheManager().getLockManager()
                 .getLockObject(shell.getLatestCommittedOrHollow());
@@ -320,6 +321,10 @@ public class EntryReplicaProducer
         }
 
         AbstractEntryReplicaData data = newEntryReplicaData(mvccShellEntryPacket);
+        boolean duplicateUid = syncCallback.synchronizationDataGenerated(data);
+
+        if (duplicateUid)
+            return null;
 
         return data;
     }
