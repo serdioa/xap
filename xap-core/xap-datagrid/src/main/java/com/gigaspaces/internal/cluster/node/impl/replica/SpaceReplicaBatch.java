@@ -55,7 +55,7 @@ public class SpaceReplicaBatch implements Collection<ISpaceReplicaData>, SmartEx
 
     @Override
     public int size() {
-        return batchSize == 0 ? batch.size() : batchSize;
+        return batchSize;
     }
 
     @Override
