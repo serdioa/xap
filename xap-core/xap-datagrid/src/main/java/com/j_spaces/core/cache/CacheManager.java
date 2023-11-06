@@ -6225,12 +6225,29 @@ public class CacheManager extends AbstractCacheManager
             for (IServerTypeDesc subType : serverTypeDesc.getAssignableTypes()) {
                 if (subType.isInactive())
                     continue;
-                TypeData typeData = _typeDataMap.get(subType);
-                result += typeData == null ? 0 : typeData.getEntries().size();
+                result += getEntriesCount(subType);
             }
         } else {
-            TypeData typeData = _typeDataMap.get(serverTypeDesc);
-            result += typeData == null ? 0 : typeData.getEntries().size();
+            result += getEntriesCount(serverTypeDesc);
+        }
+        return result;
+    }
+
+    private int getEntriesCount(IServerTypeDesc targetType) {
+        int result;
+        TypeData typeData = _typeDataMap.get(targetType);
+        if (isMVCCEnabled()) {
+            if (typeData == null || typeData.getIdField() == null) {
+                return 0;
+            }
+            long count =
+                    typeData.getIdField().getUniqueEntriesStore().values().stream()
+                            .filter(e -> ((MVCCShellEntryCacheInfo) e).getLatestGenerationCacheInfo().getEntryHolder().isLogicallyDeleted())
+                            .count();
+
+            result = Math.toIntExact(count);
+        } else {
+            result = typeData == null ? 0 : typeData.getEntries().size();
         }
         return result;
     }
