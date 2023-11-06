@@ -5,7 +5,7 @@
     <parent>
         <artifactId>xap</artifactId>
         <groupId>org.gigaspaces</groupId>
-        <version>16.5.0-SNAPSHOT</version>
+        <version>16.5.0-PIC-3368-fix-spacedeck-monitoring-for-mvcc-mon-1283</version>
         <relativePath>../../pom.xml</relativePath>
     </parent>
 
