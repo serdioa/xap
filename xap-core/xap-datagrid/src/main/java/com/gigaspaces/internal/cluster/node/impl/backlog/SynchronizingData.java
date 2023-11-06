@@ -54,9 +54,10 @@ public class SynchronizingData<T extends IReplicationPacketData<?>> {
     public SynchronizingData(Logger logger, boolean isDirectPersistencySync, String memberName) {
         _logger = logger;
         _isDirectPersistencySync = isDirectPersistencySync;
-        _isFilterEnabled = SystemProperties.getBoolean(SystemProperties.SPACE_RECOVERY_FILTER_AFTER_COPY, SystemProperties.SPACE_RECOVERY_FILTER_AFTER_COPY_DEFAULT);
-        _maxAfterIterationDoneStageLength = Integer.getInteger(SystemProperties.SPACE_RECOVERY_MAX_OPERATIONS_AFTER_COPY, SystemProperties.SPACE_RECOVERY_MAX_OPERATIONS_AFTER_COPY_DEFAULT).intValue();
         _isMvccEnabled = Boolean.parseBoolean(JProperties.getSpaceProperty(memberName, MVCC_ENABLED_PROP, MVCC_ENABLED_DEFAULT, true));
+        _isFilterEnabled = SystemProperties.getBoolean(SystemProperties.SPACE_RECOVERY_FILTER_AFTER_COPY,
+                _isMvccEnabled ? false : SystemProperties.SPACE_RECOVERY_FILTER_AFTER_COPY_DEFAULT);
+        _maxAfterIterationDoneStageLength = Integer.getInteger(SystemProperties.SPACE_RECOVERY_MAX_OPERATIONS_AFTER_COPY, SystemProperties.SPACE_RECOVERY_MAX_OPERATIONS_AFTER_COPY_DEFAULT).intValue();
         if (_logger.isDebugEnabled()) {
             _logger.debug("maxAfterIterationDoneStageLength=" + _maxAfterIterationDoneStageLength + "  ,isDirectPersistency=" + _isDirectPersistencySync + " ,isFilteredEnabled=" +_isFilterEnabled);
         }

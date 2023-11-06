@@ -7749,8 +7749,8 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
         return _mvccSpaceEngineHandler != null;
     }
 
-    public boolean mvccYoungerGenerationRecovered(String uid, MVCCGenerationsState mvccGenerationsState) {
-        return _mvccSpaceEngineHandler.isYoungerGenerationRecoveredForUID(uid, mvccGenerationsState);
+    public MVCCSpaceEngineHandler getMvccHandler() {
+        return _mvccSpaceEngineHandler;
     }
 
     public static EntryDeletedException getEntryDeletedException() {

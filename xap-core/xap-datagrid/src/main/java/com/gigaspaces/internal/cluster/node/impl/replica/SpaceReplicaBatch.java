@@ -22,8 +22,8 @@ public class SpaceReplicaBatch implements Collection<ISpaceReplicaData>, SmartEx
     private static final long serialVersionUID = -7311317700438888710L;
 
     private Collection<ISpaceReplicaData> batch;
+
     private int fifoId = 0 ;
-    private int batchSize = 0;
 
     public SpaceReplicaBatch() {
     }
@@ -52,10 +52,9 @@ public class SpaceReplicaBatch implements Collection<ISpaceReplicaData>, SmartEx
         return fifoId != 0;
     }
 
-
     @Override
     public int size() {
-        return batchSize;
+        return batch.size();
     }
 
     @Override
@@ -81,12 +80,6 @@ public class SpaceReplicaBatch implements Collection<ISpaceReplicaData>, SmartEx
     @Override
     public <T> T[] toArray(T[] a) {
         return batch.toArray(a);
-    }
-
-
-    public void add(ISpaceReplicaData data, int batchSize) {
-        add(data);
-        this.batchSize += batchSize;
     }
 
     @Override
@@ -129,7 +122,6 @@ public class SpaceReplicaBatch implements Collection<ISpaceReplicaData>, SmartEx
         return "SpaceReplicaBatch{" +
                 "batch=" + batch +
                 ", fifoId=" + fifoId +
-                ", batchSize=" + batchSize +
                 '}';
     }
 
@@ -137,13 +129,11 @@ public class SpaceReplicaBatch implements Collection<ISpaceReplicaData>, SmartEx
     public void writeExternal(ObjectOutput out) throws IOException {
         IOUtils.writeObject(out, batch);
         IOUtils.writeInt(out, fifoId);
-        IOUtils.writeInt(out, batchSize);
     }
 
     @Override
     public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         batch = IOUtils.readObject(in);
         fifoId = IOUtils.readInt(in);
-        batchSize = IOUtils.readInt(in);
     }
 }

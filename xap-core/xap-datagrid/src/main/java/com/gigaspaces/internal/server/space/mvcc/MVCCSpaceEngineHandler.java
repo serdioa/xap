@@ -132,7 +132,7 @@ public class MVCCSpaceEngineHandler {
 
 
     public boolean isYoungerGenerationRecoveredForUID(String uid, MVCCGenerationsState mvccGenerationsState) {
-        if (_spaceEngine.getSpaceImpl().isRecovering() && mvccGenerationsState != null) {
+        if (mvccGenerationsState != null && _spaceEngine.getSpaceImpl().isRecovering()) {
             boolean exists = Optional.ofNullable(_spaceEngine.getCacheManager().getMVCCShellEntryCacheInfoByUid(uid))
                     .map(shell -> shell.getLatestCommittedOrHollow())
                     .map(entry -> !entry.isHollowEntry() &&
