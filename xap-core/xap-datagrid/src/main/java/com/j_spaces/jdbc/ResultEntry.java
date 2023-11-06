@@ -17,12 +17,13 @@
 package com.j_spaces.jdbc;
 
 import java.io.Serializable;
+import java.util.Objects;
 
 /**
  * This is the result from which a ResultSet will be constructed in response to a SELECT query. This
  * class can be used when calling procedure classes to construct the {@link
  * com.j_spaces.jdbc.IProcedure} execute method return value.
- *
+ * <p>
  * The result consists of the field/column names, labels, tables and values.
  *
  * @author Michael Mitrani, 2004
@@ -30,11 +31,10 @@ import java.io.Serializable;
 @com.gigaspaces.api.InternalApi
 public class ResultEntry implements Serializable {
 
+    private static final long serialVersionUID = -4685489071410876605L;
     /**
      *
      */
-    private static final long serialVersionUID = 1L;
-
     private String[] fieldNames;
     private Object[][] fieldValues;
 
@@ -49,6 +49,8 @@ public class ResultEntry implements Serializable {
      */
     private String[] _tableNames;
 
+    private String[] columnTypes;
+
     public ResultEntry() {
 
     }
@@ -59,6 +61,7 @@ public class ResultEntry implements Serializable {
         _tableNames = tableNames;
         fieldValues = resultValues;
     }
+
 
     /**
      * The ResultEntry Field Names
@@ -123,7 +126,7 @@ public class ResultEntry implements Serializable {
      */
     public Object[] getFieldValues(int row) {
         //row start at 1
-        if (row > fieldValues.length)
+        if (row > getRowNumber())
             return null;
         return fieldValues[row - 1];
     }
@@ -155,6 +158,14 @@ public class ResultEntry implements Serializable {
         return ((fieldValues != null) ? fieldValues.length : 0);
     }
 
+    public String[] getColumnTypes() {
+        return columnTypes;
+    }
+
+    public void setColumnTypes(String[] columnTypes) {
+        this.columnTypes = columnTypes;
+    }
+
     /**
      * @return the result set data
      */
@@ -170,6 +181,10 @@ public class ResultEntry implements Serializable {
                 buffer.append(fieldNames[i]);
                 buffer.append('=');
                 buffer.append(fieldValues[j][i]);
+                if (Objects.nonNull(columnTypes)) {
+                    buffer.append(' ');
+                    buffer.append(" of type :" + columnTypes[i]);
+                }
                 buffer.append(' ');
             }
             buffer.append(']');
