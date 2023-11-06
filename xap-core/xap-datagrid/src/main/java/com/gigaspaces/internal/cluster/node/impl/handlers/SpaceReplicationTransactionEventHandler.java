@@ -71,7 +71,7 @@ public class SpaceReplicationTransactionEventHandler implements IReplicationInTr
             }
             for (IReplicationTransactionalPacketEntryData packetEntryData : packetsData) {
                 if (_spaceEngine.isMvccEnabled() &&
-                        _spaceEngine.getMvccHandler().isYoungerGenerationRecoveredForUID(packetEntryData.getUid(), xtnEntry.getMVCCGenerationsState())) {
+                        _spaceEngine.getMvccHandler().isNewerGenerationRecoveredForUID(packetEntryData.getUid(), xtnEntry.getMVCCGenerationsState())) {
                     continue;
                 }
                 packetEntryData.executeTransactional(context, this, txn, supportsTwoPhase);
