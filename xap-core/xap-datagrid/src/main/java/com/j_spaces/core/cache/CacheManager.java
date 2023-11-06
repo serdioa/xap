@@ -6240,8 +6240,7 @@ public class CacheManager extends AbstractCacheManager
             if (typeData == null || typeData.getIdField() == null) {
                 return 0;
             }
-            long count =
-                    typeData.getIdField().getUniqueEntriesStore().values().stream()
+            long count = typeData.getIdField().getUniqueEntriesStore().values().stream()
                             .filter(e -> ((MVCCShellEntryCacheInfo) e).getLatestGenerationCacheInfo().getEntryHolder().isLogicallyDeleted())
                             .count();
 
