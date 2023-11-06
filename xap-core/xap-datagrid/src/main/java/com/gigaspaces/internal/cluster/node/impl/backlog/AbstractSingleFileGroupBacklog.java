@@ -770,7 +770,7 @@ public abstract class AbstractSingleFileGroupBacklog<T extends IReplicationOrder
             }
             clearConfirmedPackets();
             // Create new sync map (override old if exists)
-            _activeSynchronizingTarget.put(memberName, new SynchronizingData(_logger, isDirectPersistencySync));
+            _activeSynchronizingTarget.put(memberName, new SynchronizingData(_logger, isDirectPersistencySync, _name));
             _backlogCapacityAllowedBreachingTargets.add(memberName);
         } finally {
             _rwLock.writeLock().unlock();

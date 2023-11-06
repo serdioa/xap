@@ -70,6 +70,10 @@ public class SpaceReplicationTransactionEventHandler implements IReplicationInTr
                 xtnEntry.setMvccRevertGenerationTxn(castedATRPD.isMvccRevertGeneration());
             }
             for (IReplicationTransactionalPacketEntryData packetEntryData : packetsData) {
+                if (_spaceEngine.isMvccEnabled() &&
+                        _spaceEngine.getMvccHandler().isNewerGenerationRecoveredForUID(packetEntryData.getUid(), xtnEntry.getMVCCGenerationsState())) {
+                    continue;
+                }
                 packetEntryData.executeTransactional(context, this, txn, supportsTwoPhase);
             }
             //We mimic the behavior of local transaction manager, this could probably be refactored to create the server transaction correct one time
