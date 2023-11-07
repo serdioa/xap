@@ -16,10 +16,10 @@
 
 package com.j_spaces.jdbc.driver;
 
+import com.j_spaces.jdbc.FetchMetaDataResultEntry;
 import com.j_spaces.jdbc.ResultEntry;
 
-import java.sql.ResultSetMetaData;
-import java.sql.SQLException;
+import java.sql.*;
 
 /**
  * This is the ResultSetMetaData implementation
@@ -51,9 +51,31 @@ public class GResultSetMetaData implements ResultSetMetaData {
      * @see java.sql.ResultSetMetaData#getColumnType(int)
      */
     public int getColumnType(int column) {
-        if (results == null || results.getColumnCodes() == null || column < 0 || column > results.getColumnCodes().length)
-            return -1;
-        return results.getColumnCodes()[column - 1];
+        //TODO
+        int type = 0;
+        String clName = this.getColumnClassName(column);
+
+        if (clName.equals(String.class.getName()))
+            type = Types.VARCHAR;
+        else if (clName.equals(Integer.class.getName()))
+            type = Types.INTEGER;
+        else if (clName.equals(Double.class.getName()))
+            type = Types.DOUBLE;
+        else if (clName.equals(Float.class.getName()))
+            type = Types.FLOAT;
+        else if (clName.equals(Object.class.getName()))
+            type = Types.JAVA_OBJECT;
+        else if (clName.equals(Timestamp.class.getName()))
+            type = Types.TIMESTAMP;
+        else if (clName.equals(Time.class.getName()))
+            type = Types.TIME;
+        else if (results instanceof FetchMetaDataResultEntry) {
+            if (column > 0 && column <= ((FetchMetaDataResultEntry) results).getColumnCodes().length) {
+                type = ((FetchMetaDataResultEntry) results).getColumnCodes()[column - 1];
+            }
+        } else type = Types.OTHER;
+
+        return type;
     }
 
     /* (non-Javadoc)
@@ -150,16 +172,11 @@ public class GResultSetMetaData implements ResultSetMetaData {
      * @see java.sql.ResultSetMetaData#getColumnClassName(int)
      */
     public String getColumnClassName(int column) {
-        String columnClassName = "";
-        if (results != null) {
-            if (results.getFieldValues(1) != null
-                    && results.getFieldValues(1)[column - 1] != null) {
-                columnClassName = results.getFieldValues(1)[column - 1].getClass().getName();
-            } else if (results.getColumnTypes() != null) {
-                columnClassName = results.getColumnTypes()[column - 1];
-            }
+        if (results != null && results.getFieldValues(1) != null
+                && results.getFieldValues(1)[column - 1] != null) {
+            return results.getFieldValues(1)[column - 1].getClass().getName();
         }
-        return columnClassName;
+        return "";
     }
 
     /* (non-Javadoc)
@@ -180,7 +197,8 @@ public class GResultSetMetaData implements ResultSetMetaData {
      * @see java.sql.ResultSetMetaData#getColumnTypeName(int)
      */
     public String getColumnTypeName(int column) {
-        return getColumnClassName(column);
+        // TODO Auto-generated method stub
+        return "";
     }
 
     /* (non-Javadoc)

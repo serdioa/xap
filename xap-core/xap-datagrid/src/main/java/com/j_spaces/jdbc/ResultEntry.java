@@ -17,7 +17,6 @@
 package com.j_spaces.jdbc;
 
 import java.io.Serializable;
-import java.util.Objects;
 
 /**
  * This is the result from which a ResultSet will be constructed in response to a SELECT query. This
@@ -50,10 +49,6 @@ public class ResultEntry implements Serializable {
      */
     private String[] _tableNames;
 
-    private String[] columnTypes;
-
-    private int[] columnCodes;
-
     public ResultEntry() {
 
     }
@@ -64,20 +59,6 @@ public class ResultEntry implements Serializable {
         _tableNames = tableNames;
         fieldValues = resultValues;
     }
-
-    /**
-     * The column type codes in jdbc
-     *
-     * @return Returns the column type codes
-     */
-    public int[] getColumnCodes() {
-        return columnCodes;
-    }
-
-    public void setColumnCodes(int[] columnCodes) {
-        this.columnCodes = columnCodes;
-    }
-
 
     /**
      * The ResultEntry Field Names
@@ -174,14 +155,6 @@ public class ResultEntry implements Serializable {
         return ((fieldValues != null) ? fieldValues.length : 0);
     }
 
-    public String[] getColumnTypes() {
-        return columnTypes;
-    }
-
-    public void setColumnTypes(String[] columnTypes) {
-        this.columnTypes = columnTypes;
-    }
-
     /**
      * @return the result set data
      */
@@ -197,15 +170,6 @@ public class ResultEntry implements Serializable {
                 buffer.append(fieldNames[i]);
                 buffer.append('=');
                 buffer.append(fieldValues[j][i]);
-                if (Objects.nonNull(columnTypes)) {
-                    buffer.append(' ');
-                    buffer.append(" of type :").append(columnTypes[i]);
-                }
-                buffer.append(' ');
-                if (Objects.nonNull(columnCodes)) {
-                    buffer.append(' ');
-                    buffer.append(" with int code :").append(columnCodes[i]);
-                }
                 buffer.append(' ');
             }
             buffer.append(']');
