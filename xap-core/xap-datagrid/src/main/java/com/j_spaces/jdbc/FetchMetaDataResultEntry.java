@@ -1,35 +1,42 @@
 package com.j_spaces.jdbc;
 
+import java.sql.Types;
 import java.util.Arrays;
 
 public class FetchMetaDataResultEntry extends ResultEntry {
 
-    private int[] columnCodes;
+    private static final long serialVersionUID = -9146224980621242280L;
+    private int[] _columnTypeCodes;
 
-    public FetchMetaDataResultEntry(String[] columnNames, String[] columnLabels, String[] tableNames, Object[][] resultValues) {
+    private String[] _columnTypeNames;
+
+    public FetchMetaDataResultEntry(String[] columnNames, String[] columnLabels, int[] columnCodes, String[] columnTypeNames, String[] tableNames, Object[][] resultValues) {
         super(columnNames, columnLabels, tableNames, resultValues);
+        _columnTypeCodes = columnCodes;
+        _columnTypeNames = columnTypeNames;
     }
 
     public FetchMetaDataResultEntry() {
     }
 
-    /**
-     * The column type codes in jdbc
-     *
-     * @return Returns the column type codes
-     */
-    public int[] getColumnCodes() {
-        return columnCodes;
+    public int getColumnType(int column) {
+        int type;
+        if (column > 0 && column <= _columnTypeCodes.length) {
+            type = _columnTypeCodes[column - 1];
+        } else type = Types.OTHER;
+        return type;
     }
 
-    public void setColumnCodes(int[] columnCodes) {
-        this.columnCodes = columnCodes;
+    public String getColumnClassName(int column) {
+        if (column > 0 && column <= _columnTypeNames.length)
+            return _columnTypeNames[column - 1];
+        return "";
     }
 
     @Override
     public String toString() {
         return "FetchMetaDataResultEntry{" +
-                "columnCodes=" + Arrays.toString(columnCodes) +
+                "columnCodes=" + Arrays.toString(_columnTypeCodes) +
                 "} " + super.toString();
     }
 }

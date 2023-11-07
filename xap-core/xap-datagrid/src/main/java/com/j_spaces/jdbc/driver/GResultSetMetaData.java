@@ -16,10 +16,10 @@
 
 package com.j_spaces.jdbc.driver;
 
-import com.j_spaces.jdbc.FetchMetaDataResultEntry;
 import com.j_spaces.jdbc.ResultEntry;
 
-import java.sql.*;
+import java.sql.ResultSetMetaData;
+import java.sql.SQLException;
 
 /**
  * This is the ResultSetMetaData implementation
@@ -51,31 +51,10 @@ public class GResultSetMetaData implements ResultSetMetaData {
      * @see java.sql.ResultSetMetaData#getColumnType(int)
      */
     public int getColumnType(int column) {
-        //TODO
-        int type = 0;
-        String clName = this.getColumnClassName(column);
-
-        if (clName.equals(String.class.getName()))
-            type = Types.VARCHAR;
-        else if (clName.equals(Integer.class.getName()))
-            type = Types.INTEGER;
-        else if (clName.equals(Double.class.getName()))
-            type = Types.DOUBLE;
-        else if (clName.equals(Float.class.getName()))
-            type = Types.FLOAT;
-        else if (clName.equals(Object.class.getName()))
-            type = Types.JAVA_OBJECT;
-        else if (clName.equals(Timestamp.class.getName()))
-            type = Types.TIMESTAMP;
-        else if (clName.equals(Time.class.getName()))
-            type = Types.TIME;
-        else if (results instanceof FetchMetaDataResultEntry) {
-            if (column > 0 && column <= ((FetchMetaDataResultEntry) results).getColumnCodes().length) {
-                type = ((FetchMetaDataResultEntry) results).getColumnCodes()[column - 1];
-            }
-        } else type = Types.OTHER;
-
-        return type;
+        if (results != null) {
+            return results.getColumnType(column);
+        }
+        return 0;
     }
 
     /* (non-Javadoc)
@@ -183,22 +162,22 @@ public class GResultSetMetaData implements ResultSetMetaData {
      * @see java.sql.ResultSetMetaData#getColumnLabel(int)
      */
     public String getColumnLabel(int column) throws SQLException {
-        return results.getColumnLabels()[column - 1];
+        return results != null ? results.getColumnLabels()[column - 1] : "";
     }
 
     /* (non-Javadoc)
      * @see java.sql.ResultSetMetaData#getColumnName(int)
      */
     public String getColumnName(int column) throws SQLException {
-        return results.getFieldNames()[column - 1];
+        return results != null ? results.getFieldNames()[column - 1] : "";
     }
 
     /* (non-Javadoc)
      * @see java.sql.ResultSetMetaData#getColumnTypeName(int)
      */
     public String getColumnTypeName(int column) {
-        // TODO Auto-generated method stub
-        return "";
+        return results != null ? results.getColumnTypeName(column) : "";
+
     }
 
     /* (non-Javadoc)
@@ -212,7 +191,7 @@ public class GResultSetMetaData implements ResultSetMetaData {
      * @see java.sql.ResultSetMetaData#getTableName(int)
      */
     public String getTableName(int column) throws SQLException {
-        return results.getTableNames()[column - 1];
+        return results != null ? results.getTableNames()[column - 1] : "";
     }
 
     public boolean isWrapperFor(Class<?> iface) throws SQLException {
