@@ -290,7 +290,7 @@ public class ReplicationNodeReplicaHandler {
     }
 
     private int getBatchSize(ISpaceReplicaData data) {
-        if (_spaceEngine.isMvccEnabled() && data.isEntryReplicaData()) {
+        if (data.isEntryReplicaData() && _spaceEngine.isMvccEnabled()) {
             AbstractEntryReplicaData replicaPacketData = ((AbstractEntryReplicaData)data);
             if (replicaPacketData.getEntryPacket() instanceof MVCCShellEntryPacket) {
                 return ((MVCCShellEntryPacket)replicaPacketData.getEntryPacket()).getEntryVersionsPackets().size();
