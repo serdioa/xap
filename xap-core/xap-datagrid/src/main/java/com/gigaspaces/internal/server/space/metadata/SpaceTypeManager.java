@@ -260,7 +260,7 @@ public class SpaceTypeManager {
         return result;
     }
 
-    private static boolean requiresRegistration(IServerTypeDesc serverTypeDesc, EntryType entryType) {
+    public static boolean requiresRegistration(IServerTypeDesc serverTypeDesc, EntryType entryType) {
         return getAddTypeDescAction(serverTypeDesc, entryType) != AddTypeDescResultType.NONE;
     }
 
