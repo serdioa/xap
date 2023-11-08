@@ -6236,17 +6236,20 @@ public class CacheManager extends AbstractCacheManager
     private int getEntriesCount(IServerTypeDesc targetType) {
         int result;
         TypeData typeData = _typeDataMap.get(targetType);
+        if (typeData == null) {
+            return 0;
+        }
         if (isMVCCEnabled()) {
-            if (typeData == null || typeData.getIdField() == null) {
+            if (typeData.getIdField() == null) {
                 return 0;
             }
             long count = typeData.getIdField().getUniqueEntriesStore().values().stream()
-                            .filter(e -> !((MVCCShellEntryCacheInfo) e).getLatestGenerationCacheInfo().getEntryHolder().isLogicallyDeleted())
+                            .filter(e -> !((MVCCShellEntryCacheInfo) e).isLogicallyDeleted())
                             .count();
 
             result = Math.toIntExact(count);
         } else {
-            result = typeData == null ? 0 : typeData.getEntries().size();
+            result = typeData.getEntries().size();
         }
         return result;
     }
