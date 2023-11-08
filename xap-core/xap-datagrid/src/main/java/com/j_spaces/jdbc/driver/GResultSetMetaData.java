@@ -191,7 +191,9 @@ public class GResultSetMetaData implements ResultSetMetaData {
      * @see java.sql.ResultSetMetaData#getTableName(int)
      */
     public String getTableName(int column) throws SQLException {
-        return results != null ? results.getTableNames()[column - 1] : "";
+        return results != null ?
+                (results.getTableNames().length == 1 ?
+                        results.getTableNames()[0] : results.getTableNames()[column - 1]) : "";
     }
 
     public boolean isWrapperFor(Class<?> iface) throws SQLException {
