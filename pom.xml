@@ -4,7 +4,7 @@
     <groupId>org.gigaspaces</groupId>
     <artifactId>xap</artifactId>
     <packaging>pom</packaging>
-    <version>16.5.0-SNAPSHOT</version>
+    <version>16.5.0-m3-wed-232</version>
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <oshi.version>6.4.6</oshi.version>
