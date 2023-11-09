@@ -6244,7 +6244,7 @@ public class CacheManager extends AbstractCacheManager
                 return 0;
             }
             long count = typeData.getIdField().getUniqueEntriesStore().values().stream()
-                            .filter(e -> !((MVCCShellEntryCacheInfo) e).isLogicallyDeleted())
+                            .filter(e -> isMvccEntryIncludedIntoCount((MVCCShellEntryCacheInfo) e))
                             .count();
 
             result = Math.toIntExact(count);
@@ -6252,6 +6252,10 @@ public class CacheManager extends AbstractCacheManager
             result = typeData.getEntries().size();
         }
         return result;
+    }
+
+    private boolean isMvccEntryIncludedIntoCount(MVCCShellEntryCacheInfo cacheInfo) {
+        return !cacheInfo.isEmptyShell() && !cacheInfo.isLogicallyDeleted();
     }
 
     public int getNumberOfNotifyTemplates() {
