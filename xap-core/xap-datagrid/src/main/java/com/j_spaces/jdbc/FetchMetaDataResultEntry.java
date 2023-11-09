@@ -20,11 +20,10 @@ public class FetchMetaDataResultEntry extends ResultEntry {
     }
 
     public int getColumnType(int column) {
-        int type;
         if (column > 0 && column <= _columnTypeCodes.length) {
-            type = _columnTypeCodes[column - 1];
-        } else type = Types.OTHER;
-        return type;
+            return _columnTypeCodes[column - 1];
+        }
+        return Types.OTHER;
     }
 
     public String getColumnClassName(int column) {
