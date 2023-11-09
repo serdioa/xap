@@ -10,8 +10,8 @@ public class FetchMetaDataResultEntry extends ResultEntry {
 
     private String[] _columnTypeNames;
 
-    public FetchMetaDataResultEntry(String[] columnNames, String[] columnLabels, int[] columnCodes, String[] columnTypeNames, String[] tableNames, Object[][] resultValues) {
-        super(columnNames, columnLabels, tableNames, resultValues);
+    public FetchMetaDataResultEntry(String[] columnNames, int[] columnCodes, String[] columnTypeNames, String[] tableNames, Object[][] resultValues) {
+        super(columnNames, columnNames, tableNames, resultValues);
         _columnTypeCodes = columnCodes;
         _columnTypeNames = columnTypeNames;
     }
