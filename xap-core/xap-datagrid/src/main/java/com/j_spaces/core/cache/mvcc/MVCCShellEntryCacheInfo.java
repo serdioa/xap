@@ -147,7 +147,7 @@ public class MVCCShellEntryCacheInfo extends MemoryBasedEntryCacheInfo {
     }
 
     public boolean isLogicallyDeleted() {
-        return this.getLatestGenerationCacheInfo().getEntryHolder().isLogicallyDeleted();
+        return this.getLatestGenerationCacheInfo() != null && this.getLatestGenerationCacheInfo().getEntryHolder().isLogicallyDeleted();
     }
 
     public boolean isEmptyShell() {

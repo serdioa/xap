@@ -6255,7 +6255,7 @@ public class CacheManager extends AbstractCacheManager
     }
 
     private boolean isMvccEntryIncludedIntoCount(MVCCShellEntryCacheInfo cacheInfo) {
-        return !cacheInfo.isEmptyShell() && !cacheInfo.isLogicallyDeleted();
+        return !(cacheInfo.getTotalCommittedGenertions() == 0) && !cacheInfo.isLogicallyDeleted();
     }
 
     public int getNumberOfNotifyTemplates() {
