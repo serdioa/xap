@@ -6225,14 +6225,37 @@ public class CacheManager extends AbstractCacheManager
             for (IServerTypeDesc subType : serverTypeDesc.getAssignableTypes()) {
                 if (subType.isInactive())
                     continue;
-                TypeData typeData = _typeDataMap.get(subType);
-                result += typeData == null ? 0 : typeData.getEntries().size();
+                result += getEntriesCount(subType);
             }
         } else {
-            TypeData typeData = _typeDataMap.get(serverTypeDesc);
-            result += typeData == null ? 0 : typeData.getEntries().size();
+            result += getEntriesCount(serverTypeDesc);
         }
         return result;
+    }
+
+    private int getEntriesCount(IServerTypeDesc targetType) {
+        int result;
+        TypeData typeData = _typeDataMap.get(targetType);
+        if (typeData == null) {
+            return 0;
+        }
+        if (isMVCCEnabled()) {
+            if (typeData.getIdField() == null) {
+                return 0;
+            }
+            long count = typeData.getIdField().getUniqueEntriesStore().values().stream()
+                            .filter(e -> isMvccEntryIncludedIntoCount((MVCCShellEntryCacheInfo) e))
+                            .count();
+
+            result = Math.toIntExact(count);
+        } else {
+            result = typeData.getEntries().size();
+        }
+        return result;
+    }
+
+    private boolean isMvccEntryIncludedIntoCount(MVCCShellEntryCacheInfo cacheInfo) {
+        return !(cacheInfo.getTotalCommittedGenertions() == 0) && !cacheInfo.isLogicallyDeleted();
     }
 
     public int getNumberOfNotifyTemplates() {
