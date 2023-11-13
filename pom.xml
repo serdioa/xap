@@ -277,11 +277,11 @@
     <distributionManagement>
         <snapshotRepository>
             <id>org.openspaces</id>
-            <url>s3://gs-releases-us-east-1</url>
+            <url>s3://gigaspaces-maven-repository-eu</url>
         </snapshotRepository>
         <repository>
             <id>org.openspaces</id>
-            <url>s3://gs-releases-us-east-1</url>
+            <url>s3://gigaspaces-maven-repository-eu</url>
         </repository>
     </distributionManagement>
 
