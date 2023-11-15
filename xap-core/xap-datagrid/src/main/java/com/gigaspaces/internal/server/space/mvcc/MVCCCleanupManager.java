@@ -199,24 +199,24 @@ public class MVCCCleanupManager {
         }
 
         private boolean removeNextOnMatch(MVCCShellEntryCacheInfo shellEntryCacheInfo,
-                                          MVCCGenerationsState generationState, boolean cleanLatest) {
-            MVCCEntryCacheInfo pEntry = cleanLatest ?
+                                          MVCCGenerationsState generationState, boolean cleanLatestUncompleted) {
+            MVCCEntryCacheInfo pEntry = cleanLatestUncompleted ?
                     shellEntryCacheInfo.getLatestGenerationCacheInfo() :
                     shellEntryCacheInfo.getOldestGenerationCacheInfo();
             if (pEntry == null) {
                 return false;
             }
             MVCCEntryHolder entry = pEntry.getEntryHolder();
-            if (matchToRemove(entry, generationState, shellEntryCacheInfo.getTotalCommittedGenertions())) {
+            if (matchToRemove(entry, generationState, shellEntryCacheInfo.getTotalCommittedGenertions(), cleanLatestUncompleted)) {
                 ILockObject entryLock = _cacheManager.getLockManager().getLockObject(entry);
                 try {
                     synchronized (entryLock) {
-                        if (matchToRemove(entry, generationState, shellEntryCacheInfo.getTotalCommittedGenertions())) {
-                            shellEntryCacheInfo.removeCommittedEntryGeneration(cleanLatest);
+                        if (matchToRemove(entry, generationState, shellEntryCacheInfo.getTotalCommittedGenertions(), cleanLatestUncompleted)) {
+                            shellEntryCacheInfo.removeCommittedEntryGeneration(cleanLatestUncompleted);
                             if (!entry.isLogicallyDeleted()) {
                                 _cacheManager.removeEntryFromCache(entry, false, true, pEntry, CacheManager.RecentDeleteCodes.NONE);
                             }
-                            if (cleanLatest) {
+                            if (cleanLatestUncompleted) {
                                 MVCCEntryHolder activeData = shellEntryCacheInfo.getLatestCommittedOrHollow();
                                 if (!activeData.isHollowEntry() && activeData.getOverrideGeneration() == entry.getCommittedGeneration()) {
                                     // arrive here after removing uncompleted entry to make previous completed as active (set override=-1)
@@ -239,9 +239,12 @@ public class MVCCCleanupManager {
             return false;
         }
 
-        private boolean matchToRemove(MVCCEntryHolder entry, MVCCGenerationsState generationState, int totalCommittedGens) {
+        private boolean matchToRemove(MVCCEntryHolder entry, MVCCGenerationsState generationState, int totalCommittedGens, boolean cleanLatestUncompleted) {
             if (!entry.isMaybeUnderXtn()) {
                 if (isLifetimeLimitExceeded(entry)) {
+                    if (cleanLatestUncompleted) {
+                        return generationState.isUncompletedGeneration(entry.getCommittedGeneration());
+                    }
                     if (generationState.isUncompletedGeneration(entry.getCommittedGeneration()) // committed uncompleted
                             || (entry.getOverrideGeneration() != -1 && !generationState.isUncompletedGeneration(entry.getOverrideGeneration())) // not active data and override gen not uncompleted
                             || entry.isLogicallyDeleted()) { // active completed logically deleted
