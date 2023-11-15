@@ -16,10 +16,8 @@ import com.j_spaces.kernel.locks.ILockObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * @author Davyd Savitskyi
@@ -145,7 +143,7 @@ public class MVCCCleanupManager {
 
         private void calculateNextCleanupDelay() {
             long nextCleanupDelay = (_nextCleanupDelayInterval * _lastCleanupExecutionInterval) / _currentCleanupExecutionInterval;
-            _nextCleanupDelayInterval = Math.max(Math.min( MAX_CLEANUP_DELAY_INTERVAL_MILLIS, nextCleanupDelay), MIN_CLEANUP_DELAY_INTERVAL_MILLIS);
+            _nextCleanupDelayInterval = Math.max(Math.min(MAX_CLEANUP_DELAY_INTERVAL_MILLIS, nextCleanupDelay), MIN_CLEANUP_DELAY_INTERVAL_MILLIS);
             _lastCleanupExecutionInterval = _currentCleanupExecutionInterval;
         }
 
@@ -172,27 +170,13 @@ public class MVCCCleanupManager {
                 }
                 Map<Object, MVCCShellEntryCacheInfo> idEntriesMap = typeData.getIdField().getUniqueEntriesStore();
                 for (MVCCShellEntryCacheInfo shellEntryCacheInfo : idEntriesMap.values()) {
-                    Iterator<MVCCEntryCacheInfo> toScan;
-                    int totalCommittedGens;
-                    ILockObject entryLock = _cacheManager.getLockManager().getLockObject(shellEntryCacheInfo.getEntryHolder());
-                    try {
-                        synchronized (entryLock) {
-                            toScan = shellEntryCacheInfo.ascIterator();
-                            totalCommittedGens = shellEntryCacheInfo.getTotalCommittedGenertions();
-                        }
-                    } finally {
-                        _cacheManager.getLockManager().freeLockObject(entryLock);
-                    }
                     int deletedEntriesPerUid = 0;
-                    AtomicBoolean isOverridingAnother = new AtomicBoolean(true);
-                    while (toScan.hasNext()) {
-                        if (removeNextOnMatch(toScan, shellEntryCacheInfo, generationState, deletedEntriesPerUid, totalCommittedGens, isOverridingAnother)) {
-                            deletedEntriesPerUid++;
-                        }
+                    while (removeNextOnMatch(shellEntryCacheInfo, generationState, deletedEntriesPerUid)) {
+                        deletedEntriesPerUid++;
                     }
                     removeUidShellPairIfEmpty(shellEntryCacheInfo);
-                    totalVersionsInPartition+=totalCommittedGens;
-                    totalDeletedVersions+=deletedEntriesPerUid;
+                    totalVersionsInPartition += shellEntryCacheInfo.getTotalCommittedGenertions();
+                    totalDeletedVersions += deletedEntriesPerUid;
                 }
             }
             _currentCleanupExecutionInterval = SystemTime.timeMillis() - startTime + 1;
@@ -200,21 +184,26 @@ public class MVCCCleanupManager {
         }
 
         private void logAfterCleanupIteration(long totalDeletedVersion, long totalVersions) {
-            _logger.info("MVCC cleanup at {} finished in {}ms. Total deleted: {}/{} entries versions.",
-                    IS_PARTITIONED ? "partition [" + _spaceImpl.getPartitionId() + "]" : "single space",
-                    _currentCleanupExecutionInterval, totalDeletedVersion, totalVersions);
+            if (_logger.isDebugEnabled() || totalDeletedVersion != 0) {
+                _logger.info("MVCC cleanup at {} finished in {}ms. Total deleted: {}/{} entries versions.",
+                        IS_PARTITIONED ? "partition [" + _spaceImpl.getPartitionId() + "]" : "single space",
+                        _currentCleanupExecutionInterval, totalDeletedVersion, totalVersions);
+            }
         }
 
-        private boolean removeNextOnMatch(Iterator<MVCCEntryCacheInfo> toScan, MVCCShellEntryCacheInfo shellEntryCacheInfo,
-                                          MVCCGenerationsState generationState, int deletedEntries, int totalCommittedGens, AtomicBoolean isOverridingAnother) {
-            MVCCEntryCacheInfo pEntry = toScan.next();
+        private boolean removeNextOnMatch(MVCCShellEntryCacheInfo shellEntryCacheInfo,
+                                          MVCCGenerationsState generationState, int deletedEntries) {
+            MVCCEntryCacheInfo pEntry = shellEntryCacheInfo.getOldestGenerationCacheInfo();
+            if (pEntry == null) {
+                return false;
+            }
             MVCCEntryHolder entry = pEntry.getEntryHolder();
-            if (matchToRemove(entry, generationState, deletedEntries, totalCommittedGens)) {
+            if (matchToRemove(entry, generationState, deletedEntries, shellEntryCacheInfo.getTotalCommittedGenertions())) {
                 ILockObject entryLock = _cacheManager.getLockManager().getLockObject(entry);
                 try {
                     synchronized (entryLock) {
-                        if (matchToRemove(entry, generationState, deletedEntries, totalCommittedGens)) {
-                            toScan.remove();
+                        if (matchToRemove(entry, generationState, deletedEntries, shellEntryCacheInfo.getTotalCommittedGenertions())) {
+                            shellEntryCacheInfo.removeOldestGenerationCacheInfo();
                             if (!entry.isLogicallyDeleted()) {
                                 _cacheManager.removeEntryFromCache(entry, false, true, pEntry, CacheManager.RecentDeleteCodes.NONE);
                                 MVCCEntryHolder activeData = shellEntryCacheInfo.getLatestCommittedOrHollow();
@@ -223,25 +212,11 @@ public class MVCCCleanupManager {
                                     activeData.setOverrideGeneration(-1);
                                 }
                             }
-                            if (toScan.hasNext()) {
-                                // each next entry already not overriding current as it was removed
-                                isOverridingAnother.set(false);
-                            }
                             if (_logger.isTraceEnabled()) {
                                 _logger.trace("Entry {} was cleaned", entry);
                             }
                             return true;
                         }
-                    }
-                } finally {
-                    _cacheManager.getLockManager().freeLockObject(entryLock);
-                }
-            } else if (!isOverridingAnother.get()) {
-                ILockObject entryLock = _cacheManager.getLockManager().getLockObject(entry);
-                try {
-                    synchronized (entryLock) {
-                        entry.setOverridingAnother(false);
-                        isOverridingAnother.set(true);
                     }
                 } finally {
                     _cacheManager.getLockManager().freeLockObject(entryLock);
