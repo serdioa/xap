@@ -57,7 +57,7 @@ public class WriteMultipleProxyActionInfo extends CommonProxyActionInfo {
         if (spaceProxy.getDirectProxy().getProxySettings().isMvccEnabled()
                 && (lease != Lease.FOREVER
                     || (leases != null && Arrays.stream(leases).anyMatch((value) -> value != Lease.FOREVER)))) {
-            throw new UnsupportedOperationException("Write Multiple operation with lease are not allowed when MVCC is enabled.");
+            throw new UnsupportedOperationException("Write Multiple operation with lease is not allowed when MVCC is enabled.");
         }
 
         if (oneWaySystemProperty)
