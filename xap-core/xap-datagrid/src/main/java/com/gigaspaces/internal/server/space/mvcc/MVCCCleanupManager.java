@@ -171,11 +171,12 @@ public class MVCCCleanupManager {
                 Map<Object, MVCCShellEntryCacheInfo> idEntriesMap = typeData.getIdField().getUniqueEntriesStore();
                 for (MVCCShellEntryCacheInfo shellEntryCacheInfo : idEntriesMap.values()) {
                     int deletedEntriesPerUid = 0;
+                    int totalCommittedVersions = shellEntryCacheInfo.getTotalCommittedGenertions();
                     while (removeNextOnMatch(shellEntryCacheInfo, generationState, deletedEntriesPerUid)) {
                         deletedEntriesPerUid++;
                     }
                     removeUidShellPairIfEmpty(shellEntryCacheInfo);
-                    totalVersionsInPartition += shellEntryCacheInfo.getTotalCommittedGenertions();
+                    totalVersionsInPartition += totalCommittedVersions;
                     totalDeletedVersions += deletedEntriesPerUid;
                 }
             }
@@ -198,11 +199,11 @@ public class MVCCCleanupManager {
                 return false;
             }
             MVCCEntryHolder entry = pEntry.getEntryHolder();
-            if (matchToRemove(entry, generationState, deletedEntries, shellEntryCacheInfo.getTotalCommittedGenertions())) {
+            if (matchToRemove(entry, generationState, shellEntryCacheInfo.getTotalCommittedGenertions())) {
                 ILockObject entryLock = _cacheManager.getLockManager().getLockObject(entry);
                 try {
                     synchronized (entryLock) {
-                        if (matchToRemove(entry, generationState, deletedEntries, shellEntryCacheInfo.getTotalCommittedGenertions())) {
+                        if (matchToRemove(entry, generationState, shellEntryCacheInfo.getTotalCommittedGenertions())) {
                             shellEntryCacheInfo.removeOldestGenerationCacheInfo();
                             if (!entry.isLogicallyDeleted()) {
                                 _cacheManager.removeEntryFromCache(entry, false, true, pEntry, CacheManager.RecentDeleteCodes.NONE);
@@ -228,7 +229,7 @@ public class MVCCCleanupManager {
             return false;
         }
 
-        private boolean matchToRemove(MVCCEntryHolder entry, MVCCGenerationsState generationState, int deletedEntries, int totalCommittedGens) {
+        private boolean matchToRemove(MVCCEntryHolder entry, MVCCGenerationsState generationState, int totalCommittedGens) {
             if (!entry.isMaybeUnderXtn()) {
                 if (isLifetimeLimitExceeded(entry)) {
                     if (generationState.isUncompletedGeneration(entry.getCommittedGeneration()) // committed uncompleted
@@ -236,7 +237,7 @@ public class MVCCCleanupManager {
                             || entry.isLogicallyDeleted()) { // active completed logically deleted
                         return true;
                     }
-                } else if (totalCommittedGens - deletedEntries > _historicalEntriesLimit) {
+                } else if (totalCommittedGens > _historicalEntriesLimit) {
                     if ((entry.getOverrideGeneration() != -1
                             && !generationState.isUncompletedGeneration(entry.getCommittedGeneration())
                             && !generationState.isUncompletedGeneration(entry.getOverrideGeneration()))) { // not active data and override gen not uncompleted
