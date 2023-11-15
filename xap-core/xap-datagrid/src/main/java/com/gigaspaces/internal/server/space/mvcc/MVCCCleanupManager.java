@@ -12,6 +12,7 @@ import com.j_spaces.core.cache.TypeData;
 import com.j_spaces.core.cache.mvcc.MVCCEntryCacheInfo;
 import com.j_spaces.core.cache.mvcc.MVCCEntryHolder;
 import com.j_spaces.core.cache.mvcc.MVCCShellEntryCacheInfo;
+import com.j_spaces.kernel.JSpaceUtilities;
 import com.j_spaces.kernel.locks.ILockObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -172,7 +173,12 @@ public class MVCCCleanupManager {
                 for (MVCCShellEntryCacheInfo shellEntryCacheInfo : idEntriesMap.values()) {
                     int deletedEntriesPerUid = 0;
                     int totalCommittedVersions = shellEntryCacheInfo.getTotalCommittedGenertions();
-                    while (removeNextOnMatch(shellEntryCacheInfo, generationState, deletedEntriesPerUid)) {
+                    // clean latest pEntry from the deque if it's expired and uncompleted
+                    if (removeNextOnMatch(shellEntryCacheInfo, generationState, true)) {
+                        deletedEntriesPerUid++;
+                    }
+                    // scan pEntries from oldest to latest until first "mismatch" for remove
+                    while (removeNextOnMatch(shellEntryCacheInfo, generationState, false)) {
                         deletedEntriesPerUid++;
                     }
                     removeUidShellPairIfEmpty(shellEntryCacheInfo);
@@ -193,8 +199,10 @@ public class MVCCCleanupManager {
         }
 
         private boolean removeNextOnMatch(MVCCShellEntryCacheInfo shellEntryCacheInfo,
-                                          MVCCGenerationsState generationState, int deletedEntries) {
-            MVCCEntryCacheInfo pEntry = shellEntryCacheInfo.getOldestGenerationCacheInfo();
+                                          MVCCGenerationsState generationState, boolean cleanLatest) {
+            MVCCEntryCacheInfo pEntry = cleanLatest ?
+                    shellEntryCacheInfo.getLatestGenerationCacheInfo() :
+                    shellEntryCacheInfo.getOldestGenerationCacheInfo();
             if (pEntry == null) {
                 return false;
             }
@@ -204,12 +212,14 @@ public class MVCCCleanupManager {
                 try {
                     synchronized (entryLock) {
                         if (matchToRemove(entry, generationState, shellEntryCacheInfo.getTotalCommittedGenertions())) {
-                            shellEntryCacheInfo.removeOldestGenerationCacheInfo();
+                            shellEntryCacheInfo.removeCommittedEntryGeneration(cleanLatest);
                             if (!entry.isLogicallyDeleted()) {
                                 _cacheManager.removeEntryFromCache(entry, false, true, pEntry, CacheManager.RecentDeleteCodes.NONE);
+                            }
+                            if (cleanLatest) {
                                 MVCCEntryHolder activeData = shellEntryCacheInfo.getLatestCommittedOrHollow();
                                 if (!activeData.isHollowEntry() && activeData.getOverrideGeneration() == entry.getCommittedGeneration()) {
-                                    // arrive here after removing uncompleted entry to make previous completed as active (set overr=-1)
+                                    // arrive here after removing uncompleted entry to make previous completed as active (set override=-1)
                                     activeData.setOverrideGeneration(-1);
                                 }
                             }
