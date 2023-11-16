@@ -419,13 +419,18 @@ public class SpaceProxyImpl extends AbstractDirectSpaceProxy implements SameProx
     }
 
     public void beforeSpaceAction(CommonProxyActionInfo action) {
-        if (action.txn == null && getProxySettings().isMvccEnabled()) {
-            if (action.requireTransactionForMVCC()) {
-                throw new UnsupportedOperationException("Operation " + action.getClass().getSimpleName() + " without transaction are not allowed when MVCC is enabled.");
-            } else if (!ReadModifiers.isReadCommitted(action.modifiers) && !ReadModifiers.isDefaultReadModifier(action.modifiers) // any not read committed or without modifier
-                    || (ReadModifiers.isDefaultReadModifier(action.modifiers)
-                            && (getProxyRouter().getDefaultSpaceContext() == null || getProxyRouter().getDefaultSpaceContext().getMVCCGenerationsState() == null))){ // active read without modifier
-                throw new UnsupportedOperationException("Read operation " + action.getClass().getSimpleName() + " without transaction and not read committed are not allowed when MVCC is enabled.");
+        if (getProxySettings().isMvccEnabled()) {
+            if (action.txn == null) {
+                if (action.requireTransactionForMVCC()) {
+                    throw new UnsupportedOperationException("Operation " + action.getClass().getSimpleName() + " without transaction is not allowed when MVCC is enabled.");
+                } else if (!ReadModifiers.isReadCommitted(action.modifiers) && !ReadModifiers.isDefaultReadModifier(action.modifiers) // any not read committed or without modifier
+                        || (ReadModifiers.isDefaultReadModifier(action.modifiers)
+                        && (getProxyRouter().getDefaultSpaceContext() == null || getProxyRouter().getDefaultSpaceContext().getMVCCGenerationsState() == null))){ // active read without modifier
+                    throw new UnsupportedOperationException("Read operation " + action.getClass().getSimpleName() + " without transaction and not read committed is not allowed when MVCC is enabled.");
+                }
+            } else if (action.requireTransactionForMVCC() &&
+                    (getProxyRouter().getDefaultSpaceContext() == null || getProxyRouter().getDefaultSpaceContext().getMVCCGenerationsState() == null)) {
+                throw new UnsupportedOperationException("Operation " + action.getClass().getSimpleName() + " with transaction and without generation state is not allowed when MVCC is enabled.");
             }
         }
         action.txn = beforeSpaceAction(action.txn);

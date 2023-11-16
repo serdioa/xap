@@ -45,7 +45,7 @@ public class WriteProxyActionInfo extends CommonProxyActionInfo {
             throw new IllegalArgumentException("lease cannot be less than zero");
 
         if (spaceProxy.getDirectProxy().getProxySettings().isMvccEnabled() && lease != Lease.FOREVER) {
-            throw new UnsupportedOperationException("Write operation with lease are not allowed when MVCC is enabled.");
+            throw new UnsupportedOperationException("Write operation with lease is not allowed when MVCC is enabled.");
         }
 
         this.entry = entry;
