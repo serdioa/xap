@@ -92,6 +92,14 @@ public class MVCCShellEntryCacheInfo extends MemoryBasedEntryCacheInfo {
     }
 
 
+    public MVCCEntryCacheInfo getGenerationCacheInfo(boolean getLast) {
+        if (getLast) {
+            return getLatestGenerationCacheInfo();
+        }
+        return getOldestGenerationCacheInfo();
+    }
+
+
     public MVCCEntryCacheInfo removeCommittedEntryGeneration(boolean removeLast) {
         if (removeLast) {
             return allEntryGenerations.removeLast();

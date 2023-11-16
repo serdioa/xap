@@ -12,7 +12,6 @@ import com.j_spaces.core.cache.TypeData;
 import com.j_spaces.core.cache.mvcc.MVCCEntryCacheInfo;
 import com.j_spaces.core.cache.mvcc.MVCCEntryHolder;
 import com.j_spaces.core.cache.mvcc.MVCCShellEntryCacheInfo;
-import com.j_spaces.kernel.JSpaceUtilities;
 import com.j_spaces.kernel.locks.ILockObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -200,9 +199,7 @@ public class MVCCCleanupManager {
 
         private boolean removeNextOnMatch(MVCCShellEntryCacheInfo shellEntryCacheInfo,
                                           MVCCGenerationsState generationState, boolean cleanLatestUncompleted) {
-            MVCCEntryCacheInfo pEntry = cleanLatestUncompleted ?
-                    shellEntryCacheInfo.getLatestGenerationCacheInfo() :
-                    shellEntryCacheInfo.getOldestGenerationCacheInfo();
+            MVCCEntryCacheInfo pEntry = shellEntryCacheInfo.getGenerationCacheInfo(cleanLatestUncompleted);
             if (pEntry == null) {
                 return false;
             }
@@ -211,9 +208,10 @@ public class MVCCCleanupManager {
                 ILockObject entryLock = _cacheManager.getLockManager().getLockObject(entry);
                 try {
                     synchronized (entryLock) {
-                        if (matchToRemove(entry, generationState, shellEntryCacheInfo.getTotalCommittedGenertions(), cleanLatestUncompleted)) {
+                        if (matchToRemove(entry, generationState, shellEntryCacheInfo.getTotalCommittedGenertions(), cleanLatestUncompleted) &&
+                                shellEntryCacheInfo.getGenerationCacheInfo(cleanLatestUncompleted) == pEntry) { // check that matched entry the same as before lock
                             shellEntryCacheInfo.removeCommittedEntryGeneration(cleanLatestUncompleted);
-                            if (!entry.isLogicallyDeleted()) {
+                            if (!entry.isLogicallyDeleted()) { // removing entry references (no references for log.deleted)
                                 _cacheManager.removeEntryFromCache(entry, false, true, pEntry, CacheManager.RecentDeleteCodes.NONE);
                             }
                             if (cleanLatestUncompleted) {
@@ -242,7 +240,7 @@ public class MVCCCleanupManager {
         private boolean matchToRemove(MVCCEntryHolder entry, MVCCGenerationsState generationState, int totalCommittedGens, boolean cleanLatestUncompleted) {
             if (!entry.isMaybeUnderXtn()) {
                 if (isLifetimeLimitExceeded(entry)) {
-                    if (cleanLatestUncompleted) {
+                    if (cleanLatestUncompleted) { // return true if entry exprited and uncompleted
                         return generationState.isUncompletedGeneration(entry.getCommittedGeneration());
                     }
                     if (generationState.isUncompletedGeneration(entry.getCommittedGeneration()) // committed uncompleted
