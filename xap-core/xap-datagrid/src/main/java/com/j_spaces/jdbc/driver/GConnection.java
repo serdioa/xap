@@ -666,6 +666,11 @@ public class GConnection implements Connection {
         return (BatchResponsePacket) writeRequestPacket(packet);
     }
 
+    public ResponsePacket sendFetchMetaData(String statement) throws SQLException {
+        // not supported for old driver
+        return null;
+    }
+
     /**
      * @return the url of this connection
      */

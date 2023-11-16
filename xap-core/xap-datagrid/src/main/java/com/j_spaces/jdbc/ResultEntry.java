@@ -17,12 +17,15 @@
 package com.j_spaces.jdbc;
 
 import java.io.Serializable;
+import java.sql.Time;
+import java.sql.Timestamp;
+import java.sql.Types;
 
 /**
  * This is the result from which a ResultSet will be constructed in response to a SELECT query. This
  * class can be used when calling procedure classes to construct the {@link
  * com.j_spaces.jdbc.IProcedure} execute method return value.
- *
+ * <p>
  * The result consists of the field/column names, labels, tables and values.
  *
  * @author Michael Mitrani, 2004
@@ -30,9 +33,6 @@ import java.io.Serializable;
 @com.gigaspaces.api.InternalApi
 public class ResultEntry implements Serializable {
 
-    /**
-     *
-     */
     private static final long serialVersionUID = 1L;
 
     private String[] fieldNames;
@@ -123,9 +123,14 @@ public class ResultEntry implements Serializable {
      */
     public Object[] getFieldValues(int row) {
         //row start at 1
-        if (row > fieldValues.length)
+        if (row > getRowNumber())
             return null;
         return fieldValues[row - 1];
+    }
+
+    public String getColumnTypeName(int column) {
+        return getColumnClassName(column);
+
     }
 
     /**
@@ -153,6 +158,36 @@ public class ResultEntry implements Serializable {
      */
     public int getRowNumber() {
         return ((fieldValues != null) ? fieldValues.length : 0);
+    }
+
+    public String getColumnClassName(int column) {
+        if (getFieldValues(1) != null
+                && getFieldValues(1)[column - 1] != null) {
+            return getFieldValues(1)[column - 1].getClass().getName();
+        }
+        return "";
+    }
+
+    public int getColumnType(int column) {
+        int type = 0;
+        String clName = this.getColumnClassName(column);
+
+        if (clName.equals(String.class.getName()))
+            type = Types.VARCHAR;
+        else if (clName.equals(Integer.class.getName()))
+            type = Types.INTEGER;
+        else if (clName.equals(Double.class.getName()))
+            type = Types.DOUBLE;
+        else if (clName.equals(Float.class.getName()))
+            type = Types.FLOAT;
+        else if (clName.equals(Object.class.getName()))
+            type = Types.JAVA_OBJECT;
+        else if (clName.equals(Timestamp.class.getName()))
+            type = Types.TIMESTAMP;
+        else if (clName.equals(Time.class.getName()))
+            type = Types.TIME;
+        else type = Types.OTHER;
+        return type;
     }
 
     /**

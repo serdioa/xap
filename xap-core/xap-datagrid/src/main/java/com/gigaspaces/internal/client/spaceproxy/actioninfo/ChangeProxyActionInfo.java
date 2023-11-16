@@ -62,7 +62,7 @@ public class ChangeProxyActionInfo extends QueryProxyActionInfo {
             throw new IllegalArgumentException("change operation cannot accept empty changeSet.");
         }
         if (spaceProxy.getDirectProxy().getProxySettings().isMvccEnabled() && lease != Lease.FOREVER) {
-            throw new UnsupportedOperationException("Change operation with lease are not allowed when MVCC is enabled.");
+            throw new UnsupportedOperationException("Change operation with lease is not allowed when MVCC is enabled.");
         }
 
         final boolean oneWay = Modifiers.contains(this.modifiers, Modifiers.ONE_WAY);

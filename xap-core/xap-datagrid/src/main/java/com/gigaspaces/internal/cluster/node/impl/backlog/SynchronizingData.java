@@ -25,8 +25,11 @@ import com.j_spaces.core.exception.internal.ReplicationInternalSpaceException;
 
 
 import com.j_spaces.kernel.SystemProperties;
+import com.j_spaces.kernel.log.JProperties;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
+import static com.j_spaces.core.Constants.Mvcc.MVCC_ENABLED_DEFAULT;
+import static com.j_spaces.core.Constants.Mvcc.MVCC_ENABLED_PROP;
 
 
 @com.gigaspaces.api.InternalApi
@@ -43,14 +46,17 @@ public class SynchronizingData<T extends IReplicationPacketData<?>> {
     on extreme condition this filtering cause missing operations in backup so this filtering can be avoided.
      */
     private final boolean _isFilterEnabled;
+    private final boolean _isMvccEnabled;
 
     private final ObjectLongMap<Object> _dataIdMap = CollectionsFactory.getInstance().createObjectLongMap();
     private long _keyWhenCopyStageCompleted = -1L;
 
-    public SynchronizingData(Logger logger, boolean isDirectPersistencySync) {
+    public SynchronizingData(Logger logger, boolean isDirectPersistencySync, String memberName) {
         _logger = logger;
         _isDirectPersistencySync = isDirectPersistencySync;
-        _isFilterEnabled = SystemProperties.getBoolean(SystemProperties.SPACE_RECOVERY_FILTER_AFTER_COPY, SystemProperties.SPACE_RECOVERY_FILTER_AFTER_COPY_DEFAULT);
+        _isMvccEnabled = memberName != null ? Boolean.parseBoolean(JProperties.getSpaceProperty(memberName, MVCC_ENABLED_PROP, MVCC_ENABLED_DEFAULT, true)) : false;
+        _isFilterEnabled = SystemProperties.getBoolean(SystemProperties.SPACE_RECOVERY_FILTER_AFTER_COPY,
+                _isMvccEnabled ? false : SystemProperties.SPACE_RECOVERY_FILTER_AFTER_COPY_DEFAULT);
         _maxAfterIterationDoneStageLength = Integer.getInteger(SystemProperties.SPACE_RECOVERY_MAX_OPERATIONS_AFTER_COPY, SystemProperties.SPACE_RECOVERY_MAX_OPERATIONS_AFTER_COPY_DEFAULT).intValue();
         if (_logger.isDebugEnabled()) {
             _logger.debug("maxAfterIterationDoneStageLength=" + _maxAfterIterationDoneStageLength + "  ,isDirectPersistency=" + _isDirectPersistencySync + " ,isFilteredEnabled=" +_isFilterEnabled);
@@ -99,6 +105,10 @@ public class SynchronizingData<T extends IReplicationPacketData<?>> {
     // getPackets
     public synchronized boolean filterEntryData(String uid, long packetKey,
                                                 boolean filterIfNotPresentInReplicaState) {
+        //Don't filter any data from redo log if filter is not enabled
+        if (_isMvccEnabled && !_isFilterEnabled)
+            return  false;
+
         if (!_entriesUidMap.containsKey(uid)) {
             if (_logger.isDebugEnabled()) {
                 _logger.debug("[SynchronizingData::filterEntryData] not in _entriesUidMap: uid=" + uid + " ,_keyWhenCopyStageCompleted=" + _keyWhenCopyStageCompleted +

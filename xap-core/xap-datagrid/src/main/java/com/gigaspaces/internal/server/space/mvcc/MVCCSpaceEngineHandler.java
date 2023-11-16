@@ -15,6 +15,8 @@ import com.j_spaces.core.sadapter.SAException;
 import com.j_spaces.core.sadapter.SelectType;
 import com.j_spaces.kernel.locks.ILockObject;
 
+import java.util.Optional;
+
 public class MVCCSpaceEngineHandler {
 
     private final SpaceEngine _spaceEngine;
@@ -128,4 +130,21 @@ public class MVCCSpaceEngineHandler {
             _mvccCleanupManager.close();
     }
 
+
+    public boolean isNewerGenerationRecoveredForUID(String uid, MVCCGenerationsState mvccGenerationsState) {
+        if (mvccGenerationsState != null && _spaceEngine.getSpaceImpl().isRecovering()) {
+            boolean exists = Optional.ofNullable(_spaceEngine.getCacheManager().getMVCCShellEntryCacheInfoByUid(uid))
+                    .map(shell -> shell.getLatestCommittedOrHollow())
+                    .map(entry -> !entry.isHollowEntry() &&
+                            entry.getCommittedGeneration() >= mvccGenerationsState.getNextGeneration())
+                    .orElse(false);
+            if (exists) {
+                if (_spaceEngine.getLogger().isDebugEnabled())
+                    _spaceEngine.getLogger().debug("Ignore mvcc entry [{}] replication as generation younger than [{}] exists",
+                            uid, mvccGenerationsState.getCompletedGeneration());
+            }
+            return exists;
+        }
+        return false;
+    }
 }
