@@ -243,9 +243,9 @@ public class MVCCCleanupManager {
                     if (cleanLatestUncompleted) { // return true if entry exprited and uncompleted
                         return generationState.isUncompletedGeneration(entry.getCommittedGeneration());
                     }
-                    if (generationState.isUncompletedGeneration(entry.getCommittedGeneration()) // committed uncompleted
-                            || (entry.getOverrideGeneration() != -1 && !generationState.isUncompletedGeneration(entry.getOverrideGeneration())) // not active data and override gen not uncompleted
-                            || entry.isLogicallyDeleted()) { // active completed logically deleted
+                    if ((!generationState.isUncompletedGeneration(entry.getCommittedGeneration())) // committed uncompleted
+                            && (entry.getOverrideGeneration() != -1 && !generationState.isUncompletedGeneration(entry.getOverrideGeneration()) // not active data and override gen not uncompleted
+                                    || entry.isLogicallyDeleted())) { // active completed logically deleted
                         return true;
                     }
                 } else if (totalCommittedGens > _historicalEntriesLimit) {
