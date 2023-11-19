@@ -720,6 +720,7 @@ public class SpaceProxyImpl extends AbstractDirectSpaceProxy implements SameProx
                 spaceContext = getSecurityManager().acquireContext(targetSpace);
                 if (spaceContext != null)
                     spaceContext.setQuiesceToken(token);
+                    spaceContext.setMVCCGenerationsState(getProxyRouter().getDefaultSpaceContext() != null ? getProxyRouter().getDefaultSpaceContext().getMVCCGenerationsState() : null);
             }
             spaceRequest.setSpaceContext(spaceContext);
 
