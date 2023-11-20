@@ -203,6 +203,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
+import static com.gigaspaces.internal.server.space.metadata.SpaceTypeManager.requiresRegistration;
 import static com.j_spaces.core.Constants.CacheManager.*;
 import static com.j_spaces.core.Constants.LeaderSelector.LEADER_SELECTOR_HANDLER_CLASS_NAME;
 import static com.j_spaces.core.Constants.LeaderSelector.ZK_PARTICIPANT_NAME_SEPARATOR;
@@ -2616,9 +2617,10 @@ public class SpaceImpl extends AbstractService implements IRemoteSpace, IInterna
 
     public void snapshot(ITemplatePacket template, SpaceContext sc)
             throws UnusableEntryException, RemoteException {
-        //todo it is incorrect to check only ALTER privilege, because different SQL can be run via snapshot
         if (sc != null) {
-            beforeTypeOperation(false, sc, SpacePrivilege.ALTER, template.getTypeName());
+            if (requiresRegistration(_engine.getTypeManager().getServerTypeDesc(template.getTypeName()), template.getEntryType())) {
+                beforeTypeOperation(false, sc, SpacePrivilege.ALTER, template.getTypeName());
+            }
             snapshotInner(template);
         } else {
             snapshot(template);
@@ -2627,10 +2629,9 @@ public class SpaceImpl extends AbstractService implements IRemoteSpace, IInterna
 
     public void snapshot(ITemplatePacket template)
             throws UnusableEntryException, RemoteException {
-        //todo should uncomment below validation
-        /*if (isSecuredSpace()) {
+        if (isSecuredSpace()) {
             throw logException(new SecurityException("Method for secured space should contain SpaceContext"));
-        }*/
+        }
         beforeOperation(false, true /*checkQuiesceMode*/, null);
 
         snapshotInner(template);
