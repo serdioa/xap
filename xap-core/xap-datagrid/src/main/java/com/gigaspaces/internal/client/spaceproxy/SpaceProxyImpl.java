@@ -714,23 +714,24 @@ public class SpaceProxyImpl extends AbstractDirectSpaceProxy implements SameProx
     public boolean beforeExecute(SpaceOperationRequest<?> spaceRequest, IRemoteSpace targetSpace, int partitionId, String clusterName, boolean isEmbedded)
             throws RemoteException {
         try {
-            SpaceContext spaceContext = getProxyRouter().getDefaultSpaceContext();
+            SpaceContext defaultSpaceContext = getProxyRouter().getDefaultSpaceContext();
             if (spaceRequest.supportsSecurity()) {
-                QuiesceToken token = spaceContext != null ? spaceContext.getQuiesceToken() : null;
-                spaceContext = getSecurityManager().acquireContext(targetSpace);
-                if (spaceContext != null) {
-                    spaceContext.setQuiesceToken(token);
-                    spaceContext.setMVCCGenerationsState(getProxyRouter().getDefaultSpaceContext() != null ? getProxyRouter().getDefaultSpaceContext().getMVCCGenerationsState() : null);
+                QuiesceToken token = defaultSpaceContext != null ? defaultSpaceContext.getQuiesceToken() : null;
+                SpaceContext securitySpaceContext = getSecurityManager().acquireContext(targetSpace);
+                if (securitySpaceContext != null) {
+                    securitySpaceContext.setQuiesceToken(token);
+                    securitySpaceContext.setMVCCGenerationsState(defaultSpaceContext != null ? defaultSpaceContext.getMVCCGenerationsState() : null);
                 }
+                defaultSpaceContext = securitySpaceContext;
             }
-            spaceRequest.setSpaceContext(spaceContext);
+            spaceRequest.setSpaceContext(defaultSpaceContext);
 
             // for broadcast table operation we need to set SpaceContext inside SpaceRequestInfo before task is
             // distributed to other partitions.
             if(spaceRequest instanceof ExecuteTaskSpaceOperationRequest) {
                 SpaceTask<?> task = ((ExecuteTaskSpaceOperationRequest) spaceRequest).getTask();
                 if (task instanceof SystemTask) {
-                    ((SystemTask<?>) task).getSpaceRequestInfo().setSpaceContext(spaceContext);
+                    ((SystemTask<?>) task).getSpaceRequestInfo().setSpaceContext(defaultSpaceContext);
                 }
             }
         } catch (com.gigaspaces.security.SecurityException e) {
