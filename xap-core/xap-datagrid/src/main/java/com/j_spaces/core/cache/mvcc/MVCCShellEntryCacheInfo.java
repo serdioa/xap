@@ -116,16 +116,16 @@ public class MVCCShellEntryCacheInfo extends MemoryBasedEntryCacheInfo {
     }
 
     // Used under lock when running revert task. Should use it with the uncompleted entry only.
-    public boolean removeUncompletedEntryFromQueue(MVCCEntryHolder revertedEntry, MVCCGenerationsState generationsState) {
-        Iterator<MVCCEntryCacheInfo> mvccEntryCacheInfoIterator = descIterator();
-        while (mvccEntryCacheInfoIterator.hasNext()) {
-            MVCCEntryHolder entryHolder = mvccEntryCacheInfoIterator.next().getEntryHolder();
+    public MVCCEntryHolder removeUncompletedEntryFromQueue(MVCCEntryHolder revertedEntry, MVCCGenerationsState generationsState) {
+        MVCCEntryCacheInfo latestGeneration = getLatestGenerationCacheInfo();
+        if  (latestGeneration != null) {
+            MVCCEntryHolder entryHolder = latestGeneration.getEntryHolder();
             if (entryHolder.equals(revertedEntry) && generationsState.isUncompletedGeneration(entryHolder.getCommittedGeneration())) {
-                mvccEntryCacheInfoIterator.remove();
-                return true;
+                removeCommittedEntryGeneration(true);
+                return entryHolder;
             }
         }
-        return false;
+        return null;
     }
 
     @Override
@@ -164,10 +164,6 @@ public class MVCCShellEntryCacheInfo extends MemoryBasedEntryCacheInfo {
 
     public int getTotalCommittedGenertions() {
         return allEntryGenerations.size();
-    }
-
-    public boolean isLogicallyDeleted() {
-        return this.getLatestGenerationCacheInfo() != null && this.getLatestGenerationCacheInfo().getEntryHolder().isLogicallyDeleted();
     }
 
     public boolean isEmptyShell() {

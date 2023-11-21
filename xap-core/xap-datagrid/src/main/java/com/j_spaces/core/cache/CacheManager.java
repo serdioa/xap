@@ -2821,6 +2821,10 @@ public class CacheManager extends AbstractCacheManager
         return _mvccCacheManagerHandler != null;
     }
 
+    public MVCCCacheManagerHandler getMVCCHandler() {
+        return _mvccCacheManagerHandler;
+    }
+
     /**
      * xtn terminating-handle under xtn updates.
      */
@@ -6234,28 +6238,11 @@ public class CacheManager extends AbstractCacheManager
     }
 
     private int getEntriesCount(IServerTypeDesc targetType) {
-        int result;
         TypeData typeData = _typeDataMap.get(targetType);
         if (typeData == null) {
             return 0;
         }
-        if (isMVCCEnabled()) {
-            if (typeData.getIdField() == null) {
-                return 0;
-            }
-            long count = typeData.getIdField().getUniqueEntriesStore().values().stream()
-                            .filter(e -> isMvccEntryIncludedIntoCount((MVCCShellEntryCacheInfo) e))
-                            .count();
-
-            result = Math.toIntExact(count);
-        } else {
-            result = typeData.getEntries().size();
-        }
-        return result;
-    }
-
-    private boolean isMvccEntryIncludedIntoCount(MVCCShellEntryCacheInfo cacheInfo) {
-        return !(cacheInfo.getTotalCommittedGenertions() == 0) && !cacheInfo.isLogicallyDeleted();
+        return isMVCCEnabled() ? typeData.getMVCCEntriesCount() : typeData.getEntries().size();
     }
 
     public int getNumberOfNotifyTemplates() {

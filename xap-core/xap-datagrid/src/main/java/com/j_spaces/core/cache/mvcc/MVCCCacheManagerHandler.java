@@ -12,6 +12,7 @@ import com.j_spaces.core.cache.context.Context;
 import com.j_spaces.core.sadapter.SAException;
 import com.j_spaces.core.server.transaction.EntryXtnInfo;
 
+import java.util.Optional;
 import java.util.concurrent.ConcurrentMap;
 
 public class MVCCCacheManagerHandler {
@@ -28,7 +29,7 @@ public class MVCCCacheManagerHandler {
         String uid = pEntry.getUID();
         MVCCShellEntryCacheInfo existingShell = (MVCCShellEntryCacheInfo) entries.get(uid);
         MVCCShellEntryCacheInfo newShell = null;
-        IEntryHolder newEntryToWrite = pEntry.getEntryHolder();
+        MVCCEntryHolder newEntryToWrite = pEntry.getEntryHolder();
         if (existingShell == null) {
             newShell = new MVCCShellEntryCacheInfo(newEntryToWrite, pEntry);
             entries.put(uid, newShell);
@@ -39,6 +40,7 @@ public class MVCCCacheManagerHandler {
             } else { // write second - add committed directly to gen queue
                 existingShell.addCommittedEntryToGenerationQueue(pEntry);
             }
+            updateLDEntriesCounter(existingShell == null ? newShell : existingShell, newEntryToWrite, true, true);
             return null;
         }
 
@@ -170,5 +172,39 @@ public class MVCCCacheManagerHandler {
         MVCCEntryCacheInfo dirtyEntryCacheInfo = new MVCCEntryCacheInfo(dummyEntry, 2);
         mvccShellEntryCacheInfo.setDirtyEntryCacheInfo(dirtyEntryCacheInfo);
         return dirtyEntryCacheInfo;
+    }
+
+    public void updateLDEntriesCounter(MVCCShellEntryCacheInfo shell, MVCCEntryHolder currentEntry, boolean isInsert, boolean getLatest) {
+        TypeData typeData = cacheManager.getTypeData(shell.getServerTypeDesc());
+        if (typeData == null || currentEntry == null) {
+            return;
+        }
+        MVCCEntryHolder previousEntry = Optional.ofNullable(shell.getGenerationCacheInfo(getLatest))
+                .map(MVCCEntryCacheInfo::getEntryHolder)
+                .orElse(null);
+        if (isInsert) { // after insert
+            if (currentEntry.isLogicallyDeleted()) {
+                // inserted entry is logically deleted
+                typeData.getMVCCUidsLogicallyDeletedCounter().inc();
+            } else if (previousEntry != null && previousEntry.isLogicallyDeleted()) {
+                // inserted entry is not logically deleted and previous(older) entry is logically deleted
+                typeData.getMVCCUidsLogicallyDeletedCounter().dec();
+            }
+        } else { // after remove
+            if (getLatest) {
+                if (currentEntry.isLogicallyDeleted()) {
+                    // latest removed entry is logically deleted
+                    typeData.getMVCCUidsLogicallyDeletedCounter().dec();
+                }  else if (previousEntry != null && previousEntry.isLogicallyDeleted()) {
+                    // latest removed entry is not logically deleted and previous(older) entry is logically deleted
+                    typeData.getMVCCUidsLogicallyDeletedCounter().inc();
+                }
+            } else if (currentEntry.isLogicallyDeleted()) {
+                if (previousEntry == null) {
+                    // oldest removed entry is logically deleted and it is last in the shell
+                    typeData.getMVCCUidsLogicallyDeletedCounter().dec();
+                }
+            }
+        }
     }
 }

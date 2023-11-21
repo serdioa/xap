@@ -7749,7 +7749,7 @@ public class SpaceEngine implements ISpaceModeListener , IClusterInfoChangedList
         return _mvccSpaceEngineHandler != null;
     }
 
-    public MVCCSpaceEngineHandler getMvccHandler() {
+    public MVCCSpaceEngineHandler getMVCCHandler() {
         return _mvccSpaceEngineHandler;
     }
 
