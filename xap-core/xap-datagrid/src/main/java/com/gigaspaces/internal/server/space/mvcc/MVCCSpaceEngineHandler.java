@@ -62,8 +62,8 @@ public class MVCCSpaceEngineHandler {
                                     entry.setMaybeUnderXtn(true);
                                     dirtyEntryHolder.setOverridingAnother(true);
                                     dirtyEntryHolder.setCommittedGeneration(nextGeneration);
-                                    mvccShellEntryCacheInfo.addDirtyEntryToGenerationQueue();
                                     _cacheManager.getMVCCHandler().updateLDEntriesCounter(mvccShellEntryCacheInfo, dirtyEntryHolder, true, true);
+                                    mvccShellEntryCacheInfo.addDirtyEntryToGenerationQueue();
                                     break;
                                 case SpaceOperations.WRITE:
                                     MVCCEntryCacheInfo activeTakenGenerationEntry = xtnEntry.getXtnData().getMvccWriteActiveLogicallyDeletedEntry(entry.getUID());
@@ -75,8 +75,8 @@ public class MVCCSpaceEngineHandler {
                                         entry.setOverridingAnother(true);
                                     }
                                     entry.setCommittedGeneration(nextGeneration);
-                                    mvccShellEntryCacheInfo.addDirtyEntryToGenerationQueue();
                                     _cacheManager.getMVCCHandler().updateLDEntriesCounter(mvccShellEntryCacheInfo, entry, true, true);
+                                    mvccShellEntryCacheInfo.addDirtyEntryToGenerationQueue();
                                     break;
                             }
                         }

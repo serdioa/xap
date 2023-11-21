@@ -35,12 +35,12 @@ public class MVCCCacheManagerHandler {
             entries.put(uid, newShell);
         }
         if (context.isInMemoryRecovery()) {
+            updateLDEntriesCounter(existingShell == null ? newShell : existingShell, newEntryToWrite, true, true);
             if (existingShell == null) { // write first - add dirty to gen queue
                 newShell.addDirtyEntryToGenerationQueue();
             } else { // write second - add committed directly to gen queue
                 existingShell.addCommittedEntryToGenerationQueue(pEntry);
             }
-            updateLDEntriesCounter(existingShell == null ? newShell : existingShell, newEntryToWrite, true, true);
             return null;
         }
 
@@ -182,15 +182,16 @@ public class MVCCCacheManagerHandler {
         MVCCEntryHolder previousEntry = Optional.ofNullable(shell.getGenerationCacheInfo(getLatest))
                 .map(MVCCEntryCacheInfo::getEntryHolder)
                 .orElse(null);
-        if (isInsert) { // after insert
+        if (isInsert) { // before insert to deque
             if (currentEntry.isLogicallyDeleted()) {
                 // inserted entry is logically deleted
                 typeData.getMVCCUidsLogicallyDeletedCounter().inc();
             } else if (previousEntry != null && previousEntry.isLogicallyDeleted()) {
-                // inserted entry is not logically deleted and previous(older) entry is logically deleted
+                // inserted entry is not logically deleted
+                // and previous(older) entry exists(history is not empty) and is logically deleted
                 typeData.getMVCCUidsLogicallyDeletedCounter().dec();
             }
-        } else { // after remove
+        } else { // after remove from deque
             if (getLatest) {
                 if (currentEntry.isLogicallyDeleted()) {
                     // latest removed entry is logically deleted
