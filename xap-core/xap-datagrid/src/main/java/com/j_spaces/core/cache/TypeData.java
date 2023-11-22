@@ -1376,8 +1376,9 @@ public class TypeData {
     }
 
     public int getMVCCEntriesCount() {
+        long ldEntries = _mvccUidsLogicallyDeletedCounter.getCount();
         return _idPropertyIndex != null
-                ? (int)(_idPropertyIndex.getUniqueEntriesStore().size() - _mvccUidsLogicallyDeletedCounter.getCount())
+                ? (int)(_idPropertyIndex.getUniqueEntriesStore().size() - (ldEntries < 0 ? 0 : ldEntries))
                 : 0;
     }
 }
