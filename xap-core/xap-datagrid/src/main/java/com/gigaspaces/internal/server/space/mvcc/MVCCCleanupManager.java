@@ -211,6 +211,7 @@ public class MVCCCleanupManager {
                         if (matchToRemove(entry, generationState, shellEntryCacheInfo.getTotalCommittedGenertions(), cleanLatestUncompleted) &&
                                 shellEntryCacheInfo.getGenerationCacheInfo(cleanLatestUncompleted) == pEntry) { // check that matched entry the same as before lock
                             shellEntryCacheInfo.removeCommittedEntryGeneration(cleanLatestUncompleted);
+                            _cacheManager.getMVCCHandler().updateLDEntriesCounter(shellEntryCacheInfo, entry, false, cleanLatestUncompleted);
                             if (!entry.isLogicallyDeleted()) { // removing entry references (no references for log.deleted)
                                 _cacheManager.removeEntryFromCache(entry, false, true, pEntry, CacheManager.RecentDeleteCodes.NONE);
                             }

@@ -1797,7 +1797,9 @@ public class Processor implements IConsumerObject<BusPacket<Processor>> {
                                         IEntryCacheInfo entryCacheInfo = _cacheManager.getMVCCEntryCacheInfoByEntryHolder(((MVCCEntryHolder) entry));
                                         _cacheManager.removeEntryFromCache(entry, false, true, entryCacheInfo, CacheManager.RecentDeleteCodes.NONE);
                                     }
-                                    mvccShellEntryCacheInfoByUid.removeUncompletedEntryFromQueue(((MVCCEntryHolder) entry), xtnEntry.getMVCCGenerationsState());
+                                    MVCCEntryHolder removedEntry = mvccShellEntryCacheInfoByUid
+                                            .removeUncompletedEntryFromQueue(((MVCCEntryHolder) entry), xtnEntry.getMVCCGenerationsState());
+                                    _cacheManager.getMVCCHandler().updateLDEntriesCounter(mvccShellEntryCacheInfoByUid, removedEntry, false, true);
                                     MVCCEntryHolder latestCommittedOrHollow = mvccShellEntryCacheInfoByUid.getLatestCommittedOrHollow();
                                     if (!latestCommittedOrHollow.isHollowEntry()) {
                                         latestCommittedOrHollow.setOverrideGeneration(-1);

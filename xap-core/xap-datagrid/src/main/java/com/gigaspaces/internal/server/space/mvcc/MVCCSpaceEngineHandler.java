@@ -62,6 +62,7 @@ public class MVCCSpaceEngineHandler {
                                     entry.setMaybeUnderXtn(true);
                                     dirtyEntryHolder.setOverridingAnother(true);
                                     dirtyEntryHolder.setCommittedGeneration(nextGeneration);
+                                    _cacheManager.getMVCCHandler().updateLDEntriesCounter(mvccShellEntryCacheInfo, dirtyEntryHolder, true, true);
                                     mvccShellEntryCacheInfo.addDirtyEntryToGenerationQueue();
                                     break;
                                 case SpaceOperations.WRITE:
@@ -74,6 +75,7 @@ public class MVCCSpaceEngineHandler {
                                         entry.setOverridingAnother(true);
                                     }
                                     entry.setCommittedGeneration(nextGeneration);
+                                    _cacheManager.getMVCCHandler().updateLDEntriesCounter(mvccShellEntryCacheInfo, entry, true, true);
                                     mvccShellEntryCacheInfo.addDirtyEntryToGenerationQueue();
                                     break;
                             }

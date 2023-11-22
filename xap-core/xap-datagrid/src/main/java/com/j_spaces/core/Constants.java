@@ -987,7 +987,7 @@ public interface Constants {
         String MVCC_FIXED_CLEANUP_DELAY_MILLIS = MVCC_PREFIX + "fixed_cleanup_delay_millis";
         String FULL_MVCC_FIXED_CLEANUP_DELAY_MILLIS = SPACE_CONFIG_PREFIX + MVCC_FIXED_CLEANUP_DELAY_MILLIS;
         String MVCC_HISTORICAL_ENTRY_LIFETIME_DEFAULT = "5";
-        String MVCC_HISTORICAL_ENTRY_LIFETIME_TIMEUNIT_DEFAULT = "m"; //seconds
+        String MVCC_HISTORICAL_ENTRY_LIFETIME_TIMEUNIT_DEFAULT = "m"; //minutes
         String MVCC_HISTORICAL_ENTRIES_LIMIT_DEFAULT = "5";
         String MVCC_FIXED_CLEANUP_DELAY_MILLIS_DEFAULT = "1000000"; // by default adaptive cleanup delay is disabled (fixed delay is not 0)
     }

@@ -12,6 +12,7 @@ import com.j_spaces.core.cache.context.Context;
 import com.j_spaces.core.sadapter.SAException;
 import com.j_spaces.core.server.transaction.EntryXtnInfo;
 
+import java.util.Optional;
 import java.util.concurrent.ConcurrentMap;
 
 public class MVCCCacheManagerHandler {
@@ -28,12 +29,13 @@ public class MVCCCacheManagerHandler {
         String uid = pEntry.getUID();
         MVCCShellEntryCacheInfo existingShell = (MVCCShellEntryCacheInfo) entries.get(uid);
         MVCCShellEntryCacheInfo newShell = null;
-        IEntryHolder newEntryToWrite = pEntry.getEntryHolder();
+        MVCCEntryHolder newEntryToWrite = pEntry.getEntryHolder();
         if (existingShell == null) {
             newShell = new MVCCShellEntryCacheInfo(newEntryToWrite, pEntry);
             entries.put(uid, newShell);
         }
         if (context.isInMemoryRecovery()) {
+            updateLDEntriesCounter(existingShell == null ? newShell : existingShell, newEntryToWrite, true, true);
             if (existingShell == null) { // write first - add dirty to gen queue
                 newShell.addDirtyEntryToGenerationQueue();
             } else { // write second - add committed directly to gen queue
@@ -170,5 +172,42 @@ public class MVCCCacheManagerHandler {
         MVCCEntryCacheInfo dirtyEntryCacheInfo = new MVCCEntryCacheInfo(dummyEntry, 2);
         mvccShellEntryCacheInfo.setDirtyEntryCacheInfo(dirtyEntryCacheInfo);
         return dirtyEntryCacheInfo;
+    }
+
+    public void updateLDEntriesCounter(MVCCShellEntryCacheInfo shell, MVCCEntryHolder currentEntry, boolean isInsert, boolean getLatest) {
+        if (currentEntry == null) {
+            return;
+        }
+        TypeData typeData = cacheManager.getTypeData(shell.getServerTypeDesc());
+        if (typeData == null) {
+            return;
+        }
+        final MVCCEntryHolder previousEntry = Optional.ofNullable(shell.getGenerationCacheInfo(getLatest))
+                .map(MVCCEntryCacheInfo::getEntryHolder)
+                .orElse(null);
+        final boolean previousIsLogicallyDeleted = previousEntry != null && previousEntry.isLogicallyDeleted();
+        if (isInsert) { // before insert to deque
+            if (currentEntry.isLogicallyDeleted()) {
+                // inserted entry is logically deleted
+                typeData.getMVCCUidsLogicallyDeletedCounter().inc();
+            } else if (previousIsLogicallyDeleted) {
+                // inserted entry is not logically deleted
+                // and previous(older) entry exists(history is not empty) and is logically deleted
+                typeData.getMVCCUidsLogicallyDeletedCounter().dec();
+            }
+        } else { // after remove from deque
+            if (getLatest) {
+                if (currentEntry.isLogicallyDeleted()) {
+                    // latest removed entry is logically deleted
+                    typeData.getMVCCUidsLogicallyDeletedCounter().dec();
+                }  else if (previousIsLogicallyDeleted) {
+                    // latest removed entry is not logically deleted and previous(older) entry is logically deleted
+                    typeData.getMVCCUidsLogicallyDeletedCounter().inc();
+                }
+            } else if (currentEntry.isLogicallyDeleted() && previousEntry == null) {
+                // oldest removed entry is logically deleted and it is last in the shell
+                typeData.getMVCCUidsLogicallyDeletedCounter().dec();
+            }
+        }
     }
 }
