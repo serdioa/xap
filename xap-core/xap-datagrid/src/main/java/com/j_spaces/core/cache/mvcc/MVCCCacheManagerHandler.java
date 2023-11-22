@@ -200,11 +200,9 @@ public class MVCCCacheManagerHandler {
                     // latest removed entry is not logically deleted and previous(older) entry is logically deleted
                     typeData.getMVCCUidsLogicallyDeletedCounter().inc();
                 }
-            } else if (currentEntry.isLogicallyDeleted()) {
-                if (previousEntry == null) {
-                    // oldest removed entry is logically deleted and it is last in the shell
-                    typeData.getMVCCUidsLogicallyDeletedCounter().dec();
-                }
+            } else if (currentEntry.isLogicallyDeleted() && previousEntry == null) {
+                // oldest removed entry is logically deleted and it is last in the shell
+                typeData.getMVCCUidsLogicallyDeletedCounter().dec();
             }
         }
     }
