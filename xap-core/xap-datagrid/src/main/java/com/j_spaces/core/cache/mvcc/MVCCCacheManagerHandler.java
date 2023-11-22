@@ -175,18 +175,22 @@ public class MVCCCacheManagerHandler {
     }
 
     public void updateLDEntriesCounter(MVCCShellEntryCacheInfo shell, MVCCEntryHolder currentEntry, boolean isInsert, boolean getLatest) {
-        TypeData typeData = cacheManager.getTypeData(shell.getServerTypeDesc());
-        if (typeData == null || currentEntry == null) {
+        if (currentEntry == null) {
             return;
         }
-        MVCCEntryHolder previousEntry = Optional.ofNullable(shell.getGenerationCacheInfo(getLatest))
+        TypeData typeData = cacheManager.getTypeData(shell.getServerTypeDesc());
+        if (typeData == null) {
+            return;
+        }
+        final MVCCEntryHolder previousEntry = Optional.ofNullable(shell.getGenerationCacheInfo(getLatest))
                 .map(MVCCEntryCacheInfo::getEntryHolder)
                 .orElse(null);
+        final boolean previousIsLogicallyDeleted = previousEntry != null && previousEntry.isLogicallyDeleted();
         if (isInsert) { // before insert to deque
             if (currentEntry.isLogicallyDeleted()) {
                 // inserted entry is logically deleted
                 typeData.getMVCCUidsLogicallyDeletedCounter().inc();
-            } else if (previousEntry != null && previousEntry.isLogicallyDeleted()) {
+            } else if (previousIsLogicallyDeleted) {
                 // inserted entry is not logically deleted
                 // and previous(older) entry exists(history is not empty) and is logically deleted
                 typeData.getMVCCUidsLogicallyDeletedCounter().dec();
@@ -196,7 +200,7 @@ public class MVCCCacheManagerHandler {
                 if (currentEntry.isLogicallyDeleted()) {
                     // latest removed entry is logically deleted
                     typeData.getMVCCUidsLogicallyDeletedCounter().dec();
-                }  else if (previousEntry != null && previousEntry.isLogicallyDeleted()) {
+                }  else if (previousIsLogicallyDeleted) {
                     // latest removed entry is not logically deleted and previous(older) entry is logically deleted
                     typeData.getMVCCUidsLogicallyDeletedCounter().inc();
                 }
