@@ -48,7 +48,10 @@ import com.j_spaces.jdbc.builder.QueryTemplatePacket;
 import net.jini.core.transaction.server.ServerTransaction;
 import org.slf4j.Logger;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Optional;
 
 /**
  * This class represents a template in a J-Space. Each instance of this class contains a reference
@@ -839,7 +842,7 @@ public class TemplateHolder extends AbstractSpaceItem implements ITemplateHolder
             if (isReadOperation() && overrideGeneration > completedGeneration && !mvccGenerationsState.isUncompletedGeneration(overrideGeneration)) {
                 return false;
             }
-            if (!this.isReadOperation() && mvccGenerationsState.isUncompletedGeneration(committedGeneration)) {
+            if (!this.isReadOperation() && !committedIsCompleted) {
                 throw new MVCCModifyOnUncompletedGenerationException(mvccGenerationsState, committedGeneration, entryHolder, getTemplateOperation());
             }
             if (isOverridenEntry
