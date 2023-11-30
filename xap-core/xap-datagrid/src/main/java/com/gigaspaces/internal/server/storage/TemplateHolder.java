@@ -30,6 +30,7 @@ import com.gigaspaces.internal.server.space.iterator.ServerIteratorInfo;
 import com.gigaspaces.internal.server.space.mvcc.MVCCGenerationsState;
 import com.gigaspaces.internal.server.space.mvcc.exception.MVCCEntryModifyConflictException;
 import com.gigaspaces.internal.server.space.mvcc.exception.MVCCModifyOnUncompletedGenerationException;
+import com.gigaspaces.internal.server.space.mvcc.exception.MVCCReadExpiredGenerationException;
 import com.gigaspaces.internal.server.space.mvcc.exception.MVCCRevertGenerationException;
 import com.gigaspaces.internal.transport.AbstractProjectionTemplate;
 import com.gigaspaces.internal.transport.IEntryPacket;
@@ -810,6 +811,9 @@ public class TemplateHolder extends AbstractSpaceItem implements ITemplateHolder
         final boolean committedIsCompleted = !isDirtyEntry && (committedGeneration <= completedGeneration)
                 && (!mvccGenerationsState.isUncompletedGeneration(committedGeneration));
         if (isHistoricalRead(cacheManager.getEngine(), context)) { // historical read
+            if (!isDirtyEntry && committedGeneration <= cacheManager.getMVCCHandler().getLatestExpiredGeneration()) {
+                throw new MVCCReadExpiredGenerationException(entryHolder, cacheManager.getMVCCHandler().getLatestExpiredGeneration());
+            }
             final boolean isOverridenEntryGenerationValidForHistoricalRead = !isOverridenEntry
                     || (overrideGeneration > completedGeneration)
                     || (overrideGeneration <= completedGeneration && mvccGenerationsState.isUncompletedGeneration(overrideGeneration));
@@ -843,7 +847,7 @@ public class TemplateHolder extends AbstractSpaceItem implements ITemplateHolder
                 throw new MVCCModifyOnUncompletedGenerationException(mvccGenerationsState, committedGeneration, entryHolder, getTemplateOperation());
             }
             if (isOverridenEntry
-                    && overrideGeneration > completedGeneration
+                    && overrideGeneration > completedGeneration // why we add this.getEntryId() != null?
                     && !mvccGenerationsState.isUncompletedGeneration(overrideGeneration) && this.getEntryId() != null) {
                 throw new MVCCEntryModifyConflictException(mvccGenerationsState, entryHolder, getTemplateOperation()); // overriden can't be modified
             }

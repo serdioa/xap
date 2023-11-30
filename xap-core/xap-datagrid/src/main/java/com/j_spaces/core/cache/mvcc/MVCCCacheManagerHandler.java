@@ -14,11 +14,14 @@ import com.j_spaces.core.server.transaction.EntryXtnInfo;
 
 import java.util.Optional;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicLong;
 
 public class MVCCCacheManagerHandler {
 
 
     private final CacheManager cacheManager;
+
+    private final AtomicLong _latestExpiredGeneration = new AtomicLong(0);
 
     public MVCCCacheManagerHandler(CacheManager cacheManager) {
         this.cacheManager = cacheManager;
@@ -209,5 +212,13 @@ public class MVCCCacheManagerHandler {
                 typeData.getMVCCUidsLogicallyDeletedCounter().dec();
             }
         }
+    }
+
+    public long getLatestExpiredGeneration() {
+        return _latestExpiredGeneration.get();
+    }
+
+    public void setLatestExpiredGeneration(long newLastExpiredGeneration) {
+        _latestExpiredGeneration.set(newLastExpiredGeneration);
     }
 }

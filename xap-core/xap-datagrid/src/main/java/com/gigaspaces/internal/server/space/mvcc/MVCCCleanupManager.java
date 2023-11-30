@@ -225,6 +225,9 @@ public class MVCCCleanupManager {
                             if (_logger.isTraceEnabled()) {
                                 _logger.trace("Entry {} was cleaned", entry);
                             }
+                            if (!cleanLatestUncompleted && entry.getCommittedGeneration() > _cacheManager.getMVCCHandler().getLatestExpiredGeneration()) {
+                                _cacheManager.getMVCCHandler().setLatestExpiredGeneration(entry.getCommittedGeneration());
+                            }
                             return true;
                         }
                     }
@@ -244,9 +247,10 @@ public class MVCCCleanupManager {
                     if (cleanLatestUncompleted) { // return true if entry exprited and uncompleted
                         return generationState.isUncompletedGeneration(entry.getCommittedGeneration());
                     }
-                    if ((!generationState.isUncompletedGeneration(entry.getCommittedGeneration())) // committed uncompleted
-                            && (entry.getOverrideGeneration() != -1 && !generationState.isUncompletedGeneration(entry.getOverrideGeneration()) // not active data and override gen not uncompleted
-                                    || entry.isLogicallyDeleted())) { // active completed logically deleted
+                    //committed completed and (it not active data and override gen completed or its active committed and logically deleted)
+                    if ((!generationState.isUncompletedGeneration(entry.getCommittedGeneration()))
+                            && (entry.getOverrideGeneration() != -1 && !generationState.isUncompletedGeneration(entry.getOverrideGeneration())
+                                    || entry.isLogicallyDeleted())) {
                         return true;
                     }
                 } else if (totalCommittedGens > _historicalEntriesLimit) {

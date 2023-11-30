@@ -24,7 +24,7 @@ public class MVCCEntryPacketMetadata implements SmartExternalizable, ISwapExtern
 
     private long _committedGeneration;
     private long _overrideGeneration;
-    private short _flags;
+    private byte _flags;
 
     public MVCCEntryPacketMetadata() {
     }
@@ -97,7 +97,7 @@ public class MVCCEntryPacketMetadata implements SmartExternalizable, ISwapExtern
     private void serialize(ObjectOutput out) {
         try {
             if (LRMIInvocationContext.getEndpointLogicalVersion().greaterThan(PlatformLogicalVersion.v16_4_0)) {
-                out.writeShort(_flags);
+                out.writeByte(_flags);
                 out.writeLong(_committedGeneration);
                 out.writeLong(_overrideGeneration);
             }
@@ -111,7 +111,7 @@ public class MVCCEntryPacketMetadata implements SmartExternalizable, ISwapExtern
     private void deserialize(ObjectInput in) {
         try {
             if (LRMIInvocationContext.getEndpointLogicalVersion().greaterThan(PlatformLogicalVersion.v16_4_0)) {
-                _flags = in.readShort();
+                _flags = in.readByte();
                 _committedGeneration = in.readLong();
                 _overrideGeneration = in.readLong();
             }
