@@ -243,17 +243,18 @@ public class MVCCCleanupManager {
 
         private boolean matchToRemove(MVCCEntryHolder entry, MVCCGenerationsState generationState, int totalCommittedGens, boolean cleanLatestUncompleted) {
             if (!entry.isMaybeUnderXtn()) {
-                if (isLifetimeLimitExceeded(entry)) {
-                    if (cleanLatestUncompleted) { // return true if entry exprited and uncompleted
+                if (isLifetimeLimitExceeded(entry)) { // expired
+                    if (cleanLatestUncompleted) { // uncompleted
                         return generationState.isUncompletedGeneration(entry.getCommittedGeneration());
                     }
-                    //committed completed and (it not active data and override gen completed or its active committed and logically deleted)
+                    //committed completed and ((not active data and override gen completed) or (its active committed and logically deleted))
                     if ((!generationState.isUncompletedGeneration(entry.getCommittedGeneration()))
                             && (entry.getOverrideGeneration() != -1 && !generationState.isUncompletedGeneration(entry.getOverrideGeneration())
                                     || entry.isLogicallyDeleted())) {
                         return true;
                     }
-                } else if (totalCommittedGens > _historicalEntriesLimit) {
+                } else if (totalCommittedGens > _historicalEntriesLimit) { // reach historical limit
+                    // not active completed data and override gen completed
                     if ((entry.getOverrideGeneration() != -1
                             && !generationState.isUncompletedGeneration(entry.getCommittedGeneration())
                             && !generationState.isUncompletedGeneration(entry.getOverrideGeneration()))) { // not active data and override gen not uncompleted

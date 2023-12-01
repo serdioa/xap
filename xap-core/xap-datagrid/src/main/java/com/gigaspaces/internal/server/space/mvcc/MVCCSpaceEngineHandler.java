@@ -135,16 +135,17 @@ public class MVCCSpaceEngineHandler {
 
     public boolean isNewerGenerationRecoveredForUID(String uid, MVCCGenerationsState mvccGenerationsState) {
         if (mvccGenerationsState != null && _spaceEngine.getSpaceImpl().isRecovering()) {
-            Optional<MVCCEntryHolder> latestInHistory = Optional.ofNullable(_spaceEngine.getCacheManager().getMVCCShellEntryCacheInfoByUid(uid))
+            boolean exists = Optional.ofNullable(_spaceEngine.getCacheManager().getMVCCShellEntryCacheInfoByUid(uid))
                     .map(shell -> shell.getLatestCommittedOrHollow())
-                    .filter(entry -> !entry.isHollowEntry() &&
-                            entry.getCommittedGeneration() >= mvccGenerationsState.getNextGeneration());
-            if (latestInHistory.isPresent()) {
+                    .map(entry -> !entry.isHollowEntry() &&
+                            entry.getCommittedGeneration() >= mvccGenerationsState.getNextGeneration())
+                    .orElse(false);
+            if (exists) {
                 if (_spaceEngine.getLogger().isDebugEnabled())
-                    _spaceEngine.getLogger().debug("Ignore mvcc entry [{}] replication as entry with generation younger than [{}] exists: {}",
-                            uid, mvccGenerationsState.getNextGeneration(), latestInHistory.get());
+                    _spaceEngine.getLogger().debug("Ignore mvcc entry [{}] replication as entry with generation younger than [{}] exists",
+                            uid, mvccGenerationsState.getNextGeneration());
             }
-            return latestInHistory.isPresent();
+            return exists;
         }
         return false;
     }
