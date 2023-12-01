@@ -2,6 +2,7 @@ package com.j_spaces.core.cache.mvcc;
 
 import com.gigaspaces.internal.server.storage.IEntryData;
 import com.gigaspaces.internal.server.storage.IEntryHolder;
+import com.gigaspaces.internal.transport.mvcc.IMVCCEntryPacket;
 import com.j_spaces.core.SpaceOperations;
 import com.j_spaces.core.XtnEntry;
 import com.j_spaces.core.cache.CacheManager;
@@ -11,6 +12,7 @@ import com.j_spaces.core.cache.XtnData;
 import com.j_spaces.core.cache.context.Context;
 import com.j_spaces.core.sadapter.SAException;
 import com.j_spaces.core.server.transaction.EntryXtnInfo;
+import com.j_spaces.kernel.JSpaceUtilities;
 
 import java.util.Optional;
 import java.util.concurrent.ConcurrentMap;
@@ -33,6 +35,10 @@ public class MVCCCacheManagerHandler {
         MVCCShellEntryCacheInfo existingShell = (MVCCShellEntryCacheInfo) entries.get(uid);
         MVCCShellEntryCacheInfo newShell = null;
         MVCCEntryHolder newEntryToWrite = pEntry.getEntryHolder();
+        if ("-671402630^42^3627^0^0".equals(newEntryToWrite.getUID()) || "-671402630^42^3628^0^0".equals(newEntryToWrite.getUID()))
+            JSpaceUtilities.DEBUG_LOGGER.info("[{}] - INSERT_CACHE(recovery:{}-{}): [{}]", cacheManager.getEngine().getSpaceImpl().getContainerName(), context.isInMemoryRecovery(),
+                    cacheManager.getEngine().getSpaceImpl().isRecovering(), newEntryToWrite);
+
         if (existingShell == null) {
             newShell = new MVCCShellEntryCacheInfo(newEntryToWrite, pEntry);
             entries.put(uid, newShell);

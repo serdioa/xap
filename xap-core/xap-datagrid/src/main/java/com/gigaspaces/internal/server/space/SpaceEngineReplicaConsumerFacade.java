@@ -29,6 +29,7 @@ import com.gigaspaces.internal.transport.mvcc.MVCCShellEntryPacket;
 import com.gigaspaces.logger.Constants;
 
 
+import com.j_spaces.kernel.JSpaceUtilities;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -89,6 +90,8 @@ public class SpaceEngineReplicaConsumerFacade
             return;
         }
         for (IMVCCEntryPacket versionedEntryPacket : entryPacket.getEntryVersionsPackets()) {
+            if ("-671402630^42^3627^0^0".equals(entryPacket.getUID()) || "-671402630^42^3628^0^0".equals(entryPacket.getUID()))
+                JSpaceUtilities.DEBUG_LOGGER.info("[{}] - CONSUME: [{}]", _spaceEngine.getSpaceImpl().getContainerName(), versionedEntryPacket.getMVCCEntryMetadata());
             write(versionedEntryPacket, replicaType);
         }
         _logger.debug("Mvcc shell with uid [{}] was recovered to {}", entryPacket.getUID(), _spaceEngine.getSpaceImpl().getContainerName());

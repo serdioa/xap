@@ -13,6 +13,7 @@ import com.j_spaces.core.cache.mvcc.MVCCShellEntryCacheInfo;
 import com.j_spaces.core.sadapter.ISAdapterIterator;
 import com.j_spaces.core.sadapter.SAException;
 import com.j_spaces.core.sadapter.SelectType;
+import com.j_spaces.kernel.JSpaceUtilities;
 import com.j_spaces.kernel.locks.ILockObject;
 
 import java.util.Optional;
@@ -64,6 +65,10 @@ public class MVCCSpaceEngineHandler {
                                     dirtyEntryHolder.setCommittedGeneration(nextGeneration);
                                     _cacheManager.getMVCCHandler().updateLDEntriesCounter(mvccShellEntryCacheInfo, dirtyEntryHolder, true, true);
                                     mvccShellEntryCacheInfo.addDirtyEntryToGenerationQueue();
+                                    if ("-671402630^42^3627^0^0".equals(dirtyEntryHolder.getUID()) || "-671402630^42^3628^0^0".equals(dirtyEntryHolder.getUID()))
+                                        JSpaceUtilities.DEBUG_LOGGER.info("[{}] - UPDATE_TAKE_ENGINE(recovery:{}-{}): [{}]", _spaceEngine.getSpaceImpl().getContainerName(),
+                                                context.isInMemoryRecovery(), _spaceEngine.getSpaceImpl().isRecovering(),
+                                                dirtyEntryHolder);
                                     break;
                                 case SpaceOperations.WRITE:
                                     MVCCEntryCacheInfo activeTakenGenerationEntry = xtnEntry.getXtnData().getMvccWriteActiveLogicallyDeletedEntry(entry.getUID());
@@ -77,6 +82,9 @@ public class MVCCSpaceEngineHandler {
                                     entry.setCommittedGeneration(nextGeneration);
                                     _cacheManager.getMVCCHandler().updateLDEntriesCounter(mvccShellEntryCacheInfo, entry, true, true);
                                     mvccShellEntryCacheInfo.addDirtyEntryToGenerationQueue();
+                                    if ("-671402630^42^3627^0^0".equals(dirtyEntryHolder.getUID()) || "-671402630^42^3628^0^0".equals(dirtyEntryHolder.getUID()))
+                                        JSpaceUtilities.DEBUG_LOGGER.info("[{}] - WRITE_ENGINE(recovery:{}-{}): [{}]", _spaceEngine.getSpaceImpl().getContainerName(),
+                                                context.isInMemoryRecovery(), _spaceEngine.getSpaceImpl().isRecovering(), dirtyEntryHolder);
                                     break;
                             }
                         }

@@ -47,6 +47,7 @@ import com.j_spaces.core.cluster.ReplicationPolicy;
 import com.j_spaces.core.exception.internal.ReplicationInternalSpaceException;
 import com.j_spaces.core.sadapter.ISAdapterIterator;
 import com.j_spaces.core.sadapter.SAException;
+import com.j_spaces.kernel.JSpaceUtilities;
 import com.j_spaces.kernel.locks.ILockObject;
 import net.jini.space.InternalSpaceException;
 import org.slf4j.Logger;
@@ -493,6 +494,8 @@ public class EntryReplicaProducer
         T entryPacket = (T)EntryPacketFactory.createFullPacketForReplication(eh, null, eh.getUID(), ttl);
         if (_engine.isMvccEnabled() && entryPacket instanceof IMVCCEntryPacket) {
             ((IMVCCEntryPacket)entryPacket).applyMVCCEntryMetadata((MVCCEntryHolder)eh);
+            if ("-671402630^42^3627^0^0".equals(entryPacket.getUID()) || "-671402630^42^3628^0^0".equals(entryPacket.getUID()))
+                JSpaceUtilities.DEBUG_LOGGER.info("[{}] - PRODUCE: [{}]", _engine.getSpaceImpl().getContainerName(), ((IMVCCEntryPacket)entryPacket).getMVCCEntryMetadata());
         }
         entryPacket.setSerializeTypeDesc(true);
         return entryPacket;
