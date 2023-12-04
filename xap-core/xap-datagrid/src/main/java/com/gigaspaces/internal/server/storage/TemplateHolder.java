@@ -848,7 +848,8 @@ public class TemplateHolder extends AbstractSpaceItem implements ITemplateHolder
             }
             if (isOverridenEntry
                     && overrideGeneration > completedGeneration
-                    && !mvccGenerationsState.isUncompletedGeneration(overrideGeneration) && this.getEntryId() != null) {
+                    && !mvccGenerationsState.isUncompletedGeneration(overrideGeneration)
+                    && this.getEntryId() != null) { // this.getEntryId() != null in read by id
                 throw new MVCCEntryModifyConflictException(mvccGenerationsState, entryHolder, getTemplateOperation()); // overriden can't be modified
             }
             if (committedGeneration > completedGeneration

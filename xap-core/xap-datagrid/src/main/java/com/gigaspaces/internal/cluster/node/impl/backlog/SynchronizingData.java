@@ -54,6 +54,7 @@ public class SynchronizingData<T extends IReplicationPacketData<?>> {
     public SynchronizingData(Logger logger, boolean isDirectPersistencySync, String memberName) {
         _logger = logger;
         _isDirectPersistencySync = isDirectPersistencySync;
+        // memberName == null in tests
         _isMvccEnabled = memberName != null ? Boolean.parseBoolean(JProperties.getSpaceProperty(memberName, MVCC_ENABLED_PROP, MVCC_ENABLED_DEFAULT, true)) : false;
         _isFilterEnabled = SystemProperties.getBoolean(SystemProperties.SPACE_RECOVERY_FILTER_AFTER_COPY,
                 _isMvccEnabled ? false : SystemProperties.SPACE_RECOVERY_FILTER_AFTER_COPY_DEFAULT);
