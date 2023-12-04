@@ -171,7 +171,7 @@ public class MVCCCleanupManager {
                 Map<Object, MVCCShellEntryCacheInfo> idEntriesMap = typeData.getIdField().getUniqueEntriesStore();
                 for (MVCCShellEntryCacheInfo shellEntryCacheInfo : idEntriesMap.values()) {
                     int deletedEntriesPerUid = 0;
-                    int totalCommittedVersions = shellEntryCacheInfo.getTotalCommittedGenertions();
+                    int totalCommittedVersions = shellEntryCacheInfo.getTotalCommittedGenerations();
                     // clean latest pEntry from the deque if it's expired and uncompleted
                     if (removeNextOnMatch(shellEntryCacheInfo, generationState, true)) {
                         deletedEntriesPerUid++;
@@ -204,11 +204,11 @@ public class MVCCCleanupManager {
                 return false;
             }
             MVCCEntryHolder entry = pEntry.getEntryHolder();
-            if (matchToRemove(entry, generationState, shellEntryCacheInfo.getTotalCommittedGenertions(), cleanLatestUncompleted)) {
+            if (matchToRemove(entry, generationState, shellEntryCacheInfo.getTotalCommittedGenerations(), cleanLatestUncompleted)) {
                 ILockObject entryLock = _cacheManager.getLockManager().getLockObject(entry);
                 try {
                     synchronized (entryLock) {
-                        if (matchToRemove(entry, generationState, shellEntryCacheInfo.getTotalCommittedGenertions(), cleanLatestUncompleted) &&
+                        if (matchToRemove(entry, generationState, shellEntryCacheInfo.getTotalCommittedGenerations(), cleanLatestUncompleted) &&
                                 shellEntryCacheInfo.getGenerationCacheInfo(cleanLatestUncompleted) == pEntry) { // check that matched entry the same as before lock
                             shellEntryCacheInfo.removeCommittedEntryGeneration(cleanLatestUncompleted);
                             _cacheManager.getMVCCHandler().updateLDEntriesCounter(shellEntryCacheInfo, entry, false, cleanLatestUncompleted);

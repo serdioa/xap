@@ -162,12 +162,12 @@ public class MVCCShellEntryCacheInfo extends MemoryBasedEntryCacheInfo {
         return true;
     }
 
-    public int getTotalCommittedGenertions() {
+    public int getTotalCommittedGenerations() {
         return allEntryGenerations.size();
     }
 
     public boolean isEmptyShell() {
-        return getTotalCommittedGenertions() == 0 && getDirtyEntryCacheInfo() == null;
+        return getTotalCommittedGenerations() == 0 && getDirtyEntryCacheInfo() == null;
     }
 
     @Override

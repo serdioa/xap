@@ -40,7 +40,7 @@ public class MVCCShellEntryPacket implements IEntryPacket {
     }
 
     public MVCCShellEntryPacket(MVCCShellEntryCacheInfo pEntryShell) {
-        _entryVersionsPackets = new ArrayList<>(pEntryShell.getTotalCommittedGenertions());
+        _entryVersionsPackets = new ArrayList<>(pEntryShell.getTotalCommittedGenerations());
         _uid = pEntryShell.getUID();
         _typeName = pEntryShell.getServerTypeDesc().getTypeName();
     }
