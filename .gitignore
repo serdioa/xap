@@ -8,8 +8,8 @@
 # virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
 hs_err_pid*
 
-
-
+# Profiling, memory dumps etc
+*.hprof
 
 # Package Files #
 .project
@@ -40,3 +40,17 @@ space-logs/
 local-storage/
 tests_env/
 *~
+
+# Automatially generated
+dependency-reduced-pom.xml
+
+xap-core/xap-datagrid/src/main/java/com/j_spaces/jdbc/parser/grammar/ParseException.java
+xap-core/xap-datagrid/src/main/java/com/j_spaces/jdbc/parser/grammar/SimpleCharStream.java
+xap-core/xap-datagrid/src/main/java/com/j_spaces/jdbc/parser/grammar/SqlParser.java
+xap-core/xap-datagrid/src/main/java/com/j_spaces/jdbc/parser/grammar/SqlParserConstants.java
+xap-core/xap-datagrid/src/main/java/com/j_spaces/jdbc/parser/grammar/SqlParserTokenManager.java
+xap-core/xap-datagrid/src/main/java/com/j_spaces/jdbc/parser/grammar/Token.java
+xap-core/xap-datagrid/src/main/java/com/j_spaces/jdbc/parser/grammar/TokenMgrError.java
+xap-dist/xap-open-metadata.txt
+xap-examples/hello-world/README.html
+xap-examples/hola-mundo/README.html
