@@ -123,10 +123,12 @@
             <groupId>org.gigaspaces</groupId>
             <artifactId>xap-cli</artifactId>
         </dependency>
+        <!--
         <dependency>
             <groupId>org.gigaspaces</groupId>
             <artifactId>xap-cassandra</artifactId>
         </dependency>
+        -->
         <dependency>
             <groupId>com.github.oshi</groupId>
             <artifactId>oshi-core</artifactId>
