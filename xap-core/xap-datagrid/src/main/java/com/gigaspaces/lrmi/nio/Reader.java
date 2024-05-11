@@ -31,7 +31,6 @@ import com.gigaspaces.time.SystemTime;
 import com.j_spaces.kernel.SystemProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import sun.misc.BASE64Encoder;
 
 import java.io.IOException;
 import java.io.ObjectStreamConstants;
@@ -47,6 +46,7 @@ import java.nio.channels.SocketChannel;
 import java.nio.charset.Charset;
 import java.rmi.NoSuchObjectException;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.concurrent.atomic.LongAdder;
 
 /**
@@ -64,6 +64,8 @@ public class Reader {
     private static final Logger _slowerConsumerLogger = LoggerFactory.getLogger(Constants.LOGGER_LRMI_SLOW_COMSUMER);
     public static final long SUSPICIOUS_THRESHOLD = Long.valueOf(System.getProperty("com.gs.lrmi.suspicious-threshold", "20000000"));
     private static final LongAdder receivedTraffic = new LongAdder();
+    
+    private static final Base64.Encoder BASE64_ENCODER = Base64.getEncoder();
 
     private static final byte[] DUMMY_BUFFER = new byte[0];
 
@@ -440,7 +442,7 @@ public class Reader {
                             String str = new String(bytes, "UTF-8");
                             offendingMessageLogger.trace(msg + ", received string is : " + str);
                         } catch (UnsupportedEncodingException e) {
-                            offendingMessageLogger.trace(msg + ", base64 encoding of the received  buffer is : " + new BASE64Encoder().encode(bytes));
+                            offendingMessageLogger.trace(msg + ", base64 encoding of the received  buffer is : " + BASE64_ENCODER.encodeToString(bytes));
                         }
                     } catch (Exception ignored) {
                     }

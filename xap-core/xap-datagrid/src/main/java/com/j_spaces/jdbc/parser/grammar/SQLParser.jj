@@ -1292,16 +1292,16 @@ ExpNode condition(AbstractDMLQuery query) :
 		<EQUAL> t = <INTEGER_LITERAL>  { int temp = Integer.parseInt(t.image);
 										 rowNum= new RowNumNode(temp,temp);
 									   }
-       | <LESS>	t = <INTEGER_LITERAL>  { temp = Integer.parseInt(t.image);
+       | <LESS>	t = <INTEGER_LITERAL>  { int temp = Integer.parseInt(t.image);
 										 rowNum= new RowNumNode(1, temp-1);
 									   }
-       | <LESSEQUAL> t = <INTEGER_LITERAL>  { temp = Integer.parseInt(t.image);
+       | <LESSEQUAL> t = <INTEGER_LITERAL>  { int temp = Integer.parseInt(t.image);
 										 	  rowNum= new RowNumNode(1, temp);
 									   		}
-       | <GREATER>  t = <INTEGER_LITERAL>   { temp = Integer.parseInt(t.image);
+       | <GREATER>  t = <INTEGER_LITERAL>   { int temp = Integer.parseInt(t.image);
 										 	  rowNum= new RowNumNode(temp+1,Integer.MAX_VALUE);
 									        }
-       | <GREATEREQUAL> t = <INTEGER_LITERAL> { temp = Integer.parseInt(t.image);
+       | <GREATEREQUAL> t = <INTEGER_LITERAL> { int temp = Integer.parseInt(t.image);
 										 	    rowNum= new RowNumNode(temp,Integer.MAX_VALUE);
 									          }
 	   |<OPENPAREN>  startIndex = <INTEGER_LITERAL> "," endIndex = <INTEGER_LITERAL> <CLOSEPAREN> 
