@@ -74,22 +74,7 @@ public class SSLFilterFactory implements IOFilterFactory {
     }
 
     private void createSelfSignedCertificate() {
-        try {
-            ks = SelfSignedCertificate.keystore();
-        } catch (Throwable e) {
-            if (_logger.isTraceEnabled()) {
-                _logger.trace("Failed to create self signed certificate using sun classes will try Bouncy Castle.", e);
-            } else if (_logger.isInfoEnabled()) {
-                _logger.info("Could not create self signed certificate using sun classes - trying Bouncy Castle");
-            }
-            try {
-                ks = BouncyCastleSelfSignedCertificate.keystore();
-            } catch (Throwable t) {
-                _logger.warn("Failed to create self signed certificate using Bouncy Castle classes.\n" +
-                        " please add Bouncy Castle jars to classpath (or add the artifact org.bouncycastle.bcpkix-jdk15on to maven)", t);
-
-            }
-        }
+        ks = BouncyCastleSelfSignedCertificate.keystore();
     }
 
     public IOFilter createClientFilter(InetSocketAddress remoteAddress) throws Exception {

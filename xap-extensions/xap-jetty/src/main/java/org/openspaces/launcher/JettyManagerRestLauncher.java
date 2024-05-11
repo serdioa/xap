@@ -2,7 +2,7 @@ package org.openspaces.launcher;
 
 import com.gigaspaces.internal.version.PlatformVersion;
 import com.gigaspaces.logger.Constants;
-import com.gigaspaces.lrmi.nio.filters.SelfSignedCertificate;
+import com.gigaspaces.lrmi.nio.filters.BouncyCastleSelfSignedCertificate;
 import com.gigaspaces.start.SystemInfo;
 import com.gigaspaces.start.SystemLocations;
 import com.gigaspaces.start.manager.XapManagerConfig;
@@ -244,7 +244,7 @@ public class JettyManagerRestLauncher implements Closeable {
             sslContextFactory.setKeyStorePath(keyStorePath);
             sslContextFactory.setKeyStorePassword(password);
         } else {
-            sslContextFactory.setKeyStore(SelfSignedCertificate.keystore());
+            sslContextFactory.setKeyStore(BouncyCastleSelfSignedCertificate.keystore());
             sslContextFactory.setKeyStorePassword("foo");
             logger.info("SSL Keystore was not provided - Self-signed certificate was generated");
         }

@@ -19,7 +19,6 @@ package org.jini.rio.tools.webster;
 import com.gigaspaces.internal.io.BootIOUtils;
 import com.gigaspaces.internal.utils.concurrent.GSThread;
 import com.gigaspaces.lrmi.nio.filters.BouncyCastleSelfSignedCertificate;
-import com.gigaspaces.lrmi.nio.filters.SelfSignedCertificate;
 import com.gigaspaces.start.SystemInfo;
 
 import com.gigaspaces.start.SystemLocations;
@@ -356,24 +355,7 @@ public class Webster implements Runnable {
     }
 
     private KeyStore keystore() {
-        try {
-            return SelfSignedCertificate.keystore();
-        } catch (Throwable e) {
-            e.printStackTrace();
-            if (logger.isTraceEnabled()) {
-                logger.trace("Failed to create self signed certificate using sun classes will try Bouncy Castle.", e);
-            } else if (logger.isInfoEnabled()) {
-                logger.info("Could not create self signed certificate using sun classes - trying Bouncy Castle");
-            }
-            try {
-                return BouncyCastleSelfSignedCertificate.keystore();
-            } catch (Throwable t) {
-                logger.warn("Failed to create self signed certificate using Bouncy Castle classes.\n" +
-                        " please add Bouncy Castle jars to classpath (or add the artifact org.bouncycastle.bcpkix-jdk15on to maven)", t);
-
-            }
-        }
-        return null;
+        return BouncyCastleSelfSignedCertificate.keystore();
     }
 
     private void logAndThrowBindExceptionException(String bindAddress,
