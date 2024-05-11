@@ -29,6 +29,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Constructor;
 
+import org.objectweb.gs.asm.Opcodes;
+
 /**
  * @author Dan Kilman
  * @since 9.6
@@ -69,13 +71,15 @@ public class ConstructorPropertyNameExtractor {
         return extractor.parameterNames;
     }
 
-    private static class ParameterNameExtractorClassVisitor implements ClassVisitor {
+    private static class ParameterNameExtractorClassVisitor extends ClassVisitor {
         private static final String CONSTRUCTOR_METHOD_NAME = "<init>";
         private final String constructorDescription;
         private final String[] parameterNames;
         private final Type[] argumentTypes;
 
         ParameterNameExtractorClassVisitor(String constructorDescription) {
+            super(Opcodes.ASM9);
+            
             this.constructorDescription = constructorDescription;
             this.argumentTypes = Type.getArgumentTypes(constructorDescription);
             this.parameterNames = new String[argumentTypes.length];
@@ -124,13 +128,15 @@ public class ConstructorPropertyNameExtractor {
         }
     }
 
-    private static class ParameterNameExtractorMethodVisitor implements MethodVisitor {
+    private static class ParameterNameExtractorMethodVisitor extends MethodVisitor {
         private final int numberOfParameters;
         private final String[] parameterNames;
         private int currentIndex = 0;
 
         public ParameterNameExtractorMethodVisitor(int numberOfParameters,
                                                    String[] parameterNames) {
+            super(Opcodes.ASM9);
+            
             this.numberOfParameters = numberOfParameters;
             this.parameterNames = parameterNames;
         }
